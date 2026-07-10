@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app/rebirth_app.dart';
+import 'core/database/database_provider.dart';
 
-void main() {
-  runApp(const ProviderScope(child: RebirthApp()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final container = ProviderContainer();
+  await container.read(appBootstrapProvider.future);
+
+  runApp(
+    UncontrolledProviderScope(container: container, child: const RebirthApp()),
+  );
 }
