@@ -1,9 +1,12 @@
 import 'package:drift/drift.dart';
+import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:uuid/uuid.dart';
 
 const databaseUuid = Uuid();
+const databaseDateTimeService = DateTimeService();
 
-int utcNowMilliseconds() => DateTime.now().toUtc().millisecondsSinceEpoch;
+int utcNowMilliseconds() =>
+    databaseDateTimeService.currentUtcMillisecondsSinceEpoch();
 
 mixin UuidPrimaryKey on Table {
   TextColumn get id =>
