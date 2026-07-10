@@ -1,20 +1,26 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final dateTimeServiceProvider = Provider<DateTimeService>(
-  (ref) => const DateTimeService(),
-);
-
 class DateTimeService {
-  const DateTimeService();
+  const DateTimeService({this.now = DateTime.now});
 
   static final RegExp _localDatePattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+  final DateTime Function() now;
 
   int currentUtcMillisecondsSinceEpoch() {
-    return DateTime.now().toUtc().millisecondsSinceEpoch;
+    return now().toUtc().millisecondsSinceEpoch;
   }
 
   String currentLocalDateString() {
-    return formatLocalDate(DateTime.now());
+    return formatLocalDate(now());
+  }
+
+  DateTimeSnapshot currentSnapshot() {
+    final currentDateTime = now();
+
+    return DateTimeSnapshot(
+      now: currentDateTime,
+      utcMilliseconds: currentDateTime.toUtc().millisecondsSinceEpoch,
+      localDateString: formatLocalDate(currentDateTime),
+      timezoneOffsetMinutes: currentDateTime.timeZoneOffset.inMinutes,
+    );
   }
 
   String formatLocalDate(DateTime dateTime) {
@@ -25,7 +31,7 @@ class DateTimeService {
   }
 
   int currentTimezoneOffsetMinutes() {
-    return DateTime.now().timeZoneOffset.inMinutes;
+    return now().timeZoneOffset.inMinutes;
   }
 
   List<String> recentLocalDateRange(int days, {DateTime? endingAt}) {
@@ -33,16 +39,18 @@ class DateTimeService {
       return const <String>[];
     }
 
-    final endDate = (endingAt ?? DateTime.now()).toLocal();
+    final endDate = (endingAt ?? now()).toLocal();
     final startDate = DateTime(
       endDate.year,
       endDate.month,
-      endDate.day,
-    ).subtract(Duration(days: days - 1));
+      endDate.day - days + 1,
+    );
 
     return List<String>.generate(
       days,
-      (index) => formatLocalDate(startDate.add(Duration(days: index))),
+      (index) => formatLocalDate(
+        DateTime(startDate.year, startDate.month, startDate.day + index),
+      ),
     );
   }
 
@@ -58,4 +66,36 @@ class DateTimeService {
 
     return parsed.year == year && parsed.month == month && parsed.day == day;
   }
+}
+
+class DateTimeSnapshot {
+  const DateTimeSnapshot({
+    required this.now,
+    required this.utcMilliseconds,
+    required this.localDateString,
+    required this.timezoneOffsetMinutes,
+  });
+
+  final DateTime now;
+  final int utcMilliseconds;
+  final String localDateString;
+  final int timezoneOffsetMinutes;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is DateTimeSnapshot &&
+            now == other.now &&
+            utcMilliseconds == other.utcMilliseconds &&
+            localDateString == other.localDateString &&
+            timezoneOffsetMinutes == other.timezoneOffsetMinutes;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        now,
+        utcMilliseconds,
+        localDateString,
+        timezoneOffsetMinutes,
+      );
 }

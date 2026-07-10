@@ -3,29 +3,52 @@ import 'package:rebirth/core/utils/date_time_service.dart';
 
 void main() {
   const service = DateTimeService();
+  final fixedNow = DateTime(2026, 7, 10, 23, 59, 58, 321);
+  final fixedService = DateTimeService(now: () => fixedNow);
 
   test('formats DateTime as YYYY-MM-DD', () {
     expect(
       service.formatLocalDate(DateTime(2026, 7, 10, 23, 59)),
       '2026-07-10',
     );
+  });
+
+  test('returns a predictable local date with a fixed clock', () {
+    expect(fixedService.currentLocalDateString(), '2026-07-10');
+  });
+
+  test('returns predictable UTC milliseconds with a fixed clock', () {
+    final milliseconds = fixedService.currentUtcMillisecondsSinceEpoch();
+
+    expect(milliseconds, isA<int>());
+    expect(milliseconds, fixedNow.toUtc().millisecondsSinceEpoch);
+  });
+
+  test('returns timezone offset matching the clock', () {
     expect(
-      service.currentLocalDateString(),
-      matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')),
+      fixedService.currentTimezoneOffsetMinutes(),
+      fixedNow.timeZoneOffset.inMinutes,
     );
   });
 
-  test('returns UTC milliseconds as an integer', () {
-    final milliseconds = service.currentUtcMillisecondsSinceEpoch();
+  test('currentSnapshot derives all fields from one clock read', () {
+    var clockReads = 0;
+    final snapshotService = DateTimeService(
+      now: () {
+        clockReads += 1;
+        return fixedNow;
+      },
+    );
 
-    expect(milliseconds, isA<int>());
-    expect(milliseconds, greaterThan(0));
-  });
+    final snapshot = snapshotService.currentSnapshot();
 
-  test('returns timezone offset matching DateTime.now()', () {
+    expect(clockReads, 1);
+    expect(snapshot.now, same(fixedNow));
+    expect(snapshot.utcMilliseconds, fixedNow.toUtc().millisecondsSinceEpoch);
+    expect(snapshot.localDateString, '2026-07-10');
     expect(
-      service.currentTimezoneOffsetMinutes(),
-      DateTime.now().timeZoneOffset.inMinutes,
+      snapshot.timezoneOffsetMinutes,
+      fixedNow.timeZoneOffset.inMinutes,
     );
   });
 
@@ -38,6 +61,18 @@ void main() {
     expect(range, hasLength(7));
     expect(range.first, '2026-07-04');
     expect(range.last, '2026-07-10');
+  });
+
+  test('generates a one day local date range', () {
+    expect(
+      service.recentLocalDateRange(1, endingAt: DateTime(2026, 7, 10, 18)),
+      <String>['2026-07-10'],
+    );
+  });
+
+  test('returns an empty range when days is not positive', () {
+    expect(service.recentLocalDateRange(0), isEmpty);
+    expect(service.recentLocalDateRange(-1), isEmpty);
   });
 
   test('recognizes invalid YYYY-MM-DD strings', () {
