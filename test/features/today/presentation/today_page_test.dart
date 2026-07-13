@@ -68,7 +68,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_fieldText(tester, 'priority1Field'), '完成实验');
-    expect(_fieldText(tester, 'researchMinutesField'), '45');
+    expect(_durationPartText(tester, 'researchMinutesField', 0), '0');
+    expect(_durationPartText(tester, 'researchMinutesField', 1), '45');
     expect(_fieldText(tester, 'dailyNoteField'), '已有的一句话');
     expect(find.byKey(const ValueKey('todayEmptyState')), findsNothing);
   });
@@ -159,41 +160,84 @@ void main() {
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
 
-    final researchField = find.byKey(const ValueKey('researchMinutesField'));
-    expect(_fieldText(tester, 'researchMinutesField'), isEmpty);
+    expect(_durationPartText(tester, 'researchMinutesField', 0), isEmpty);
+    expect(_durationPartText(tester, 'researchMinutesField', 1), isEmpty);
 
-    await tester.ensureVisible(researchField);
-    await tester.enterText(researchField, '0');
+    await _enterDuration(tester, 'researchMinutesField', '0', '0');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, 0);
     expect(repository.lastSaved?.moodScore, isNull);
     expect(repository.lastSaved?.energyScore, isNull);
     expect(repository.lastSaved?.health, isNull);
 
-    await tester.ensureVisible(researchField);
-    await tester.enterText(researchField, '');
+    await _enterDuration(tester, 'researchMinutesField', '', '');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, isNull);
   });
 
-  testWidgets('negative and invalid minutes do not save', (tester) async {
+  testWidgets('hour and minute fields save total minutes', (tester) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
 
-    final researchField = find.byKey(const ValueKey('researchMinutesField'));
-    await tester.ensureVisible(researchField);
-    await tester.enterText(researchField, '-1');
+    await _enterDuration(tester, 'researchMinutesField', '1', '30');
+    await _enterDuration(tester, 'learningMinutesField', '0', '0');
+    await _enterDuration(tester, 'sleepMinutesField', '7', '30');
     await _tapSave(tester);
 
-    expect(find.text('请输入非负整数'), findsOneWidget);
+    expect(repository.lastSaved?.researchMinutes, 90);
+    expect(repository.lastSaved?.learningMinutes, 0);
+    expect(repository.lastSaved?.health?.sleepDurationMinutes, 450);
+  });
+
+  testWidgets('minute 60 and invalid text do not save or lose input', (
+    tester,
+  ) async {
+    final repository = _FakeTodayRepository(entry: _sampleEntry());
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await _enterDuration(tester, 'researchMinutesField', '1', '60');
+    await _tapSave(tester);
+
+    expect(find.text('分钟需小于 60'), findsOneWidget);
     expect(repository.lastSaved, isNull);
     expect(repository.saveAttempts, 0);
+    expect(_durationPartText(tester, 'researchMinutesField', 0), '1');
+    expect(_durationPartText(tester, 'researchMinutesField', 1), '60');
 
-    await tester.enterText(researchField, 'not-an-integer');
+    await tester.enterText(
+      _durationPart('researchMinutesField', 1),
+      'not-an-integer',
+    );
     await _tapSave(tester);
-    expect(find.text('请输入非负整数'), findsOneWidget);
+    expect(find.text('请输入 0–59 的整数'), findsOneWidget);
     expect(repository.saveAttempts, 0);
+    expect(
+      _durationPartText(tester, 'researchMinutesField', 1),
+      'not-an-integer',
+    );
+  });
+
+  testWidgets('duration quick chip fills fields and saves total minutes', (
+    tester,
+  ) async {
+    final repository = _FakeTodayRepository(entry: _sampleEntry());
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    final research = find.byKey(const ValueKey('researchMinutesField'));
+    await Scrollable.ensureVisible(tester.element(research), alignment: 0.4);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: research, matching: find.text('1小时30分钟')),
+    );
+    await tester.pump();
+
+    expect(_durationPartText(tester, 'researchMinutesField', 0), '1');
+    expect(_durationPartText(tester, 'researchMinutesField', 1), '30');
+    await _tapSave(tester);
+    expect(repository.lastSaved?.researchMinutes, 90);
   });
 
   testWidgets('clearing priority text also clears completed state', (
@@ -249,6 +293,7 @@ void main() {
     const paths = <String>[
       'lib/features/today/presentation/today_page.dart',
       'lib/features/today/presentation/widgets/today_form.dart',
+      'lib/features/today/presentation/widgets/duration_input_field.dart',
     ];
 
     for (final path in paths) {
@@ -283,10 +328,7 @@ Future<void> _tapSave(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   final saveButton = find.byKey(const ValueKey('saveTodayButton'));
-  await Scrollable.ensureVisible(
-    tester.element(saveButton),
-    alignment: 0.5,
-  );
+  await Scrollable.ensureVisible(tester.element(saveButton), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(saveButton);
   await tester.pumpAndSettle();
@@ -295,6 +337,35 @@ Future<void> _tapSave(WidgetTester tester) async {
 String _fieldText(WidgetTester tester, String key) {
   return tester
       .widget<TextFormField>(find.byKey(ValueKey(key)))
+      .controller!
+      .text;
+}
+
+Future<void> _enterDuration(
+  WidgetTester tester,
+  String key,
+  String hours,
+  String minutes,
+) async {
+  final durationField = find.byKey(ValueKey(key));
+  await Scrollable.ensureVisible(tester.element(durationField), alignment: 0.4);
+  await tester.pumpAndSettle();
+  await tester.enterText(_durationPart(key, 0), hours);
+  await tester.enterText(_durationPart(key, 1), minutes);
+}
+
+Finder _durationPart(String key, int index) {
+  return find
+      .descendant(
+        of: find.byKey(ValueKey(key)),
+        matching: find.byType(TextFormField),
+      )
+      .at(index);
+}
+
+String _durationPartText(WidgetTester tester, String key, int index) {
+  return tester
+      .widget<TextFormField>(_durationPart(key, index))
       .controller!
       .text;
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 
+import 'duration_input_field.dart';
+
 class TodayForm extends StatefulWidget {
   const TodayForm({required this.entry, required this.onSave, super.key});
 
@@ -13,18 +15,21 @@ class TodayForm extends StatefulWidget {
 }
 
 class _TodayFormState extends State<TodayForm> {
+  static const _standardDurationQuickValues = <int>[15, 30, 45, 60, 90, 120];
+  static const _sleepDurationQuickValues = <int>[360, 390, 420, 450, 480, 510];
+
   final _formKey = GlobalKey<FormState>();
   late final List<TextEditingController> _priorityControllers;
-  late final TextEditingController _researchController;
-  late final TextEditingController _learningController;
   late final TextEditingController _dailyNoteController;
-  late final TextEditingController _sleepController;
-  late final TextEditingController _exerciseController;
 
   late List<bool> _priorityCompleted;
   int? _moodScore;
   int? _energyScore;
   int? _physicalStateScore;
+  int? _researchMinutes;
+  int? _learningMinutes;
+  int? _sleepDurationMinutes;
+  int? _exerciseDurationMinutes;
   bool _isSaving = false;
 
   @override
@@ -34,11 +39,7 @@ class _TodayFormState extends State<TodayForm> {
       3,
       (_) => TextEditingController(),
     );
-    _researchController = TextEditingController();
-    _learningController = TextEditingController();
     _dailyNoteController = TextEditingController();
-    _sleepController = TextEditingController();
-    _exerciseController = TextEditingController();
     _syncFromEntry(widget.entry);
   }
 
@@ -55,11 +56,7 @@ class _TodayFormState extends State<TodayForm> {
     for (final controller in _priorityControllers) {
       controller.dispose();
     }
-    _researchController.dispose();
-    _learningController.dispose();
     _dailyNoteController.dispose();
-    _sleepController.dispose();
-    _exerciseController.dispose();
     super.dispose();
   }
 
@@ -152,18 +149,26 @@ class _TodayFormState extends State<TodayForm> {
                         children: [
                           SizedBox(
                             width: fieldWidth,
-                            child: _buildMinutesField(
+                            child: DurationInputField(
                               key: const ValueKey('researchMinutesField'),
-                              controller: _researchController,
                               label: '科研时间',
+                              initialMinutes: widget.entry.researchMinutes,
+                              quickValues: _standardDurationQuickValues,
+                              onChanged: (value) {
+                                setState(() => _researchMinutes = value);
+                              },
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
-                            child: _buildMinutesField(
+                            child: DurationInputField(
                               key: const ValueKey('learningMinutesField'),
-                              controller: _learningController,
                               label: '学习时间',
+                              initialMinutes: widget.entry.learningMinutes,
+                              quickValues: _standardDurationQuickValues,
+                              onChanged: (value) {
+                                setState(() => _learningMinutes = value);
+                              },
                             ),
                           ),
                         ],
@@ -199,18 +204,30 @@ class _TodayFormState extends State<TodayForm> {
                         children: [
                           SizedBox(
                             width: fieldWidth,
-                            child: _buildMinutesField(
+                            child: DurationInputField(
                               key: const ValueKey('sleepMinutesField'),
-                              controller: _sleepController,
                               label: '睡眠时长',
+                              initialMinutes:
+                                  widget.entry.health?.sleepDurationMinutes,
+                              quickValues: _sleepDurationQuickValues,
+                              onChanged: (value) {
+                                setState(() => _sleepDurationMinutes = value);
+                              },
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
-                            child: _buildMinutesField(
+                            child: DurationInputField(
                               key: const ValueKey('exerciseMinutesField'),
-                              controller: _exerciseController,
                               label: '运动时长',
+                              initialMinutes:
+                                  widget.entry.health?.exerciseDurationMinutes,
+                              quickValues: _standardDurationQuickValues,
+                              onChanged: (value) {
+                                setState(
+                                  () => _exerciseDurationMinutes = value,
+                                );
+                              },
                             ),
                           ),
                         ],
@@ -296,39 +313,6 @@ class _TodayFormState extends State<TodayForm> {
     );
   }
 
-  Widget _buildMinutesField({
-    required Key key,
-    required TextEditingController controller,
-    required String label,
-  }) {
-    return TextFormField(
-      key: key,
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(signed: true),
-      textInputAction: TextInputAction.next,
-      decoration: InputDecoration(
-        labelText: label,
-        suffixText: '分钟',
-        border: const OutlineInputBorder(),
-      ),
-      validator: _validateMinutes,
-      onChanged: (_) => setState(() {}),
-    );
-  }
-
-  String? _validateMinutes(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) {
-      return null;
-    }
-
-    final minutes = int.tryParse(text);
-    if (minutes == null || minutes < 0) {
-      return '请输入非负整数';
-    }
-    return null;
-  }
-
   Future<void> _submit() async {
     if (_isSaving || !(_formKey.currentState?.validate() ?? false)) {
       return;
@@ -346,8 +330,8 @@ class _TodayFormState extends State<TodayForm> {
       priorities: priorities,
       moodScore: _moodScore,
       energyScore: _energyScore,
-      researchMinutes: _nullableMinutes(_researchController.text),
-      learningMinutes: _nullableMinutes(_learningController.text),
+      researchMinutes: _researchMinutes,
+      learningMinutes: _learningMinutes,
       dailyNote: _nullableText(_dailyNoteController.text),
       status: widget.entry.status,
       health: _buildHealthInput(),
@@ -370,23 +354,21 @@ class _TodayFormState extends State<TodayForm> {
   }
 
   TodayHealthInput? _buildHealthInput() {
-    final sleep = _nullableMinutes(_sleepController.text);
-    final exercise = _nullableMinutes(_exerciseController.text);
     final existing = widget.entry.health;
 
     if (existing == null &&
-        sleep == null &&
-        exercise == null &&
+        _sleepDurationMinutes == null &&
+        _exerciseDurationMinutes == null &&
         _physicalStateScore == null) {
       return null;
     }
 
     return TodayHealthInput(
-      sleepDurationMinutes: sleep,
+      sleepDurationMinutes: _sleepDurationMinutes,
       weightKg: existing?.weightKg,
       waterIntakeMl: existing?.waterIntakeMl,
       exerciseType: existing?.exerciseType,
-      exerciseDurationMinutes: exercise,
+      exerciseDurationMinutes: _exerciseDurationMinutes,
       physicalStateScore: _physicalStateScore,
       note: existing?.note,
     );
@@ -401,13 +383,11 @@ class _TodayFormState extends State<TodayForm> {
         .toList(growable: false);
     _moodScore = entry.moodScore;
     _energyScore = entry.energyScore;
-    _researchController.text = _minutesText(entry.researchMinutes);
-    _learningController.text = _minutesText(entry.learningMinutes);
+    _researchMinutes = entry.researchMinutes;
+    _learningMinutes = entry.learningMinutes;
     _dailyNoteController.text = entry.dailyNote ?? '';
-    _sleepController.text = _minutesText(entry.health?.sleepDurationMinutes);
-    _exerciseController.text = _minutesText(
-      entry.health?.exerciseDurationMinutes,
-    );
+    _sleepDurationMinutes = entry.health?.sleepDurationMinutes;
+    _exerciseDurationMinutes = entry.health?.exerciseDurationMinutes;
     _physicalStateScore = entry.health?.physicalStateScore;
   }
 
@@ -417,19 +397,12 @@ class _TodayFormState extends State<TodayForm> {
         ) ||
         _moodScore != null ||
         _energyScore != null ||
-        _researchController.text.trim().isNotEmpty ||
-        _learningController.text.trim().isNotEmpty ||
+        _researchMinutes != null ||
+        _learningMinutes != null ||
         _dailyNoteController.text.trim().isNotEmpty ||
-        _sleepController.text.trim().isNotEmpty ||
-        _exerciseController.text.trim().isNotEmpty ||
+        _sleepDurationMinutes != null ||
+        _exerciseDurationMinutes != null ||
         _physicalStateScore != null;
-  }
-
-  String _minutesText(int? value) => value?.toString() ?? '';
-
-  int? _nullableMinutes(String value) {
-    final text = value.trim();
-    return text.isEmpty ? null : int.parse(text);
   }
 
   String? _nullableText(String value) {
