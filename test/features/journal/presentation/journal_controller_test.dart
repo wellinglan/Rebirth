@@ -5,6 +5,7 @@ import 'package:rebirth/core/database/app_database.dart' hide JournalEntry;
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/features/journal/data/journal_repository_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
@@ -75,4 +76,48 @@ void main() {
       isA<AsyncError<List<JournalEntry>>>(),
     );
   });
+
+  test('reload reads newly saved recent entries', () async {
+    expect(await container.read(journalControllerProvider.future), isEmpty);
+    await container
+        .read(journalRepositoryProvider)
+        .saveTodayEntry(const JournalSaveData(learning: '外部保存'));
+
+    await container.read(journalControllerProvider.notifier).reload();
+
+    expect(
+      container.read(journalControllerProvider).requireValue.single.learning,
+      '外部保存',
+    );
+  });
+
+  test('initial repository failure exposes AsyncError', () async {
+    final errorContainer = ProviderContainer(
+      overrides: [
+        journalRepositoryProvider.overrideWithValue(
+          _FailingJournalRepository(),
+        ),
+      ],
+    );
+    addTearDown(errorContainer.dispose);
+
+    await expectLater(
+      errorContainer.read(journalControllerProvider.future),
+      throwsA(isA<StateError>()),
+    );
+    expect(
+      errorContainer.read(journalControllerProvider),
+      isA<AsyncError<List<JournalEntry>>>(),
+    );
+  });
+}
+
+final class _FailingJournalRepository implements JournalRepository {
+  @override
+  Future<List<JournalEntry>> listRecent({int limit = 20}) {
+    throw StateError('history load failed for test');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

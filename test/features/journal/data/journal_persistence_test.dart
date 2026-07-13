@@ -60,6 +60,7 @@ void main() {
 
     final secondRepository = openRepository();
     final afterFirstRestart = await secondRepository.getTodayEntry();
+    final firstHistory = await secondRepository.listRecent();
 
     expect(afterFirstRestart?.id, firstSave.id);
     expect(afterFirstRestart?.mostImportantAccomplishment, '完成关键实验');
@@ -67,6 +68,8 @@ void main() {
     expect(afterFirstRestart?.emotionSource, '对进度的担心');
     expect(afterFirstRestart?.learning, '先验证最小假设');
     expect(afterFirstRestart?.tomorrowAdjustment, '优先整理数据');
+    expect(firstHistory, hasLength(1));
+    expect(firstHistory.single.id, firstSave.id);
 
     currentTime = currentTime.add(const Duration(minutes: 30));
     final updated = await secondRepository.saveTodayEntry(
@@ -81,6 +84,7 @@ void main() {
 
     final thirdRepository = openRepository();
     final afterSecondRestart = await thirdRepository.getTodayEntry();
+    final secondHistory = await thirdRepository.listRecent();
     final rawRows = await openDatabase!
         .select(openDatabase!.journalEntries)
         .get();
@@ -91,6 +95,9 @@ void main() {
     expect(afterSecondRestart?.emotionSource, isNull);
     expect(afterSecondRestart?.learning, '记录过程同样重要');
     expect(afterSecondRestart?.tomorrowAdjustment, isNull);
+    expect(secondHistory, hasLength(1));
+    expect(secondHistory.single.id, firstSave.id);
+    expect(secondHistory.single.learning, '记录过程同样重要');
     expect(rawRows.where((row) => row.deletedAt == null), hasLength(1));
   });
 }

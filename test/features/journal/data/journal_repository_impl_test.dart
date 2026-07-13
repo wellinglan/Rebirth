@@ -125,6 +125,20 @@ void main() {
     expect(entries.map((entry) => entry.id), [first.id, second.id]);
   });
 
+  test('listRecent applies the requested limit', () async {
+    final created = <domain.JournalEntry>[];
+    for (final day in [8, 9, 10]) {
+      currentTime = DateTime(2026, 7, day, 20);
+      created.add(
+        await repository.createEntry(JournalSaveData(learning: '第 $day 天')),
+      );
+    }
+
+    final entries = await repository.listRecent(limit: 2);
+
+    expect(entries.map((entry) => entry.id), [created[2].id, created[1].id]);
+  });
+
   test(
     'listByDate and inclusive date range only return matching entries',
     () async {

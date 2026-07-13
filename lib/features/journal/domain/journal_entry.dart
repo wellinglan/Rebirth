@@ -30,4 +30,25 @@ final class JournalEntry {
   final JournalEntryStatus status;
   final int createdAt;
   final int updatedAt;
+
+  bool get hasContent =>
+      _contentFields.any((value) => value != null && value.trim().isNotEmpty);
+
+  String get previewText {
+    for (final value in _contentFields) {
+      final text = value?.trim();
+      if (text != null && text.isNotEmpty) {
+        return text;
+      }
+    }
+    return '无内容';
+  }
+
+  List<String?> get _contentFields => [
+    mostImportantAccomplishment,
+    mostDrainingEvent,
+    emotionSource,
+    learning,
+    tomorrowAdjustment,
+  ];
 }

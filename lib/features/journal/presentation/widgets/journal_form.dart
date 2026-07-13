@@ -63,91 +63,89 @@ class _JournalFormState extends State<JournalForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('今日复盘', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 6),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('今日复盘', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 6),
+              Text(
+                widget.entry?.entryDate ?? '写下今天值得理解的部分',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              JournalQuestionField(
+                question: '今天最重要的完成是什么？',
+                controller: _accomplishmentController,
+                fieldKey: const ValueKey('journalAccomplishmentField'),
+                onChanged: _handleChanged,
+              ),
+              const SizedBox(height: 16),
+              JournalQuestionField(
+                question: '今天最消耗我的事情是什么？',
+                controller: _drainingController,
+                fieldKey: const ValueKey('journalDrainingField'),
+                onChanged: _handleChanged,
+              ),
+              const SizedBox(height: 16),
+              JournalQuestionField(
+                question: '今天主要情绪的来源是什么？',
+                controller: _emotionController,
+                fieldKey: const ValueKey('journalEmotionField'),
+                onChanged: _handleChanged,
+              ),
+              const SizedBox(height: 16),
+              JournalQuestionField(
+                question: '今天我学到了什么？',
+                controller: _learningController,
+                fieldKey: const ValueKey('journalLearningField'),
+                onChanged: _handleChanged,
+              ),
+              const SizedBox(height: 16),
+              JournalQuestionField(
+                question: '明天我想如何调整？',
+                controller: _adjustmentController,
+                fieldKey: const ValueKey('journalAdjustmentField'),
+                onChanged: _handleChanged,
+              ),
+              if (_contentError != null) ...[
+                const SizedBox(height: 10),
                 Text(
-                  widget.entry?.entryDate ?? '写下今天值得理解的部分',
+                  _contentError!,
+                  key: const ValueKey('journalContentError'),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                JournalQuestionField(
-                  question: '今天最重要的完成是什么？',
-                  controller: _accomplishmentController,
-                  fieldKey: const ValueKey('journalAccomplishmentField'),
-                  onChanged: _handleChanged,
-                ),
-                const SizedBox(height: 16),
-                JournalQuestionField(
-                  question: '今天最消耗我的事情是什么？',
-                  controller: _drainingController,
-                  fieldKey: const ValueKey('journalDrainingField'),
-                  onChanged: _handleChanged,
-                ),
-                const SizedBox(height: 16),
-                JournalQuestionField(
-                  question: '今天主要情绪的来源是什么？',
-                  controller: _emotionController,
-                  fieldKey: const ValueKey('journalEmotionField'),
-                  onChanged: _handleChanged,
-                ),
-                const SizedBox(height: 16),
-                JournalQuestionField(
-                  question: '今天我学到了什么？',
-                  controller: _learningController,
-                  fieldKey: const ValueKey('journalLearningField'),
-                  onChanged: _handleChanged,
-                ),
-                const SizedBox(height: 16),
-                JournalQuestionField(
-                  question: '明天我想如何调整？',
-                  controller: _adjustmentController,
-                  fieldKey: const ValueKey('journalAdjustmentField'),
-                  onChanged: _handleChanged,
-                ),
-                if (_contentError != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    _contentError!,
-                    key: const ValueKey('journalContentError'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
-                    key: const ValueKey('saveJournalButton'),
-                    onPressed: _isSaving ? null : _submit,
-                    icon: _isSaving
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(
-                              key: ValueKey('journalSaveProgressIndicator'),
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Icons.save_outlined),
-                    label: Text(_isSaving ? '保存中...' : '保存复盘'),
+                    color: theme.colorScheme.error,
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  key: const ValueKey('saveJournalButton'),
+                  onPressed: _isSaving ? null : _submit,
+                  icon: _isSaving
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            key: ValueKey('journalSaveProgressIndicator'),
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(_isSaving ? '保存中...' : '保存复盘'),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 

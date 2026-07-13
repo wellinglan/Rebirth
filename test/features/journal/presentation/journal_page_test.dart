@@ -51,6 +51,52 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
+    expect(find.text('最近复盘'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('journalHistoryEmptyState')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('history loading does not replace the today form', (
+    tester,
+  ) async {
+    final historyGate = Completer<List<JournalEntry>>();
+    final repository = _FakeJournalRepository(pendingHistoryLoad: historyGate);
+    await _pumpJournalPage(tester, repository);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('journalHistoryLoadingState')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('history error has an independent retry action', (tester) async {
+    final repository = _FakeJournalRepository(
+      historyLoadError: StateError('history failed for test'),
+    );
+    await _pumpJournalPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('journalHistoryErrorState')),
+      findsOneWidget,
+    );
+    expect(find.text('历史复盘暂时无法加载'), findsOneWidget);
+
+    repository.historyLoadError = null;
+    await tester.tap(find.byTooltip('重新加载历史复盘'));
+    await tester.pumpAndSettle();
+
+    expect(repository.listRecentCalls, 2);
+    expect(
+      find.byKey(const ValueKey('journalHistoryEmptyState')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('JournalPage fills an existing today entry', (tester) async {
@@ -63,6 +109,59 @@ void main() {
     expect(_fieldText(tester, 'journalEmotionField'), '对进度的担心');
     expect(_fieldText(tester, 'journalLearningField'), '先验证最小假设');
     expect(_fieldText(tester, 'journalAdjustmentField'), '优先整理数据');
+    expect(find.byKey(const ValueKey('journalHistoryList')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('journalHistoryItem_journal-id')),
+      findsOneWidget,
+    );
+    expect(find.text('完成关键实验'), findsWidgets);
+  });
+
+  testWidgets('tapping history opens a read-only detail dialog', (
+    tester,
+  ) async {
+    final historyEntry = _sampleEntry();
+    final repository = _FakeJournalRepository(
+      entry: historyEntry,
+      historyEntries: [historyEntry],
+    );
+    await _pumpJournalPage(tester, repository);
+    await tester.pumpAndSettle();
+    final item = find.byKey(const ValueKey('journalHistoryItem_journal-id'));
+    await Scrollable.ensureVisible(tester.element(item), alignment: 0.5);
+    await tester.tap(item);
+    await tester.pumpAndSettle();
+
+    final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('2026-07-13')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('今天最重要的完成是什么？')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('完成关键实验')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('等待实验结果')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('对进度的担心')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('先验证最小假设')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('优先整理数据')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('all-empty form shows validation and does not save', (
@@ -92,6 +191,11 @@ void main() {
     expect(repository.lastSaved?.learning, '学会拆分问题');
     expect(repository.lastSaved?.mostImportantAccomplishment, isNull);
     expect(find.text('今日复盘已保存'), findsOneWidget);
+    expect(repository.listRecentCalls, 2);
+    expect(
+      find.byKey(const ValueKey('journalHistoryItem_journal-id')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('saving disables the button and keeps form content', (
@@ -139,11 +243,13 @@ void main() {
     expect(_fieldText(tester, 'journalEmotionField'), '失败后仍然保留');
     expect(find.byKey(const ValueKey('journalErrorState')), findsNothing);
     expect(repository.saveAttempts, 1);
+    expect(repository.listRecentCalls, 1);
 
     await _tapSave(tester);
     expect(repository.saveAttempts, 2);
     expect(repository.lastSaved?.emotionSource, '失败后仍然保留');
     expect(find.text('今日复盘已保存'), findsOneWidget);
+    expect(repository.listRecentCalls, 2);
   });
 
   testWidgets('saved content is filled when the page is opened again', (
@@ -173,6 +279,9 @@ void main() {
       'lib/features/journal/presentation/journal_today_controller.dart',
       'lib/features/journal/presentation/widgets/journal_form.dart',
       'lib/features/journal/presentation/widgets/journal_question_field.dart',
+      'lib/features/journal/presentation/widgets/journal_history_list.dart',
+      'lib/features/journal/presentation/widgets/journal_history_card.dart',
+      'lib/features/journal/presentation/widgets/journal_entry_detail_dialog.dart',
     ];
 
     for (final path in paths) {
@@ -242,6 +351,9 @@ final class _FakeJournalRepository implements JournalRepository {
     this.pendingLoad,
     this.loadError,
     this.pendingSave,
+    this.pendingHistoryLoad,
+    this.historyLoadError,
+    this.historyEntries,
     this.failuresBeforeSuccess = 0,
   });
 
@@ -249,8 +361,12 @@ final class _FakeJournalRepository implements JournalRepository {
   final Completer<JournalEntry?>? pendingLoad;
   final Object? loadError;
   final Completer<void>? pendingSave;
+  final Completer<List<JournalEntry>>? pendingHistoryLoad;
+  Object? historyLoadError;
+  final List<JournalEntry>? historyEntries;
   int failuresBeforeSuccess;
   int saveAttempts = 0;
+  int listRecentCalls = 0;
   JournalSaveData? lastSaved;
 
   @override
@@ -309,8 +425,17 @@ final class _FakeJournalRepository implements JournalRepository {
   }) async => entry == null ? [] : [entry!];
 
   @override
-  Future<List<JournalEntry>> listRecent({int limit = 20}) async =>
-      entry == null ? [] : [entry!];
+  Future<List<JournalEntry>> listRecent({int limit = 20}) async {
+    listRecentCalls += 1;
+    if (historyLoadError != null) {
+      throw historyLoadError!;
+    }
+    if (pendingHistoryLoad != null) {
+      return pendingHistoryLoad!.future;
+    }
+    final entries = historyEntries ?? (entry == null ? [] : [entry!]);
+    return entries.take(limit).toList(growable: false);
+  }
 
   @override
   Future<void> softDelete(String id) async {
