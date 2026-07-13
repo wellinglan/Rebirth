@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/features/today/domain/today_save_data.dart';
 
 import 'today_controller.dart';
+import 'widgets/today_form.dart';
 
 class TodayPage extends ConsumerWidget {
   const TodayPage({super.key});
@@ -10,34 +12,47 @@ class TodayPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final today = ref.watch(todayControllerProvider);
 
-    return Center(
+    return SafeArea(
       child: today.when(
-        loading: () => const CircularProgressIndicator(),
-        error: (error, stackTrace) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('今日数据暂时无法加载'),
-            const SizedBox(height: 12),
-            IconButton(
-              onPressed: () =>
-                  ref.read(todayControllerProvider.notifier).reload(),
-              tooltip: '重新加载',
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
+        loading: () => const Center(
+          child: CircularProgressIndicator(key: ValueKey('todayLoadingState')),
         ),
-        data: (entry) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              entry.recordDate,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            const Text('今日记录已建立'),
-          ],
+        error: (error, stackTrace) => Center(
+          child: Column(
+            key: const ValueKey('todayErrorState'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('今日数据暂时无法加载'),
+              const SizedBox(height: 12),
+              IconButton(
+                onPressed: () =>
+                    ref.read(todayControllerProvider.notifier).reload(),
+                tooltip: '重新加载',
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
+          ),
+        ),
+        data: (entry) => TodayForm(
+          entry: entry,
+          onSave: (data) => _save(context, ref, data),
         ),
       ),
     );
+  }
+
+  Future<void> _save(
+    BuildContext context,
+    WidgetRef ref,
+    TodaySaveData data,
+  ) async {
+    await ref.read(todayControllerProvider.notifier).saveToday(data);
+    if (!context.mounted || ref.read(todayControllerProvider).hasError) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('今日记录已保存')));
   }
 }

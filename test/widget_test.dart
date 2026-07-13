@@ -27,7 +27,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2026-07-10'), findsOneWidget);
-    expect(find.text('今日记录已建立'), findsOneWidget);
+    expect(find.byKey(const ValueKey('todayEmptyState')), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.auto_stories_outlined));
     await tester.pumpAndSettle();
