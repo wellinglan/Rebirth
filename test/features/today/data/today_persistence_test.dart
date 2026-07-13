@@ -71,6 +71,7 @@ void main() {
 
     final secondRepository = openRepository();
     final afterFirstRestart = await secondRepository.getToday();
+    final firstHistory = await secondRepository.listRecentEntries();
 
     expect(afterFirstRestart.id, firstSave.id);
     expect(afterFirstRestart.priorities[0].text, '完成实验');
@@ -85,6 +86,9 @@ void main() {
     expect(afterFirstRestart.health?.sleepDurationMinutes, 450);
     expect(afterFirstRestart.health?.exerciseDurationMinutes, 35);
     expect(afterFirstRestart.health?.physicalStateScore, 4);
+    expect(firstHistory, hasLength(1));
+    expect(firstHistory.single.id, firstSave.id);
+    expect(firstHistory.single.researchMinutes, 90);
 
     final health = afterFirstRestart.health!;
     await secondRepository.saveToday(
@@ -112,6 +116,7 @@ void main() {
 
     final thirdRepository = openRepository();
     final afterSecondRestart = await thirdRepository.getByDate('2026-07-13');
+    final secondHistory = await thirdRepository.listRecentEntries();
 
     expect(afterSecondRestart, isNotNull);
     expect(afterSecondRestart!.researchMinutes, isNull);
@@ -124,5 +129,10 @@ void main() {
     expect(afterSecondRestart.health?.waterIntakeMl, 1800);
     expect(afterSecondRestart.health?.exerciseType, 'running');
     expect(afterSecondRestart.health?.note, '隐藏健康字段必须保留');
+    expect(secondHistory, hasLength(1));
+    expect(secondHistory.single.id, firstSave.id);
+    expect(secondHistory.single.researchMinutes, isNull);
+    expect(secondHistory.single.learningMinutes, 0);
+    expect(secondHistory.single.dailyNote, '第二轮持久化记录');
   });
 }

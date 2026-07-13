@@ -214,4 +214,128 @@ void main() {
     expect(rawRecord.updatedAt, currentTime.toUtc().millisecondsSinceEpoch);
     expect(updated.updatedAt, greaterThan(created.updatedAt));
   });
+
+  test('history query returns empty without creating records', () async {
+    final entries = await repository.listRecentEntries();
+
+    expect(entries, isEmpty);
+    expect(await database.select(database.todayRecords).get(), isEmpty);
+  });
+
+  test('recent entries are date-descending and days are enforced', () async {
+    for (final day in [10, 11, 13]) {
+      currentTime = DateTime(2026, 7, day, 9);
+      await repository.saveToday(TodaySaveData(dailyNote: '第 $day 天'));
+    }
+
+    final threeDays = await repository.listRecentEntries(days: 4);
+    final twoDays = await repository.listRecentEntries(days: 2);
+
+    expect(threeDays.map((entry) => entry.recordDate), [
+      '2026-07-13',
+      '2026-07-11',
+      '2026-07-10',
+    ]);
+    expect(twoDays.map((entry) => entry.recordDate), ['2026-07-13']);
+    expect(await database.select(database.todayRecords).get(), hasLength(3));
+  });
+
+  test('date range limit applies without creating missing dates', () async {
+    for (final day in [10, 11, 12]) {
+      currentTime = DateTime(2026, 7, day, 9);
+      await repository.saveToday(TodaySaveData(dailyNote: '第 $day 天'));
+    }
+
+    final entries = await repository.listByDateRange(
+      startDate: '2026-07-01',
+      endDate: '2026-07-31',
+      limit: 2,
+    );
+
+    expect(entries.map((entry) => entry.recordDate), [
+      '2026-07-12',
+      '2026-07-11',
+    ]);
+    expect(await database.select(database.todayRecords).get(), hasLength(3));
+  });
+
+  test('history excludes soft-deleted Today records', () async {
+    final entry = await repository.saveToday(TodaySaveData(dailyNote: '即将软删除'));
+    await (database.update(
+      database.todayRecords,
+    )..where((row) => row.id.equals(entry.id))).write(
+      const TodayRecordsCompanion(deletedAt: Value(1), updatedAt: Value(1)),
+    );
+
+    expect(await repository.listRecentEntries(), isEmpty);
+    expect(await database.select(database.todayRecords).get(), hasLength(1));
+  });
+
+  test('history aggregates the Health record from the same date', () async {
+    await repository.saveToday(
+      TodaySaveData(
+        dailyNote: '包含健康摘要',
+        health: const TodayHealthInput(
+          sleepDurationMinutes: 450,
+          exerciseDurationMinutes: 30,
+          physicalStateScore: 4,
+        ),
+      ),
+    );
+
+    final entry = (await repository.listRecentEntries()).single;
+
+    expect(entry.health?.sleepDurationMinutes, 450);
+    expect(entry.health?.exerciseDurationMinutes, 30);
+    expect(entry.health?.physicalStateScore, 4);
+  });
+
+  test('history never leaks records from another user', () async {
+    final own = await repository.saveToday(TodaySaveData(dailyNote: '当前用户记录'));
+    final otherUserId = uuid.v4();
+    await database
+        .into(database.userProfiles)
+        .insert(
+          UserProfilesCompanion.insert(
+            id: Value(otherUserId),
+            timezoneId: 'Etc/UTC',
+            isActive: const Value(false),
+          ),
+        );
+    await database
+        .into(database.todayRecords)
+        .insert(
+          TodayRecordsCompanion.insert(
+            id: Value(uuid.v4()),
+            userId: otherUserId,
+            recordDate: own.recordDate,
+            timezoneOffsetMinutes: 0,
+            dailyNote: const Value('其他用户记录'),
+          ),
+        );
+
+    final entries = await repository.listRecentEntries();
+
+    expect(entries, hasLength(1));
+    expect(entries.single.id, own.id);
+    expect(entries.single.dailyNote, '当前用户记录');
+  });
+
+  test('history arguments are validated and getToday still creates', () async {
+    await expectLater(
+      repository.listRecentEntries(days: 0),
+      throwsArgumentError,
+    );
+    await expectLater(
+      repository.listByDateRange(
+        startDate: '2026-07-13',
+        endDate: '2026-07-12',
+      ),
+      throwsArgumentError,
+    );
+
+    final today = await repository.getToday();
+    expect(today.recordDate, '2026-07-10');
+    expect(await database.select(database.todayRecords).get(), hasLength(1));
+  });
 }

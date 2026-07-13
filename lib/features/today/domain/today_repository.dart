@@ -6,6 +6,14 @@ abstract interface class TodayRepository {
 
   Future<TodayEntry?> getByDate(String recordDate);
 
+  Future<List<TodayEntry>> listByDateRange({
+    required String startDate,
+    required String endDate,
+    int? limit,
+  });
+
+  Future<List<TodayEntry>> listRecentEntries({int days = 30});
+
   Future<TodayEntry> saveToday(TodaySaveData data);
 
   Future<TodayEntry> updatePriorities({

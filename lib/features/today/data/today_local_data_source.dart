@@ -41,6 +41,58 @@ final class TodayLocalDataSource {
     );
   }
 
+  Future<List<TodayDatabaseEntry>> selectByDateRange({
+    required String userId,
+    required String startDate,
+    required String endDate,
+    int? limit,
+  }) async {
+    final todayQuery = database.select(database.todayRecords)
+      ..where(
+        (row) =>
+            row.userId.equals(userId) &
+            row.recordDate.isBiggerOrEqualValue(startDate) &
+            row.recordDate.isSmallerOrEqualValue(endDate) &
+            row.deletedAt.isNull(),
+      )
+      ..orderBy([(row) => OrderingTerm.desc(row.recordDate)]);
+    if (limit != null) {
+      todayQuery.limit(limit);
+    }
+
+    final todayRecords = await todayQuery.get();
+    if (todayRecords.isEmpty) {
+      return const <TodayDatabaseEntry>[];
+    }
+
+    final includedDates = todayRecords
+        .map((record) => record.recordDate)
+        .toSet();
+    final healthRecords =
+        await (database.select(database.healthRecords)..where(
+              (row) =>
+                  row.userId.equals(userId) &
+                  row.recordDate.isBiggerOrEqualValue(startDate) &
+                  row.recordDate.isSmallerOrEqualValue(endDate) &
+                  row.deletedAt.isNull(),
+            ))
+            .get();
+    final healthByDate = <String, HealthRecord>{
+      for (final health in healthRecords)
+        if (includedDates.contains(health.recordDate))
+          health.recordDate: health,
+    };
+
+    return todayRecords
+        .map(
+          (today) => TodayDatabaseEntry(
+            today: today,
+            health: healthByDate[today.recordDate],
+          ),
+        )
+        .toList(growable: false);
+  }
+
   Future<TodayDatabaseEntry> getOrCreate({
     required String userId,
     required String recordDate,

@@ -9,6 +9,7 @@ import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_repository.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 import 'package:rebirth/features/today/presentation/today_page.dart';
+import 'package:rebirth/features/today/presentation/today_history_controller.dart';
 
 void main() {
   testWidgets('TodayPage renders loading state', (tester) async {
@@ -45,6 +46,10 @@ void main() {
     expect(find.text('2026-07-13'), findsOneWidget);
     expect(find.byKey(const ValueKey('todayEmptyState')), findsOneWidget);
     expect(find.byKey(const ValueKey('saveTodayButton')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('openTodayHistoryButton')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('TodayPage displays values from an existing TodayEntry', (
@@ -89,6 +94,28 @@ void main() {
     expect(repository.lastSaved?.dailyNote, '今天完成了关键实验');
     expect(find.text('今日记录已保存'), findsOneWidget);
     expect(_fieldText(tester, 'dailyNoteField'), '今天完成了关键实验');
+  });
+
+  testWidgets('successful save invalidates previously loaded history', (
+    tester,
+  ) async {
+    final repository = _FakeTodayRepository(entry: _sampleEntry());
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(TodayPage)),
+    );
+    await container.read(todayHistoryControllerProvider.future);
+    expect(repository.historyLoadAttempts, 1);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('dailyNoteField')),
+      '刷新历史记录',
+    );
+    await _tapSave(tester);
+    await container.read(todayHistoryControllerProvider.future);
+
+    expect(repository.historyLoadAttempts, 2);
   });
 
   testWidgets('saving disables button and keeps the form visible', (
@@ -417,6 +444,7 @@ final class _FakeTodayRepository implements TodayRepository {
   int failuresBeforeSuccess;
   TodaySaveData? lastSaved;
   int saveAttempts = 0;
+  int historyLoadAttempts = 0;
 
   @override
   Future<TodayEntry> getToday() async {
@@ -428,6 +456,19 @@ final class _FakeTodayRepository implements TodayRepository {
 
   @override
   Future<TodayEntry?> getByDate(String recordDate) async => entry;
+
+  @override
+  Future<List<TodayEntry>> listByDateRange({
+    required String startDate,
+    required String endDate,
+    int? limit,
+  }) async => [entry];
+
+  @override
+  Future<List<TodayEntry>> listRecentEntries({int days = 30}) async {
+    historyLoadAttempts += 1;
+    return [entry];
+  }
 
   @override
   Future<TodayEntry> saveToday(TodaySaveData data) async {

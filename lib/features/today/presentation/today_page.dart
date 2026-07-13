@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 
 import 'today_controller.dart';
+import 'today_history_controller.dart';
 import 'widgets/today_form.dart';
 
 class TodayPage extends ConsumerWidget {
@@ -36,6 +39,7 @@ class TodayPage extends ConsumerWidget {
         data: (entry) => TodayForm(
           entry: entry,
           onSave: (data) => _save(context, ref, data),
+          onOpenHistory: () => context.push(RoutePaths.todayHistory),
         ),
       ),
     );
@@ -50,6 +54,7 @@ class TodayPage extends ConsumerWidget {
     if (!context.mounted || ref.read(todayControllerProvider).hasError) {
       return;
     }
+    ref.invalidate(todayHistoryControllerProvider);
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()

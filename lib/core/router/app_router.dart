@@ -5,6 +5,7 @@ import '../../features/journal/presentation/journal_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/today/presentation/today_page.dart';
+import '../../features/today/presentation/today_history_page.dart';
 import '../app/home_shell.dart';
 import 'route_names.dart';
 
@@ -28,6 +29,13 @@ final GoRouter appRouter = GoRouter(
               path: RoutePaths.today,
               name: RouteNames.today,
               builder: (context, state) => const TodayPage(),
+              routes: [
+                GoRoute(
+                  path: 'history',
+                  name: RouteNames.todayHistory,
+                  builder: (context, state) => const TodayHistoryPage(),
+                ),
+              ],
             ),
           ],
         ),

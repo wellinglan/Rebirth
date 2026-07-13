@@ -5,10 +5,16 @@ import 'package:rebirth/features/today/domain/today_save_data.dart';
 import 'duration_input_field.dart';
 
 class TodayForm extends StatefulWidget {
-  const TodayForm({required this.entry, required this.onSave, super.key});
+  const TodayForm({
+    required this.entry,
+    required this.onSave,
+    required this.onOpenHistory,
+    super.key,
+  });
 
   final TodayEntry entry;
   final Future<void> Function(TodaySaveData data) onSave;
+  final VoidCallback onOpenHistory;
 
   @override
   State<TodayForm> createState() => _TodayFormState();
@@ -75,9 +81,21 @@ class _TodayFormState extends State<TodayForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    widget.entry.recordDate,
-                    style: theme.textTheme.titleLarge,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.entry.recordDate,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
+                      TextButton.icon(
+                        key: const ValueKey('openTodayHistoryButton'),
+                        onPressed: widget.onOpenHistory,
+                        icon: const Icon(Icons.history),
+                        label: const Text('历史记录'),
+                      ),
+                    ],
                   ),
                   if (!_hasAnyInput) ...[
                     const SizedBox(height: 6),

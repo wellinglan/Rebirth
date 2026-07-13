@@ -28,6 +28,20 @@ void main() {
 
     expect(find.text('2026-07-10'), findsOneWidget);
     expect(find.byKey(const ValueKey('todayEmptyState')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('openTodayHistoryButton')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('openTodayHistoryButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('todayHistoryPage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('todayHistoryList')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('todayHistoryBackButton')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('saveTodayButton')), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.auto_stories_outlined));
     await tester.pumpAndSettle();

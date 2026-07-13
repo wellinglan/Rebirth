@@ -46,6 +46,48 @@ final class TodayRepositoryImpl implements TodayRepository {
   }
 
   @override
+  Future<List<TodayEntry>> listByDateRange({
+    required String startDate,
+    required String endDate,
+    int? limit,
+  }) async {
+    _validateRecordDate(startDate);
+    _validateRecordDate(endDate);
+    if (startDate.compareTo(endDate) > 0) {
+      throw ArgumentError('startDate must not be after endDate.');
+    }
+    if (limit != null && limit <= 0) {
+      throw ArgumentError.value(limit, 'limit', 'Limit must be positive.');
+    }
+
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    final entries = await _localDataSource.selectByDateRange(
+      userId: bootstrap.activeUserId,
+      startDate: startDate,
+      endDate: endDate,
+      limit: limit,
+    );
+    return entries.map(_toDomain).toList(growable: false);
+  }
+
+  @override
+  Future<List<TodayEntry>> listRecentEntries({int days = 30}) async {
+    if (days <= 0) {
+      throw ArgumentError.value(days, 'days', 'Days must be positive.');
+    }
+    final snapshot = dateTimeService.currentSnapshot();
+    final dateRange = dateTimeService.recentLocalDateRange(
+      days,
+      endingAt: snapshot.now,
+    );
+    return listByDateRange(
+      startDate: dateRange.first,
+      endDate: dateRange.last,
+      limit: days,
+    );
+  }
+
+  @override
   Future<TodayEntry> saveToday(TodaySaveData data) async {
     final priorities = _normalizePriorities(data.priorities);
     _validateScore(data.moodScore, 'moodScore');
