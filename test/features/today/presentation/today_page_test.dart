@@ -90,6 +90,70 @@ void main() {
     expect(_fieldText(tester, 'dailyNoteField'), '今天完成了关键实验');
   });
 
+  testWidgets('saving disables button and keeps the form visible', (
+    tester,
+  ) async {
+    final saveGate = Completer<void>();
+    final repository = _FakeTodayRepository(
+      entry: _sampleEntry(),
+      pendingSave: saveGate,
+    );
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    final noteField = find.byKey(const ValueKey('dailyNoteField'));
+    await tester.ensureVisible(noteField);
+    await tester.enterText(noteField, '保存期间保留这段内容');
+    final saveButton = find.byKey(const ValueKey('saveTodayButton'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pump();
+
+    expect(tester.widget<FilledButton>(saveButton).onPressed, isNull);
+    expect(find.text('保存中...'), findsOneWidget);
+    expect(find.byKey(const ValueKey('saveProgressIndicator')), findsOneWidget);
+    expect(find.byKey(const ValueKey('todayLoadingState')), findsNothing);
+    expect(_fieldText(tester, 'dailyNoteField'), '保存期间保留这段内容');
+    expect(repository.saveAttempts, 1);
+
+    await tester.tap(saveButton);
+    await tester.pump();
+    expect(repository.saveAttempts, 1);
+
+    saveGate.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('今日记录已保存'), findsOneWidget);
+  });
+
+  testWidgets('failed save keeps input and can be retried', (tester) async {
+    final repository = _FakeTodayRepository(
+      entry: _sampleEntry(),
+      failuresBeforeSuccess: 1,
+    );
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    final noteField = find.byKey(const ValueKey('dailyNoteField'));
+    await tester.ensureVisible(noteField);
+    await tester.enterText(noteField, '失败后不能丢失');
+    await _tapSave(tester);
+
+    expect(find.text('保存失败，请重试'), findsOneWidget);
+    expect(_fieldText(tester, 'dailyNoteField'), '失败后不能丢失');
+    expect(repository.saveAttempts, 1);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const ValueKey('saveTodayButton')))
+          .onPressed,
+      isNotNull,
+    );
+
+    await _tapSave(tester);
+    expect(repository.saveAttempts, 2);
+    expect(repository.lastSaved?.dailyNote, '失败后不能丢失');
+    expect(find.text('今日记录已保存'), findsOneWidget);
+  });
+
   testWidgets('research minutes keeps empty and zero distinct', (tester) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
@@ -102,6 +166,9 @@ void main() {
     await tester.enterText(researchField, '0');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, 0);
+    expect(repository.lastSaved?.moodScore, isNull);
+    expect(repository.lastSaved?.energyScore, isNull);
+    expect(repository.lastSaved?.health, isNull);
 
     await tester.ensureVisible(researchField);
     await tester.enterText(researchField, '');
@@ -109,9 +176,7 @@ void main() {
     expect(repository.lastSaved?.researchMinutes, isNull);
   });
 
-  testWidgets('negative minutes fail validation without saving', (
-    tester,
-  ) async {
+  testWidgets('negative and invalid minutes do not save', (tester) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
@@ -123,6 +188,61 @@ void main() {
 
     expect(find.text('请输入非负整数'), findsOneWidget);
     expect(repository.lastSaved, isNull);
+    expect(repository.saveAttempts, 0);
+
+    await tester.enterText(researchField, 'not-an-integer');
+    await _tapSave(tester);
+    expect(find.text('请输入非负整数'), findsOneWidget);
+    expect(repository.saveAttempts, 0);
+  });
+
+  testWidgets('clearing priority text also clears completed state', (
+    tester,
+  ) async {
+    final repository = _FakeTodayRepository(
+      entry: _sampleEntry(
+        priorities: const <TodayPriority>[
+          TodayPriority(text: '原有事项', completed: true),
+          TodayPriority(),
+          TodayPriority(),
+        ],
+      ),
+    );
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    final priorityField = find.byKey(const ValueKey('priority1Field'));
+    await tester.enterText(priorityField, '');
+    await _tapSave(tester);
+
+    expect(repository.lastSaved?.priorities.first.text, isNull);
+    expect(repository.lastSaved?.priorities.first.completed, isFalse);
+  });
+
+  testWidgets('health fields hidden by Today UI are preserved', (tester) async {
+    final repository = _FakeTodayRepository(
+      entry: _sampleEntry(
+        health: const TodayHealthSummary(
+          id: 'health-id',
+          sleepDurationMinutes: 450,
+          weightKg: 68.5,
+          waterIntakeMl: 1800,
+          exerciseType: 'running',
+          exerciseDurationMinutes: 35,
+          physicalStateScore: 4,
+          note: '保留健康备注',
+        ),
+      ),
+    );
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await _tapSave(tester);
+
+    expect(repository.lastSaved?.health?.weightKg, 68.5);
+    expect(repository.lastSaved?.health?.waterIntakeMl, 1800);
+    expect(repository.lastSaved?.health?.exerciseType, 'running');
+    expect(repository.lastSaved?.health?.note, '保留健康备注');
   });
 
   test('Today widgets do not import Drift or Repository implementations', () {
@@ -156,8 +276,18 @@ Future<void> _pumpTodayPage(
 }
 
 Future<void> _tapSave(WidgetTester tester) async {
+  final messenger = tester.state<ScaffoldMessengerState>(
+    find.byType(ScaffoldMessenger),
+  );
+  messenger.hideCurrentSnackBar();
+  await tester.pumpAndSettle();
+
   final saveButton = find.byKey(const ValueKey('saveTodayButton'));
-  await tester.ensureVisible(saveButton);
+  await Scrollable.ensureVisible(
+    tester.element(saveButton),
+    alignment: 0.5,
+  );
+  await tester.pumpAndSettle();
   await tester.tap(saveButton);
   await tester.pumpAndSettle();
 }
@@ -201,12 +331,21 @@ TodayEntry _sampleEntry({
 }
 
 final class _FakeTodayRepository implements TodayRepository {
-  _FakeTodayRepository({required this.entry, this.pendingLoad, this.loadError});
+  _FakeTodayRepository({
+    required this.entry,
+    this.pendingLoad,
+    this.loadError,
+    this.pendingSave,
+    this.failuresBeforeSuccess = 0,
+  });
 
   TodayEntry entry;
   final Completer<TodayEntry>? pendingLoad;
   final Object? loadError;
+  final Completer<void>? pendingSave;
+  int failuresBeforeSuccess;
   TodaySaveData? lastSaved;
+  int saveAttempts = 0;
 
   @override
   Future<TodayEntry> getToday() async {
@@ -221,6 +360,12 @@ final class _FakeTodayRepository implements TodayRepository {
 
   @override
   Future<TodayEntry> saveToday(TodaySaveData data) async {
+    saveAttempts += 1;
+    if (failuresBeforeSuccess > 0) {
+      failuresBeforeSuccess -= 1;
+      throw StateError('save failed for test');
+    }
+    await pendingSave?.future;
     lastSaved = data;
     final health = data.health == null
         ? entry.health

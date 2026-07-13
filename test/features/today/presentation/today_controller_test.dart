@@ -46,9 +46,15 @@ void main() {
       'Controller 保存成功',
     );
 
-    await container
-        .read(todayControllerProvider.notifier)
-        .updateMoodEnergy(moodScore: 6);
-    expect(container.read(todayControllerProvider).hasError, isTrue);
+    await expectLater(
+      container
+          .read(todayControllerProvider.notifier)
+          .updateMoodEnergy(moodScore: 6),
+      throwsArgumentError,
+    );
+    expect(
+      container.read(todayControllerProvider).requireValue.dailyNote,
+      'Controller 保存成功',
+    );
   });
 }

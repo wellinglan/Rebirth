@@ -25,6 +25,7 @@ class _TodayFormState extends State<TodayForm> {
   int? _moodScore;
   int? _energyScore;
   int? _physicalStateScore;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -230,9 +231,17 @@ class _TodayFormState extends State<TodayForm> {
                     alignment: Alignment.centerRight,
                     child: FilledButton.icon(
                       key: const ValueKey('saveTodayButton'),
-                      onPressed: _submit,
-                      icon: const Icon(Icons.save_outlined),
-                      label: const Text('保存'),
+                      onPressed: _isSaving ? null : _submit,
+                      icon: _isSaving
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(
+                                key: ValueKey('saveProgressIndicator'),
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Text(_isSaving ? '保存中...' : '保存'),
                     ),
                   ),
                 ],
@@ -321,7 +330,7 @@ class _TodayFormState extends State<TodayForm> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
@@ -333,18 +342,31 @@ class _TodayFormState extends State<TodayForm> {
       );
     }, growable: false);
 
-    await widget.onSave(
-      TodaySaveData(
-        priorities: priorities,
-        moodScore: _moodScore,
-        energyScore: _energyScore,
-        researchMinutes: _nullableMinutes(_researchController.text),
-        learningMinutes: _nullableMinutes(_learningController.text),
-        dailyNote: _nullableText(_dailyNoteController.text),
-        status: widget.entry.status,
-        health: _buildHealthInput(),
-      ),
+    final data = TodaySaveData(
+      priorities: priorities,
+      moodScore: _moodScore,
+      energyScore: _energyScore,
+      researchMinutes: _nullableMinutes(_researchController.text),
+      learningMinutes: _nullableMinutes(_learningController.text),
+      dailyNote: _nullableText(_dailyNoteController.text),
+      status: widget.entry.status,
+      health: _buildHealthInput(),
     );
+
+    setState(() => _isSaving = true);
+    try {
+      await widget.onSave(data);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('保存失败，请重试')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   TodayHealthInput? _buildHealthInput() {

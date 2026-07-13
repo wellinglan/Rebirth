@@ -14,11 +14,11 @@ class TodayController extends AsyncNotifier<TodayEntry> {
   }
 
   Future<void> reload() {
-    return _run(() => ref.read(todayRepositoryProvider).getToday());
+    return _reload(() => ref.read(todayRepositoryProvider).getToday());
   }
 
   Future<void> saveToday(TodaySaveData data) {
-    return _run(() => ref.read(todayRepositoryProvider).saveToday(data));
+    return _mutate(() => ref.read(todayRepositoryProvider).saveToday(data));
   }
 
   Future<void> updatePriorities(List<TodayPriority> priorities) {
@@ -80,11 +80,16 @@ class TodayController extends AsyncNotifier<TodayEntry> {
       return;
     }
 
-    await _run(() => operation(ref.read(todayRepositoryProvider), current));
+    await _mutate(() => operation(ref.read(todayRepositoryProvider), current));
   }
 
-  Future<void> _run(Future<TodayEntry> Function() operation) async {
+  Future<void> _reload(Future<TodayEntry> Function() operation) async {
     state = const AsyncLoading<TodayEntry>();
     state = await AsyncValue.guard(operation);
+  }
+
+  Future<void> _mutate(Future<TodayEntry> Function() operation) async {
+    final updated = await operation();
+    state = AsyncData(updated);
   }
 }
