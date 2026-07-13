@@ -33,5 +33,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.auto_stories), findsOneWidget);
+    expect(find.byKey(const ValueKey('journalEmptyState')), findsOneWidget);
   });
 }
