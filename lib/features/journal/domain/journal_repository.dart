@@ -21,6 +21,10 @@ final class JournalEntryNotFoundException implements Exception {
 abstract interface class JournalRepository {
   Future<JournalEntry> createEntry(JournalSaveData data);
 
+  Future<JournalEntry?> getTodayEntry();
+
+  Future<JournalEntry> saveTodayEntry(JournalSaveData data);
+
   Future<JournalEntry?> getById(String id);
 
   Future<List<JournalEntry>> listRecent({int limit = 20});

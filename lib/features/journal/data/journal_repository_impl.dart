@@ -23,20 +23,63 @@ final class JournalRepositoryImpl implements JournalRepository {
     final content = _normalize(data);
     final snapshot = dateTimeService.currentSnapshot();
     final bootstrap = await _database.bootstrapDao.bootstrap();
-    final entry = await _localDataSource.insertEntry(
+    return _insertEntry(
       userId: bootstrap.activeUserId,
       entryDate: snapshot.localDateString,
       timezoneOffsetMinutes: snapshot.timezoneOffsetMinutes,
       timestamp: snapshot.utcMilliseconds,
       originDeviceId: bootstrap.localInstallationId,
-      mostImportantAccomplishment: content.mostImportantAccomplishment,
-      mostDrainingEvent: content.mostDrainingEvent,
-      emotionSource: content.emotionSource,
-      learning: content.learning,
-      tomorrowAdjustment: content.tomorrowAdjustment,
-      entryStatus: data.status.name,
+      content: content,
+      status: data.status,
     );
-    return _toDomain(entry);
+  }
+
+  @override
+  Future<JournalEntry?> getTodayEntry() async {
+    final snapshot = dateTimeService.currentSnapshot();
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    final entries = await _localDataSource.selectByDate(
+      userId: bootstrap.activeUserId,
+      entryDate: snapshot.localDateString,
+    );
+    return entries.isEmpty ? null : _toDomain(entries.single);
+  }
+
+  @override
+  Future<JournalEntry> saveTodayEntry(JournalSaveData data) async {
+    final content = _normalize(data);
+    final snapshot = dateTimeService.currentSnapshot();
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+
+    return _database.transaction(() async {
+      final entries = await _localDataSource.selectByDate(
+        userId: bootstrap.activeUserId,
+        entryDate: snapshot.localDateString,
+      );
+      if (entries.isEmpty) {
+        return _insertEntry(
+          userId: bootstrap.activeUserId,
+          entryDate: snapshot.localDateString,
+          timezoneOffsetMinutes: snapshot.timezoneOffsetMinutes,
+          timestamp: snapshot.utcMilliseconds,
+          originDeviceId: bootstrap.localInstallationId,
+          content: content,
+          status: data.status,
+        );
+      }
+
+      final updated = await _updateEntry(
+        userId: bootstrap.activeUserId,
+        id: entries.single.id,
+        timestamp: snapshot.utcMilliseconds,
+        content: content,
+        status: data.status,
+      );
+      if (updated == null) {
+        throw JournalEntryNotFoundException(entries.single.id);
+      }
+      return updated;
+    });
   }
 
   @override
@@ -107,23 +150,17 @@ final class JournalRepositoryImpl implements JournalRepository {
     final content = _normalize(data);
     final snapshot = dateTimeService.currentSnapshot();
     final bootstrap = await _database.bootstrapDao.bootstrap();
-    final entry = await _localDataSource.updateById(
+    final entry = await _updateEntry(
       userId: bootstrap.activeUserId,
       id: id,
-      changes: db.JournalEntriesCompanion(
-        mostImportantAccomplishment: Value(content.mostImportantAccomplishment),
-        mostDrainingEvent: Value(content.mostDrainingEvent),
-        emotionSource: Value(content.emotionSource),
-        learning: Value(content.learning),
-        tomorrowAdjustment: Value(content.tomorrowAdjustment),
-        entryStatus: Value(data.status.name),
-        updatedAt: Value(snapshot.utcMilliseconds),
-      ),
+      timestamp: snapshot.utcMilliseconds,
+      content: content,
+      status: data.status,
     );
     if (entry == null) {
       throw JournalEntryNotFoundException(id);
     }
-    return _toDomain(entry);
+    return entry;
   }
 
   @override
@@ -138,6 +175,54 @@ final class JournalRepositoryImpl implements JournalRepository {
     if (!deleted) {
       throw JournalEntryNotFoundException(id);
     }
+  }
+
+  Future<JournalEntry> _insertEntry({
+    required String userId,
+    required String entryDate,
+    required int timezoneOffsetMinutes,
+    required int timestamp,
+    required String originDeviceId,
+    required _NormalizedJournalContent content,
+    required JournalEntryStatus status,
+  }) async {
+    final entry = await _localDataSource.insertEntry(
+      userId: userId,
+      entryDate: entryDate,
+      timezoneOffsetMinutes: timezoneOffsetMinutes,
+      timestamp: timestamp,
+      originDeviceId: originDeviceId,
+      mostImportantAccomplishment: content.mostImportantAccomplishment,
+      mostDrainingEvent: content.mostDrainingEvent,
+      emotionSource: content.emotionSource,
+      learning: content.learning,
+      tomorrowAdjustment: content.tomorrowAdjustment,
+      entryStatus: status.name,
+    );
+    return _toDomain(entry);
+  }
+
+  Future<JournalEntry?> _updateEntry({
+    required String userId,
+    required String id,
+    required int timestamp,
+    required _NormalizedJournalContent content,
+    required JournalEntryStatus status,
+  }) async {
+    final entry = await _localDataSource.updateById(
+      userId: userId,
+      id: id,
+      changes: db.JournalEntriesCompanion(
+        mostImportantAccomplishment: Value(content.mostImportantAccomplishment),
+        mostDrainingEvent: Value(content.mostDrainingEvent),
+        emotionSource: Value(content.emotionSource),
+        learning: Value(content.learning),
+        tomorrowAdjustment: Value(content.tomorrowAdjustment),
+        entryStatus: Value(status.name),
+        updatedAt: Value(timestamp),
+      ),
+    );
+    return entry == null ? null : _toDomain(entry);
   }
 
   JournalEntry _toDomain(db.JournalEntry entry) {

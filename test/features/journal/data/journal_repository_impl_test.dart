@@ -281,4 +281,52 @@ void main() {
       throwsA(isA<JournalEntryNotFoundException>()),
     );
   });
+
+  test('getTodayEntry returns null when today has no journal', () async {
+    final entry = await repository.getTodayEntry();
+
+    expect(entry, isNull);
+    expect(clockReads, 1);
+  });
+
+  test('saveTodayEntry creates and can be read as today entry', () async {
+    final saved = await repository.saveTodayEntry(
+      const JournalSaveData(learning: '今日第一次保存'),
+    );
+    final loaded = await repository.getTodayEntry();
+
+    expect(saved.entryDate, '2026-07-10');
+    expect(loaded?.id, saved.id);
+    expect(loaded?.learning, '今日第一次保存');
+  });
+
+  test('saveTodayEntry updates the same row and updatedAt', () async {
+    final first = await repository.saveTodayEntry(
+      const JournalSaveData(learning: '第一次内容'),
+    );
+    currentTime = currentTime.add(const Duration(minutes: 20));
+
+    final second = await repository.saveTodayEntry(
+      const JournalSaveData(learning: '第二次内容', tomorrowAdjustment: '明天减少干扰'),
+    );
+
+    expect(second.id, first.id);
+    expect(second.learning, '第二次内容');
+    expect(second.updatedAt, currentTime.toUtc().millisecondsSinceEpoch);
+    expect(second.updatedAt, greaterThan(first.updatedAt));
+    expect(await database.select(database.journalEntries).get(), hasLength(1));
+  });
+
+  test('saveTodayEntry rejects all-empty content before writing', () async {
+    await expectLater(
+      repository.saveTodayEntry(
+        const JournalSaveData(learning: ' ', tomorrowAdjustment: '\n'),
+      ),
+      throwsA(isA<EmptyJournalContentException>()),
+    );
+
+    expect(await database.select(database.journalEntries).get(), isEmpty);
+    expect(clockReads, 0);
+    expect(database.schemaVersion, 1);
+  });
 }
