@@ -10,6 +10,7 @@ import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
 import 'package:rebirth/features/plan/domain/plan_repository.dart';
 import 'package:rebirth/features/plan/presentation/plan_controller.dart';
+import 'package:rebirth/features/plan/presentation/plan_filter_state.dart';
 import 'package:rebirth/features/plan/presentation/plan_view_state.dart';
 
 void main() {
@@ -123,7 +124,7 @@ void main() {
     expect(view.goals.single.id, root.id);
   });
 
-  test('updateStatus refreshes the current child list', () async {
+  test('updateCompletion refreshes the current child list', () async {
     final repository = container.read(planRepositoryProvider);
     final parent = await repository.createGoal(
       PlanGoalSaveData(title: '父目标', goalLevel: PlanGoalLevel.year),
@@ -139,10 +140,7 @@ void main() {
     final controller = container.read(planControllerProvider.notifier);
     await controller.openChildren(parent);
 
-    await controller.updateStatus(
-      id: child.id,
-      status: PlanGoalStatus.completed,
-    );
+    await controller.updateCompletion(id: child.id, completed: true);
 
     final goal = container
         .read(planControllerProvider)
@@ -151,6 +149,187 @@ void main() {
         .single;
     expect(goal.status, PlanGoalStatus.completed);
     expect(goal.completedAt, isNotNull);
+  });
+
+  test('archived goals are hidden by default and included on demand', () async {
+    final repository = container.read(planRepositoryProvider);
+    final active = await repository.createGoal(
+      PlanGoalSaveData(title: '活动目标', goalLevel: PlanGoalLevel.month),
+    );
+    final archived = await repository.createGoal(
+      PlanGoalSaveData(title: '归档目标', goalLevel: PlanGoalLevel.month),
+    );
+    await repository.archiveGoal(archived.id);
+
+    var view = await container.read(planControllerProvider.future);
+    expect(view.goals.map((goal) => goal.id), [active.id]);
+    expect(view.filter.includeArchived, isFalse);
+
+    await container
+        .read(planControllerProvider.notifier)
+        .toggleIncludeArchived(true);
+    view = container.read(planControllerProvider).requireValue;
+    expect(
+      view.goals.map((goal) => goal.id),
+      containsAll([active.id, archived.id]),
+    );
+    expect(
+      view.goals.singleWhere((goal) => goal.id == archived.id).archivedAt,
+      isNotNull,
+    );
+  });
+
+  test('level and lifecycle filters apply without entering loading', () async {
+    final repository = container.read(planRepositoryProvider);
+    await repository.createGoal(
+      PlanGoalSaveData(
+        title: '过期月目标',
+        goalLevel: PlanGoalLevel.month,
+        startDate: '2026-06-01',
+        targetDate: '2026-07-13',
+      ),
+    );
+    await repository.createGoal(
+      PlanGoalSaveData(
+        title: '未来年度目标',
+        goalLevel: PlanGoalLevel.year,
+        startDate: '2026-08-01',
+        targetDate: '2027-08-01',
+      ),
+    );
+    await container.read(planControllerProvider.future);
+    final controller = container.read(planControllerProvider.notifier);
+
+    await controller.updateFilter(
+      const PlanFilterState(level: PlanGoalLevel.month),
+    );
+    expect(
+      container.read(planControllerProvider),
+      isA<AsyncData<PlanViewState>>(),
+    );
+    expect(
+      container.read(planControllerProvider).requireValue.goals.single.title,
+      '过期月目标',
+    );
+
+    await controller.updateFilter(
+      const PlanFilterState(lifecycle: PlanLifecycleFilter.notStarted),
+    );
+    expect(
+      container.read(planControllerProvider).requireValue.goals.single.title,
+      '未来年度目标',
+    );
+  });
+
+  test('priority and target date sort modes are stable', () async {
+    final repository = container.read(planRepositoryProvider);
+    await repository.createGoal(
+      PlanGoalSaveData(
+        title: '较晚低优先级',
+        goalLevel: PlanGoalLevel.month,
+        targetDate: '2026-09-01',
+        sortOrder: 5,
+      ),
+    );
+    await repository.createGoal(
+      PlanGoalSaveData(
+        title: '较早高优先级',
+        goalLevel: PlanGoalLevel.year,
+        targetDate: '2026-08-01',
+        sortOrder: 1,
+      ),
+    );
+    await container.read(planControllerProvider.future);
+    final controller = container.read(planControllerProvider.notifier);
+
+    expect(
+      container
+          .read(planControllerProvider)
+          .requireValue
+          .goals
+          .map((goal) => goal.sortOrder),
+      [1, 5],
+    );
+    await controller.updateSortMode(PlanSortMode.targetDateAsc);
+    expect(
+      container
+          .read(planControllerProvider)
+          .requireValue
+          .goals
+          .map((goal) => goal.targetDate),
+      ['2026-08-01', '2026-09-01'],
+    );
+  });
+
+  test('archive restore and delete refresh the current view', () async {
+    await container.read(planControllerProvider.future);
+    final controller = container.read(planControllerProvider.notifier);
+    await controller.createGoal(
+      PlanGoalSaveData(title: '生命周期目标', goalLevel: PlanGoalLevel.month),
+    );
+    final id = container
+        .read(planControllerProvider)
+        .requireValue
+        .goals
+        .single
+        .id;
+
+    await controller.archiveGoal(id);
+    expect(container.read(planControllerProvider).requireValue.goals, isEmpty);
+    await controller.toggleIncludeArchived(true);
+    expect(
+      container
+          .read(planControllerProvider)
+          .requireValue
+          .goals
+          .single
+          .archivedAt,
+      isNotNull,
+    );
+    await controller.restoreGoal(id);
+    expect(
+      container
+          .read(planControllerProvider)
+          .requireValue
+          .goals
+          .single
+          .archivedAt,
+      isNull,
+    );
+    await controller.deleteGoal(id);
+    expect(container.read(planControllerProvider).requireValue.goals, isEmpty);
+  });
+
+  test('child filters keep the current parent and breadcrumbs', () async {
+    final repository = container.read(planRepositoryProvider);
+    final parent = await repository.createGoal(
+      PlanGoalSaveData(title: '父目标', goalLevel: PlanGoalLevel.year),
+    );
+    await repository.createGoal(
+      PlanGoalSaveData(
+        parentGoalId: parent.id,
+        title: '月子目标',
+        goalLevel: PlanGoalLevel.month,
+      ),
+    );
+    await repository.createGoal(
+      PlanGoalSaveData(
+        parentGoalId: parent.id,
+        title: '周子目标',
+        goalLevel: PlanGoalLevel.week,
+      ),
+    );
+    await container.read(planControllerProvider.future);
+    final controller = container.read(planControllerProvider.notifier);
+    await controller.openChildren(parent);
+    await controller.updateFilter(
+      const PlanFilterState(level: PlanGoalLevel.week),
+    );
+
+    final view = container.read(planControllerProvider).requireValue;
+    expect(view.currentParentGoalId, parent.id);
+    expect(view.breadcrumbs.single.id, parent.id);
+    expect(view.goals.single.title, '周子目标');
   });
 
   test('deleteGoal refreshes the current list', () async {
@@ -269,19 +448,34 @@ final class _FailingPlanRepository implements PlanRepository {
   Object? loadError;
 
   @override
-  Future<List<PlanGoal>> listRootGoals() async {
+  Future<List<PlanGoal>> listRootGoals({bool includeArchived = false}) async {
     if (failInitialLoad || loadError != null) {
       throw loadError ?? StateError('plan load failed for test');
     }
-    return goals.where((goal) => goal.parentGoalId == null).toList();
+    return goals
+        .where(
+          (goal) =>
+              goal.parentGoalId == null &&
+              (includeArchived || goal.archivedAt == null),
+        )
+        .toList();
   }
 
   @override
-  Future<List<PlanGoal>> listChildren(String parentGoalId) async {
+  Future<List<PlanGoal>> listChildren(
+    String parentGoalId, {
+    bool includeArchived = false,
+  }) async {
     if (loadError != null) {
       throw loadError!;
     }
-    return goals.where((goal) => goal.parentGoalId == parentGoalId).toList();
+    return goals
+        .where(
+          (goal) =>
+              goal.parentGoalId == parentGoalId &&
+              (includeArchived || goal.archivedAt == null),
+        )
+        .toList();
   }
 
   @override

@@ -199,20 +199,93 @@ void main() {
     expect(resumed.updatedAt, resumedTimestamp);
   });
 
-  test('softDelete hides the goal but preserves the physical row', () async {
-    final created = await _create(repository, title: '待删除目标');
+  test(
+    'updateCompletion maps checkbox state to status and completedAt',
+    () async {
+      final created = await _create(repository, title: '完成状态目标');
+      currentTime = currentTime.add(const Duration(minutes: 10));
+      final completedAt = currentTime.toUtc().millisecondsSinceEpoch;
+
+      final completed = await repository.updateCompletion(
+        id: created.id,
+        completed: true,
+      );
+      expect(completed.status, PlanGoalStatus.completed);
+      expect(completed.completedAt, completedAt);
+      expect(completed.updatedAt, completedAt);
+
+      currentTime = currentTime.add(const Duration(minutes: 10));
+      final resumed = await repository.updateCompletion(
+        id: created.id,
+        completed: false,
+      );
+      expect(resumed.status, PlanGoalStatus.inProgress);
+      expect(resumed.completedAt, isNull);
+      expect(resumed.updatedAt, currentTime.toUtc().millisecondsSinceEpoch);
+    },
+  );
+
+  test('archive and restore affect the complete subtree', () async {
+    final parent = await _create(repository, title: '归档父目标');
+    final child = await _create(
+      repository,
+      title: '归档子目标',
+      parentGoalId: parent.id,
+    );
     currentTime = currentTime.add(const Duration(minutes: 30));
-    final timestamp = currentTime.toUtc().millisecondsSinceEpoch;
+    final archivedAt = currentTime.toUtc().millisecondsSinceEpoch;
 
-    await repository.softDelete(created.id);
+    await repository.archiveGoal(parent.id);
 
-    expect(await repository.getById(created.id), isNull);
-    expect(await repository.listGoals(), isEmpty);
-    final rows = await database.select(database.goals).get();
-    expect(rows, hasLength(1));
-    expect(rows.single.deletedAt, timestamp);
-    expect(rows.single.updatedAt, timestamp);
+    expect(await repository.listRootGoals(), isEmpty);
+    expect(await repository.listChildren(parent.id), isEmpty);
+    final archivedRoots = await repository.listRootGoals(includeArchived: true);
+    final archivedChildren = await repository.listChildren(
+      parent.id,
+      includeArchived: true,
+    );
+    expect(archivedRoots.single.archivedAt, archivedAt);
+    expect(archivedChildren.single.id, child.id);
+    expect(archivedChildren.single.archivedAt, archivedAt);
+
+    currentTime = currentTime.add(const Duration(minutes: 30));
+    await repository.restoreGoal(parent.id);
+    expect((await repository.listRootGoals()).single.archivedAt, isNull);
+    expect(
+      (await repository.listChildren(parent.id)).single.archivedAt,
+      isNull,
+    );
   });
+
+  test(
+    'softDelete hides an archived subtree but preserves physical rows',
+    () async {
+      final created = await _create(repository, title: '待删除父目标');
+      final child = await _create(
+        repository,
+        title: '待删除子目标',
+        parentGoalId: created.id,
+      );
+      await repository.archiveGoal(created.id);
+      currentTime = currentTime.add(const Duration(minutes: 30));
+      final timestamp = currentTime.toUtc().millisecondsSinceEpoch;
+
+      await repository.softDelete(created.id);
+
+      expect(await repository.getById(created.id), isNull);
+      expect(await repository.listGoals(), isEmpty);
+      expect(await repository.listRootGoals(includeArchived: true), isEmpty);
+      expect(
+        await repository.listChildren(created.id, includeArchived: true),
+        isEmpty,
+      );
+      final rows = await database.select(database.goals).get();
+      expect(rows, hasLength(2));
+      expect(rows.map((row) => row.id), containsAll([created.id, child.id]));
+      expect(rows.every((row) => row.deletedAt == timestamp), isTrue);
+      expect(rows.every((row) => row.updatedAt == timestamp), isTrue);
+    },
+  );
 
   test('queries and mutations are isolated to the active user', () async {
     final own = await _create(repository, title: '当前用户目标');
@@ -249,6 +322,14 @@ void main() {
     );
     await expectLater(
       repository.softDelete(otherGoalId),
+      throwsA(isA<PlanGoalNotFoundException>()),
+    );
+    await expectLater(
+      repository.archiveGoal(otherGoalId),
+      throwsA(isA<PlanGoalNotFoundException>()),
+    );
+    await expectLater(
+      repository.updateCompletion(id: otherGoalId, completed: true),
       throwsA(isA<PlanGoalNotFoundException>()),
     );
   });
@@ -325,13 +406,25 @@ void main() {
       throwsA(isA<PlanGoalNotFoundException>()),
     );
     await expectLater(
+      repository.updateCompletion(id: id, completed: true),
+      throwsA(isA<PlanGoalNotFoundException>()),
+    );
+    await expectLater(
+      repository.archiveGoal(id),
+      throwsA(isA<PlanGoalNotFoundException>()),
+    );
+    await expectLater(
+      repository.restoreGoal(id),
+      throwsA(isA<PlanGoalNotFoundException>()),
+    );
+    await expectLater(
       repository.softDelete(id),
       throwsA(isA<PlanGoalNotFoundException>()),
     );
   });
 
-  test('schema version is 2', () {
-    expect(database.schemaVersion, 2);
+  test('schema version is 3', () {
+    expect(database.schemaVersion, 3);
   });
 }
 

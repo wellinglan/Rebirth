@@ -62,9 +62,13 @@ final class PlanLocalDataSource {
     String? goalLevel,
     String? status,
     String? parentGoalId,
+    bool includeArchived = false,
   }) {
     final query = database.select(database.goals)
       ..where((row) => row.userId.equals(userId) & row.deletedAt.isNull());
+    if (!includeArchived) {
+      query.where((row) => row.archivedAt.isNull());
+    }
     if (goalLevel != null) {
       query.where((row) => row.goalLevel.equals(goalLevel));
     }
@@ -78,7 +82,10 @@ final class PlanLocalDataSource {
     return query.get();
   }
 
-  Future<List<db.Goal>> selectRootGoals({required String userId}) {
+  Future<List<db.Goal>> selectRootGoals({
+    required String userId,
+    bool includeArchived = false,
+  }) {
     final query = database.select(database.goals)
       ..where(
         (row) =>
@@ -86,6 +93,9 @@ final class PlanLocalDataSource {
             row.deletedAt.isNull() &
             row.parentGoalId.isNull(),
       );
+    if (!includeArchived) {
+      query.where((row) => row.archivedAt.isNull());
+    }
     _order(query);
     return query.get();
   }
@@ -93,6 +103,7 @@ final class PlanLocalDataSource {
   Future<List<db.Goal>> selectChildren({
     required String userId,
     required String parentGoalId,
+    bool includeArchived = false,
   }) {
     final query = database.select(database.goals)
       ..where(
@@ -101,6 +112,9 @@ final class PlanLocalDataSource {
             row.deletedAt.isNull() &
             row.parentGoalId.equals(parentGoalId),
       );
+    if (!includeArchived) {
+      query.where((row) => row.archivedAt.isNull());
+    }
     _order(query);
     return query.get();
   }
@@ -124,25 +138,80 @@ final class PlanLocalDataSource {
     return selectById(userId: userId, id: id);
   }
 
-  Future<bool> softDeleteById({
+  Future<bool> setArchivedForSubtree({
+    required String userId,
+    required String id,
+    required int? archivedAt,
+    required int timestamp,
+  }) {
+    return database.transaction(() async {
+      final ids = await _activeSubtreeIds(userId: userId, rootId: id);
+      if (ids.isEmpty) {
+        return false;
+      }
+      await (database.update(
+        database.goals,
+      )..where((row) => row.userId.equals(userId) & row.id.isIn(ids))).write(
+        db.GoalsCompanion(
+          archivedAt: Value(archivedAt),
+          updatedAt: Value(timestamp),
+        ),
+      );
+      return true;
+    });
+  }
+
+  Future<bool> softDeleteSubtree({
     required String userId,
     required String id,
     required int timestamp,
+  }) {
+    return database.transaction(() async {
+      final ids = await _activeSubtreeIds(userId: userId, rootId: id);
+      if (ids.isEmpty) {
+        return false;
+      }
+      await (database.update(
+        database.goals,
+      )..where((row) => row.userId.equals(userId) & row.id.isIn(ids))).write(
+        db.GoalsCompanion(
+          deletedAt: Value(timestamp),
+          updatedAt: Value(timestamp),
+        ),
+      );
+      return true;
+    });
+  }
+
+  Future<List<String>> _activeSubtreeIds({
+    required String userId,
+    required String rootId,
   }) async {
-    final affectedRows =
-        await (database.update(database.goals)..where(
-              (row) =>
-                  row.userId.equals(userId) &
-                  row.id.equals(id) &
-                  row.deletedAt.isNull(),
+    final goals =
+        await (database.select(database.goals)..where(
+              (row) => row.userId.equals(userId) & row.deletedAt.isNull(),
             ))
-            .write(
-              db.GoalsCompanion(
-                deletedAt: Value(timestamp),
-                updatedAt: Value(timestamp),
-              ),
-            );
-    return affectedRows > 0;
+            .get();
+    if (!goals.any((goal) => goal.id == rootId)) {
+      return const [];
+    }
+
+    final childrenByParent = <String, List<String>>{};
+    for (final goal in goals) {
+      final parentId = goal.parentGoalId;
+      if (parentId != null) {
+        childrenByParent.putIfAbsent(parentId, () => []).add(goal.id);
+      }
+    }
+
+    final result = <String>[];
+    final pending = <String>[rootId];
+    while (pending.isNotEmpty) {
+      final current = pending.removeLast();
+      result.add(current);
+      pending.addAll(childrenByParent[current] ?? const []);
+    }
+    return result;
   }
 
   void _order(SimpleSelectStatement<db.$GoalsTable, db.Goal> query) {

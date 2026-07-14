@@ -1,14 +1,22 @@
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 
+import 'plan_filter_state.dart';
+
 final class PlanViewState {
   PlanViewState({
     required List<PlanGoal> goals,
     required List<PlanGoal> breadcrumbs,
+    required this.filter,
+    required this.today,
+    required this.hasUnfilteredGoals,
   }) : goals = List.unmodifiable(goals),
        breadcrumbs = List.unmodifiable(breadcrumbs);
 
   final List<PlanGoal> goals;
   final List<PlanGoal> breadcrumbs;
+  final PlanFilterState filter;
+  final String today;
+  final bool hasUnfilteredGoals;
 
   PlanGoal? get currentParent => breadcrumbs.isEmpty ? null : breadcrumbs.last;
 

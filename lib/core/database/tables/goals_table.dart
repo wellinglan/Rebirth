@@ -26,6 +26,8 @@ class Goals extends Table
 
   IntColumn get completedAt => integer().nullable()();
 
+  IntColumn get archivedAt => integer().nullable()();
+
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
   @override
@@ -37,6 +39,7 @@ class Goals extends Table
     "CHECK (target_date IS NULL OR target_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')",
     'CHECK (start_date IS NULL OR target_date IS NULL OR target_date >= start_date)',
     'CHECK (completed_at IS NULL OR completed_at >= 0)',
+    'CHECK (archived_at IS NULL OR archived_at >= 0)',
     'CHECK (sort_order >= 0)',
     'CHECK (created_at >= 0)',
     'CHECK (updated_at >= 0)',

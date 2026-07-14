@@ -28,11 +28,15 @@ abstract interface class PlanRepository {
     PlanGoalLevel? level,
     PlanGoalStatus? status,
     String? parentGoalId,
+    bool includeArchived = false,
   });
 
-  Future<List<PlanGoal>> listRootGoals();
+  Future<List<PlanGoal>> listRootGoals({bool includeArchived = false});
 
-  Future<List<PlanGoal>> listChildren(String parentGoalId);
+  Future<List<PlanGoal>> listChildren(
+    String parentGoalId, {
+    bool includeArchived = false,
+  });
 
   Future<PlanGoal> updateGoal({
     required String id,
@@ -43,6 +47,15 @@ abstract interface class PlanRepository {
     required String id,
     required PlanGoalStatus status,
   });
+
+  Future<PlanGoal> updateCompletion({
+    required String id,
+    required bool completed,
+  });
+
+  Future<void> archiveGoal(String id);
+
+  Future<void> restoreGoal(String id);
 
   Future<void> softDelete(String id);
 }

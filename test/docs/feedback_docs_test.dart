@@ -22,6 +22,11 @@ void main() {
     expect(planText, contains('custom / 自定义'));
     expect(planText, contains('目标日期应根据目标层级自动计算'));
     expect(planText, contains('优先级'));
+    expect(planText, contains('缺少删除计划功能'));
+    expect(planText, contains('手动状态设置不符合使用直觉'));
+    expect(planText, contains('日期选择组件响应延迟明显'));
+    expect(planText, contains('缺少归档功能'));
+    expect(planText, contains('缺少分类、筛选、排序能力'));
     expect(
       legacy.readAsStringSync(),
       contains('后续以 `docs/backlog/feedback/` 下的模块级反馈文件为准'),

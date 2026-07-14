@@ -60,6 +60,7 @@ final class PlanRepositoryImpl implements PlanRepository {
     PlanGoalLevel? level,
     PlanGoalStatus? status,
     String? parentGoalId,
+    bool includeArchived = false,
   }) async {
     final bootstrap = await _database.bootstrapDao.bootstrap();
     return _mapGoals(
@@ -68,25 +69,33 @@ final class PlanRepositoryImpl implements PlanRepository {
         goalLevel: level?.databaseValue,
         status: status?.databaseValue,
         parentGoalId: parentGoalId,
+        includeArchived: includeArchived,
       ),
     );
   }
 
   @override
-  Future<List<PlanGoal>> listRootGoals() async {
+  Future<List<PlanGoal>> listRootGoals({bool includeArchived = false}) async {
     final bootstrap = await _database.bootstrapDao.bootstrap();
     return _mapGoals(
-      await _localDataSource.selectRootGoals(userId: bootstrap.activeUserId),
+      await _localDataSource.selectRootGoals(
+        userId: bootstrap.activeUserId,
+        includeArchived: includeArchived,
+      ),
     );
   }
 
   @override
-  Future<List<PlanGoal>> listChildren(String parentGoalId) async {
+  Future<List<PlanGoal>> listChildren(
+    String parentGoalId, {
+    bool includeArchived = false,
+  }) async {
     final bootstrap = await _database.bootstrapDao.bootstrap();
     return _mapGoals(
       await _localDataSource.selectChildren(
         userId: bootstrap.activeUserId,
         parentGoalId: parentGoalId,
+        includeArchived: includeArchived,
       ),
     );
   }
@@ -165,10 +174,66 @@ final class PlanRepositoryImpl implements PlanRepository {
   }
 
   @override
+  Future<PlanGoal> updateCompletion({
+    required String id,
+    required bool completed,
+  }) async {
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    final snapshot = dateTimeService.currentSnapshot();
+    final updated = await _localDataSource.updateById(
+      userId: bootstrap.activeUserId,
+      id: id,
+      changes: db.GoalsCompanion(
+        status: Value(
+          completed
+              ? PlanGoalStatus.completed.databaseValue
+              : PlanGoalStatus.inProgress.databaseValue,
+        ),
+        completedAt: Value(completed ? snapshot.utcMilliseconds : null),
+        updatedAt: Value(snapshot.utcMilliseconds),
+      ),
+    );
+    if (updated == null) {
+      throw PlanGoalNotFoundException(id);
+    }
+    return _toDomain(updated);
+  }
+
+  @override
+  Future<void> archiveGoal(String id) async {
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    final timestamp = dateTimeService.currentSnapshot().utcMilliseconds;
+    final archived = await _localDataSource.setArchivedForSubtree(
+      userId: bootstrap.activeUserId,
+      id: id,
+      archivedAt: timestamp,
+      timestamp: timestamp,
+    );
+    if (!archived) {
+      throw PlanGoalNotFoundException(id);
+    }
+  }
+
+  @override
+  Future<void> restoreGoal(String id) async {
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    final timestamp = dateTimeService.currentSnapshot().utcMilliseconds;
+    final restored = await _localDataSource.setArchivedForSubtree(
+      userId: bootstrap.activeUserId,
+      id: id,
+      archivedAt: null,
+      timestamp: timestamp,
+    );
+    if (!restored) {
+      throw PlanGoalNotFoundException(id);
+    }
+  }
+
+  @override
   Future<void> softDelete(String id) async {
     final bootstrap = await _database.bootstrapDao.bootstrap();
     final snapshot = dateTimeService.currentSnapshot();
-    final deleted = await _localDataSource.softDeleteById(
+    final deleted = await _localDataSource.softDeleteSubtree(
       userId: bootstrap.activeUserId,
       id: id,
       timestamp: snapshot.utcMilliseconds,
@@ -206,6 +271,7 @@ final class PlanRepositoryImpl implements PlanRepository {
       startDate: goal.startDate,
       targetDate: goal.targetDate,
       completedAt: goal.completedAt,
+      archivedAt: goal.archivedAt,
       sortOrder: goal.sortOrder,
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt,

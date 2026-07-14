@@ -134,30 +134,6 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
                           },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<PlanGoalStatus>(
-                    key: const ValueKey('planGoalStatusField'),
-                    initialValue: _status,
-                    decoration: const InputDecoration(
-                      labelText: '状态',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: PlanGoalStatus.values
-                        .map((status) {
-                          return DropdownMenuItem(
-                            value: status,
-                            child: Text(planGoalStatusLabel(status)),
-                          );
-                        })
-                        .toList(growable: false),
-                    onChanged: _isSaving
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setState(() => _status = value);
-                            }
-                          },
-                  ),
-                  const SizedBox(height: 20),
                   PlanDatePartsField(
                     key: const ValueKey('planGoalStartDateField'),
                     fieldId: 'planStartDate',

@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 
 enum _DatePart { year, month, day }
@@ -38,9 +37,7 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
   static const _dateTimeService = DateTimeService();
 
   final _formFieldKey = GlobalKey<FormFieldState<String?>>();
-  late final TextEditingController _yearController;
-  late final TextEditingController _monthController;
-  late final TextEditingController _dayController;
+  late final TextEditingController _manualController;
   int? _year;
   int? _month;
   int? _day;
@@ -49,9 +46,7 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
   @override
   void initState() {
     super.initState();
-    _yearController = TextEditingController();
-    _monthController = TextEditingController();
-    _dayController = TextEditingController();
+    _manualController = TextEditingController();
     _syncFromValue(widget.value);
   }
 
@@ -71,9 +66,7 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
 
   @override
   void dispose() {
-    _yearController.dispose();
-    _monthController.dispose();
-    _dayController.dispose();
+    _manualController.dispose();
     super.dispose();
   }
 
@@ -84,17 +77,13 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
       initialValue: _formattedValue,
       validator: (_) {
         final manualError = _manualValueError();
-        if (manualError != null) {
-          return manualError;
-        }
+        if (manualError != null) return manualError;
         final value = _formattedValue;
-        if (widget.isRequired && value == null) {
-          return '请选择日期';
-        }
+        if (widget.isRequired && value == null) return '请选择日期';
         return widget.validator?.call(value);
       },
       builder: (field) {
-        final errorColor = Theme.of(context).colorScheme.error;
+        final colors = Theme.of(context).colorScheme;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -123,7 +112,7 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
                 field.errorText!,
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: errorColor),
+                ).textTheme.bodySmall?.copyWith(color: colors.error),
               ),
             ],
           ],
@@ -136,59 +125,105 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
     if (_manualPart == part) {
       return TextFormField(
         key: ValueKey('${widget.fieldId}Manual${_partName(part)}'),
-        controller: _controllerFor(part),
+        controller: _manualController,
         autofocus: true,
         keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9-]'))],
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(
           labelText: _partLabel(part),
           border: const OutlineInputBorder(),
         ),
-        onChanged: (_) =>
-            _formFieldKey.currentState?.didChange(_formattedValue),
+        onChanged: (_) => _formFieldKey.currentState?.validate(),
         onFieldSubmitted: (_) => _commitManual(part),
         onTapOutside: (_) => _commitManual(part),
       );
     }
 
+    final value = _valueFor(part);
     return GestureDetector(
       key: ValueKey('${widget.fieldId}${_partName(part)}'),
+      onTap: widget.enabled ? () => _openPicker(part) : null,
       onDoubleTap: widget.enabled ? () => _beginManual(part) : null,
-      child: DropdownButtonFormField<int>(
-        key: ValueKey(
-          '${widget.fieldId}${_partName(part)}Value${_valueFor(part)}',
-        ),
-        initialValue: _valueFor(part),
-        isExpanded: true,
+      child: InputDecorator(
+        isEmpty: value == null,
         decoration: InputDecoration(
           labelText: _partLabel(part),
+          enabled: widget.enabled,
           border: const OutlineInputBorder(),
+          suffixIcon: const Icon(Icons.expand_more, size: 18),
         ),
-        items: _valuesFor(part)
-            .map((value) {
-              return DropdownMenuItem<int>(value: value, child: Text('$value'));
-            })
-            .toList(growable: false),
-        onChanged: widget.enabled
-            ? (value) {
-                if (value != null) {
-                  _changePart(part, value);
-                }
-              }
-            : null,
+        child: Text(value?.toString() ?? '--'),
       ),
     );
   }
 
-  Iterable<int> _valuesFor(_DatePart part) {
+  Future<void> _openPicker(_DatePart part) async {
+    final values = _valuesFor(part);
+    final currentValue = _valueFor(part);
+    final initialIndex = currentValue == null
+        ? 0
+        : math.max(0, currentValue - values.first);
+    final controller = ScrollController(initialScrollOffset: initialIndex * 48);
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SizedBox(
+          height: 380,
+          child: Column(
+            children: [
+              Text(
+                '选择${_partLabel(part)}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  key: ValueKey('${widget.fieldId}${_partName(part)}Picker'),
+                  controller: controller,
+                  itemExtent: 48,
+                  itemCount: values.length,
+                  itemBuilder: (context, index) {
+                    final value = values[index];
+                    return ListTile(
+                      key: ValueKey(
+                        '${widget.fieldId}${_partName(part)}Option$value',
+                      ),
+                      title: Text('$value', textAlign: TextAlign.center),
+                      selected: value == currentValue,
+                      onTap: () => Navigator.of(context).pop(value),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    if (selected != null && mounted) {
+      _changePart(part, selected);
+    }
+  }
+
+  List<int> _valuesFor(_DatePart part) {
     return switch (part) {
-      _DatePart.year => Iterable<int>.generate(
+      _DatePart.year => List<int>.generate(
         widget.yearEnd - widget.yearStart + 1,
         (index) => widget.yearStart + index,
+        growable: false,
       ),
-      _DatePart.month => Iterable<int>.generate(12, (index) => index + 1),
-      _DatePart.day => Iterable<int>.generate(_maxDay, (index) => index + 1),
+      _DatePart.month => List<int>.generate(
+        12,
+        (index) => index + 1,
+        growable: false,
+      ),
+      _DatePart.day => List<int>.generate(
+        _maxDay,
+        (index) => index + 1,
+        growable: false,
+      ),
     };
   }
 
@@ -197,14 +232,6 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
       _DatePart.year => _year,
       _DatePart.month => _month,
       _DatePart.day => _day,
-    };
-  }
-
-  TextEditingController _controllerFor(_DatePart part) {
-    return switch (part) {
-      _DatePart.year => _yearController,
-      _DatePart.month => _monthController,
-      _DatePart.day => _dayController,
     };
   }
 
@@ -219,7 +246,6 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
           _day = value;
       }
       _clampDay();
-      _syncControllers();
     });
     _emit();
   }
@@ -227,26 +253,21 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
   void _beginManual(_DatePart part) {
     setState(() {
       _manualPart = part;
-      final controller = _controllerFor(part);
-      controller.text = _valueFor(part)?.toString() ?? '';
-      controller.selection = TextSelection(
+      _manualController.text = _valueFor(part)?.toString() ?? '';
+      _manualController.selection = TextSelection(
         baseOffset: 0,
-        extentOffset: controller.text.length,
+        extentOffset: _manualController.text.length,
       );
     });
   }
 
   void _commitManual(_DatePart part) {
-    if (_manualPart != part) {
-      return;
-    }
-    final error = _manualValueError();
-    if (error != null) {
+    if (_manualPart != part) return;
+    if (_manualValueError() != null) {
       _formFieldKey.currentState?.validate();
       return;
     }
-
-    final value = int.parse(_controllerFor(part).text.trim());
+    final value = int.parse(_manualController.text.trim());
     setState(() {
       switch (part) {
         case _DatePart.year:
@@ -258,7 +279,6 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
       }
       _manualPart = null;
       _clampDay();
-      _syncControllers();
     });
     _emit();
     _formFieldKey.currentState?.validate();
@@ -266,10 +286,8 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
 
   String? _manualValueError() {
     final part = _manualPart;
-    if (part == null) {
-      return null;
-    }
-    final value = int.tryParse(_controllerFor(part).text.trim());
+    if (part == null) return null;
+    final value = int.tryParse(_manualController.text.trim());
     return switch (part) {
       _DatePart.year
           when value == null ||
@@ -290,7 +308,6 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
       _month = null;
       _day = null;
       _manualPart = null;
-      _syncControllers();
     });
     _emit();
   }
@@ -306,19 +323,12 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
       _year = null;
       _month = null;
       _day = null;
-    } else {
-      _year = int.parse(value.substring(0, 4));
-      _month = int.parse(value.substring(5, 7));
-      _day = int.parse(value.substring(8, 10));
-      _clampDay();
+      return;
     }
-    _syncControllers();
-  }
-
-  void _syncControllers() {
-    _yearController.text = _year?.toString() ?? '';
-    _monthController.text = _month?.toString() ?? '';
-    _dayController.text = _day?.toString() ?? '';
+    _year = int.parse(value.substring(0, 4));
+    _month = int.parse(value.substring(5, 7));
+    _day = int.parse(value.substring(8, 10));
+    _clampDay();
   }
 
   void _clampDay() {
@@ -328,36 +338,26 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
   }
 
   int get _maxDay {
-    final year = _year;
-    final month = _month;
-    if (year == null || month == null) {
-      return 31;
-    }
-    return DateTime(year, month + 1, 0).day;
+    if (_year == null || _month == null) return 31;
+    return DateTime(_year!, _month! + 1, 0).day;
   }
 
   String? get _formattedValue {
-    if (_year == null || _month == null || _day == null) {
-      return null;
-    }
+    if (_year == null || _month == null || _day == null) return null;
     return '${_year!.toString().padLeft(4, '0')}-'
         '${_month!.toString().padLeft(2, '0')}-'
         '${_day!.toString().padLeft(2, '0')}';
   }
 
-  String _partName(_DatePart part) {
-    return switch (part) {
-      _DatePart.year => 'Year',
-      _DatePart.month => 'Month',
-      _DatePart.day => 'Day',
-    };
-  }
+  String _partName(_DatePart part) => switch (part) {
+    _DatePart.year => 'Year',
+    _DatePart.month => 'Month',
+    _DatePart.day => 'Day',
+  };
 
-  String _partLabel(_DatePart part) {
-    return switch (part) {
-      _DatePart.year => '年',
-      _DatePart.month => '月',
-      _DatePart.day => '日',
-    };
-  }
+  String _partLabel(_DatePart part) => switch (part) {
+    _DatePart.year => '年',
+    _DatePart.month => '月',
+    _DatePart.day => '日',
+  };
 }

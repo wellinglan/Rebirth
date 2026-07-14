@@ -1919,6 +1919,17 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _archivedAtMeta = const VerificationMeta(
+    'archivedAt',
+  );
+  @override
+  late final GeneratedColumn<int> archivedAt = GeneratedColumn<int>(
+    'archived_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -1950,6 +1961,7 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
     startDate,
     targetDate,
     completedAt,
+    archivedAt,
     sortOrder,
   ];
   @override
@@ -2087,6 +2099,12 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
         ),
       );
     }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+        _archivedAtMeta,
+        archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
+      );
+    }
     if (data.containsKey('sort_order')) {
       context.handle(
         _sortOrderMeta,
@@ -2170,6 +2188,10 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
         DriftSqlType.int,
         data['${effectivePrefix}completed_at'],
       ),
+      archivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}archived_at'],
+      ),
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -2201,6 +2223,7 @@ class Goal extends DataClass implements Insertable<Goal> {
   final String? startDate;
   final String? targetDate;
   final int? completedAt;
+  final int? archivedAt;
   final int sortOrder;
   const Goal({
     required this.id,
@@ -2220,6 +2243,7 @@ class Goal extends DataClass implements Insertable<Goal> {
     this.startDate,
     this.targetDate,
     this.completedAt,
+    this.archivedAt,
     required this.sortOrder,
   });
   @override
@@ -2259,6 +2283,9 @@ class Goal extends DataClass implements Insertable<Goal> {
     }
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<int>(completedAt);
+    }
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<int>(archivedAt);
     }
     map['sort_order'] = Variable<int>(sortOrder);
     return map;
@@ -2301,6 +2328,9 @@ class Goal extends DataClass implements Insertable<Goal> {
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(completedAt),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
       sortOrder: Value(sortOrder),
     );
   }
@@ -2328,6 +2358,7 @@ class Goal extends DataClass implements Insertable<Goal> {
       startDate: serializer.fromJson<String?>(json['startDate']),
       targetDate: serializer.fromJson<String?>(json['targetDate']),
       completedAt: serializer.fromJson<int?>(json['completedAt']),
+      archivedAt: serializer.fromJson<int?>(json['archivedAt']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
     );
   }
@@ -2352,6 +2383,7 @@ class Goal extends DataClass implements Insertable<Goal> {
       'startDate': serializer.toJson<String?>(startDate),
       'targetDate': serializer.toJson<String?>(targetDate),
       'completedAt': serializer.toJson<int?>(completedAt),
+      'archivedAt': serializer.toJson<int?>(archivedAt),
       'sortOrder': serializer.toJson<int>(sortOrder),
     };
   }
@@ -2374,6 +2406,7 @@ class Goal extends DataClass implements Insertable<Goal> {
     Value<String?> startDate = const Value.absent(),
     Value<String?> targetDate = const Value.absent(),
     Value<int?> completedAt = const Value.absent(),
+    Value<int?> archivedAt = const Value.absent(),
     int? sortOrder,
   }) => Goal(
     id: id ?? this.id,
@@ -2397,6 +2430,7 @@ class Goal extends DataClass implements Insertable<Goal> {
     startDate: startDate.present ? startDate.value : this.startDate,
     targetDate: targetDate.present ? targetDate.value : this.targetDate,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
     sortOrder: sortOrder ?? this.sortOrder,
   );
   Goal copyWithCompanion(GoalsCompanion data) {
@@ -2434,6 +2468,9 @@ class Goal extends DataClass implements Insertable<Goal> {
       completedAt: data.completedAt.present
           ? data.completedAt.value
           : this.completedAt,
+      archivedAt: data.archivedAt.present
+          ? data.archivedAt.value
+          : this.archivedAt,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
     );
   }
@@ -2458,6 +2495,7 @@ class Goal extends DataClass implements Insertable<Goal> {
           ..write('startDate: $startDate, ')
           ..write('targetDate: $targetDate, ')
           ..write('completedAt: $completedAt, ')
+          ..write('archivedAt: $archivedAt, ')
           ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
@@ -2482,6 +2520,7 @@ class Goal extends DataClass implements Insertable<Goal> {
     startDate,
     targetDate,
     completedAt,
+    archivedAt,
     sortOrder,
   );
   @override
@@ -2505,6 +2544,7 @@ class Goal extends DataClass implements Insertable<Goal> {
           other.startDate == this.startDate &&
           other.targetDate == this.targetDate &&
           other.completedAt == this.completedAt &&
+          other.archivedAt == this.archivedAt &&
           other.sortOrder == this.sortOrder);
 }
 
@@ -2526,6 +2566,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
   final Value<String?> startDate;
   final Value<String?> targetDate;
   final Value<int?> completedAt;
+  final Value<int?> archivedAt;
   final Value<int> sortOrder;
   final Value<int> rowid;
   const GoalsCompanion({
@@ -2546,6 +2587,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     this.startDate = const Value.absent(),
     this.targetDate = const Value.absent(),
     this.completedAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -2567,6 +2609,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     this.startDate = const Value.absent(),
     this.targetDate = const Value.absent(),
     this.completedAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId),
@@ -2590,6 +2633,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     Expression<String>? startDate,
     Expression<String>? targetDate,
     Expression<int>? completedAt,
+    Expression<int>? archivedAt,
     Expression<int>? sortOrder,
     Expression<int>? rowid,
   }) {
@@ -2611,6 +2655,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
       if (startDate != null) 'start_date': startDate,
       if (targetDate != null) 'target_date': targetDate,
       if (completedAt != null) 'completed_at': completedAt,
+      if (archivedAt != null) 'archived_at': archivedAt,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (rowid != null) 'rowid': rowid,
     });
@@ -2634,6 +2679,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     Value<String?>? startDate,
     Value<String?>? targetDate,
     Value<int?>? completedAt,
+    Value<int?>? archivedAt,
     Value<int>? sortOrder,
     Value<int>? rowid,
   }) {
@@ -2655,6 +2701,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
       startDate: startDate ?? this.startDate,
       targetDate: targetDate ?? this.targetDate,
       completedAt: completedAt ?? this.completedAt,
+      archivedAt: archivedAt ?? this.archivedAt,
       sortOrder: sortOrder ?? this.sortOrder,
       rowid: rowid ?? this.rowid,
     );
@@ -2714,6 +2761,9 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     if (completedAt.present) {
       map['completed_at'] = Variable<int>(completedAt.value);
     }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<int>(archivedAt.value);
+    }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
@@ -2743,6 +2793,7 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
           ..write('startDate: $startDate, ')
           ..write('targetDate: $targetDate, ')
           ..write('completedAt: $completedAt, ')
+          ..write('archivedAt: $archivedAt, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -9561,6 +9612,7 @@ typedef $$GoalsTableCreateCompanionBuilder =
       Value<String?> startDate,
       Value<String?> targetDate,
       Value<int?> completedAt,
+      Value<int?> archivedAt,
       Value<int> sortOrder,
       Value<int> rowid,
     });
@@ -9583,6 +9635,7 @@ typedef $$GoalsTableUpdateCompanionBuilder =
       Value<String?> startDate,
       Value<String?> targetDate,
       Value<int?> completedAt,
+      Value<int?> archivedAt,
       Value<int> sortOrder,
       Value<int> rowid,
     });
@@ -9769,6 +9822,11 @@ class $$GoalsTableFilterComposer extends Composer<_$AppDatabase, $GoalsTable> {
 
   ColumnFilters<int> get completedAt => $composableBuilder(
     column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9983,6 +10041,11 @@ class $$GoalsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -10100,6 +10163,11 @@ class $$GoalsTableAnnotationComposer
 
   GeneratedColumn<int> get completedAt => $composableBuilder(
     column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
     builder: (column) => column,
   );
 
@@ -10279,6 +10347,7 @@ class $$GoalsTableTableManager
                 Value<String?> startDate = const Value.absent(),
                 Value<String?> targetDate = const Value.absent(),
                 Value<int?> completedAt = const Value.absent(),
+                Value<int?> archivedAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GoalsCompanion(
@@ -10299,6 +10368,7 @@ class $$GoalsTableTableManager
                 startDate: startDate,
                 targetDate: targetDate,
                 completedAt: completedAt,
+                archivedAt: archivedAt,
                 sortOrder: sortOrder,
                 rowid: rowid,
               ),
@@ -10321,6 +10391,7 @@ class $$GoalsTableTableManager
                 Value<String?> startDate = const Value.absent(),
                 Value<String?> targetDate = const Value.absent(),
                 Value<int?> completedAt = const Value.absent(),
+                Value<int?> archivedAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GoalsCompanion.insert(
@@ -10341,6 +10412,7 @@ class $$GoalsTableTableManager
                 startDate: startDate,
                 targetDate: targetDate,
                 completedAt: completedAt,
+                archivedAt: archivedAt,
                 sortOrder: sortOrder,
                 rowid: rowid,
               ),

@@ -52,6 +52,7 @@ final class PlanGoal {
     required this.startDate,
     required this.targetDate,
     required this.completedAt,
+    this.archivedAt,
     required this.sortOrder,
     required this.createdAt,
     required this.updatedAt,
@@ -67,6 +68,7 @@ final class PlanGoal {
   final String? startDate;
   final String? targetDate;
   final int? completedAt;
+  final int? archivedAt;
   final int sortOrder;
   final int createdAt;
   final int updatedAt;

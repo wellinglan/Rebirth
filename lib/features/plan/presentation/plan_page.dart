@@ -6,7 +6,10 @@ import 'package:rebirth/features/plan/domain/plan_goal_date_policy.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
 
 import 'plan_controller.dart';
+import 'plan_filter_state.dart';
 import 'plan_view_state.dart';
+import 'widgets/plan_filter_bar.dart';
+import 'widgets/plan_goal_actions_menu.dart';
 import 'widgets/plan_goal_card.dart';
 import 'widgets/plan_goal_form_dialog.dart';
 
@@ -33,6 +36,11 @@ class PlanPage extends ConsumerWidget {
           onRoot: () => _navigateToBreadcrumb(ref, -1),
           onBreadcrumb: (index) => _navigateToBreadcrumb(ref, index),
         ),
+        if (view != null)
+          PlanFilterBar(
+            filter: view.filter,
+            onChanged: (filter) => _updateFilter(ref, filter),
+          ),
         const Divider(height: 1),
         Expanded(
           child: asyncView.when(
@@ -58,6 +66,7 @@ class PlanPage extends ConsumerWidget {
             data: (data) => data.goals.isEmpty
                 ? _PlanEmptyState(
                     isRoot: data.isRoot,
+                    isFiltered: data.hasUnfilteredGoals,
                     onCreate: () => _openGoalForm(
                       context,
                       ref,
@@ -67,6 +76,7 @@ class PlanPage extends ConsumerWidget {
                   )
                 : _PlanGoalList(
                     goals: data.goals,
+                    today: data.today,
                     onEdit: (goal) => _openGoalForm(
                       context,
                       ref,
@@ -81,8 +91,10 @@ class PlanPage extends ConsumerWidget {
                       parentGoalId: goal.id,
                       defaultGoalLevel: _childLevelFor(goal.goalLevel),
                     ),
-                    onStatusChanged: (goal, status) =>
-                        _updateStatus(context, ref, goal.id, status),
+                    onCompletionChanged: (goal, completed) =>
+                        _updateCompletion(context, ref, goal.id, completed),
+                    onAction: (goal, action) =>
+                        _handleAction(context, ref, goal, action),
                   ),
           ),
         ),
@@ -107,6 +119,10 @@ class PlanPage extends ConsumerWidget {
         .read(planControllerProvider.notifier)
         .navigateToBreadcrumb(index)
         .ignore();
+  }
+
+  void _updateFilter(WidgetRef ref, PlanFilterState filter) {
+    ref.read(planControllerProvider.notifier).updateFilter(filter).ignore();
   }
 
   Future<void> _openGoalForm(
@@ -141,22 +157,74 @@ class PlanPage extends ConsumerWidget {
         : controller.updateGoal(id: goal.id, data: data);
   }
 
-  Future<void> _updateStatus(
+  Future<void> _updateCompletion(
     BuildContext context,
     WidgetRef ref,
     String goalId,
-    PlanGoalStatus status,
+    bool completed,
   ) async {
     try {
       await ref
           .read(planControllerProvider.notifier)
-          .updateStatus(id: goalId, status: status);
+          .updateCompletion(id: goalId, completed: completed);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('状态更新失败，请重试')));
+          ..showSnackBar(const SnackBar(content: Text('完成状态更新失败，请重试')));
       }
+    }
+  }
+
+  Future<void> _handleAction(
+    BuildContext context,
+    WidgetRef ref,
+    PlanGoal goal,
+    PlanGoalAction action,
+  ) async {
+    if (action == PlanGoalAction.delete) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          key: const ValueKey('deletePlanGoalConfirmationDialog'),
+          title: const Text('删除目标'),
+          content: const Text('删除后该目标及其子目标将从普通列表中移除。是否继续？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              key: const ValueKey('confirmDeletePlanGoalButton'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
+
+    try {
+      final controller = ref.read(planControllerProvider.notifier);
+      switch (action) {
+        case PlanGoalAction.archive:
+          await controller.archiveGoal(goal.id);
+        case PlanGoalAction.restore:
+          await controller.restoreGoal(goal.id);
+        case PlanGoalAction.delete:
+          await controller.deleteGoal(goal.id);
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      final message = switch (action) {
+        PlanGoalAction.archive => '归档失败，请重试',
+        PlanGoalAction.restore => '恢复失败，请重试',
+        PlanGoalAction.delete => '删除失败，请重试',
+      };
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -281,9 +349,14 @@ class _PlanHeader extends StatelessWidget {
 }
 
 class _PlanEmptyState extends StatelessWidget {
-  const _PlanEmptyState({required this.isRoot, required this.onCreate});
+  const _PlanEmptyState({
+    required this.isRoot,
+    required this.isFiltered,
+    required this.onCreate,
+  });
 
   final bool isRoot;
+  final bool isFiltered;
   final VoidCallback onCreate;
 
   @override
@@ -293,7 +366,15 @@ class _PlanEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(isRoot ? '还没有计划，先写下一个阶段目标。' : '这个目标还没有子目标。'),
+          Text(
+            isFiltered
+                ? isRoot
+                      ? '没有符合条件的目标。'
+                      : '这个目标下没有符合条件的子目标。'
+                : isRoot
+                ? '还没有计划，先写下一个阶段目标。'
+                : '这个目标还没有子目标。',
+          ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             key: const ValueKey('emptyNewPlanGoalButton'),
@@ -310,18 +391,22 @@ class _PlanEmptyState extends StatelessWidget {
 class _PlanGoalList extends StatelessWidget {
   const _PlanGoalList({
     required this.goals,
+    required this.today,
     required this.onEdit,
     required this.onOpenChildren,
     required this.onAddChild,
-    required this.onStatusChanged,
+    required this.onCompletionChanged,
+    required this.onAction,
   });
 
   final List<PlanGoal> goals;
+  final String today;
   final ValueChanged<PlanGoal> onEdit;
   final ValueChanged<PlanGoal> onOpenChildren;
   final ValueChanged<PlanGoal> onAddChild;
-  final Future<void> Function(PlanGoal goal, PlanGoalStatus status)
-  onStatusChanged;
+  final Future<void> Function(PlanGoal goal, bool completed)
+  onCompletionChanged;
+  final Future<void> Function(PlanGoal goal, PlanGoalAction action) onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -341,10 +426,13 @@ class _PlanGoalList extends StatelessWidget {
         final goal = goals[index - 1];
         return PlanGoalCard(
           goal: goal,
+          today: today,
           onEdit: () => onEdit(goal),
           onOpenChildren: () => onOpenChildren(goal),
           onAddChild: () => onAddChild(goal),
-          onStatusChanged: (status) => onStatusChanged(goal, status),
+          onCompletionChanged: (completed) =>
+              onCompletionChanged(goal, completed).ignore(),
+          onAction: (action) => onAction(goal, action).ignore(),
         );
       },
     );

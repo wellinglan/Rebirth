@@ -64,11 +64,7 @@ void main() {
     expect(goals.single.id, goalId);
     expect(goals.single.title, '已编辑的真实目标');
 
-    await tester.tap(find.byKey(ValueKey('planGoalStatusMenu_$goalId')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(CheckedPopupMenuItem<PlanGoalStatus>, '已完成'),
-    );
+    await tester.tap(find.byKey(ValueKey('planGoalCompleted_$goalId')));
     await tester.pumpAndSettle();
 
     final completed = await container
@@ -76,6 +72,6 @@ void main() {
         .getById(goalId);
     expect(completed?.status, PlanGoalStatus.completed);
     expect(completed?.completedAt, isNotNull);
-    expect(database.schemaVersion, 2);
+    expect(database.schemaVersion, 3);
   });
 }

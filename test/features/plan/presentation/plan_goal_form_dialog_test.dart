@@ -18,6 +18,7 @@ void main() {
       expect(find.text('优先级'), findsOneWidget);
       expect(find.text('排序'), findsNothing);
       expect(find.text('数值越小越靠前'), findsOneWidget);
+      expect(find.byKey(const ValueKey('planGoalStatusField')), findsNothing);
     },
   );
 
@@ -68,6 +69,7 @@ void main() {
 
     expect(submitted?.goalLevel, PlanGoalLevel.custom);
     expect(submitted?.targetDate, isNull);
+    expect(submitted?.status, PlanGoalStatus.notStarted);
   });
 
   testWidgets('custom target before start date reports an error', (

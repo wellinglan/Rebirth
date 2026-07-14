@@ -3,54 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/plan/presentation/widgets/plan_date_parts_field.dart';
 
 void main() {
-  testWidgets('displays separate year, month, and day controls', (
+  testWidgets('main build uses lightweight year month day controls', (
     tester,
   ) async {
     await _pumpField(tester, value: '2026-07-14');
 
-    expect(find.text('年'), findsOneWidget);
-    expect(find.text('月'), findsOneWidget);
-    expect(find.text('日'), findsOneWidget);
-    expect(_selectedValue(tester, 'testDateYear'), 2026);
-    expect(_selectedValue(tester, 'testDateMonth'), 7);
-    expect(_selectedValue(tester, 'testDateDay'), 14);
+    expect(find.byType(DropdownButtonFormField<int>), findsNothing);
+    expect(_partHasText('testDateYear', '2026'), findsOneWidget);
+    expect(_partHasText('testDateMonth', '7'), findsOneWidget);
+    expect(_partHasText('testDateDay', '14'), findsOneWidget);
   });
 
-  testWidgets('changing month emits YYYY-MM-DD and clamps the day', (
-    tester,
-  ) async {
-    String? output;
-    await _pumpField(
-      tester,
-      value: '2026-01-31',
-      onChanged: (value) => output = value,
-    );
-
-    _changeDropdown(tester, 'testDateMonth', 2);
-    await tester.pump();
-
-    expect(output, '2026-02-28');
-    expect(_selectedValue(tester, 'testDateDay'), 28);
-  });
-
-  testWidgets('changing leap year clamps February 29 to February 28', (
-    tester,
-  ) async {
-    String? output;
-    await _pumpField(
-      tester,
-      value: '2028-02-29',
-      onChanged: (value) => output = value,
-    );
-
-    _changeDropdown(tester, 'testDateYear', 2029);
-    await tester.pump();
-
-    expect(output, '2029-02-28');
-    expect(_selectedValue(tester, 'testDateDay'), 28);
-  });
-
-  testWidgets('double-clicking each part supports valid manual input', (
+  testWidgets('single tap opens a lazy picker and selects a month', (
     tester,
   ) async {
     String? output;
@@ -60,22 +24,75 @@ void main() {
       onChanged: (value) => output = value,
     );
 
-    await _enterManualPart(
+    await _openPicker(tester, 'Month');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('testDateMonthPicker')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('testDateMonthOption8')));
+    await tester.pumpAndSettle();
+
+    expect(output, '2026-08-14');
+  });
+
+  testWidgets('selecting year month and day emits YYYY-MM-DD', (tester) async {
+    String? output;
+    await _pumpField(tester, value: null, onChanged: (value) => output = value);
+
+    await _selectPart(tester, 'Year', 2023);
+    await _selectPart(tester, 'Month', 3);
+    await _selectPart(tester, 'Day', 3);
+
+    expect(output, '2023-03-03');
+  });
+
+  testWidgets('changing month clamps day to the final valid date', (
+    tester,
+  ) async {
+    String? output;
+    await _pumpField(
       tester,
-      'testDateYear',
-      'testDateManualYear',
-      '2027',
+      value: '2026-01-31',
+      onChanged: (value) => output = value,
     );
-    await _enterManualPart(tester, 'testDateMonth', 'testDateManualMonth', '8');
-    await _enterManualPart(tester, 'testDateDay', 'testDateManualDay', '15');
+
+    await _selectPart(tester, 'Month', 2);
+
+    expect(output, '2026-02-28');
+    expect(_partHasText('testDateDay', '28'), findsOneWidget);
+  });
+
+  testWidgets('changing leap year clamps February 29', (tester) async {
+    String? output;
+    await _pumpField(
+      tester,
+      value: '2028-02-29',
+      onChanged: (value) => output = value,
+    );
+
+    await _selectPart(tester, 'Year', 2029);
+
+    expect(output, '2029-02-28');
+  });
+
+  testWidgets('double-clicking each part supports manual input', (
+    tester,
+  ) async {
+    String? output;
+    await _pumpField(
+      tester,
+      value: '2026-07-14',
+      onChanged: (value) => output = value,
+    );
+
+    await _enterManualPart(tester, 'Year', '2027');
+    await _enterManualPart(tester, 'Month', '8');
+    await _enterManualPart(tester, 'Day', '15');
 
     expect(output, '2027-08-15');
   });
 
   testWidgets('invalid manual month shows the specified error', (tester) async {
     await _pumpField(tester, value: '2026-07-14');
-
-    await _doubleTap(tester, find.byKey(const ValueKey('testDateMonth')));
+    _openManual(tester, 'Month');
     await tester.pump();
     await tester.enterText(
       find.byKey(const ValueKey('testDateManualMonth')),
@@ -88,27 +105,17 @@ void main() {
     expect(find.byKey(const ValueKey('testDateManualMonth')), findsOneWidget);
   });
 
-  testWidgets('disabled state cannot edit dropdowns or enter manual mode', (
+  testWidgets('disabled state cannot open picker or manual mode', (
     tester,
   ) async {
     await _pumpField(tester, value: '2026-07-14', enabled: false);
 
     for (final part in ['Year', 'Month', 'Day']) {
-      final finder = find.descendant(
-        of: find.byKey(ValueKey('testDate$part')),
-        matching: find.byType(DropdownButtonFormField<int>),
+      final gesture = tester.widget<GestureDetector>(
+        find.byKey(ValueKey('testDate$part')),
       );
-      expect(
-        tester.widget<DropdownButtonFormField<int>>(finder).onChanged,
-        isNull,
-      );
-      expect(
-        tester
-            .widget<GestureDetector>(find.byKey(ValueKey('testDate$part')))
-            .onDoubleTap,
-        isNull,
-      );
-      expect(find.byKey(ValueKey('testDateManual$part')), findsNothing);
+      expect(gesture.onTap, isNull);
+      expect(gesture.onDoubleTap, isNull);
     }
   });
 
@@ -161,36 +168,41 @@ Future<void> _pumpField(
   await tester.pump();
 }
 
-int? _selectedValue(WidgetTester tester, String fieldKey) {
-  final finder = find.descendant(
-    of: find.byKey(ValueKey(fieldKey)),
-    matching: find.byType(DropdownButtonFormField<int>),
+Finder _partHasText(String key, String text) {
+  return find.descendant(
+    of: find.byKey(ValueKey(key)),
+    matching: find.text(text),
   );
-  return tester.widget<DropdownButtonFormField<int>>(finder).initialValue;
 }
 
-void _changeDropdown(WidgetTester tester, String fieldKey, int value) {
-  final finder = find.descendant(
-    of: find.byKey(ValueKey(fieldKey)),
-    matching: find.byType(DropdownButtonFormField<int>),
-  );
-  tester.widget<DropdownButtonFormField<int>>(finder).onChanged!(value);
+Future<void> _selectPart(WidgetTester tester, String part, int value) async {
+  await _openPicker(tester, part);
+  await tester.pumpAndSettle();
+  final option = find.byKey(ValueKey('testDate${part}Option$value'));
+  await tester.ensureVisible(option);
+  await tester.tap(option);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _enterManualPart(
   WidgetTester tester,
-  String partKey,
-  String manualKey,
+  String part,
   String value,
 ) async {
-  await _doubleTap(tester, find.byKey(ValueKey(partKey)));
+  _openManual(tester, part);
   await tester.pump();
-  await tester.enterText(find.byKey(ValueKey(manualKey)), value);
+  await tester.enterText(find.byKey(ValueKey('testDateManual$part')), value);
   await tester.testTextInput.receiveAction(TextInputAction.done);
   await tester.pump();
 }
 
-Future<void> _doubleTap(WidgetTester tester, Finder finder) async {
-  tester.widget<GestureDetector>(finder).onDoubleTap!();
-  await tester.pump();
+void _openManual(WidgetTester tester, String part) {
+  tester
+      .widget<GestureDetector>(find.byKey(ValueKey('testDate$part')))
+      .onDoubleTap!();
+}
+
+Future<void> _openPicker(WidgetTester tester, String part) async {
+  await tester.tap(find.byKey(ValueKey('testDate$part')));
+  await tester.pump(const Duration(milliseconds: 400));
 }

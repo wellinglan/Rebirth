@@ -1,4 +1,5 @@
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
+import 'package:rebirth/features/plan/domain/plan_goal_lifecycle.dart';
 
 String planGoalLevelLabel(PlanGoalLevel level) {
   return switch (level) {
@@ -19,5 +20,15 @@ String planGoalStatusLabel(PlanGoalStatus status) {
     PlanGoalStatus.completed => '已完成',
     PlanGoalStatus.paused => '暂停',
     PlanGoalStatus.cancelled => '已取消',
+  };
+}
+
+String planGoalLifecycleLabel(PlanGoalLifecycle lifecycle) {
+  return switch (lifecycle) {
+    PlanGoalLifecycle.notStarted => '未开始',
+    PlanGoalLifecycle.inProgress => '进行中',
+    PlanGoalLifecycle.overdue => '已过期',
+    PlanGoalLifecycle.completed => '已完成',
+    PlanGoalLifecycle.archived => '已归档',
   };
 }
