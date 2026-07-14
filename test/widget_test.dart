@@ -48,5 +48,11 @@ void main() {
 
     expect(find.byIcon(Icons.auto_stories), findsOneWidget);
     expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.account_tree_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.account_tree), findsOneWidget);
+    expect(find.byKey(const ValueKey('planEmptyState')), findsOneWidget);
   });
 }
