@@ -60,13 +60,8 @@ class PlanController extends AsyncNotifier<List<PlanGoal>> {
   }
 
   Future<void> _mutate(Future<Object?> Function() operation) async {
-    try {
-      await operation();
-      state = AsyncData(await _readCurrentList());
-    } catch (error, stackTrace) {
-      state = AsyncError(error, stackTrace);
-      rethrow;
-    }
+    await operation();
+    state = AsyncData(await _readCurrentList());
   }
 
   Future<List<PlanGoal>> _readCurrentList() {

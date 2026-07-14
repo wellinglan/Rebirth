@@ -70,6 +70,29 @@ void main() {
     expect(goal.completedAt, isNotNull);
   });
 
+  test('updateGoal refreshes the current list', () async {
+    await container.read(planControllerProvider.future);
+    final controller = container.read(planControllerProvider.notifier);
+    await controller.createGoal(
+      PlanGoalSaveData(title: '旧标题', goalLevel: PlanGoalLevel.month),
+    );
+    final id = container.read(planControllerProvider).requireValue.single.id;
+
+    await controller.updateGoal(
+      id: id,
+      data: PlanGoalSaveData(
+        title: '新标题',
+        description: '阶段说明',
+        goalLevel: PlanGoalLevel.quarter,
+      ),
+    );
+
+    final goal = container.read(planControllerProvider).requireValue.single;
+    expect(goal.title, '新标题');
+    expect(goal.description, '阶段说明');
+    expect(goal.goalLevel, PlanGoalLevel.quarter);
+  });
+
   test('deleteGoal refreshes the current list', () async {
     await container.read(planControllerProvider.future);
     final controller = container.read(planControllerProvider.notifier);
@@ -142,14 +165,16 @@ void main() {
     );
   });
 
-  test('mutation failure is rethrown and exposed as AsyncError', () async {
+  test('mutation failure is rethrown without clearing existing data', () async {
+    final existing = _sampleGoal();
+    final repository = _FailingPlanRepository(goals: [existing]);
     final errorContainer = ProviderContainer(
-      overrides: [
-        planRepositoryProvider.overrideWithValue(_FailingPlanRepository()),
-      ],
+      overrides: [planRepositoryProvider.overrideWithValue(repository)],
     );
     addTearDown(errorContainer.dispose);
-    await errorContainer.read(planControllerProvider.future);
+    expect(await errorContainer.read(planControllerProvider.future), [
+      existing,
+    ]);
 
     await expectLater(
       errorContainer
@@ -161,22 +186,47 @@ void main() {
     );
     expect(
       errorContainer.read(planControllerProvider),
+      isA<AsyncData<List<PlanGoal>>>(),
+    );
+    expect(errorContainer.read(planControllerProvider).requireValue, [
+      existing,
+    ]);
+  });
+
+  test('reload failure enters AsyncError', () async {
+    final repository = _FailingPlanRepository(goals: [_sampleGoal()]);
+    final errorContainer = ProviderContainer(
+      overrides: [planRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(errorContainer.dispose);
+    await errorContainer.read(planControllerProvider.future);
+    repository.loadError = StateError('reload failed for test');
+
+    await expectLater(
+      errorContainer.read(planControllerProvider.notifier).reload(),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(
+      errorContainer.read(planControllerProvider),
       isA<AsyncError<List<PlanGoal>>>(),
     );
   });
 }
 
 final class _FailingPlanRepository implements PlanRepository {
-  _FailingPlanRepository({this.failInitialLoad = false});
+  _FailingPlanRepository({this.failInitialLoad = false, this.goals = const []});
 
   final bool failInitialLoad;
+  final List<PlanGoal> goals;
+  Object? loadError;
 
   @override
   Future<List<PlanGoal>> listRootGoals() async {
-    if (failInitialLoad) {
-      throw StateError('plan load failed for test');
+    if (failInitialLoad || loadError != null) {
+      throw loadError ?? StateError('plan load failed for test');
     }
-    return const [];
+    return goals;
   }
 
   @override
@@ -186,4 +236,22 @@ final class _FailingPlanRepository implements PlanRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+PlanGoal _sampleGoal() {
+  return const PlanGoal(
+    id: 'existing-goal',
+    userId: 'user-id',
+    parentGoalId: null,
+    title: '已有目标',
+    description: null,
+    goalLevel: PlanGoalLevel.year,
+    status: PlanGoalStatus.inProgress,
+    startDate: null,
+    targetDate: null,
+    completedAt: null,
+    sortOrder: 0,
+    createdAt: 1,
+    updatedAt: 1,
+  );
 }
