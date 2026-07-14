@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
-
-import 'duration_input_field.dart';
+import 'package:rebirth/shared/widgets/duration_input_field.dart';
 
 class TodayForm extends StatefulWidget {
   const TodayForm({

@@ -54,5 +54,18 @@ void main() {
 
     expect(find.byIcon(Icons.account_tree), findsOneWidget);
     expect(find.byKey(const ValueKey('planEmptyState')), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.insights_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.insights), findsOneWidget);
+    expect(find.text('看见缓慢而真实的变化。'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.monitor_heart_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.monitor_heart), findsOneWidget);
+    expect(find.byKey(const ValueKey('healthDataState')), findsOneWidget);
+    expect(find.text('Health'), findsOneWidget);
   });
 }

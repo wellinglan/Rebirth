@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rebirth/features/today/presentation/widgets/duration_input_field.dart';
+import 'package:rebirth/shared/widgets/duration_input_field.dart';
 
 void main() {
   final initialValueCases = <({int? initial, String hours, String minutes})>[

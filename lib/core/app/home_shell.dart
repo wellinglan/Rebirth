@@ -6,7 +6,7 @@ class HomeShell extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  static const _titles = <String>['今日', '复盘', '计划', '成长', '我的'];
+  static const _titles = <String>['今日', '复盘', '计划', '成长', '健康'];
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +38,9 @@ class HomeShell extends StatelessWidget {
             label: '成长',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: '我的',
+            icon: Icon(Icons.monitor_heart_outlined),
+            selectedIcon: Icon(Icons.monitor_heart),
+            label: '健康',
           ),
         ],
       ),

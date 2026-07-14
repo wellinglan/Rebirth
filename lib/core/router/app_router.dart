@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/growth/presentation/growth_page.dart';
+import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
@@ -69,13 +70,18 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: RoutePaths.profile,
-              name: RouteNames.profile,
-              builder: (context, state) => const ProfilePage(),
+              path: RoutePaths.health,
+              name: RouteNames.health,
+              builder: (context, state) => const HealthPage(),
             ),
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: RoutePaths.profile,
+      name: RouteNames.profile,
+      builder: (context, state) => const ProfilePage(),
     ),
   ],
 );

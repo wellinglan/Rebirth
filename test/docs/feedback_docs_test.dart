@@ -8,9 +8,10 @@ void main() {
     final today = File('docs/backlog/feedback/01_today_feedback.md');
     final journal = File('docs/backlog/feedback/02_journal_feedback.md');
     final plan = File('docs/backlog/feedback/03_plan_feedback.md');
+    final health = File('docs/backlog/feedback/04_health_feedback.md');
     final legacy = File('docs/backlog/01_today_journal_usage_feedback.md');
 
-    for (final file in [readme, today, journal, plan, legacy]) {
+    for (final file in [readme, today, journal, plan, health, legacy]) {
       expect(file.existsSync(), isTrue, reason: '${file.path} should exist');
     }
 
@@ -27,6 +28,8 @@ void main() {
     expect(planText, contains('日期选择组件响应延迟明显'));
     expect(planText, contains('缺少归档功能'));
     expect(planText, contains('缺少分类、筛选、排序能力'));
+    expect(health.readAsStringSync(), contains('# Health Feedback'));
+    expect(health.readAsStringSync(), contains('Sprint 5A'));
     expect(
       legacy.readAsStringSync(),
       contains('后续以 `docs/backlog/feedback/` 下的模块级反馈文件为准'),

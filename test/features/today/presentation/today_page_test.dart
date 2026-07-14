@@ -320,7 +320,7 @@ void main() {
     const paths = <String>[
       'lib/features/today/presentation/today_page.dart',
       'lib/features/today/presentation/widgets/today_form.dart',
-      'lib/features/today/presentation/widgets/duration_input_field.dart',
+      'lib/shared/widgets/duration_input_field.dart',
     ];
 
     for (final path in paths) {
