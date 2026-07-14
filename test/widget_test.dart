@@ -37,7 +37,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('todayHistoryPage')), findsOneWidget);
-    expect(find.byKey(const ValueKey('todayHistoryList')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('todayHistoryEmptyState')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('todayHistoryBackButton')));
     await tester.pumpAndSettle();

@@ -3,6 +3,7 @@ import 'package:rebirth/features/today/data/today_repository_provider.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_repository.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
+import 'package:rebirth/shared/state/health_record_revision_provider.dart';
 
 final todayControllerProvider =
     AsyncNotifierProvider<TodayController, TodayEntry>(TodayController.new);
@@ -10,6 +11,7 @@ final todayControllerProvider =
 class TodayController extends AsyncNotifier<TodayEntry> {
   @override
   Future<TodayEntry> build() {
+    ref.watch(healthRecordRevisionProvider);
     return ref.watch(todayRepositoryProvider).getToday();
   }
 
@@ -17,8 +19,9 @@ class TodayController extends AsyncNotifier<TodayEntry> {
     return _reload(() => ref.read(todayRepositoryProvider).getToday());
   }
 
-  Future<void> saveToday(TodaySaveData data) {
-    return _mutate(() => ref.read(todayRepositoryProvider).saveToday(data));
+  Future<void> saveToday(TodaySaveData data) async {
+    await _mutate(() => ref.read(todayRepositoryProvider).saveToday(data));
+    ref.read(healthRecordRevisionProvider.notifier).bump();
   }
 
   Future<void> updatePriorities(List<TodayPriority> priorities) {

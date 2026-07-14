@@ -4,9 +4,14 @@ import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'today_history_formatters.dart';
 
 class TodayEntryDetailDialog extends StatelessWidget {
-  const TodayEntryDetailDialog({required this.entry, super.key});
+  const TodayEntryDetailDialog({
+    required this.entry,
+    required this.today,
+    super.key,
+  });
 
   final TodayEntry entry;
+  final String today;
 
   @override
   Widget build(BuildContext context) {
@@ -54,9 +59,7 @@ class TodayEntryDetailDialog extends StatelessWidget {
               ),
               _DetailValue(
                 label: '记录状态',
-                value: entry.status == TodayRecordStatus.completed
-                    ? '已完成'
-                    : '草稿',
+                value: todayHistoryStatusLabel(entry: entry, today: today),
               ),
             ],
           ),

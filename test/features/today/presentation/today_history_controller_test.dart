@@ -48,7 +48,7 @@ void main() {
     expect(await database.select(database.todayRecords).get(), isEmpty);
   });
 
-  test('initial load returns multiple recent dates', () async {
+  test('initial load excludes today and returns past recent dates', () async {
     final repository = container.read(todayRepositoryProvider);
     currentTime = DateTime(2026, 7, 12, 9);
     await repository.saveToday(TodaySaveData(dailyNote: '十二日'));
@@ -57,10 +57,7 @@ void main() {
 
     final entries = await container.read(todayHistoryControllerProvider.future);
 
-    expect(entries.map((entry) => entry.recordDate), [
-      '2026-07-13',
-      '2026-07-12',
-    ]);
+    expect(entries.map((entry) => entry.recordDate), ['2026-07-12']);
   });
 
   test('reload reads records saved after the initial load', () async {
@@ -68,9 +65,11 @@ void main() {
       await container.read(todayHistoryControllerProvider.future),
       isEmpty,
     );
+    currentTime = DateTime(2026, 7, 12, 9);
     await container
         .read(todayRepositoryProvider)
         .saveToday(TodaySaveData(dailyNote: '重新加载'));
+    currentTime = DateTime(2026, 7, 13, 9);
 
     await container.read(todayHistoryControllerProvider.notifier).reload();
 
@@ -81,6 +80,17 @@ void main() {
           .single
           .dailyNote,
       '重新加载',
+    );
+  });
+
+  test('history is empty when the only record is today', () async {
+    await container
+        .read(todayRepositoryProvider)
+        .saveToday(TodaySaveData(dailyNote: '今天'));
+
+    expect(
+      await container.read(todayHistoryControllerProvider.future),
+      isEmpty,
     );
   });
 

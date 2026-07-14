@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 
@@ -16,6 +17,7 @@ class JournalPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final journalState = ref.watch(journalTodayControllerProvider);
     final historyState = ref.watch(journalControllerProvider);
+    final today = ref.watch(dateTimeServiceProvider).currentLocalDateString();
 
     return SafeArea(
       child: journalState.when(
@@ -49,6 +51,7 @@ class JournalPage extends ConsumerWidget {
             const Divider(height: 1),
             JournalHistoryList(
               state: historyState,
+              today: today,
               onRetry: () async {
                 try {
                   await ref.read(journalControllerProvider.notifier).reload();
@@ -57,7 +60,7 @@ class JournalPage extends ConsumerWidget {
                 }
               },
               onEntryTap: (historyEntry) {
-                _showEntryDetail(context, historyEntry);
+                _showEntryDetail(context, historyEntry, today);
               },
             ),
           ],
@@ -77,10 +80,15 @@ class JournalPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _showEntryDetail(BuildContext context, JournalEntry entry) {
+  Future<void> _showEntryDetail(
+    BuildContext context,
+    JournalEntry entry,
+    String today,
+  ) {
     return showDialog<void>(
       context: context,
-      builder: (context) => JournalEntryDetailDialog(entry: entry),
+      builder: (context) =>
+          JournalEntryDetailDialog(entry: entry, today: today),
     );
   }
 }

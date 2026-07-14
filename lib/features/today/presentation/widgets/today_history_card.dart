@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:rebirth/core/theme/app_typography.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 
 import 'today_history_formatters.dart';
 
 class TodayHistoryCard extends StatelessWidget {
-  const TodayHistoryCard({required this.entry, required this.onTap, super.key});
+  const TodayHistoryCard({
+    required this.entry,
+    required this.today,
+    required this.onTap,
+    super.key,
+  });
 
   final TodayEntry entry;
+  final String today;
   final VoidCallback onTap;
 
   @override
@@ -19,10 +26,10 @@ class TodayHistoryCard extends StatelessWidget {
 
     return Card(
       key: ValueKey('todayHistoryItem_${entry.id}'),
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: AppLayout.cardGap),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: ListTile(
@@ -59,10 +66,7 @@ class TodayHistoryCard extends StatelessWidget {
                   ),
                 ),
               if (priorities.isEmpty)
-                Text(
-                  '未填写三件事',
-                  style: theme.textTheme.bodySmall,
-                ),
+                Text('未填写三件事', style: theme.textTheme.bodySmall),
               const SizedBox(height: 4),
               Text(
                 'Mood ${entry.moodScore ?? '未填写'} · '
@@ -71,6 +75,13 @@ class TodayHistoryCard extends StatelessWidget {
               Text(
                 '科研 ${formatDurationMinutes(entry.researchMinutes)} · '
                 '学习 ${formatDurationMinutes(entry.learningMinutes)}',
+              ),
+              const SizedBox(height: 4),
+              Text(
+                todayHistoryStatusLabel(entry: entry, today: today),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               if (entry.dailyNote?.trim().isNotEmpty ?? false) ...[
                 const SizedBox(height: 6),

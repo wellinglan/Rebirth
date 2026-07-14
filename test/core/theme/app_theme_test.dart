@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/theme/app_theme.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/core/theme/app_typography.dart';
 
 void main() {
@@ -38,6 +39,37 @@ void main() {
     expect(filledButtonStyle?.fontWeight, FontWeight.w500);
     expect(theme.inputDecorationTheme.errorStyle?.fontSize, 12);
     expect(theme.inputDecorationTheme.helperStyle?.fontSize, 12);
+  });
+
+  test(
+    'cards, dialogs, dividers, list tiles, and chips share visual basics',
+    () {
+      final theme = AppTheme.light;
+
+      expect(theme.cardTheme.shape, isNotNull);
+      expect(theme.dialogTheme.shape, isNotNull);
+      expect(theme.dividerTheme.thickness, 1);
+      expect(theme.dividerTheme.color, isNotNull);
+      expect(theme.listTileTheme.contentPadding, isNotNull);
+      expect(theme.chipTheme.shape, isNotNull);
+    },
+  );
+
+  test('layout constants provide an increasing spacing scale', () {
+    expect([
+      AppSpacing.xxs,
+      AppSpacing.xs,
+      AppSpacing.sm,
+      AppSpacing.md,
+      AppSpacing.lg,
+      AppSpacing.xl,
+      AppSpacing.xxl,
+    ], orderedEquals([4, 8, 12, 16, 20, 24, 32]));
+    expect(AppRadius.sm, lessThan(AppRadius.md));
+    expect(AppRadius.md, lessThan(AppRadius.lg));
+    expect(AppRadius.lg, lessThan(AppRadius.xl));
+    expect(AppLayout.maxContentWidth, 720);
+    expect(AppLayout.wideContentWidth, 840);
   });
 
   test('typography polish adds no bundled or network font dependency', () {

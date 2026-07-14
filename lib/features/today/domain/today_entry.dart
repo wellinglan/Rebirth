@@ -79,4 +79,25 @@ final class TodayEntry {
   int get completedPriorityCount => priorities
       .where((priority) => priority.isPopulated && priority.completed)
       .length;
+
+  bool get hasContent =>
+      priorities.any((priority) => priority.isPopulated) ||
+      moodScore != null ||
+      energyScore != null ||
+      researchMinutes != null ||
+      learningMinutes != null ||
+      (dailyNote?.trim().isNotEmpty ?? false) ||
+      _healthHasContent;
+
+  bool get _healthHasContent {
+    final summary = health;
+    return summary != null &&
+        (summary.sleepDurationMinutes != null ||
+            summary.weightKg != null ||
+            summary.waterIntakeMl != null ||
+            (summary.exerciseType?.trim().isNotEmpty ?? false) ||
+            summary.exerciseDurationMinutes != null ||
+            summary.physicalStateScore != null ||
+            (summary.note?.trim().isNotEmpty ?? false));
+  }
 }

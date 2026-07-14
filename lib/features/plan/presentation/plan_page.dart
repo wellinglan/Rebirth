@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_date_policy.dart';
@@ -269,7 +270,10 @@ class _PlanHeader extends StatelessWidget {
     final buttonLabel = isRoot ? '新建目标' : '新建子目标';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -412,9 +416,15 @@ class _PlanGoalList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       key: const ValueKey('planGoalList'),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.xl,
+      ),
       itemCount: goals.length + 1,
-      separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 12 : 8),
+      separatorBuilder: (_, index) =>
+          SizedBox(height: index == 0 ? AppLayout.cardGap : AppSpacing.xs),
       itemBuilder: (context, index) {
         if (index == 0) {
           return Text(

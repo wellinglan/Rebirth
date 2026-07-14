@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 
 class GrowthPage extends StatelessWidget {
   const GrowthPage({super.key});
@@ -11,7 +12,7 @@ class GrowthPage extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('Growth', style: textTheme.headlineSmall),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs),
           Text('看见缓慢而真实的变化。', style: textTheme.bodyMedium),
         ],
       ),

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/today/data/today_repository_provider.dart';
+import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_repository.dart';
 import 'package:rebirth/features/today/presentation/today_history_page.dart';
@@ -73,6 +75,8 @@ void main() {
     expect(find.text('Mood 4 · Energy 3'), findsOneWidget);
     expect(find.text('科研 1小时30分钟 · 学习 0分钟'), findsOneWidget);
     expect(find.text('历史记录摘要'), findsOneWidget);
+    expect(find.text('已记录'), findsOneWidget);
+    expect(find.text('草稿'), findsNothing);
   });
 
   testWidgets('history item opens a complete read-only detail', (tester) async {
@@ -96,7 +100,7 @@ void main() {
       '睡眠时长',
       '运动时长',
       '身体状态',
-      '已完成',
+      '已记录',
       '1小时30分钟',
       '7小时30分钟',
       '30分钟',
@@ -117,6 +121,10 @@ void main() {
     );
     expect(
       find.descendant(of: dialog, matching: find.text('删除')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('草稿')),
       findsNothing,
     );
   });
@@ -148,7 +156,12 @@ Future<void> _pumpHistoryPage(
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [todayRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        todayRepositoryProvider.overrideWithValue(repository),
+        dateTimeServiceProvider.overrideWithValue(
+          DateTimeService(now: () => DateTime(2026, 7, 14, 9)),
+        ),
+      ],
       child: const MaterialApp(home: Scaffold(body: TodayHistoryPage())),
     ),
   );

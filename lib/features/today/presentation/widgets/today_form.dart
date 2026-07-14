@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 import 'package:rebirth/shared/widgets/duration_input_field.dart';
@@ -73,11 +74,13 @@ class _TodayFormState extends State<TodayForm> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        padding: AppLayout.pagePadding,
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
+              constraints: const BoxConstraints(
+                maxWidth: AppLayout.maxContentWidth,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

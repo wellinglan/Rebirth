@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -11,7 +12,7 @@ class ProfilePage extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('Profile', style: textTheme.headlineSmall),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs),
           Text('这里属于你。', style: textTheme.bodyMedium),
         ],
       ),

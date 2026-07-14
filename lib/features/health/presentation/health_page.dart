@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/health/domain/health_save_data.dart';
 
 import 'health_controller.dart';
@@ -29,9 +30,8 @@ class HealthPage extends ConsumerWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               key: const ValueKey('retryHealthButton'),
-              onPressed: () => ref
-                  .read(healthControllerProvider.notifier)
-                  .reload(),
+              onPressed: () =>
+                  ref.read(healthControllerProvider.notifier).reload(),
               icon: const Icon(Icons.refresh),
               label: const Text('重试'),
             ),
@@ -40,9 +40,8 @@ class HealthPage extends ConsumerWidget {
       ),
       data: (value) => _HealthContent(
         state: value,
-        onSave: (data) => ref
-            .read(healthControllerProvider.notifier)
-            .saveToday(data),
+        onSave: (data) =>
+            ref.read(healthControllerProvider.notifier).saveToday(data),
       ),
     );
   }
@@ -58,15 +57,20 @@ class _HealthContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       key: const ValueKey('healthDataState'),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
+      padding: AppLayout.pagePadding,
       children: [
         Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 840),
+            constraints: const BoxConstraints(
+              maxWidth: AppLayout.wideContentWidth,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Health', style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  'Health',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '记录身体状态与恢复质量',
@@ -74,17 +78,17 @@ class _HealthContent extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppLayout.sectionGap),
                 HealthForm(
                   entry: state.today,
                   isSaving: state.isSaving,
                   onSave: onSave,
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: AppLayout.sectionGap),
                 Text('近 7 日摘要', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppLayout.cardGap),
                 HealthSummaryCards(summary: state.summary),
-                const SizedBox(height: 36),
+                const SizedBox(height: AppLayout.sectionGap),
                 Text('近 30 日历史', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 HealthHistoryList(entries: state.recentEntries),

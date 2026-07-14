@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 
+import 'journal_history_formatters.dart';
+
 class JournalEntryDetailDialog extends StatelessWidget {
-  const JournalEntryDetailDialog({required this.entry, super.key});
+  const JournalEntryDetailDialog({
+    required this.entry,
+    required this.today,
+    super.key,
+  });
 
   final JournalEntry entry;
+  final String today;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +42,7 @@ class JournalEntryDetailDialog extends StatelessWidget {
                 answer: entry.tomorrowAdjustment,
               ),
               Text(
-                entry.status == JournalEntryStatus.completed ? '已完成' : '草稿',
+                journalHistoryStatusLabel(entry: entry, today: today),
                 style: Theme.of(context).textTheme.labelLarge,
               ),
             ],
@@ -65,15 +72,22 @@ class _DetailAnswer extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(question, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 6),
+          Text(
+            question,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 5),
           Text(
             isEmpty ? '未填写' : text,
             style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w400,
               color: isEmpty ? theme.colorScheme.onSurfaceVariant : null,
             ),
           ),

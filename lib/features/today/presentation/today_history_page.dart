@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 
 import 'today_history_controller.dart';
@@ -12,6 +13,7 @@ class TodayHistoryPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(todayHistoryControllerProvider);
+    final today = ref.watch(dateTimeServiceProvider).currentLocalDateString();
 
     return SafeArea(
       key: const ValueKey('todayHistoryPage'),
@@ -28,10 +30,7 @@ class TodayHistoryPage extends ConsumerWidget {
                   icon: const Icon(Icons.arrow_back),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  '历史记录',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
+                Text('历史记录', style: Theme.of(context).textTheme.headlineSmall),
               ],
             ),
           ),
@@ -75,7 +74,8 @@ class TodayHistoryPage extends ConsumerWidget {
                     )
                   : TodayHistoryList(
                       entries: entries,
-                      onEntryTap: (entry) => _showDetail(context, entry),
+                      today: today,
+                      onEntryTap: (entry) => _showDetail(context, entry, today),
                     ),
             ),
           ),
@@ -84,10 +84,14 @@ class TodayHistoryPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _showDetail(BuildContext context, TodayEntry entry) {
+  Future<void> _showDetail(
+    BuildContext context,
+    TodayEntry entry,
+    String today,
+  ) {
     return showDialog<void>(
       context: context,
-      builder: (context) => TodayEntryDetailDialog(entry: entry),
+      builder: (context) => TodayEntryDetailDialog(entry: entry, today: today),
     );
   }
 }

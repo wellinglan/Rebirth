@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 
 import 'journal_history_card.dart';
@@ -7,22 +8,26 @@ import 'journal_history_card.dart';
 class JournalHistoryList extends StatelessWidget {
   const JournalHistoryList({
     required this.state,
+    required this.today,
     required this.onRetry,
     required this.onEntryTap,
     super.key,
   });
 
   final AsyncValue<List<JournalEntry>> state;
+  final String today;
   final VoidCallback onRetry;
   final ValueChanged<JournalEntry> onEntryTap;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      padding: AppLayout.pagePadding.copyWith(top: AppLayout.sectionGap),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(
+            maxWidth: AppLayout.maxContentWidth,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -60,6 +65,7 @@ class JournalHistoryList extends StatelessWidget {
                           for (final entry in entries)
                             JournalHistoryCard(
                               entry: entry,
+                              today: today,
                               onTap: () => onEntryTap(entry),
                             ),
                         ],

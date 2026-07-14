@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/journal/data/journal_repository_provider.dart';
+import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'package:rebirth/features/journal/presentation/journal_page.dart';
+import 'package:rebirth/features/journal/presentation/widgets/journal_entry_detail_dialog.dart';
 
 void main() {
   testWidgets('JournalPage shows loading', (tester) async {
@@ -115,6 +118,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('完成关键实验'), findsWidgets);
+    expect(find.text('已复盘'), findsOneWidget);
+    expect(find.text('草稿'), findsNothing);
   });
 
   testWidgets('tapping history opens a read-only detail dialog', (
@@ -162,6 +167,40 @@ void main() {
       find.descendant(of: dialog, matching: find.text('优先整理数据')),
       findsOneWidget,
     );
+    expect(
+      find.descendant(of: dialog, matching: find.text('已复盘')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('草稿')),
+      findsNothing,
+    );
+
+    final question = tester.widget<Text>(
+      find.descendant(of: dialog, matching: find.text('今天最重要的完成是什么？')),
+    );
+    final answer = tester.widget<Text>(
+      find.descendant(of: dialog, matching: find.text('完成关键实验')),
+    );
+    expect(question.style?.fontWeight, FontWeight.w600);
+    expect(answer.style?.fontWeight, FontWeight.w400);
+  });
+
+  testWidgets('detail keeps empty answers readable', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: JournalEntryDetailDialog(
+            entry: _emptyEntry(),
+            today: '2026-07-14',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('未填写'), findsNWidgets(5));
+    expect(find.text('空复盘'), findsOneWidget);
+    expect(find.text('草稿'), findsNothing);
   });
 
   testWidgets('all-empty form shows validation and does not save', (
@@ -301,7 +340,12 @@ Future<void> _pumpJournalPage(
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [journalRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        journalRepositoryProvider.overrideWithValue(repository),
+        dateTimeServiceProvider.overrideWithValue(
+          DateTimeService(now: () => DateTime(2026, 7, 14, 9)),
+        ),
+      ],
       child: const MaterialApp(home: Scaffold(body: JournalPage())),
     ),
   );
@@ -339,6 +383,24 @@ JournalEntry _sampleEntry() {
     emotionSource: '对进度的担心',
     learning: '先验证最小假设',
     tomorrowAdjustment: '优先整理数据',
+    status: JournalEntryStatus.draft,
+    createdAt: 1,
+    updatedAt: 1,
+  );
+}
+
+JournalEntry _emptyEntry() {
+  return const JournalEntry(
+    id: 'empty-journal-id',
+    userId: 'user-id',
+    todayRecordId: null,
+    entryDate: '2026-07-13',
+    timezoneOffsetMinutes: 480,
+    mostImportantAccomplishment: null,
+    mostDrainingEvent: null,
+    emotionSource: null,
+    learning: null,
+    tomorrowAdjustment: null,
     status: JournalEntryStatus.draft,
     createdAt: 1,
     updatedAt: 1,

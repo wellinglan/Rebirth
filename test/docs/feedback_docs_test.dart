@@ -16,8 +16,14 @@ void main() {
     }
 
     expect(readme.readAsStringSync(), contains('独立的 feedback 文件'));
-    expect(today.readAsStringSync(), contains('过了一天仍显示“草稿”'));
-    expect(journal.readAsStringSync(), contains('# Journal Feedback'));
+    final todayText = today.readAsStringSync();
+    expect(todayText, contains('过了一天仍显示“草稿”'));
+    expect(todayText, contains('Today 与 Health 数据同步延迟'));
+    expect(todayText, contains('Today 历史记录包含今天'));
+    expect(todayText, contains('Sprint UI-1B 实现'));
+    final journalText = journal.readAsStringSync();
+    expect(journalText, contains('# Journal Feedback'));
+    expect(journalText, contains('Journal 历史详情问答层级不清晰'));
     final planText = plan.readAsStringSync();
     expect(planText, contains('日期输入不友好'));
     expect(planText, contains('custom / 自定义'));
@@ -28,8 +34,10 @@ void main() {
     expect(planText, contains('日期选择组件响应延迟明显'));
     expect(planText, contains('缺少归档功能'));
     expect(planText, contains('缺少分类、筛选、排序能力'));
-    expect(health.readAsStringSync(), contains('# Health Feedback'));
-    expect(health.readAsStringSync(), contains('Sprint 5A'));
+    final healthText = health.readAsStringSync();
+    expect(healthText, contains('# Health Feedback'));
+    expect(healthText, contains('Health 与 Today 数据同步延迟'));
+    expect(healthText, contains('Health 历史记录包含今天'));
     expect(
       legacy.readAsStringSync(),
       contains('后续以 `docs/backlog/feedback/` 下的模块级反馈文件为准'),

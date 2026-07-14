@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/health/data/health_repository_provider.dart';
 import 'package:rebirth/features/health/domain/health_entry.dart';
 import 'package:rebirth/features/health/domain/health_repository.dart';
@@ -15,7 +17,12 @@ void main() {
   setUp(() {
     repository = _FakeHealthRepository();
     container = ProviderContainer(
-      overrides: [healthRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        healthRepositoryProvider.overrideWithValue(repository),
+        dateTimeServiceProvider.overrideWithValue(
+          DateTimeService(now: () => DateTime(2026, 7, 14, 9)),
+        ),
+      ],
     );
   });
 
@@ -30,20 +37,23 @@ void main() {
 
     expect(state.today.recordDate, '2026-07-14');
     expect(state.recentEntries, hasLength(1));
-    expect(state.summary.recordsCount, 1);
+    expect(state.recentEntries.single.recordDate, '2026-07-13');
+    expect(state.summary.recordsCount, 2);
     expect(repository.getTodayCalls, 1);
     expect(repository.listRecentCalls, 2);
   });
 
   test('successful save refreshes all state sections', () async {
     await container.read(healthControllerProvider.future);
-    await container.read(healthControllerProvider.notifier).saveToday(
+    await container
+        .read(healthControllerProvider.notifier)
+        .saveToday(
           HealthSaveData(recordDate: '2026-07-14', waterIntakeMl: 2000),
         );
 
     final state = container.read(healthControllerProvider).requireValue;
     expect(state.today.waterIntakeMl, 2000);
-    expect(state.recentEntries.single.waterIntakeMl, 2000);
+    expect(state.recentEntries.single.recordDate, '2026-07-13');
     expect(state.summary.averageWaterIntakeMl, 2000);
     expect(state.isSaving, isFalse);
   });
@@ -53,7 +63,9 @@ void main() {
     repository.saveError = StateError('save failed');
 
     await expectLater(
-      container.read(healthControllerProvider.notifier).saveToday(
+      container
+          .read(healthControllerProvider.notifier)
+          .saveToday(
             HealthSaveData(recordDate: '2026-07-14', waterIntakeMl: 2500),
           ),
       throwsStateError,
@@ -76,12 +88,21 @@ void main() {
 
   test('saveForDate accepts a specified date', () async {
     await container.read(healthControllerProvider.future);
-    await container.read(healthControllerProvider.notifier).saveForDate(
-          HealthSaveData(recordDate: '2026-07-13', weightKg: 65.5),
-        );
+    await container
+        .read(healthControllerProvider.notifier)
+        .saveForDate(HealthSaveData(recordDate: '2026-07-13', weightKg: 65.5));
 
     expect(repository.lastSaved?.recordDate, '2026-07-13');
     expect(repository.savedByDate['2026-07-13']?.weightKg, 65.5);
+  });
+
+  test('history is empty when the only metric record is today', () async {
+    repository.includePastEntry = false;
+
+    final state = await container.read(healthControllerProvider.future);
+
+    expect(state.recentEntries, isEmpty);
+    expect(state.summary.recordsCount, 1);
   });
 }
 
@@ -93,6 +114,7 @@ final class _FakeHealthRepository implements HealthRepository {
   HealthSaveData? lastSaved;
   int getTodayCalls = 0;
   int listRecentCalls = 0;
+  bool includePastEntry = true;
 
   @override
   Future<HealthEntry> getToday() async {
@@ -105,13 +127,20 @@ final class _FakeHealthRepository implements HealthRepository {
 
   @override
   Future<HealthEntry?> getByDate(String recordDate) async =>
-      savedByDate[recordDate] ?? (recordDate == today.recordDate ? today : null);
+      savedByDate[recordDate] ??
+      (recordDate == today.recordDate ? today : null);
 
   @override
   Future<List<HealthEntry>> listRecent({int days = 30}) async {
     listRecentCalls += 1;
     final current = savedByDate[today.recordDate] ?? today;
-    return [current, ...savedByDate.values.where((entry) => entry.id != current.id)];
+    return [
+      current,
+      if (includePastEntry) _entry(date: '2026-07-13', water: 2000),
+      ...savedByDate.values.where(
+        (entry) => entry.id != current.id && entry.recordDate != '2026-07-13',
+      ),
+    ];
   }
 
   @override

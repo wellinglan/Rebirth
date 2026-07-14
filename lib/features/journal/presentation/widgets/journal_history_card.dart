@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:rebirth/core/theme/app_typography.dart';
+import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
+
+import 'journal_history_formatters.dart';
 
 class JournalHistoryCard extends StatelessWidget {
   const JournalHistoryCard({
     required this.entry,
+    required this.today,
     required this.onTap,
     super.key,
   });
 
   final JournalEntry entry;
+  final String today;
   final VoidCallback onTap;
 
   @override
@@ -18,10 +23,10 @@ class JournalHistoryCard extends StatelessWidget {
 
     return Card(
       key: ValueKey('journalHistoryItem_${entry.id}'),
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: AppLayout.cardGap),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: ListTile(
@@ -42,7 +47,7 @@ class JournalHistoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                entry.status == JournalEntryStatus.completed ? '已完成' : '草稿',
+                journalHistoryStatusLabel(entry: entry, today: today),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
