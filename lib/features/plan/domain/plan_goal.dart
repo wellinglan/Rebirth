@@ -1,4 +1,4 @@
-enum PlanGoalLevel { life, year, quarter, month, week, day }
+enum PlanGoalLevel { life, year, quarter, month, week, day, custom }
 
 enum PlanGoalStatus { notStarted, inProgress, completed, paused, cancelled }
 
@@ -24,6 +24,7 @@ PlanGoalLevel planGoalLevelFromDatabase(String value) {
     'month' => PlanGoalLevel.month,
     'week' => PlanGoalLevel.week,
     'day' => PlanGoalLevel.day,
+    'custom' => PlanGoalLevel.custom,
     _ => throw StateError('Unknown plan goal level: $value'),
   };
 }

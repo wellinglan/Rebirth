@@ -10,6 +10,7 @@ import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
 import 'package:rebirth/features/plan/domain/plan_repository.dart';
 import 'package:rebirth/features/plan/presentation/plan_controller.dart';
+import 'package:rebirth/features/plan/presentation/plan_view_state.dart';
 
 void main() {
   late AppDatabase database;
@@ -32,16 +33,19 @@ void main() {
     await database.close();
   });
 
-  test('initially loads an empty root goal list', () async {
+  test('initially loads an empty root view', () async {
     expect(
       container.read(planControllerProvider),
-      isA<AsyncLoading<List<PlanGoal>>>(),
+      isA<AsyncLoading<PlanViewState>>(),
     );
 
-    expect(await container.read(planControllerProvider.future), isEmpty);
+    final view = await container.read(planControllerProvider.future);
+    expect(view.goals, isEmpty);
+    expect(view.breadcrumbs, isEmpty);
+    expect(view.isRoot, isTrue);
   });
 
-  test('createGoal refreshes the root list', () async {
+  test('createGoal at root creates a root goal and refreshes', () async {
     await container.read(planControllerProvider.future);
 
     await container
@@ -50,47 +54,103 @@ void main() {
           PlanGoalSaveData(title: '年度研究方向', goalLevel: PlanGoalLevel.year),
         );
 
-    final goals = container.read(planControllerProvider).requireValue;
-    expect(goals, hasLength(1));
-    expect(goals.single.title, '年度研究方向');
+    final view = container.read(planControllerProvider).requireValue;
+    expect(view.goals, hasLength(1));
+    expect(view.goals.single.title, '年度研究方向');
+    expect(view.goals.single.parentGoalId, isNull);
   });
 
-  test('updateStatus refreshes the current list', () async {
+  test('openChildren and createGoal attach the current parent', () async {
+    final repository = container.read(planRepositoryProvider);
+    final parent = await repository.createGoal(
+      PlanGoalSaveData(title: '年度目标', goalLevel: PlanGoalLevel.year),
+    );
     await container.read(planControllerProvider.future);
     final controller = container.read(planControllerProvider.notifier);
-    await controller.createGoal(
-      PlanGoalSaveData(title: '推进实验', goalLevel: PlanGoalLevel.quarter),
+
+    await controller.openChildren(parent);
+    expect(
+      container.read(planControllerProvider).requireValue.currentParent,
+      parent,
     );
-    final id = container.read(planControllerProvider).requireValue.single.id;
 
-    await controller.updateStatus(id: id, status: PlanGoalStatus.completed);
+    await controller.createGoal(
+      PlanGoalSaveData(title: '季度子目标', goalLevel: PlanGoalLevel.quarter),
+    );
 
-    final goal = container.read(planControllerProvider).requireValue.single;
-    expect(goal.status, PlanGoalStatus.completed);
-    expect(goal.completedAt, isNotNull);
+    final view = container.read(planControllerProvider).requireValue;
+    expect(view.goals, hasLength(1));
+    expect(view.goals.single.parentGoalId, parent.id);
+    expect(view.goals.single.title, '季度子目标');
   });
 
-  test('updateGoal refreshes the current list', () async {
-    await container.read(planControllerProvider.future);
-    final controller = container.read(planControllerProvider.notifier);
-    await controller.createGoal(
-      PlanGoalSaveData(title: '旧标题', goalLevel: PlanGoalLevel.month),
+  test('back and breadcrumb navigation restore the expected level', () async {
+    final repository = container.read(planRepositoryProvider);
+    final root = await repository.createGoal(
+      PlanGoalSaveData(title: '人生方向', goalLevel: PlanGoalLevel.life),
     );
-    final id = container.read(planControllerProvider).requireValue.single.id;
-
-    await controller.updateGoal(
-      id: id,
-      data: PlanGoalSaveData(
-        title: '新标题',
-        description: '阶段说明',
+    final child = await repository.createGoal(
+      PlanGoalSaveData(
+        parentGoalId: root.id,
+        title: '年度目标',
+        goalLevel: PlanGoalLevel.year,
+      ),
+    );
+    await repository.createGoal(
+      PlanGoalSaveData(
+        parentGoalId: child.id,
+        title: '季度目标',
         goalLevel: PlanGoalLevel.quarter,
       ),
     );
+    await container.read(planControllerProvider.future);
+    final controller = container.read(planControllerProvider.notifier);
 
-    final goal = container.read(planControllerProvider).requireValue.single;
-    expect(goal.title, '新标题');
-    expect(goal.description, '阶段说明');
-    expect(goal.goalLevel, PlanGoalLevel.quarter);
+    await controller.openChildren(root);
+    await controller.openChildren(child);
+    var view = container.read(planControllerProvider).requireValue;
+    expect(view.breadcrumbs, [root, child]);
+    expect(view.goals.single.title, '季度目标');
+
+    await controller.navigateToBreadcrumb(0);
+    view = container.read(planControllerProvider).requireValue;
+    expect(view.breadcrumbs, [root]);
+    expect(view.goals.single.id, child.id);
+
+    await controller.navigateBack();
+    view = container.read(planControllerProvider).requireValue;
+    expect(view.isRoot, isTrue);
+    expect(view.goals.single.id, root.id);
+  });
+
+  test('updateStatus refreshes the current child list', () async {
+    final repository = container.read(planRepositoryProvider);
+    final parent = await repository.createGoal(
+      PlanGoalSaveData(title: '父目标', goalLevel: PlanGoalLevel.year),
+    );
+    final child = await repository.createGoal(
+      PlanGoalSaveData(
+        parentGoalId: parent.id,
+        title: '推进实验',
+        goalLevel: PlanGoalLevel.quarter,
+      ),
+    );
+    await container.read(planControllerProvider.future);
+    final controller = container.read(planControllerProvider.notifier);
+    await controller.openChildren(parent);
+
+    await controller.updateStatus(
+      id: child.id,
+      status: PlanGoalStatus.completed,
+    );
+
+    final goal = container
+        .read(planControllerProvider)
+        .requireValue
+        .goals
+        .single;
+    expect(goal.status, PlanGoalStatus.completed);
+    expect(goal.completedAt, isNotNull);
   });
 
   test('deleteGoal refreshes the current list', () async {
@@ -99,38 +159,23 @@ void main() {
     await controller.createGoal(
       PlanGoalSaveData(title: '待删除目标', goalLevel: PlanGoalLevel.month),
     );
-    final id = container.read(planControllerProvider).requireValue.single.id;
+    final id = container
+        .read(planControllerProvider)
+        .requireValue
+        .goals
+        .single
+        .id;
 
     await controller.deleteGoal(id);
 
-    expect(container.read(planControllerProvider).requireValue, isEmpty);
-  });
-
-  test('loadChildren switches to and refreshes the child list', () async {
-    await container.read(planControllerProvider.future);
-    final controller = container.read(planControllerProvider.notifier);
-    await controller.createGoal(
-      PlanGoalSaveData(title: '父目标', goalLevel: PlanGoalLevel.year),
-    );
-    final parent = container.read(planControllerProvider).requireValue.single;
-    await controller.createGoal(
-      PlanGoalSaveData(
-        parentGoalId: parent.id,
-        title: '子目标',
-        goalLevel: PlanGoalLevel.quarter,
-      ),
-    );
-
-    await controller.loadChildren(parent.id);
-
-    final children = container.read(planControllerProvider).requireValue;
-    expect(children, hasLength(1));
-    expect(children.single.parentGoalId, parent.id);
-    expect(children.single.title, '子目标');
+    expect(container.read(planControllerProvider).requireValue.goals, isEmpty);
   });
 
   test('reload reads goals saved outside the controller', () async {
-    expect(await container.read(planControllerProvider.future), isEmpty);
+    expect(
+      (await container.read(planControllerProvider.future)).goals,
+      isEmpty,
+    );
     await container
         .read(planRepositoryProvider)
         .createGoal(
@@ -140,7 +185,7 @@ void main() {
     await container.read(planControllerProvider.notifier).reload();
 
     expect(
-      container.read(planControllerProvider).requireValue.single.title,
+      container.read(planControllerProvider).requireValue.goals.single.title,
       '外部创建',
     );
   });
@@ -161,20 +206,20 @@ void main() {
     );
     expect(
       errorContainer.read(planControllerProvider),
-      isA<AsyncError<List<PlanGoal>>>(),
+      isA<AsyncError<PlanViewState>>(),
     );
   });
 
-  test('mutation failure is rethrown without clearing existing data', () async {
+  test('mutation failure is rethrown without clearing existing view', () async {
     final existing = _sampleGoal();
     final repository = _FailingPlanRepository(goals: [existing]);
     final errorContainer = ProviderContainer(
       overrides: [planRepositoryProvider.overrideWithValue(repository)],
     );
     addTearDown(errorContainer.dispose);
-    expect(await errorContainer.read(planControllerProvider.future), [
-      existing,
-    ]);
+    final initialView = await errorContainer.read(
+      planControllerProvider.future,
+    );
 
     await expectLater(
       errorContainer
@@ -184,13 +229,15 @@ void main() {
           ),
       throwsA(isA<StateError>()),
     );
+
     expect(
       errorContainer.read(planControllerProvider),
-      isA<AsyncData<List<PlanGoal>>>(),
+      isA<AsyncData<PlanViewState>>(),
     );
-    expect(errorContainer.read(planControllerProvider).requireValue, [
-      existing,
-    ]);
+    expect(
+      errorContainer.read(planControllerProvider).requireValue,
+      initialView,
+    );
   });
 
   test('reload failure enters AsyncError', () async {
@@ -209,7 +256,7 @@ void main() {
 
     expect(
       errorContainer.read(planControllerProvider),
-      isA<AsyncError<List<PlanGoal>>>(),
+      isA<AsyncError<PlanViewState>>(),
     );
   });
 }
@@ -226,7 +273,15 @@ final class _FailingPlanRepository implements PlanRepository {
     if (failInitialLoad || loadError != null) {
       throw loadError ?? StateError('plan load failed for test');
     }
-    return goals;
+    return goals.where((goal) => goal.parentGoalId == null).toList();
+  }
+
+  @override
+  Future<List<PlanGoal>> listChildren(String parentGoalId) async {
+    if (loadError != null) {
+      throw loadError!;
+    }
+    return goals.where((goal) => goal.parentGoalId == parentGoalId).toList();
   }
 
   @override

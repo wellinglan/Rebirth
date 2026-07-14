@@ -8,6 +8,7 @@ String planGoalLevelLabel(PlanGoalLevel level) {
     PlanGoalLevel.month => '月度',
     PlanGoalLevel.week => '每周',
     PlanGoalLevel.day => '每日',
+    PlanGoalLevel.custom => '自定义',
   };
 }
 

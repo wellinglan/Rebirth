@@ -59,6 +59,21 @@ void main() {
     expect(raw.originDeviceId, settings.localInstallationId);
   });
 
+  test('new schema creates and reads a custom goal', () async {
+    final created = await repository.createGoal(
+      PlanGoalSaveData(
+        title: '自定义周期目标',
+        goalLevel: PlanGoalLevel.custom,
+        startDate: '2026-07-14',
+        targetDate: '2026-08-20',
+      ),
+    );
+
+    final loaded = await repository.getById(created.id);
+    expect(loaded?.goalLevel, PlanGoalLevel.custom);
+    expect(loaded?.targetDate, '2026-08-20');
+  });
+
   test('empty title fails before any database write', () async {
     expect(
       () => PlanGoalSaveData(title: '   ', goalLevel: PlanGoalLevel.life),
@@ -315,8 +330,8 @@ void main() {
     );
   });
 
-  test('schema version remains 1', () {
-    expect(database.schemaVersion, 1);
+  test('schema version is 2', () {
+    expect(database.schemaVersion, 2);
   });
 }
 

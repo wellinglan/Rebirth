@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
+import 'package:rebirth/features/plan/presentation/widgets/plan_goal_labels.dart';
 
 void main() {
   test('normalizes title and blank description', () {
@@ -72,6 +73,12 @@ void main() {
     for (final level in PlanGoalLevel.values) {
       expect(planGoalLevelFromDatabase(level.databaseValue), level);
     }
+  });
+
+  test('custom goal level maps to its stable database value', () {
+    expect(PlanGoalLevel.custom.databaseValue, 'custom');
+    expect(planGoalLevelFromDatabase('custom'), PlanGoalLevel.custom);
+    expect(planGoalLevelLabel(PlanGoalLevel.custom), '自定义');
   });
 
   test('goal status enum maps to and from database strings', () {

@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 1 with all core tables', () async {
+  test('creates schema version 2 with all core tables', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -39,7 +39,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 1);
+    expect(versionRow.read<int>('user_version'), 2);
   });
 
   test('bootstrap creates one default user and matching settings', () async {

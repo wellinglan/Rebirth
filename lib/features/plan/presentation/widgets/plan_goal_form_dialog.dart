@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
+import 'package:rebirth/features/plan/domain/plan_goal_date_policy.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
 
+import 'plan_date_parts_field.dart';
 import 'plan_goal_labels.dart';
 
 class PlanGoalFormDialog extends StatefulWidget {
   const PlanGoalFormDialog({
     required this.existingGoal,
+    required this.parentGoalId,
+    required this.defaultStartDate,
+    required this.defaultGoalLevel,
     required this.onSubmit,
     super.key,
   });
 
   final PlanGoal? existingGoal;
+  final String? parentGoalId;
+  final String defaultStartDate;
+  final PlanGoalLevel defaultGoalLevel;
   final Future<void> Function(PlanGoalSaveData data) onSubmit;
 
   @override
@@ -20,19 +27,20 @@ class PlanGoalFormDialog extends StatefulWidget {
 }
 
 class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
-  static const _dateTimeService = DateTimeService();
+  static const _datePolicy = PlanGoalDatePolicy();
 
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _startDateController;
-  late final TextEditingController _targetDateController;
-  late final TextEditingController _sortOrderController;
+  late final TextEditingController _priorityController;
   late PlanGoalLevel _goalLevel;
   late PlanGoalStatus _status;
+  late String? _startDate;
+  late String? _targetDate;
   var _isSaving = false;
 
   bool get _isEditing => widget.existingGoal != null;
+  bool get _targetDateIsEditable => _goalLevel == PlanGoalLevel.custom;
 
   @override
   void initState() {
@@ -42,22 +50,22 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
     _descriptionController = TextEditingController(
       text: goal?.description ?? '',
     );
-    _startDateController = TextEditingController(text: goal?.startDate ?? '');
-    _targetDateController = TextEditingController(text: goal?.targetDate ?? '');
-    _sortOrderController = TextEditingController(
+    _priorityController = TextEditingController(
       text: (goal?.sortOrder ?? 0).toString(),
     );
-    _goalLevel = goal?.goalLevel ?? PlanGoalLevel.month;
+    _goalLevel = goal?.goalLevel ?? widget.defaultGoalLevel;
     _status = goal?.status ?? PlanGoalStatus.notStarted;
+    _startDate = goal?.startDate ?? widget.defaultStartDate;
+    _targetDate = _goalLevel == PlanGoalLevel.custom
+        ? goal?.targetDate
+        : _calculateTargetDate();
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _startDateController.dispose();
-    _targetDateController.dispose();
-    _sortOrderController.dispose();
+    _priorityController.dispose();
     super.dispose();
   }
 
@@ -69,7 +77,7 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
         key: const ValueKey('planGoalFormDialog'),
         title: Text(_isEditing ? '编辑目标' : '新建目标'),
         content: SizedBox(
-          width: 520,
+          width: 600,
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -121,7 +129,7 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
                         ? null
                         : (value) {
                             if (value != null) {
-                              setState(() => _goalLevel = value);
+                              _changeGoalLevel(value);
                             }
                           },
                   ),
@@ -149,45 +157,40 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
                             }
                           },
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
+                  const SizedBox(height: 20),
+                  PlanDatePartsField(
                     key: const ValueKey('planGoalStartDateField'),
-                    controller: _startDateController,
-                    keyboardType: TextInputType.datetime,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: '开始日期（可选）',
-                      hintText: 'YYYY-MM-DD',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: _validateDate,
+                    fieldId: 'planStartDate',
+                    label: '开始日期',
+                    value: _startDate,
+                    enabled: !_isSaving,
+                    isRequired: true,
+                    onChanged: _changeStartDate,
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
+                  const SizedBox(height: 20),
+                  PlanDatePartsField(
                     key: const ValueKey('planGoalTargetDateField'),
-                    controller: _targetDateController,
-                    keyboardType: TextInputType.datetime,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: '目标日期（可选）',
-                      hintText: 'YYYY-MM-DD',
-                      border: OutlineInputBorder(),
-                    ),
+                    fieldId: 'planTargetDate',
+                    label: _targetDateIsEditable ? '目标日期（可选）' : '目标日期（自动）',
+                    value: _targetDate,
+                    enabled: !_isSaving && _targetDateIsEditable,
                     validator: _validateTargetDate,
+                    onChanged: (value) => setState(() => _targetDate = value),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    key: const ValueKey('planGoalSortOrderField'),
-                    controller: _sortOrderController,
+                    key: const ValueKey('planGoalPriorityField'),
+                    controller: _priorityController,
                     keyboardType: TextInputType.number,
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(
-                      labelText: '排序',
+                      labelText: '优先级',
+                      helperText: '数值越小越靠前',
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      final sortOrder = int.tryParse(value?.trim() ?? '');
-                      return sortOrder == null || sortOrder < 0
+                      final priority = int.tryParse(value?.trim() ?? '');
+                      return priority == null || priority < 0
                           ? '请输入非负整数'
                           : null;
                     },
@@ -229,30 +232,37 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
     );
   }
 
-  String? _validateDate(String? value) {
-    final date = value?.trim() ?? '';
-    if (date.isEmpty) {
+  void _changeGoalLevel(PlanGoalLevel value) {
+    setState(() {
+      _goalLevel = value;
+      if (value != PlanGoalLevel.custom) {
+        _targetDate = _calculateTargetDate();
+      }
+    });
+  }
+
+  void _changeStartDate(String? value) {
+    setState(() {
+      _startDate = value;
+      if (_goalLevel != PlanGoalLevel.custom) {
+        _targetDate = _calculateTargetDate();
+      }
+    });
+  }
+
+  String? _calculateTargetDate() {
+    final startDate = _startDate;
+    if (startDate == null) {
       return null;
     }
-    return _dateTimeService.isValidLocalDateString(date)
-        ? null
-        : '请输入 YYYY-MM-DD 格式日期';
+    return _datePolicy.targetDate(level: _goalLevel, startDate: startDate);
   }
 
   String? _validateTargetDate(String? value) {
-    final formatError = _validateDate(value);
-    if (formatError != null) {
-      return formatError;
+    if (!_targetDateIsEditable || value == null || _startDate == null) {
+      return null;
     }
-    final startDate = _nullableText(_startDateController.text);
-    final targetDate = _nullableText(value ?? '');
-    if (startDate != null &&
-        targetDate != null &&
-        _dateTimeService.isValidLocalDateString(startDate) &&
-        targetDate.compareTo(startDate) < 0) {
-      return '目标日期不能早于开始日期';
-    }
-    return null;
+    return value.compareTo(_startDate!) < 0 ? '目标日期不能早于开始日期' : null;
   }
 
   Future<void> _submit() async {
@@ -261,14 +271,14 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
     }
 
     final data = PlanGoalSaveData(
-      parentGoalId: widget.existingGoal?.parentGoalId,
+      parentGoalId: widget.existingGoal?.parentGoalId ?? widget.parentGoalId,
       title: _titleController.text,
       description: _descriptionController.text,
       goalLevel: _goalLevel,
       status: _status,
-      startDate: _nullableText(_startDateController.text),
-      targetDate: _nullableText(_targetDateController.text),
-      sortOrder: int.parse(_sortOrderController.text.trim()),
+      startDate: _startDate,
+      targetDate: _targetDate,
+      sortOrder: int.parse(_priorityController.text.trim()),
     );
 
     setState(() => _isSaving = true);
@@ -290,10 +300,5 @@ class _PlanGoalFormDialogState extends State<PlanGoalFormDialog> {
         setState(() => _isSaving = false);
       }
     }
-  }
-
-  String? _nullableText(String value) {
-    final text = value.trim();
-    return text.isEmpty ? null : text;
   }
 }

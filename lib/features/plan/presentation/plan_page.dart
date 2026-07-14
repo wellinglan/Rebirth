@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
+import 'package:rebirth/features/plan/domain/plan_goal_date_policy.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
 
 import 'plan_controller.dart';
+import 'plan_view_state.dart';
 import 'widgets/plan_goal_card.dart';
 import 'widgets/plan_goal_form_dialog.dart';
 
@@ -12,15 +15,27 @@ class PlanPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goals = ref.watch(planControllerProvider);
+    final asyncView = ref.watch(planControllerProvider);
+    final view = asyncView.asData?.value;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _PlanHeader(onCreate: () => _openGoalForm(context, ref)),
+        _PlanHeader(
+          view: view,
+          onCreate: () => _openGoalForm(
+            context,
+            ref,
+            parentGoalId: view?.currentParentGoalId,
+            defaultGoalLevel: _defaultChildLevel(view?.currentParent),
+          ),
+          onBack: () => _navigateBack(ref),
+          onRoot: () => _navigateToBreadcrumb(ref, -1),
+          onBreadcrumb: (index) => _navigateToBreadcrumb(ref, index),
+        ),
         const Divider(height: 1),
         Expanded(
-          child: goals.when(
+          child: asyncView.when(
             loading: () => const Center(
               key: ValueKey('planLoadingState'),
               child: CircularProgressIndicator(),
@@ -40,11 +55,32 @@ class PlanPage extends ConsumerWidget {
                 ],
               ),
             ),
-            data: (items) => items.isEmpty
-                ? _PlanEmptyState(onCreate: () => _openGoalForm(context, ref))
+            data: (data) => data.goals.isEmpty
+                ? _PlanEmptyState(
+                    isRoot: data.isRoot,
+                    onCreate: () => _openGoalForm(
+                      context,
+                      ref,
+                      parentGoalId: data.currentParentGoalId,
+                      defaultGoalLevel: _defaultChildLevel(data.currentParent),
+                    ),
+                  )
                 : _PlanGoalList(
-                    goals: items,
-                    onEdit: (goal) => _openGoalForm(context, ref, goal: goal),
+                    goals: data.goals,
+                    onEdit: (goal) => _openGoalForm(
+                      context,
+                      ref,
+                      goal: goal,
+                      parentGoalId: goal.parentGoalId,
+                      defaultGoalLevel: goal.goalLevel,
+                    ),
+                    onOpenChildren: (goal) => _openChildren(ref, goal),
+                    onAddChild: (goal) => _openGoalForm(
+                      context,
+                      ref,
+                      parentGoalId: goal.id,
+                      defaultGoalLevel: _childLevelFor(goal.goalLevel),
+                    ),
                     onStatusChanged: (goal, status) =>
                         _updateStatus(context, ref, goal.id, status),
                   ),
@@ -58,16 +94,40 @@ class PlanPage extends ConsumerWidget {
     ref.read(planControllerProvider.notifier).reload().ignore();
   }
 
+  void _openChildren(WidgetRef ref, PlanGoal goal) {
+    ref.read(planControllerProvider.notifier).openChildren(goal).ignore();
+  }
+
+  void _navigateBack(WidgetRef ref) {
+    ref.read(planControllerProvider.notifier).navigateBack().ignore();
+  }
+
+  void _navigateToBreadcrumb(WidgetRef ref, int index) {
+    ref
+        .read(planControllerProvider.notifier)
+        .navigateToBreadcrumb(index)
+        .ignore();
+  }
+
   Future<void> _openGoalForm(
     BuildContext context,
     WidgetRef ref, {
     PlanGoal? goal,
+    required String? parentGoalId,
+    required PlanGoalLevel defaultGoalLevel,
   }) {
+    const datePolicy = PlanGoalDatePolicy();
+    final defaultStartDate = datePolicy.defaultStartDate(
+      ref.read(dateTimeServiceProvider),
+    );
     return showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return PlanGoalFormDialog(
           existingGoal: goal,
+          parentGoalId: parentGoalId,
+          defaultStartDate: defaultStartDate,
+          defaultGoalLevel: defaultGoalLevel,
           onSubmit: (data) => _saveGoal(ref, goal, data),
         );
       },
@@ -99,56 +159,131 @@ class PlanPage extends ConsumerWidget {
       }
     }
   }
+
+  PlanGoalLevel _defaultChildLevel(PlanGoal? parent) {
+    return parent == null
+        ? PlanGoalLevel.month
+        : _childLevelFor(parent.goalLevel);
+  }
+
+  PlanGoalLevel _childLevelFor(PlanGoalLevel parentLevel) {
+    return switch (parentLevel) {
+      PlanGoalLevel.life => PlanGoalLevel.year,
+      PlanGoalLevel.year => PlanGoalLevel.quarter,
+      PlanGoalLevel.quarter => PlanGoalLevel.month,
+      PlanGoalLevel.month => PlanGoalLevel.week,
+      PlanGoalLevel.week => PlanGoalLevel.day,
+      PlanGoalLevel.day => PlanGoalLevel.day,
+      PlanGoalLevel.custom => PlanGoalLevel.custom,
+    };
+  }
 }
 
 class _PlanHeader extends StatelessWidget {
-  const _PlanHeader({required this.onCreate});
+  const _PlanHeader({
+    required this.view,
+    required this.onCreate,
+    required this.onBack,
+    required this.onRoot,
+    required this.onBreadcrumb,
+  });
 
+  final PlanViewState? view;
   final VoidCallback onCreate;
+  final VoidCallback onBack;
+  final VoidCallback onRoot;
+  final ValueChanged<int> onBreadcrumb;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final title = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Plan', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 4),
-              Text('让今天与长期方向相连', style: Theme.of(context).textTheme.bodyMedium),
-            ],
-          );
-          final button = FilledButton.icon(
-            key: const ValueKey('newPlanGoalButton'),
-            onPressed: onCreate,
-            icon: const Icon(Icons.add),
-            label: const Text('新建目标'),
-          );
+    final currentParent = view?.currentParent;
+    final isRoot = currentParent == null;
+    final buttonLabel = isRoot ? '新建目标' : '新建子目标';
 
-          if (constraints.maxWidth < 420) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [title, const SizedBox(height: 12), button],
-            );
-          }
-          return Row(
-            children: [
-              Expanded(child: title),
-              const SizedBox(width: 16),
-              button,
-            ],
-          );
-        },
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isRoot) ...[
+            Row(
+              children: [
+                IconButton(
+                  key: const ValueKey('planBackButton'),
+                  tooltip: '返回上一级',
+                  onPressed: onBack,
+                  icon: const Icon(Icons.arrow_back),
+                ),
+                const SizedBox(width: 4),
+                TextButton(
+                  key: const ValueKey('planRootBreadcrumbButton'),
+                  onPressed: onRoot,
+                  child: const Text('Plan'),
+                ),
+                for (
+                  var index = 0;
+                  index < (view?.breadcrumbs.length ?? 0);
+                  index++
+                ) ...[
+                  const Icon(Icons.chevron_right, size: 18),
+                  TextButton(
+                    key: ValueKey('planBreadcrumb_$index'),
+                    onPressed: () => onBreadcrumb(index),
+                    child: Text(view!.breadcrumbs[index].title),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final title = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentParent?.title ?? 'Plan',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isRoot ? '让今天与长期方向相连' : '直接子目标',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              );
+              final button = FilledButton.icon(
+                key: const ValueKey('newPlanGoalButton'),
+                onPressed: onCreate,
+                icon: const Icon(Icons.add),
+                label: Text(buttonLabel),
+              );
+
+              if (constraints.maxWidth < 420) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [title, const SizedBox(height: 12), button],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  const SizedBox(width: 16),
+                  button,
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
 class _PlanEmptyState extends StatelessWidget {
-  const _PlanEmptyState({required this.onCreate});
+  const _PlanEmptyState({required this.isRoot, required this.onCreate});
 
+  final bool isRoot;
   final VoidCallback onCreate;
 
   @override
@@ -158,13 +293,13 @@ class _PlanEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('还没有计划，先写下一个阶段目标。'),
+          Text(isRoot ? '还没有计划，先写下一个阶段目标。' : '这个目标还没有子目标。'),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             key: const ValueKey('emptyNewPlanGoalButton'),
             onPressed: onCreate,
             icon: const Icon(Icons.add),
-            label: const Text('新建目标'),
+            label: Text(isRoot ? '新建目标' : '新建子目标'),
           ),
         ],
       ),
@@ -176,11 +311,15 @@ class _PlanGoalList extends StatelessWidget {
   const _PlanGoalList({
     required this.goals,
     required this.onEdit,
+    required this.onOpenChildren,
+    required this.onAddChild,
     required this.onStatusChanged,
   });
 
   final List<PlanGoal> goals;
   final ValueChanged<PlanGoal> onEdit;
+  final ValueChanged<PlanGoal> onOpenChildren;
+  final ValueChanged<PlanGoal> onAddChild;
   final Future<void> Function(PlanGoal goal, PlanGoalStatus status)
   onStatusChanged;
 
@@ -203,6 +342,8 @@ class _PlanGoalList extends StatelessWidget {
         return PlanGoalCard(
           goal: goal,
           onEdit: () => onEdit(goal),
+          onOpenChildren: () => onOpenChildren(goal),
+          onAddChild: () => onAddChild(goal),
           onStatusChanged: (status) => onStatusChanged(goal, status),
         );
       },

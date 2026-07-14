@@ -31,13 +31,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) async {
       await migrator.createAll();
       await _createVersionOneIndexes();
+    },
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.alterTable(TableMigration(goals));
+        await _createGoalIndexes();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -51,6 +57,13 @@ class AppDatabase extends _$AppDatabase {
     for (final statement in _versionOneIndexes) {
       await customStatement(statement);
     }
+    await _createGoalIndexes();
+  }
+
+  Future<void> _createGoalIndexes() async {
+    for (final statement in _goalIndexes) {
+      await customStatement(statement);
+    }
   }
 }
 
@@ -60,12 +73,6 @@ const _versionOneIndexes = <String>[
       'WHERE is_active = 1 AND deleted_at IS NULL',
   'CREATE INDEX user_profiles_sync_status_updated_at '
       'ON user_profiles (sync_status, updated_at)',
-  'CREATE INDEX goals_user_parent_sort_order '
-      'ON goals (user_id, parent_goal_id, sort_order)',
-  'CREATE INDEX goals_user_level_status '
-      'ON goals (user_id, goal_level, status)',
-  'CREATE INDEX goals_user_target_date '
-      'ON goals (user_id, target_date)',
   'CREATE UNIQUE INDEX today_records_user_date_active '
       'ON today_records (user_id, record_date) '
       'WHERE deleted_at IS NULL',
@@ -99,4 +106,13 @@ const _versionOneIndexes = <String>[
       '(user_id, report_type, period_start_date, period_end_date, input_hash)',
   'CREATE INDEX ai_reports_status_requested_at '
       'ON ai_reports (report_status, requested_at)',
+];
+
+const _goalIndexes = <String>[
+  'CREATE INDEX IF NOT EXISTS goals_user_parent_sort_order '
+      'ON goals (user_id, parent_goal_id, sort_order)',
+  'CREATE INDEX IF NOT EXISTS goals_user_level_status '
+      'ON goals (user_id, goal_level, status)',
+  'CREATE INDEX IF NOT EXISTS goals_user_target_date '
+      'ON goals (user_id, target_date)',
 ];

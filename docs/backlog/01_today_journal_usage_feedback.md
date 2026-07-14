@@ -1,5 +1,7 @@
 # Today / Journal Usage Feedback Backlog
 
+> 该文件为早期合并反馈记录。后续以 `docs/backlog/feedback/` 下的模块级反馈文件为准。
+
 ## 1. Today 历史记录状态显示问题
 
 问题：

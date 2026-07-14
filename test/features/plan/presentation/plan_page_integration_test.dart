@@ -76,6 +76,6 @@ void main() {
         .getById(goalId);
     expect(completed?.status, PlanGoalStatus.completed);
     expect(completed?.completedAt, isNotNull);
-    expect(database.schemaVersion, 1);
+    expect(database.schemaVersion, 2);
   });
 }

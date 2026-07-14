@@ -31,7 +31,7 @@ class Goals extends Table
   @override
   List<String> get customConstraints => const [
     'CHECK (length(trim(title)) > 0)',
-    "CHECK (goal_level IN ('life', 'year', 'quarter', 'month', 'week', 'day'))",
+    "CHECK (goal_level IN ('life', 'year', 'quarter', 'month', 'week', 'day', 'custom'))",
     "CHECK (status IN ('not_started', 'in_progress', 'completed', 'paused', 'cancelled'))",
     "CHECK (start_date IS NULL OR start_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')",
     "CHECK (target_date IS NULL OR target_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')",

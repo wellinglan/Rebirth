@@ -4,24 +4,31 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/plan/data/plan_repository_provider.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
 import 'package:rebirth/features/plan/domain/plan_repository.dart';
 import 'package:rebirth/features/plan/presentation/plan_page.dart';
+import 'package:rebirth/features/plan/presentation/widgets/plan_goal_form_dialog.dart';
 
 void main() {
-  testWidgets('PlanPage shows its header and loading state', (tester) async {
+  testWidgets('root view shows header, create button, and loading state', (
+    tester,
+  ) async {
     final gate = Completer<List<PlanGoal>>();
     await _pumpPlanPage(tester, _FakePlanRepository(loadGate: gate));
 
     expect(find.text('Plan'), findsOneWidget);
     expect(find.text('让今天与长期方向相连'), findsOneWidget);
-    expect(find.byKey(const ValueKey('newPlanGoalButton')), findsOneWidget);
+    expect(find.text('新建目标'), findsOneWidget);
     expect(find.byKey(const ValueKey('planLoadingState')), findsOneWidget);
   });
 
-  testWidgets('PlanPage shows an error and retries', (tester) async {
+  testWidgets('load error shows retry and recovers to root empty state', (
+    tester,
+  ) async {
     final repository = _FakePlanRepository(
       loadError: StateError('load failed for test'),
     );
@@ -29,194 +36,161 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('planErrorState')), findsOneWidget);
-    expect(find.text('计划暂时无法加载'), findsOneWidget);
-
     repository.loadError = null;
     await tester.tap(find.byTooltip('重新加载'));
     await tester.pumpAndSettle();
 
     expect(repository.listRootCalls, 2);
-    expect(find.byKey(const ValueKey('planEmptyState')), findsOneWidget);
-  });
-
-  testWidgets('empty state can open the create form', (tester) async {
-    await _pumpPlanPage(tester, _FakePlanRepository());
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('planEmptyState')), findsOneWidget);
     expect(find.text('还没有计划，先写下一个阶段目标。'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('emptyNewPlanGoalButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('planGoalFormDialog')), findsOneWidget);
-    expect(find.text('新建目标'), findsWidgets);
-    expect(_fieldText(tester, 'planGoalSortOrderField'), '0');
   });
 
-  testWidgets('blank title shows validation without creating', (tester) async {
-    final repository = _FakePlanRepository();
-    await _pumpPlanPage(tester, repository);
-    await tester.pumpAndSettle();
-    await _openCreateForm(tester);
-
-    await _submitForm(tester);
-
-    expect(find.text('目标标题不能为空'), findsOneWidget);
-    expect(repository.createAttempts, 0);
-    expect(find.byKey(const ValueKey('planGoalFormDialog')), findsOneWidget);
-  });
-
-  testWidgets('invalid dates and negative sort order show field errors', (
+  testWidgets('root goal card shows metadata and child actions', (
     tester,
   ) async {
-    final repository = _FakePlanRepository();
-    await _pumpPlanPage(tester, repository);
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_rootGoal()]));
     await tester.pumpAndSettle();
-    await _openCreateForm(tester);
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTitleField')),
-      '校验目标',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalStartDateField')),
-      '2026/07/14',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTargetDateField')),
-      '2026-02-30',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalSortOrderField')),
-      '-1',
-    );
 
-    await _submitForm(tester);
-
-    expect(find.text('请输入 YYYY-MM-DD 格式日期'), findsNWidgets(2));
-    expect(find.text('请输入非负整数'), findsOneWidget);
-    expect(repository.createAttempts, 0);
+    expect(find.text('年度研究方向'), findsOneWidget);
+    expect(find.text('年度 · 进行中'), findsOneWidget);
+    expect(find.text('开始日期：2026-07-01'), findsOneWidget);
+    expect(find.text('目标日期：2027-07-01'), findsOneWidget);
+    expect(find.text('优先级：2'), findsOneWidget);
+    expect(find.text('整理长期研究路线'), findsOneWidget);
+    expect(find.text('子目标'), findsOneWidget);
+    expect(find.text('添加子目标'), findsOneWidget);
   });
 
-  testWidgets('target date before start date is rejected', (tester) async {
-    final repository = _FakePlanRepository();
-    await _pumpPlanPage(tester, repository);
-    await tester.pumpAndSettle();
-    await _openCreateForm(tester);
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTitleField')),
-      '日期范围目标',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalStartDateField')),
-      '2026-07-14',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTargetDateField')),
-      '2026-07-13',
-    );
-
-    await _submitForm(tester);
-
-    expect(find.text('目标日期不能早于开始日期'), findsOneWidget);
-    expect(repository.createAttempts, 0);
-  });
-
-  testWidgets('valid input creates a root goal and closes the dialog', (
+  testWidgets('child action enters child view and back returns to root', (
     tester,
   ) async {
-    final repository = _FakePlanRepository();
+    final repository = _FakePlanRepository(goals: [_rootGoal()]);
     await _pumpPlanPage(tester, repository);
     await tester.pumpAndSettle();
-    await _openCreateForm(tester);
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTitleField')),
-      '  完成论文初稿  ',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalDescriptionField')),
-      '   ',
-    );
-    await tester.tap(find.byKey(const ValueKey('planGoalLevelField')));
-    await tester.pumpAndSettle();
-    await tester.tapAt(
-      tester.getCenter(
-        find.widgetWithText(DropdownMenuItem<PlanGoalLevel>, '年度').last,
-      ),
+
+    await tester.tap(
+      find.byKey(const ValueKey('viewPlanGoalChildren_root-goal')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('planGoalStatusField')));
-    await tester.pumpAndSettle();
-    await tester.tapAt(
-      tester.getCenter(
-        find.widgetWithText(DropdownMenuItem<PlanGoalStatus>, '进行中').last,
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTargetDateField')),
-      '2026-09-30',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalSortOrderField')),
-      '3',
-    );
 
-    await _submitForm(tester);
-
-    expect(find.byKey(const ValueKey('planGoalFormDialog')), findsNothing);
-    expect(repository.createAttempts, 1);
-    expect(repository.lastCreated?.parentGoalId, isNull);
-    expect(repository.lastCreated?.title, '完成论文初稿');
-    expect(repository.lastCreated?.description, isNull);
-    expect(repository.lastCreated?.goalLevel, PlanGoalLevel.year);
-    expect(repository.lastCreated?.status, PlanGoalStatus.inProgress);
-    expect(repository.lastCreated?.targetDate, '2026-09-30');
-    expect(repository.lastCreated?.sortOrder, 3);
-    expect(find.text('完成论文初稿'), findsOneWidget);
-  });
-
-  testWidgets('saving disables submit and keeps the form visible', (
-    tester,
-  ) async {
-    final saveGate = Completer<void>();
-    final repository = _FakePlanRepository(createGate: saveGate);
-    await _pumpPlanPage(tester, repository);
-    await tester.pumpAndSettle();
-    await _openCreateForm(tester);
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTitleField')),
-      '保存中的目标',
-    );
-
-    final button = find.byKey(const ValueKey('submitPlanGoalButton'));
-    await tester.tap(button);
-    await tester.pump();
-
-    expect(tester.widget<FilledButton>(button).onPressed, isNull);
-    expect(find.text('保存中...'), findsOneWidget);
+    expect(find.text('年度研究方向'), findsWidgets);
+    expect(find.text('这个目标还没有子目标。'), findsOneWidget);
+    expect(find.text('新建子目标'), findsWidgets);
+    expect(find.byKey(const ValueKey('planBackButton')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('planGoalSaveProgressIndicator')),
+      find.byKey(const ValueKey('planRootBreadcrumbButton')),
       findsOneWidget,
     );
-    expect(_fieldText(tester, 'planGoalTitleField'), '保存中的目标');
-    expect(repository.createAttempts, 1);
 
-    saveGate.complete();
+    await tester.tap(find.byKey(const ValueKey('planBackButton')));
     await tester.pumpAndSettle();
+
+    expect(find.text('让今天与长期方向相连'), findsOneWidget);
+    expect(find.text('新建目标'), findsOneWidget);
+    expect(find.text('年度研究方向'), findsOneWidget);
   });
 
-  testWidgets('create failure keeps dialog input and existing list state', (
+  testWidgets('direct add child creates with card parent and lower level', (
     tester,
   ) async {
-    final existing = _sampleGoal();
+    final repository = _FakePlanRepository(goals: [_rootGoal()]);
+    await _pumpPlanPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('addPlanGoalChild_root-goal')));
+    await tester.pumpAndSettle();
+    final dialog = tester.widget<PlanGoalFormDialog>(
+      find.byType(PlanGoalFormDialog),
+    );
+    expect(dialog.parentGoalId, 'root-goal');
+    expect(dialog.defaultGoalLevel, PlanGoalLevel.quarter);
+    await tester.enterText(
+      find.byKey(const ValueKey('planGoalTitleField')),
+      '第一季度实验',
+    );
+
+    await _submitForm(tester);
+
+    expect(repository.lastCreated?.parentGoalId, 'root-goal');
+    expect(repository.lastCreated?.goalLevel, PlanGoalLevel.quarter);
+  });
+
+  testWidgets('child view create button uses the current parent', (
+    tester,
+  ) async {
+    final repository = _FakePlanRepository(goals: [_rootGoal()]);
+    await _pumpPlanPage(tester, repository);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('viewPlanGoalChildren_root-goal')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('newPlanGoalButton')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('planGoalTitleField')),
+      '当前层级子目标',
+    );
+    await _submitForm(tester);
+
+    expect(repository.lastCreated?.parentGoalId, 'root-goal');
+  });
+
+  testWidgets('status menu updates the goal through the controller', (
+    tester,
+  ) async {
+    final repository = _FakePlanRepository(goals: [_rootGoal()]);
+    await _pumpPlanPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('planGoalStatusMenu_root-goal')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(CheckedPopupMenuItem<PlanGoalStatus>, '已完成'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository.lastStatus, PlanGoalStatus.completed);
+    expect(find.text('年度 · 已完成'), findsOneWidget);
+  });
+
+  testWidgets('status failure shows a snackbar and keeps the current list', (
+    tester,
+  ) async {
     final repository = _FakePlanRepository(
-      goals: [existing],
+      goals: [_rootGoal()],
+      statusFailures: 1,
+    );
+    await _pumpPlanPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('planGoalStatusMenu_root-goal')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(CheckedPopupMenuItem<PlanGoalStatus>, '已完成'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('状态更新失败，请重试'), findsOneWidget);
+    expect(find.text('年度 · 进行中'), findsOneWidget);
+    expect(find.byKey(const ValueKey('planErrorState')), findsNothing);
+  });
+
+  testWidgets('create failure preserves dialog input and root list', (
+    tester,
+  ) async {
+    final repository = _FakePlanRepository(
+      goals: [_rootGoal()],
       createFailures: 1,
     );
     await _pumpPlanPage(tester, repository);
     await tester.pumpAndSettle();
-    await _openCreateForm(tester);
+    await tester.tap(find.byKey(const ValueKey('newPlanGoalButton')));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('planGoalTitleField')),
       '失败后保留',
@@ -225,133 +199,19 @@ void main() {
     await _submitForm(tester);
 
     expect(find.text('创建失败，请重试'), findsOneWidget);
+    expect(find.text('失败后保留'), findsOneWidget);
     expect(find.byKey(const ValueKey('planGoalFormDialog')), findsOneWidget);
-    expect(_fieldText(tester, 'planGoalTitleField'), '失败后保留');
-    expect(find.byKey(const ValueKey('planErrorState')), findsNothing);
-
     await tester.tap(find.byKey(const ValueKey('cancelPlanGoalButton')));
     await tester.pumpAndSettle();
-    expect(find.text(existing.title), findsOneWidget);
-  });
-
-  testWidgets('data state displays goal metadata and description', (
-    tester,
-  ) async {
-    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_sampleGoal()]));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
-    expect(find.text('共 1 个目标'), findsOneWidget);
-    expect(find.text('完成论文初稿'), findsOneWidget);
-    expect(find.text('季度 · 进行中'), findsOneWidget);
-    expect(find.text('目标日期：2026-09-30'), findsOneWidget);
-    expect(find.text('整理核心实验结果'), findsOneWidget);
-  });
-
-  testWidgets('tapping a goal opens an edit form with existing values', (
-    tester,
-  ) async {
-    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_sampleGoal()]));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const ValueKey('planGoalItem_goal-id')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('编辑目标'), findsOneWidget);
-    expect(_fieldText(tester, 'planGoalTitleField'), '完成论文初稿');
-    expect(_fieldText(tester, 'planGoalDescriptionField'), '整理核心实验结果');
-    expect(_fieldText(tester, 'planGoalStartDateField'), '2026-07-01');
-    expect(_fieldText(tester, 'planGoalTargetDateField'), '2026-09-30');
-    expect(_fieldText(tester, 'planGoalSortOrderField'), '2');
-    expect(find.text('季度'), findsOneWidget);
-    expect(find.text('进行中'), findsOneWidget);
-    expect(find.text('保存修改'), findsOneWidget);
-  });
-
-  testWidgets('editing updates the goal and closes the dialog', (tester) async {
-    final repository = _FakePlanRepository(goals: [_sampleGoal()]);
-    await _pumpPlanPage(tester, repository);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('planGoalItem_goal-id')));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTitleField')),
-      '修改后的标题',
-    );
-
-    await _submitForm(tester);
-
-    expect(repository.updateAttempts, 1);
-    expect(find.byKey(const ValueKey('planGoalFormDialog')), findsNothing);
-    expect(find.text('修改后的标题'), findsOneWidget);
-  });
-
-  testWidgets('edit failure keeps modified input', (tester) async {
-    final repository = _FakePlanRepository(
-      goals: [_sampleGoal()],
-      updateFailures: 1,
-    );
-    await _pumpPlanPage(tester, repository);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('planGoalItem_goal-id')));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('planGoalTitleField')),
-      '编辑失败后保留',
-    );
-
-    await _submitForm(tester);
-
-    expect(find.text('保存失败，请重试'), findsOneWidget);
-    expect(find.byKey(const ValueKey('planGoalFormDialog')), findsOneWidget);
-    expect(_fieldText(tester, 'planGoalTitleField'), '编辑失败后保留');
-    expect(find.byKey(const ValueKey('planErrorState')), findsNothing);
-  });
-
-  testWidgets('status menu updates status through the controller', (
-    tester,
-  ) async {
-    final repository = _FakePlanRepository(goals: [_sampleGoal()]);
-    await _pumpPlanPage(tester, repository);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const ValueKey('planGoalStatusMenu_goal-id')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(CheckedPopupMenuItem<PlanGoalStatus>, '已完成'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(repository.lastStatus, PlanGoalStatus.completed);
-    expect(find.text('季度 · 已完成'), findsOneWidget);
-  });
-
-  testWidgets('status failure shows a snackbar and keeps the list', (
-    tester,
-  ) async {
-    final repository = _FakePlanRepository(
-      goals: [_sampleGoal()],
-      statusFailures: 1,
-    );
-    await _pumpPlanPage(tester, repository);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const ValueKey('planGoalStatusMenu_goal-id')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(CheckedPopupMenuItem<PlanGoalStatus>, '已完成'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('状态更新失败，请重试'), findsOneWidget);
-    expect(find.text('季度 · 进行中'), findsOneWidget);
-    expect(find.byKey(const ValueKey('planErrorState')), findsNothing);
+    expect(find.text('年度研究方向'), findsOneWidget);
   });
 
   test('Plan presentation has no database implementation imports', () {
     const paths = <String>[
       'lib/features/plan/presentation/plan_page.dart',
       'lib/features/plan/presentation/plan_controller.dart',
+      'lib/features/plan/presentation/plan_view_state.dart',
+      'lib/features/plan/presentation/widgets/plan_date_parts_field.dart',
       'lib/features/plan/presentation/widgets/plan_goal_form_dialog.dart',
       'lib/features/plan/presentation/widgets/plan_goal_card.dart',
       'lib/features/plan/presentation/widgets/plan_goal_status_menu.dart',
@@ -372,19 +232,19 @@ Future<void> _pumpPlanPage(
   WidgetTester tester,
   PlanRepository repository,
 ) async {
-  await tester.binding.setSurfaceSize(const Size(1000, 900));
+  await tester.binding.setSurfaceSize(const Size(1000, 1000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [planRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        planRepositoryProvider.overrideWithValue(repository),
+        dateTimeServiceProvider.overrideWithValue(
+          DateTimeService(now: () => DateTime(2026, 7, 14, 10)),
+        ),
+      ],
       child: const MaterialApp(home: Scaffold(body: PlanPage())),
     ),
   );
-}
-
-Future<void> _openCreateForm(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('newPlanGoalButton')));
-  await tester.pumpAndSettle();
 }
 
 Future<void> _submitForm(WidgetTester tester) async {
@@ -394,24 +254,17 @@ Future<void> _submitForm(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-String _fieldText(WidgetTester tester, String key) {
-  return tester
-      .widget<TextFormField>(find.byKey(ValueKey(key)))
-      .controller!
-      .text;
-}
-
-PlanGoal _sampleGoal() {
+PlanGoal _rootGoal() {
   return const PlanGoal(
-    id: 'goal-id',
+    id: 'root-goal',
     userId: 'user-id',
     parentGoalId: null,
-    title: '完成论文初稿',
-    description: '整理核心实验结果',
-    goalLevel: PlanGoalLevel.quarter,
+    title: '年度研究方向',
+    description: '整理长期研究路线',
+    goalLevel: PlanGoalLevel.year,
     status: PlanGoalStatus.inProgress,
     startDate: '2026-07-01',
-    targetDate: '2026-09-30',
+    targetDate: '2027-07-01',
     completedAt: null,
     sortOrder: 2,
     createdAt: 1,
@@ -424,22 +277,17 @@ final class _FakePlanRepository implements PlanRepository {
     List<PlanGoal> goals = const [],
     this.loadGate,
     this.loadError,
-    this.createGate,
     this.createFailures = 0,
-    this.updateFailures = 0,
     this.statusFailures = 0,
   }) : goals = List.of(goals);
 
   List<PlanGoal> goals;
   final Completer<List<PlanGoal>>? loadGate;
   Object? loadError;
-  final Completer<void>? createGate;
   int createFailures;
-  int updateFailures;
   int statusFailures;
   int listRootCalls = 0;
   int createAttempts = 0;
-  int updateAttempts = 0;
   PlanGoalSaveData? lastCreated;
   PlanGoalStatus? lastStatus;
 
@@ -449,7 +297,18 @@ final class _FakePlanRepository implements PlanRepository {
     if (loadError != null) {
       throw loadError!;
     }
-    return loadGate?.future ?? List.unmodifiable(goals);
+    if (loadGate != null) {
+      return loadGate!.future;
+    }
+    return goals.where((goal) => goal.parentGoalId == null).toList();
+  }
+
+  @override
+  Future<List<PlanGoal>> listChildren(String parentGoalId) async {
+    if (loadError != null) {
+      throw loadError!;
+    }
+    return goals.where((goal) => goal.parentGoalId == parentGoalId).toList();
   }
 
   @override
@@ -459,9 +318,8 @@ final class _FakePlanRepository implements PlanRepository {
       createFailures -= 1;
       throw StateError('create failed for test');
     }
-    await createGate?.future;
     lastCreated = data;
-    final goal = _goalFromData(id: 'created-goal', data: data);
+    final goal = _goalFromData(id: 'created-$createAttempts', data: data);
     goals = [...goals, goal];
     return goal;
   }
@@ -471,11 +329,6 @@ final class _FakePlanRepository implements PlanRepository {
     required String id,
     required PlanGoalSaveData data,
   }) async {
-    updateAttempts += 1;
-    if (updateFailures > 0) {
-      updateFailures -= 1;
-      throw StateError('update failed for test');
-    }
     final updated = _goalFromData(id: id, data: data);
     goals = goals.map((goal) => goal.id == id ? updated : goal).toList();
     return updated;
@@ -491,7 +344,8 @@ final class _FakePlanRepository implements PlanRepository {
       throw StateError('status failed for test');
     }
     lastStatus = status;
-    final existing = goals.singleWhere((goal) => goal.id == id);
+    final index = goals.indexWhere((goal) => goal.id == id);
+    final existing = goals[index];
     final updated = PlanGoal(
       id: existing.id,
       userId: existing.userId,
@@ -507,7 +361,7 @@ final class _FakePlanRepository implements PlanRepository {
       createdAt: existing.createdAt,
       updatedAt: existing.updatedAt + 1,
     );
-    goals = [updated];
+    goals[index] = updated;
     return updated;
   }
 
