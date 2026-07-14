@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rebirth/core/theme/app_typography.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 
 import 'today_history_formatters.dart';
@@ -26,7 +27,10 @@ class TodayHistoryCard extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
-        title: Text(entry.recordDate),
+        title: Text(
+          entry.recordDate,
+          style: AppTypography.numericStyle(theme.textTheme.titleSmall!),
+        ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Column(
@@ -57,7 +61,7 @@ class TodayHistoryCard extends StatelessWidget {
               if (priorities.isEmpty)
                 Text(
                   '未填写三件事',
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall,
                 ),
               const SizedBox(height: 4),
               Text(
@@ -74,7 +78,7 @@ class TodayHistoryCard extends StatelessWidget {
                   entry.dailyNote!.trim(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall,
                 ),
               ],
             ],

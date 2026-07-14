@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rebirth/core/theme/app_typography.dart';
 import 'package:rebirth/features/health/domain/health_summary.dart';
 
 import 'health_formatters.dart';
@@ -68,7 +69,9 @@ class HealthSummaryCards extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 item.value,
-                                style: Theme.of(context).textTheme.titleMedium,
+                                style: AppTypography.numericStyle(
+                                  Theme.of(context).textTheme.titleMedium!,
+                                ),
                               ),
                             ],
                           ),

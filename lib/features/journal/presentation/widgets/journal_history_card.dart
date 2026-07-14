@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rebirth/core/theme/app_typography.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 
 class JournalHistoryCard extends StatelessWidget {
@@ -25,7 +26,10 @@ class JournalHistoryCard extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
-        title: Text(entry.entryDate),
+        title: Text(
+          entry.entryDate,
+          style: AppTypography.numericStyle(theme.textTheme.titleSmall!),
+        ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Column(

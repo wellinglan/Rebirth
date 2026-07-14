@@ -28,7 +28,10 @@ class TodayHistoryPage extends ConsumerWidget {
                   icon: const Icon(Icons.arrow_back),
                 ),
                 const SizedBox(width: 4),
-                Text('历史记录', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  '历史记录',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
               ],
             ),
           ),

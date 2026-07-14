@@ -5,6 +5,16 @@ class GrowthPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('看见缓慢而真实的变化。'));
+    final textTheme = Theme.of(context).textTheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Growth', style: textTheme.headlineSmall),
+          const SizedBox(height: 6),
+          Text('看见缓慢而真实的变化。', style: textTheme.bodyMedium),
+        ],
+      ),
+    );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 import 'package:rebirth/shared/widgets/duration_input_field.dart';
+import 'package:rebirth/core/theme/app_typography.dart';
 
 class TodayForm extends StatefulWidget {
   const TodayForm({
@@ -85,7 +86,9 @@ class _TodayFormState extends State<TodayForm> {
                       Expanded(
                         child: Text(
                           widget.entry.recordDate,
-                          style: theme.textTheme.titleLarge,
+                          style: AppTypography.numericStyle(
+                            theme.textTheme.titleLarge!,
+                          ),
                         ),
                       ),
                       TextButton.icon(

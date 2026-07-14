@@ -66,7 +66,7 @@ class _HealthContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Health', style: Theme.of(context).textTheme.headlineMedium),
+                Text('Health', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 4),
                 Text(
                   '记录身体状态与恢复质量',

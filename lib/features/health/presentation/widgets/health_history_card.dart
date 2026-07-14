@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rebirth/core/theme/app_typography.dart';
 import 'package:rebirth/features/health/domain/health_entry.dart';
 
 import 'health_formatters.dart';
@@ -24,7 +25,12 @@ class HealthHistoryCard extends StatelessWidget {
       child: ListTile(
         key: ValueKey('healthHistory-${entry.id}'),
         onTap: onTap,
-        title: Text(entry.recordDate),
+        title: Text(
+          entry.recordDate,
+          style: AppTypography.numericStyle(
+            Theme.of(context).textTheme.titleSmall!,
+          ),
+        ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Text(details.join(' · ')),
