@@ -33,7 +33,24 @@ class SettingsPage extends ConsumerWidget {
           ),
           data: (value) => _SettingsContent(
             state: value,
-            onConnectAccount: () => _showAccountDialog(context),
+            onDevLogin: () => _showUnavailableDialog(
+              context,
+              key: 'devLoginDialog',
+              title: '开发登录尚未接入',
+              message: '下一 Sprint 接入本地开发后端登录。',
+            ),
+            onWeChatLogin: () => _showUnavailableDialog(
+              context,
+              key: 'wechatLoginDialog',
+              title: '微信登录尚未启用',
+              message: '微信登录需要微信开放平台配置和 Rebirth 后端支持，本版本尚未启用。',
+            ),
+            onSyncSettings: () => _showUnavailableDialog(
+              context,
+              key: 'syncSettingsDialog',
+              title: '同步设置尚未启用',
+              message: '同步功能正在搭建，当前数据仍保存在本设备。',
+            ),
             onOpenProfile: () => context.push(RoutePaths.settingsProfile),
           ),
         ),
@@ -41,13 +58,18 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAccountDialog(BuildContext context) {
+  Future<void> _showUnavailableDialog(
+    BuildContext context, {
+    required String key,
+    required String title,
+    required String message,
+  }) {
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        key: const ValueKey('accountConnectionDialog'),
-        title: const Text('账号互联即将支持'),
-        content: const Text('当前版本仍是本地优先模式，数据只保存在当前设备。后续版本将支持账号登录、设备绑定与跨端同步。'),
+        key: ValueKey(key),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -62,12 +84,16 @@ class SettingsPage extends ConsumerWidget {
 class _SettingsContent extends StatelessWidget {
   const _SettingsContent({
     required this.state,
-    required this.onConnectAccount,
+    required this.onDevLogin,
+    required this.onWeChatLogin,
+    required this.onSyncSettings,
     required this.onOpenProfile,
   });
 
   final SettingsViewState state;
-  final VoidCallback onConnectAccount;
+  final VoidCallback onDevLogin;
+  final VoidCallback onWeChatLogin;
+  final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
 
   @override
@@ -94,7 +120,13 @@ class _SettingsContent extends StatelessWidget {
                 const SizedBox(height: AppLayout.sectionGap),
                 SettingsSection(
                   title: '账号与同步',
-                  child: AccountStatusCard(onConnectAccount: onConnectAccount),
+                  child: AccountStatusCard(
+                    accountStatus: state.accountStatus,
+                    syncStatus: state.accountSyncStatus,
+                    onDevLogin: onDevLogin,
+                    onWeChatLogin: onWeChatLogin,
+                    onSyncSettings: onSyncSettings,
+                  ),
                 ),
                 const SizedBox(height: AppLayout.sectionGap),
                 SettingsSection(

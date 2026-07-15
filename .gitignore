@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Rebirth development API
+server/.venv/
+server/.env
+server/.env.*
+server/*.sqlite
+server/*.sqlite3
+server/secrets/
+server/*.secret
+server/**/__pycache__/
+server/.pytest_cache/

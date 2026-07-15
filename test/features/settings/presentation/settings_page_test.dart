@@ -46,9 +46,13 @@ void main() {
       'Settings',
       '管理账号、资料与本地数据',
       '账号与同步',
-      '本地模式',
       '未登录',
-      '跨端同步暂未启用',
+      '云账号',
+      '尚未连接',
+      '跨端同步',
+      '尚未启用',
+      '后端状态',
+      '未配置',
       '个人资料',
       '本地资料',
       '本地数据与设备',
@@ -57,30 +61,57 @@ void main() {
     ]) {
       expect(find.text(text), findsOneWidget);
     }
+    expect(find.text('本地模式'), findsNWidgets(2));
     expect(find.text('Local user'), findsOneWidget);
     expect(find.text('已登录'), findsNothing);
     expect(find.text('已同步'), findsNothing);
+    expect(find.text('云端已连接'), findsNothing);
+    expect(find.text('微信已绑定'), findsNothing);
     expect(find.text(_installationId), findsNothing);
     expect(find.text('12345678...cdef'), findsOneWidget);
   });
 
-  testWidgets('account connection opens an honest placeholder dialog', (
+  testWidgets('development login explains that backend login is not wired', (
     tester,
   ) async {
     await _pumpSettings(tester, _FakeProfileRepository());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('accountConnectionButton')));
+    await tester.tap(find.byKey(const ValueKey('devLoginButton')));
     await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('accountConnectionDialog')),
-      findsOneWidget,
-    );
-    expect(find.text('账号互联即将支持'), findsOneWidget);
+    expect(find.byKey(const ValueKey('devLoginDialog')), findsOneWidget);
+    expect(find.text('开发登录尚未接入'), findsOneWidget);
+    expect(find.text('下一 Sprint 接入本地开发后端登录。'), findsOneWidget);
     expect(find.text('知道了'), findsOneWidget);
     expect(find.text('已登录'), findsNothing);
     expect(find.text('已同步'), findsNothing);
+  });
+
+  testWidgets('WeChat login shows the explicit not-enabled explanation', (
+    tester,
+  ) async {
+    await _pumpSettings(tester, _FakeProfileRepository());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('wechatLoginButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('wechatLoginDialog')), findsOneWidget);
+    expect(find.text('微信登录尚未启用'), findsOneWidget);
+    expect(find.text('微信登录需要微信开放平台配置和 Rebirth 后端支持，本版本尚未启用。'), findsOneWidget);
+  });
+
+  testWidgets('sync settings explains that data remains local', (tester) async {
+    await _pumpSettings(tester, _FakeProfileRepository());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('syncSettingsButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('syncSettingsDialog')), findsOneWidget);
+    expect(find.text('同步设置尚未启用'), findsOneWidget);
+    expect(find.text('同步功能正在搭建，当前数据仍保存在本设备。'), findsOneWidget);
   });
 
   testWidgets('device read failure keeps Settings usable', (tester) async {
