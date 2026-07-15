@@ -6,8 +6,7 @@
 
    ```powershell
    cd E:\Projects\Rebirth\server
-   .venv\Scripts\Activate.ps1
-   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+   .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
    ```
 
 2. 浏览器访问 `http://127.0.0.1:8000/health`，确认返回 `status: ok` 和 `service: rebirth-api`。

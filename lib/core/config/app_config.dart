@@ -6,7 +6,10 @@ final class AppConfig {
   });
 
   const AppConfig.development()
-    : apiBaseUrl = 'http://127.0.0.1:8000',
+    : apiBaseUrl = const String.fromEnvironment(
+        'REBIRTH_API_BASE_URL',
+        defaultValue: 'http://127.0.0.1:8000',
+      ),
       enableDevLogin = true,
       appVersionLabel = '1.0.0+1';
 

@@ -45,6 +45,8 @@ void main() {
     expect(saved.growthFocus, '稳定成长');
     expect(saved.timezoneId, before.timezoneId);
     expect(saved.updatedAt, expectedTimestamp);
+    final stored = await database.select(database.userProfiles).getSingle();
+    expect(stored.syncStatus, 'pending');
     expect(await database.select(database.userProfiles).get(), hasLength(1));
   });
 

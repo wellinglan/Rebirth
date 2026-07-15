@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
+import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
 
 class AccountStatusCard extends StatelessWidget {
   const AccountStatusCard({
@@ -12,6 +13,9 @@ class AccountStatusCard extends StatelessWidget {
     required this.onDevLogin,
     required this.onRegisterDevice,
     required this.onLogout,
+    required this.profileSyncState,
+    required this.onPushProfile,
+    required this.onPullProfile,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     super.key,
@@ -24,6 +28,9 @@ class AccountStatusCard extends StatelessWidget {
   final VoidCallback onDevLogin;
   final VoidCallback onRegisterDevice;
   final VoidCallback onLogout;
+  final ProfileSyncViewState profileSyncState;
+  final VoidCallback onPushProfile;
+  final VoidCallback onPullProfile;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
 
@@ -52,7 +59,10 @@ class AccountStatusCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text('账号连接不会改变本地优先保存。跨端同步仍未启用。', style: theme.textTheme.bodyMedium),
+            Text(
+              'Profile 可手动同步；其他业务数据仍只保存在本地。',
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: AppSpacing.md),
             _StatusRow(label: '当前模式', value: _modeLabel(accountStatus.mode)),
             _StatusRow(label: '登录状态', value: isSignedIn ? '已登录，开发账号' : '未登录'),
@@ -65,10 +75,14 @@ class AccountStatusCard extends StatelessWidget {
                   ? '开发服务已连接'
                   : '未连接',
             ),
-            const _StatusRow(label: '跨端同步', value: '尚未启用'),
+            const _StatusRow(label: '同步范围', value: '仅 Profile 手动同步'),
             _StatusRow(
               label: '设备注册',
               value: accountStatus.deviceRegistered ? '已注册' : '未注册',
+            ),
+            _StatusRow(
+              label: 'Profile 同步',
+              value: _profileSyncLabel(accountStatus, profileSyncState),
             ),
             if (isSignedIn)
               _StatusRow(
@@ -128,6 +142,26 @@ class AccountStatusCard extends StatelessWidget {
                   label: Text(state.isLoggingOut ? '退出中...' : '退出登录'),
                 ),
                 OutlinedButton.icon(
+                  key: const ValueKey('pushProfileButton'),
+                  onPressed: state.isBusy || profileSyncState.isBusy
+                      ? null
+                      : onPushProfile,
+                  icon: const Icon(Icons.cloud_upload_outlined),
+                  label: Text(
+                    profileSyncState.isPushing ? '上传中...' : '上传 Profile',
+                  ),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('pullProfileButton'),
+                  onPressed: state.isBusy || profileSyncState.isBusy
+                      ? null
+                      : onPullProfile,
+                  icon: const Icon(Icons.cloud_download_outlined),
+                  label: Text(
+                    profileSyncState.isPulling ? '拉取中...' : '拉取 Profile',
+                  ),
+                ),
+                OutlinedButton.icon(
                   key: const ValueKey('wechatLoginButton'),
                   onPressed: state.isBusy ? null : onWeChatLogin,
                   icon: const Icon(Icons.chat_bubble_outline),
@@ -153,6 +187,18 @@ class AccountStatusCard extends StatelessWidget {
       AccountMode.cloudReady => '开发云账号',
       AccountMode.cloud => '云账号',
     };
+  }
+
+  String _profileSyncLabel(
+    AccountStatus accountStatus,
+    ProfileSyncViewState syncState,
+  ) {
+    if (!accountStatus.isAuthenticated) return '需要先登录';
+    if (!accountStatus.deviceRegistered) return '需要先注册设备';
+    if (syncState.lastResult?.conflict ?? false) return '检测到冲突';
+    if (syncState.lastResult?.pushed ?? false) return '最近已上传';
+    if (syncState.lastResult?.pulled ?? false) return '最近已更新';
+    return '可手动同步';
   }
 }
 

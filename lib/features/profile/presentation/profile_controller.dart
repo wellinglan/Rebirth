@@ -14,6 +14,7 @@ class ProfileController extends AsyncNotifier<UserProfile> {
 
   @override
   Future<UserProfile> build() {
+    ref.watch(profileRevisionProvider);
     return ref.watch(profileRepositoryProvider).getActiveProfile();
   }
 

@@ -14,12 +14,17 @@ import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/account/domain/backend_health.dart';
 import 'package:rebirth/features/account/domain/device_registration.dart';
 import 'package:rebirth/features/profile/data/profile_repository_provider.dart';
+import 'package:rebirth/features/profile/data/profile_sync_repository_provider.dart';
 import 'package:rebirth/features/profile/domain/device_profile_status.dart';
 import 'package:rebirth/features/profile/domain/profile_repository.dart';
 import 'package:rebirth/features/profile/domain/profile_save_data.dart';
 import 'package:rebirth/features/profile/domain/user_profile.dart';
 import 'package:rebirth/features/settings/presentation/settings_page.dart';
 import 'package:rebirth/features/settings/presentation/widgets/device_status_card.dart';
+import 'package:rebirth/features/sync/domain/profile_sync_direction.dart';
+import 'package:rebirth/features/sync/domain/profile_sync_repository.dart';
+import 'package:rebirth/features/sync/domain/profile_sync_result.dart';
+import 'package:rebirth/features/sync/domain/sync_exception.dart';
 
 void main() {
   testWidgets('SettingsPage shows loading state', (tester) async {
@@ -74,10 +79,12 @@ void main() {
     expect(find.text('未连接'), findsOneWidget);
     expect(find.text('云账号'), findsOneWidget);
     expect(find.text('尚未连接'), findsOneWidget);
-    expect(find.text('跨端同步'), findsOneWidget);
-    expect(find.text('尚未启用'), findsOneWidget);
+    expect(find.text('同步范围'), findsOneWidget);
+    expect(find.text('仅 Profile 手动同步'), findsOneWidget);
     expect(find.text('设备注册'), findsOneWidget);
     expect(find.text('未注册'), findsOneWidget);
+    expect(find.text('Profile 同步'), findsOneWidget);
+    expect(find.text('需要先登录'), findsOneWidget);
     expect(authRepository.healthCalls, 0);
     expect(authRepository.loginCalls, 0);
     expect(authRepository.registrationCalls, 0);
@@ -158,7 +165,7 @@ void main() {
     expect(find.text('开发账号已连接'), findsOneWidget);
     expect(find.text('Dev research-user'), findsOneWidget);
     expect(find.text('开发登录成功'), findsOneWidget);
-    expect(find.text('尚未启用'), findsOneWidget);
+    expect(find.text('仅 Profile 手动同步'), findsOneWidget);
   });
 
   testWidgets('registering a device while signed out asks for login', (
@@ -196,6 +203,179 @@ void main() {
     expect(find.text(_deviceId), findsNothing);
   });
 
+  testWidgets('signed-out Profile upload asks for development login', (
+    tester,
+  ) async {
+    final syncRepository = _FakeProfileSyncRepository(
+      pushError: const SyncAuthenticationRequiredException(),
+    );
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pushProfileButton');
+
+    expect(syncRepository.pushCalls, 1);
+    expect(find.text('请先开发登录'), findsOneWidget);
+  });
+
+  testWidgets('signed-in unregistered Profile sync asks for registration', (
+    tester,
+  ) async {
+    final authRepository = _signedInAuthRepository();
+    final syncRepository = _FakeProfileSyncRepository(
+      pullError: const SyncDeviceRegistrationRequiredException(),
+    );
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      authRepository,
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('需要先注册设备'), findsOneWidget);
+    await _tapByKey(tester, 'pullProfileButton');
+
+    expect(find.text('请先注册当前设备'), findsOneWidget);
+  });
+
+  testWidgets('registered account exposes manual Profile sync actions', (
+    tester,
+  ) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('可手动同步'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pushProfileButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pullProfileButton')), findsOneWidget);
+  });
+
+  testWidgets('successful Profile upload shows an honest result', (
+    tester,
+  ) async {
+    final syncRepository = _FakeProfileSyncRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pushProfileButton');
+
+    expect(syncRepository.pushCalls, 1);
+    expect(find.text('Profile 已上传'), findsOneWidget);
+    expect(find.text('最近已上传'), findsOneWidget);
+  });
+
+  testWidgets('successful Profile pull shows the update result', (
+    tester,
+  ) async {
+    final syncRepository = _FakeProfileSyncRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pullProfileButton');
+
+    expect(syncRepository.pullCalls, 1);
+    expect(find.text('Profile 已更新'), findsOneWidget);
+    expect(find.text('最近已更新'), findsOneWidget);
+  });
+
+  testWidgets('Profile pull reports when there is no newer item', (
+    tester,
+  ) async {
+    final syncRepository = _FakeProfileSyncRepository(
+      pullResult: const ProfileSyncResult(
+        success: true,
+        direction: ProfileSyncDirection.pull,
+        message: '没有新的 Profile 更新',
+        pushed: false,
+        pulled: false,
+        conflict: false,
+        serverVersion: 2,
+      ),
+    );
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pullProfileButton');
+
+    expect(find.text('没有新的 Profile 更新'), findsOneWidget);
+  });
+
+  testWidgets('Profile conflict is shown without claiming an update', (
+    tester,
+  ) async {
+    final syncRepository = _FakeProfileSyncRepository(
+      pullResult: const ProfileSyncResult(
+        success: false,
+        direction: ProfileSyncDirection.pull,
+        message: '检测到本地与云端都有修改，暂未自动覆盖',
+        pushed: false,
+        pulled: false,
+        conflict: true,
+        serverVersion: 3,
+      ),
+    );
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pullProfileButton');
+
+    expect(find.text('检测到本地与云端都有修改，暂未自动覆盖'), findsOneWidget);
+    expect(find.text('检测到冲突'), findsOneWidget);
+    expect(find.text('Profile 已更新'), findsNothing);
+  });
+
+  testWidgets('Profile network failure keeps local Profile available', (
+    tester,
+  ) async {
+    final syncRepository = _FakeProfileSyncRepository(
+      pushError: const ApiException(
+        message: '无法连接开发后端',
+        isNetworkError: true,
+      ),
+    );
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pushProfileButton');
+
+    expect(find.text('无法连接开发后端，本地资料未受影响'), findsOneWidget);
+    expect(find.text('Local user'), findsOneWidget);
+  });
+
   testWidgets('logout returns to local mode without touching profile data', (
     tester,
   ) async {
@@ -231,7 +411,9 @@ void main() {
     expect(find.textContaining('微信开放平台配置'), findsOneWidget);
   });
 
-  testWidgets('sync settings remains explicitly unavailable', (tester) async {
+  testWidgets('sync settings explains the Profile-only manual scope', (
+    tester,
+  ) async {
     await _pumpSettings(
       tester,
       _FakeProfileRepository(),
@@ -242,8 +424,9 @@ void main() {
     await _tapByKey(tester, 'syncSettingsButton');
 
     expect(find.byKey(const ValueKey('syncSettingsDialog')), findsOneWidget);
-    expect(find.text('同步设置尚未启用'), findsOneWidget);
-    expect(find.textContaining('当前数据仍保存在本设备'), findsOneWidget);
+    expect(find.text('同步范围'), findsWidgets);
+    expect(find.textContaining('当前仅支持 Profile 手动同步'), findsOneWidget);
+    expect(find.textContaining('同步失败不会删除本地数据'), findsOneWidget);
   });
 
   testWidgets('account UI never claims unavailable cloud capabilities', (
@@ -256,7 +439,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (final unavailableClaim in ['跨端同步已启用', '微信已绑定', '云端已同步']) {
+    for (final unavailableClaim in [
+      '全部数据已同步',
+      'Today 已同步',
+      'Journal 已同步',
+      'Plan 已同步',
+      'Health 已同步',
+      '微信已绑定',
+      '云端已同步',
+    ]) {
       expect(find.text(unavailableClaim), findsNothing);
     }
   });
@@ -297,7 +488,9 @@ void main() {
 Future<void> _pumpSettings(
   WidgetTester tester,
   ProfileRepository profileRepository,
-  AuthRepository authRepository,
+  AuthRepository authRepository, {
+  ProfileSyncRepository? syncRepository,
+}
 ) async {
   await tester.binding.setSurfaceSize(const Size(900, 1100));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -306,6 +499,9 @@ Future<void> _pumpSettings(
       overrides: [
         profileRepositoryProvider.overrideWithValue(profileRepository),
         accountRepositoryProvider.overrideWithValue(authRepository),
+        profileSyncRepositoryProvider.overrideWithValue(
+          syncRepository ?? _FakeProfileSyncRepository(),
+        ),
       ],
       child: const MaterialApp(home: SettingsPage()),
     ),
@@ -331,6 +527,76 @@ Future<void> _login(WidgetTester tester, String devUserKey) async {
 
 const _installationId = '12345678-1234-1234-1234-12345678cdef';
 const _deviceId = '12345678-abcd-abcd-abcd-12345678cdef';
+
+_FakeAuthRepository _signedInAuthRepository() {
+  return _FakeAuthRepository()
+    ..status = const AccountStatus(
+      mode: AccountMode.cloudReady,
+      authentication: AuthenticationStatus.signedIn,
+      backendConfigured: true,
+      backendReachable: true,
+      user: AuthUser(id: 'cloud-user', displayName: 'Dev user'),
+    );
+}
+
+_FakeAuthRepository _registeredAuthRepository() {
+  return _FakeAuthRepository()
+    ..status = const AccountStatus(
+      mode: AccountMode.cloudReady,
+      authentication: AuthenticationStatus.signedIn,
+      backendConfigured: true,
+      backendReachable: true,
+      user: AuthUser(id: 'cloud-user', displayName: 'Dev user'),
+      deviceRegistration: DeviceRegistration(
+        deviceId: _deviceId,
+        serverTime: 1,
+      ),
+    );
+}
+
+final class _FakeProfileSyncRepository implements ProfileSyncRepository {
+  _FakeProfileSyncRepository({
+    this.pushError,
+    this.pullError,
+    this.pullResult = const ProfileSyncResult(
+      success: true,
+      direction: ProfileSyncDirection.pull,
+      message: 'Profile 已更新',
+      pushed: false,
+      pulled: true,
+      conflict: false,
+      serverVersion: 2,
+    ),
+  });
+
+  final Object? pushError;
+  final Object? pullError;
+  final ProfileSyncResult pullResult;
+  int pushCalls = 0;
+  int pullCalls = 0;
+
+  @override
+  Future<ProfileSyncResult> pushProfile() async {
+    pushCalls += 1;
+    if (pushError case final error?) throw error;
+    return const ProfileSyncResult(
+      success: true,
+      direction: ProfileSyncDirection.push,
+      message: 'Profile 已上传',
+      pushed: true,
+      pulled: false,
+      conflict: false,
+      serverVersion: 1,
+    );
+  }
+
+  @override
+  Future<ProfileSyncResult> pullProfile() async {
+    pullCalls += 1;
+    if (pullError case final error?) throw error;
+    return pullResult;
+  }
+}
 
 final class _FakeAuthRepository implements AuthRepository {
   AccountStatus status = const AccountStatus.localOnly(

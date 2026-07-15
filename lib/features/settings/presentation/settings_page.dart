@@ -6,6 +6,9 @@ import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
+import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/profile_sync_error_message.dart';
+import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
 
 import 'settings_controller.dart';
 import 'settings_view_state.dart';
@@ -21,6 +24,7 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsState = ref.watch(settingsControllerProvider);
     final accountState = ref.watch(accountControllerProvider);
+    final profileSyncState = ref.watch(profileSyncControllerProvider);
     final config = ref.watch(appConfigProvider);
     return Scaffold(
       key: const ValueKey('settingsPage'),
@@ -51,6 +55,9 @@ class SettingsPage extends ConsumerWidget {
               onDevLogin: () => _devLogin(context, ref),
               onRegisterDevice: () => _registerDevice(context, ref),
               onLogout: () => _logout(context, ref),
+              profileSyncState: profileSyncState,
+              onPushProfile: () => _pushProfile(context, ref),
+              onPullProfile: () => _pullProfile(context, ref),
               onWeChatLogin: () => _showUnavailableDialog(
                 context,
                 key: 'wechatLoginDialog',
@@ -60,8 +67,10 @@ class SettingsPage extends ConsumerWidget {
               onSyncSettings: () => _showUnavailableDialog(
                 context,
                 key: 'syncSettingsDialog',
-                title: '同步设置尚未启用',
-                message: '同步功能正在搭建，当前数据仍保存在本设备。',
+                title: '同步范围',
+                message:
+                    '当前仅支持 Profile 手动同步。Today、Journal、Plan 和 Health '
+                    '暂未同步；同步失败不会删除本地数据。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
             ),
@@ -116,6 +125,32 @@ class SettingsPage extends ConsumerWidget {
     final success = await ref.read(accountControllerProvider.notifier).logout();
     if (!context.mounted) return;
     _showMessage(context, success ? '已退出开发账号，本地数据保持不变' : '退出登录失败');
+  }
+
+  Future<void> _pushProfile(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await ref
+          .read(profileSyncControllerProvider.notifier)
+          .pushProfile();
+      if (!context.mounted) return;
+      _showMessage(context, result.message);
+    } catch (error) {
+      if (!context.mounted) return;
+      _showMessage(context, profileSyncErrorMessage(error));
+    }
+  }
+
+  Future<void> _pullProfile(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await ref
+          .read(profileSyncControllerProvider.notifier)
+          .pullProfile();
+      if (!context.mounted) return;
+      _showMessage(context, result.message);
+    } catch (error) {
+      if (!context.mounted) return;
+      _showMessage(context, profileSyncErrorMessage(error));
+    }
   }
 
   Future<String?> _showDevLoginDialog(BuildContext context) async {
@@ -194,6 +229,9 @@ class _SettingsContent extends StatelessWidget {
     required this.onDevLogin,
     required this.onRegisterDevice,
     required this.onLogout,
+    required this.profileSyncState,
+    required this.onPushProfile,
+    required this.onPullProfile,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     required this.onOpenProfile,
@@ -207,6 +245,9 @@ class _SettingsContent extends StatelessWidget {
   final VoidCallback onDevLogin;
   final VoidCallback onRegisterDevice;
   final VoidCallback onLogout;
+  final ProfileSyncViewState profileSyncState;
+  final VoidCallback onPushProfile;
+  final VoidCallback onPullProfile;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
@@ -243,6 +284,9 @@ class _SettingsContent extends StatelessWidget {
                     onDevLogin: onDevLogin,
                     onRegisterDevice: onRegisterDevice,
                     onLogout: onLogout,
+                    profileSyncState: profileSyncState,
+                    onPushProfile: onPushProfile,
+                    onPullProfile: onPullProfile,
                     onWeChatLogin: onWeChatLogin,
                     onSyncSettings: onSyncSettings,
                   ),

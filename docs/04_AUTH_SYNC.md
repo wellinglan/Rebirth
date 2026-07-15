@@ -1,7 +1,7 @@
 # Rebirth Auth & Sync Architecture
 
-> Status: Sprint 6C development client connection
-> Scope: development auth and device registration, not production cloud sync
+> Status: Sprint 6D Profile Cloud Sync MVP
+> Scope: manual Profile-only sync, not production or full business sync
 
 ## 目标
 
@@ -113,12 +113,13 @@ Sprint 6B 仅预留 start/callback endpoint 合同，不实现浏览器回调、
 - 同步失败影响本地保存。
 - 在没有真实会话或同步结果时展示“已登录”“已同步”或“云端已连接”。
 
-## Sprint 6C 当前限制
+## Sprint 6D 当前限制
 
 - 开发数据库是单机 SQLite，生产环境计划替换 PostgreSQL。
 - JWT refresh 生命周期、撤销列表、密钥轮换和安全存储尚未实现。
-- 同步冲突只提供基础检测与合同，不提供业务级合并 UI。
+- Profile 同步冲突只检测并提示，不提供字段级合并或覆盖选择 UI。
 - 没有真实微信 Open Platform 配置或外部调用。
 - Flutter Account 已通过独立 data layer 连接 `/health`、`/auth/dev-login` 和 `/devices/register`。
 - 开发会话使用可替换的本地开发存储；尚未接入平台安全存储或 token refresh。
-- Flutter Sync 仍只有 domain contract，尚未调用 `/sync/push` 或 `/sync/pull`，也未接入现有业务 Repository。
+- Flutter 仅为 `user_profiles` 手动调用 `/sync/push` 和 `/sync/pull`。
+- Today、Journal、Plan、Health 仍未接入同步，也没有自动后台同步。

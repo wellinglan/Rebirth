@@ -1,6 +1,6 @@
 # Rebirth API Contract Draft
 
-> Status: Sprint 6C development contract and Flutter account client
+> Status: Sprint 6D development contract and Profile sync client
 > Authentication: `Authorization: Bearer <Rebirth access token>` where marked
 
 ## Base URL
@@ -215,5 +215,6 @@ Only items with `server_version > since_server_version` and a requested table ar
 
 - There is no production refresh endpoint, token revocation, account linking, device management UI, background sync, batch pagination, encryption-at-rest policy, or business-specific conflict resolution yet.
 - The development SQLite service is not a production deployment topology.
-- Flutter Sprint 6C 调用 `/health`、`/auth/dev-login` 和 `/devices/register`。
-- Flutter 尚未调用 `/sync/push` 或 `/sync/pull`；业务数据继续只走本地 Repository。
+- Flutter 调用 `/health`、`/auth/dev-login` 和 `/devices/register`。
+- Flutter Sprint 6D 只为 `user_profiles` 手动调用 `/sync/push` 和 `/sync/pull`。
+- Today、Journal、Plan、Health 继续只走本地 Repository，且不会在登录后自动上传。
