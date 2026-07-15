@@ -5,6 +5,7 @@ import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
+import '../../features/settings/presentation/settings_page.dart';
 import '../../features/today/presentation/today_page.dart';
 import '../../features/today/presentation/today_history_page.dart';
 import '../app/home_shell.dart';
@@ -61,27 +62,34 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: RoutePaths.growth,
-              name: RouteNames.growth,
-              builder: (context, state) => const GrowthPage(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
               path: RoutePaths.health,
               name: RouteNames.health,
               builder: (context, state) => const HealthPage(),
             ),
           ],
         ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: RoutePaths.growth,
+              name: RouteNames.growth,
+              builder: (context, state) => const GrowthPage(),
+            ),
+          ],
+        ),
       ],
     ),
     GoRoute(
-      path: RoutePaths.profile,
-      name: RouteNames.profile,
-      builder: (context, state) => const ProfilePage(),
+      path: RoutePaths.settings,
+      name: RouteNames.settings,
+      builder: (context, state) => const SettingsPage(),
+      routes: [
+        GoRoute(
+          path: 'profile',
+          name: RouteNames.settingsProfile,
+          builder: (context, state) => const ProfilePage(),
+        ),
+      ],
     ),
   ],
 );

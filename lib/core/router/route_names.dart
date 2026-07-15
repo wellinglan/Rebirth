@@ -6,7 +6,8 @@ abstract final class RouteNames {
   static const plan = 'plan';
   static const growth = 'growth';
   static const health = 'health';
-  static const profile = 'profile';
+  static const settings = 'settings';
+  static const settingsProfile = 'settingsProfile';
 }
 
 abstract final class RoutePaths {
@@ -17,5 +18,6 @@ abstract final class RoutePaths {
   static const plan = '/plan';
   static const growth = '/growth';
   static const health = '/health';
-  static const profile = '/profile';
+  static const settings = '/settings';
+  static const settingsProfile = '/settings/profile';
 }

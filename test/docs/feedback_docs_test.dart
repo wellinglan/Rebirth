@@ -9,9 +9,20 @@ void main() {
     final journal = File('docs/backlog/feedback/02_journal_feedback.md');
     final plan = File('docs/backlog/feedback/03_plan_feedback.md');
     final health = File('docs/backlog/feedback/04_health_feedback.md');
+    final settingsProfile = File(
+      'docs/backlog/feedback/05_settings_profile_feedback.md',
+    );
     final legacy = File('docs/backlog/01_today_journal_usage_feedback.md');
 
-    for (final file in [readme, today, journal, plan, health, legacy]) {
+    for (final file in [
+      readme,
+      today,
+      journal,
+      plan,
+      health,
+      settingsProfile,
+      legacy,
+    ]) {
       expect(file.existsSync(), isTrue, reason: '${file.path} should exist');
     }
 
@@ -38,6 +49,10 @@ void main() {
     expect(healthText, contains('# Health Feedback'));
     expect(healthText, contains('Health 与 Today 数据同步延迟'));
     expect(healthText, contains('Health 历史记录包含今天'));
+    final settingsProfileText = settingsProfile.readAsStringSync();
+    expect(settingsProfileText, contains('账号互联'));
+    expect(settingsProfileText, contains('本地模式'));
+    expect(settingsProfileText, contains('跨端同步'));
     expect(
       legacy.readAsStringSync(),
       contains('后续以 `docs/backlog/feedback/` 下的模块级反馈文件为准'),
