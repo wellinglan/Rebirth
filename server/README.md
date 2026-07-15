@@ -1,6 +1,6 @@
 # Rebirth Development API
 
-This directory contains the Sprint 6B development backend. It is a local FastAPI service for validating Rebirth account, device, and incremental sync contracts. It is not a production cloud deployment.
+This directory contains the development backend introduced in Sprint 6B and connected to Flutter account flows in Sprint 6C. It is a local FastAPI service for validating Rebirth account, device, and incremental sync contracts. It is not a production cloud deployment.
 
 ## Requirements
 
@@ -43,7 +43,7 @@ pytest
 - Tombstone transport through `deleted_at`
 - WeChat endpoint placeholders that return `not_implemented`
 
-The Flutter app does not call this API in Sprint 6B. Today, Journal, Plan, and Health remain local-first and continue using their existing local repositories.
+The Flutter app calls `/health`, `/auth/dev-login`, and `/devices/register` for development account diagnostics. It does not call the sync endpoints. Today, Journal, Plan, and Health remain local-first and continue using their existing local repositories.
 
 ## Configuration
 

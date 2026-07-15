@@ -26,6 +26,7 @@ void main() {
       mode: AccountMode.cloud,
       authentication: AuthenticationStatus.signedIn,
       backendConfigured: true,
+      backendReachable: true,
       user: user,
     );
 

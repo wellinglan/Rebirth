@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rebirth/core/config/app_config_provider.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
+import 'package:rebirth/features/account/presentation/account_controller.dart';
+import 'package:rebirth/features/account/presentation/account_view_state.dart';
 
 import 'settings_controller.dart';
 import 'settings_view_state.dart';
@@ -16,46 +19,146 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsControllerProvider);
+    final settingsState = ref.watch(settingsControllerProvider);
+    final accountState = ref.watch(accountControllerProvider);
+    final config = ref.watch(appConfigProvider);
     return Scaffold(
       key: const ValueKey('settingsPage'),
       appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
-        child: state.when(
+        child: settingsState.when(
           loading: () => const Center(
             child: CircularProgressIndicator(
               key: ValueKey('settingsLoadingState'),
             ),
           ),
-          error: (error, stackTrace) => _SettingsError(
-            onRetry: () =>
-                ref.read(settingsControllerProvider.notifier).reload(),
-          ),
-          data: (value) => _SettingsContent(
-            state: value,
-            onDevLogin: () => _showUnavailableDialog(
-              context,
-              key: 'devLoginDialog',
-              title: '开发登录尚未接入',
-              message: '下一 Sprint 接入本地开发后端登录。',
+          error: (error, stackTrace) =>
+              _SettingsError(onRetry: () => _reload(ref)),
+          data: (value) => accountState.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                key: ValueKey('settingsLoadingState'),
+              ),
             ),
-            onWeChatLogin: () => _showUnavailableDialog(
-              context,
-              key: 'wechatLoginDialog',
-              title: '微信登录尚未启用',
-              message: '微信登录需要微信开放平台配置和 Rebirth 后端支持，本版本尚未启用。',
+            error: (error, stackTrace) =>
+                _SettingsError(onRetry: () => _reload(ref)),
+            data: (account) => _SettingsContent(
+              state: value,
+              account: account,
+              apiBaseUrl: config.apiBaseUrl,
+              enableDevLogin: config.enableDevLogin,
+              onCheckBackend: () => _checkBackend(context, ref),
+              onDevLogin: () => _devLogin(context, ref),
+              onRegisterDevice: () => _registerDevice(context, ref),
+              onLogout: () => _logout(context, ref),
+              onWeChatLogin: () => _showUnavailableDialog(
+                context,
+                key: 'wechatLoginDialog',
+                title: '微信登录尚未启用',
+                message: '微信登录需要微信开放平台配置和 Rebirth 后端支持，本版本尚未启用。',
+              ),
+              onSyncSettings: () => _showUnavailableDialog(
+                context,
+                key: 'syncSettingsDialog',
+                title: '同步设置尚未启用',
+                message: '同步功能正在搭建，当前数据仍保存在本设备。',
+              ),
+              onOpenProfile: () => context.push(RoutePaths.settingsProfile),
             ),
-            onSyncSettings: () => _showUnavailableDialog(
-              context,
-              key: 'syncSettingsDialog',
-              title: '同步设置尚未启用',
-              message: '同步功能正在搭建，当前数据仍保存在本设备。',
-            ),
-            onOpenProfile: () => context.push(RoutePaths.settingsProfile),
           ),
         ),
       ),
     );
+  }
+
+  void _reload(WidgetRef ref) {
+    ref.read(settingsControllerProvider.notifier).reload();
+    ref.read(accountControllerProvider.notifier).reload();
+  }
+
+  Future<void> _checkBackend(BuildContext context, WidgetRef ref) async {
+    final success = await ref
+        .read(accountControllerProvider.notifier)
+        .checkBackendHealth();
+    if (!context.mounted) return;
+    _showMessage(context, success ? '开发后端已连接' : '无法连接开发后端');
+  }
+
+  Future<void> _devLogin(BuildContext context, WidgetRef ref) async {
+    final key = await _showDevLoginDialog(context);
+    if (key == null || !context.mounted) return;
+    final success = await ref
+        .read(accountControllerProvider.notifier)
+        .devLogin(key);
+    if (!context.mounted) return;
+    final error = ref
+        .read(accountControllerProvider)
+        .value
+        ?.status
+        .errorMessage;
+    _showMessage(context, success ? '开发登录成功' : error ?? '开发登录失败');
+  }
+
+  Future<void> _registerDevice(BuildContext context, WidgetRef ref) async {
+    final success = await ref
+        .read(accountControllerProvider.notifier)
+        .registerCurrentDevice();
+    if (!context.mounted) return;
+    final error = ref
+        .read(accountControllerProvider)
+        .value
+        ?.status
+        .errorMessage;
+    _showMessage(context, success ? '当前设备已注册' : error ?? '设备注册失败');
+  }
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final success = await ref.read(accountControllerProvider.notifier).logout();
+    if (!context.mounted) return;
+    _showMessage(context, success ? '已退出开发账号，本地数据保持不变' : '退出登录失败');
+  }
+
+  Future<String?> _showDevLoginDialog(BuildContext context) async {
+    var devUserKey = 'local-test-user';
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        key: const ValueKey('devLoginDialog'),
+        title: const Text('开发登录'),
+        content: TextFormField(
+          key: const ValueKey('devUserKeyField'),
+          initialValue: devUserKey,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'dev_user_key'),
+          textInputAction: TextInputAction.done,
+          onChanged: (value) => devUserKey = value,
+          onFieldSubmitted: (value) => _submitDevLogin(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            key: const ValueKey('confirmDevLoginButton'),
+            onPressed: () => _submitDevLogin(context, devUserKey),
+            child: const Text('登录'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitDevLogin(BuildContext context, String value) {
+    final key = value.trim();
+    if (key.isEmpty) return;
+    Navigator.of(context).pop(key);
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _showUnavailableDialog(
@@ -84,14 +187,26 @@ class SettingsPage extends ConsumerWidget {
 class _SettingsContent extends StatelessWidget {
   const _SettingsContent({
     required this.state,
+    required this.account,
+    required this.apiBaseUrl,
+    required this.enableDevLogin,
+    required this.onCheckBackend,
     required this.onDevLogin,
+    required this.onRegisterDevice,
+    required this.onLogout,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     required this.onOpenProfile,
   });
 
   final SettingsViewState state;
+  final AccountViewState account;
+  final String apiBaseUrl;
+  final bool enableDevLogin;
+  final VoidCallback onCheckBackend;
   final VoidCallback onDevLogin;
+  final VoidCallback onRegisterDevice;
+  final VoidCallback onLogout;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
@@ -121,9 +236,13 @@ class _SettingsContent extends StatelessWidget {
                 SettingsSection(
                   title: '账号与同步',
                   child: AccountStatusCard(
-                    accountStatus: state.accountStatus,
-                    syncStatus: state.accountSyncStatus,
+                    state: account,
+                    apiBaseUrl: apiBaseUrl,
+                    enableDevLogin: enableDevLogin,
+                    onCheckBackend: onCheckBackend,
                     onDevLogin: onDevLogin,
+                    onRegisterDevice: onRegisterDevice,
+                    onLogout: onLogout,
                     onWeChatLogin: onWeChatLogin,
                     onSyncSettings: onSyncSettings,
                   ),

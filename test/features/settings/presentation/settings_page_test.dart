@@ -4,6 +4,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rebirth/core/network/api_exception.dart';
+import 'package:rebirth/features/account/data/account_repository_provider.dart';
+import 'package:rebirth/features/account/domain/account_exception.dart';
+import 'package:rebirth/features/account/domain/account_status.dart';
+import 'package:rebirth/features/account/domain/auth_repository.dart';
+import 'package:rebirth/features/account/domain/auth_session.dart';
+import 'package:rebirth/features/account/domain/auth_user.dart';
+import 'package:rebirth/features/account/domain/backend_health.dart';
+import 'package:rebirth/features/account/domain/device_registration.dart';
 import 'package:rebirth/features/profile/data/profile_repository_provider.dart';
 import 'package:rebirth/features/profile/domain/device_profile_status.dart';
 import 'package:rebirth/features/profile/domain/profile_repository.dart';
@@ -15,109 +24,248 @@ import 'package:rebirth/features/settings/presentation/widgets/device_status_car
 void main() {
   testWidgets('SettingsPage shows loading state', (tester) async {
     final gate = Completer<UserProfile>();
-    await _pumpSettings(tester, _FakeProfileRepository(profileGate: gate));
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(profileGate: gate),
+      _FakeAuthRepository(),
+    );
 
     expect(find.byKey(const ValueKey('settingsLoadingState')), findsOneWidget);
   });
 
   testWidgets('SettingsPage shows error and retries', (tester) async {
-    final repository = _FakeProfileRepository(loadError: StateError('failed'));
-    await _pumpSettings(tester, repository);
+    final profileRepository = _FakeProfileRepository(
+      loadError: StateError('failed'),
+    );
+    await _pumpSettings(
+      tester,
+      profileRepository,
+      _FakeAuthRepository(),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('settingsErrorState')), findsOneWidget);
     expect(find.text('设置暂时无法加载'), findsOneWidget);
 
-    repository.loadError = null;
+    profileRepository.loadError = null;
     await tester.tap(find.byKey(const ValueKey('retrySettingsButton')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('settingsDataState')), findsOneWidget);
-    expect(repository.profileLoads, greaterThanOrEqualTo(2));
+    expect(profileRepository.profileLoads, greaterThanOrEqualTo(2));
   });
 
-  testWidgets('SettingsPage describes local account, profile, device and app', (
+  testWidgets('initial account state is local and does not call the network', (
     tester,
   ) async {
-    await _pumpSettings(tester, _FakeProfileRepository());
+    final authRepository = _FakeAuthRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      authRepository,
+    );
     await tester.pumpAndSettle();
 
-    for (final text in [
-      'Settings',
-      '管理账号、资料与本地数据',
-      '账号与同步',
-      '未登录',
-      '云账号',
-      '尚未连接',
-      '跨端同步',
-      '尚未启用',
-      '后端状态',
-      '未配置',
-      '个人资料',
-      '本地资料',
-      '本地数据与设备',
-      '关于 Rebirth',
-      'Rebirth · alpha',
-    ]) {
-      expect(find.text(text), findsOneWidget);
-    }
+    expect(find.text('当前模式'), findsOneWidget);
     expect(find.text('本地模式'), findsNWidgets(2));
-    expect(find.text('Local user'), findsOneWidget);
-    expect(find.text('已登录'), findsNothing);
-    expect(find.text('已同步'), findsNothing);
-    expect(find.text('云端已连接'), findsNothing);
-    expect(find.text('微信已绑定'), findsNothing);
-    expect(find.text(_installationId), findsNothing);
-    expect(find.text('12345678...cdef'), findsOneWidget);
+    expect(find.text('登录状态'), findsOneWidget);
+    expect(find.text('未登录'), findsOneWidget);
+    expect(find.text('后端状态'), findsOneWidget);
+    expect(find.text('未连接'), findsOneWidget);
+    expect(find.text('云账号'), findsOneWidget);
+    expect(find.text('尚未连接'), findsOneWidget);
+    expect(find.text('跨端同步'), findsOneWidget);
+    expect(find.text('尚未启用'), findsOneWidget);
+    expect(find.text('设备注册'), findsOneWidget);
+    expect(find.text('未注册'), findsOneWidget);
+    expect(authRepository.healthCalls, 0);
+    expect(authRepository.loginCalls, 0);
+    expect(authRepository.registrationCalls, 0);
   });
 
-  testWidgets('development login explains that backend login is not wired', (
+  testWidgets('checking backend health shows the connected state', (
     tester,
   ) async {
-    await _pumpSettings(tester, _FakeProfileRepository());
+    final authRepository = _FakeAuthRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      authRepository,
+    );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('devLoginButton')));
+    await _tapByKey(tester, 'checkBackendButton');
+
+    expect(authRepository.healthCalls, 1);
+    expect(find.text('开发服务已连接'), findsOneWidget);
+    expect(find.text('开发后端已连接'), findsOneWidget);
+  });
+
+  testWidgets('backend health failure keeps local state available', (
+    tester,
+  ) async {
+    final authRepository = _FakeAuthRepository()
+      ..healthError = const ApiException(
+        message: '无法连接开发后端，请确认服务已启动且网络可达。',
+        isNetworkError: true,
+      );
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      authRepository,
+    );
     await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'checkBackendButton');
+
+    expect(find.text('未连接'), findsOneWidget);
+    expect(find.text('无法连接开发后端'), findsOneWidget);
+    expect(find.text('Local user'), findsOneWidget);
+    expect(find.byKey(const ValueKey('accountActionError')), findsOneWidget);
+  });
+
+  testWidgets('development login opens a dev_user_key dialog', (tester) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'devLoginButton');
 
     expect(find.byKey(const ValueKey('devLoginDialog')), findsOneWidget);
-    expect(find.text('开发登录尚未接入'), findsOneWidget);
-    expect(find.text('下一 Sprint 接入本地开发后端登录。'), findsOneWidget);
-    expect(find.text('知道了'), findsOneWidget);
-    expect(find.text('已登录'), findsNothing);
-    expect(find.text('已同步'), findsNothing);
+    expect(find.byKey(const ValueKey('devUserKeyField')), findsOneWidget);
+    expect(find.text('local-test-user'), findsOneWidget);
   });
 
-  testWidgets('WeChat login shows the explicit not-enabled explanation', (
+  testWidgets('successful development login updates account status', (
     tester,
   ) async {
-    await _pumpSettings(tester, _FakeProfileRepository());
+    final authRepository = _FakeAuthRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      authRepository,
+    );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('wechatLoginButton')));
+    await _login(tester, 'research-user');
+
+    expect(authRepository.lastDevUserKey, 'research-user');
+    expect(find.text('开发云账号'), findsNWidgets(2));
+    expect(find.text('已登录，开发账号'), findsOneWidget);
+    expect(find.text('开发账号已连接'), findsOneWidget);
+    expect(find.text('Dev research-user'), findsOneWidget);
+    expect(find.text('开发登录成功'), findsOneWidget);
+    expect(find.text('尚未启用'), findsOneWidget);
+  });
+
+  testWidgets('registering a device while signed out asks for login', (
+    tester,
+  ) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+    );
     await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'registerDeviceButton');
+
+    expect(find.text('请先开发登录'), findsWidgets);
+    expect(find.text('已注册'), findsNothing);
+  });
+
+  testWidgets('signed-in user can register the current device', (tester) async {
+    final authRepository = _FakeAuthRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      authRepository,
+    );
+    await tester.pumpAndSettle();
+    await _login(tester, 'local-test-user');
+
+    await _tapByKey(tester, 'registerDeviceButton');
+
+    expect(authRepository.registrationCalls, 1);
+    expect(find.text('已注册'), findsOneWidget);
+    expect(find.text('12345678...cdef'), findsNWidgets(2));
+    expect(find.text('当前设备已注册'), findsOneWidget);
+    expect(find.text(_deviceId), findsNothing);
+  });
+
+  testWidgets('logout returns to local mode without touching profile data', (
+    tester,
+  ) async {
+    final profileRepository = _FakeProfileRepository();
+    final authRepository = _FakeAuthRepository();
+    await _pumpSettings(tester, profileRepository, authRepository);
+    await tester.pumpAndSettle();
+    await _login(tester, 'local-test-user');
+    await _tapByKey(tester, 'registerDeviceButton');
+
+    await _tapByKey(tester, 'logoutButton');
+
+    expect(authRepository.logoutCalls, 1);
+    expect(find.text('未登录'), findsOneWidget);
+    expect(find.text('未注册'), findsOneWidget);
+    expect(find.text('Local user'), findsOneWidget);
+    expect(find.text('已退出开发账号，本地数据保持不变'), findsOneWidget);
+    expect(profileRepository.saveCalls, 0);
+  });
+
+  testWidgets('WeChat login remains explicitly unavailable', (tester) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'wechatLoginButton');
 
     expect(find.byKey(const ValueKey('wechatLoginDialog')), findsOneWidget);
     expect(find.text('微信登录尚未启用'), findsOneWidget);
-    expect(find.text('微信登录需要微信开放平台配置和 Rebirth 后端支持，本版本尚未启用。'), findsOneWidget);
+    expect(find.textContaining('微信开放平台配置'), findsOneWidget);
   });
 
-  testWidgets('sync settings explains that data remains local', (tester) async {
-    await _pumpSettings(tester, _FakeProfileRepository());
+  testWidgets('sync settings remains explicitly unavailable', (tester) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+    );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('syncSettingsButton')));
-    await tester.pumpAndSettle();
+    await _tapByKey(tester, 'syncSettingsButton');
 
     expect(find.byKey(const ValueKey('syncSettingsDialog')), findsOneWidget);
     expect(find.text('同步设置尚未启用'), findsOneWidget);
-    expect(find.text('同步功能正在搭建，当前数据仍保存在本设备。'), findsOneWidget);
+    expect(find.textContaining('当前数据仍保存在本设备'), findsOneWidget);
+  });
+
+  testWidgets('account UI never claims unavailable cloud capabilities', (
+    tester,
+  ) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+    );
+    await tester.pumpAndSettle();
+
+    for (final unavailableClaim in ['跨端同步已启用', '微信已绑定', '云端已同步']) {
+      expect(find.text(unavailableClaim), findsNothing);
+    }
   });
 
   testWidgets('device read failure keeps Settings usable', (tester) async {
     await _pumpSettings(
       tester,
       _FakeProfileRepository(deviceError: StateError('device failed')),
+      _FakeAuthRepository(),
     );
     await tester.pumpAndSettle();
 
@@ -131,38 +279,127 @@ void main() {
     expect(formatLocalIdentifier('short-id'), 'short-id');
   });
 
-  test(
-    'Settings presentation has no database or Profile presentation imports',
-    () {
-      final directory = Directory('lib/features/settings/presentation');
-      for (final file
-          in directory.listSync(recursive: true).whereType<File>()) {
-        if (!file.path.endsWith('.dart')) continue;
-        final source = file.readAsStringSync();
-        expect(source, isNot(contains('app_database')));
-        expect(source, isNot(contains('package:drift')));
-        expect(source, isNot(contains('RepositoryImpl')));
-        expect(source, isNot(contains('features/profile/presentation')));
-      }
-    },
-  );
+  test('Settings presentation keeps data and network boundaries explicit', () {
+    final directory = Directory('lib/features/settings/presentation');
+    for (final file in directory.listSync(recursive: true).whereType<File>()) {
+      if (!file.path.endsWith('.dart')) continue;
+      final source = file.readAsStringSync();
+      expect(source, isNot(contains('app_database')));
+      expect(source, isNot(contains('package:drift')));
+      expect(source, isNot(contains('RepositoryImpl')));
+      expect(source, isNot(contains('features/account/data')));
+      expect(source, isNot(contains('core/network')));
+      expect(source, isNot(contains('features/profile/presentation')));
+    }
+  });
 }
 
 Future<void> _pumpSettings(
   WidgetTester tester,
-  ProfileRepository repository,
+  ProfileRepository profileRepository,
+  AuthRepository authRepository,
 ) async {
   await tester.binding.setSurfaceSize(const Size(900, 1100));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [profileRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        profileRepositoryProvider.overrideWithValue(profileRepository),
+        accountRepositoryProvider.overrideWithValue(authRepository),
+      ],
       child: const MaterialApp(home: SettingsPage()),
     ),
   );
 }
 
+Future<void> _tapByKey(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await tester.ensureVisible(finder);
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _login(WidgetTester tester, String devUserKey) async {
+  await _tapByKey(tester, 'devLoginButton');
+  await tester.enterText(
+    find.byKey(const ValueKey('devUserKeyField')),
+    devUserKey,
+  );
+  await tester.tap(find.byKey(const ValueKey('confirmDevLoginButton')));
+  await tester.pumpAndSettle();
+}
+
 const _installationId = '12345678-1234-1234-1234-12345678cdef';
+const _deviceId = '12345678-abcd-abcd-abcd-12345678cdef';
+
+final class _FakeAuthRepository implements AuthRepository {
+  AccountStatus status = const AccountStatus.localOnly(
+    backendConfigured: true,
+  );
+  Object? healthError;
+  int healthCalls = 0;
+  int loginCalls = 0;
+  int registrationCalls = 0;
+  int logoutCalls = 0;
+  String? lastDevUserKey;
+
+  @override
+  Future<AccountStatus> getAccountStatus() async => status;
+
+  @override
+  Future<BackendHealth> checkBackendHealth() async {
+    healthCalls += 1;
+    if (healthError case final error?) throw error;
+    return const BackendHealth(status: 'ok', service: 'rebirth-api');
+  }
+
+  @override
+  Future<AuthSession> devLogin(String devUserKey) async {
+    loginCalls += 1;
+    lastDevUserKey = devUserKey;
+    final user = AuthUser(
+      id: 'user-$devUserKey',
+      displayName: 'Dev $devUserKey',
+    );
+    status = AccountStatus(
+      mode: AccountMode.cloudReady,
+      authentication: AuthenticationStatus.signedIn,
+      backendConfigured: true,
+      backendReachable: false,
+      user: user,
+    );
+    return AuthSession(
+      accessToken: 'test-access-value',
+      refreshToken: 'test-refresh-value',
+      user: user,
+    );
+  }
+
+  @override
+  Future<DeviceRegistration> registerCurrentDevice() async {
+    registrationCalls += 1;
+    if (!status.isAuthenticated) {
+      throw const AccountAuthenticationRequiredException();
+    }
+    const registration = DeviceRegistration(
+      deviceId: _deviceId,
+      serverTime: 1784073600000,
+    );
+    status = status.copyWith(deviceRegistration: registration);
+    return registration;
+  }
+
+  @override
+  Future<void> logout() async {
+    logoutCalls += 1;
+    status = const AccountStatus.localOnly(backendConfigured: true);
+  }
+
+  @override
+  Future<void> refreshSession() async {
+    throw UnsupportedError('Not available in this sprint.');
+  }
+}
 
 final class _FakeProfileRepository implements ProfileRepository {
   _FakeProfileRepository({this.profileGate, this.loadError, this.deviceError});
@@ -171,6 +408,7 @@ final class _FakeProfileRepository implements ProfileRepository {
   Object? loadError;
   Object? deviceError;
   int profileLoads = 0;
+  int saveCalls = 0;
   UserProfile profile = const UserProfile(
     id: '87654321-1234-1234-1234-12345678dcba',
     displayName: 'Local user',
@@ -200,5 +438,8 @@ final class _FakeProfileRepository implements ProfileRepository {
   }
 
   @override
-  Future<UserProfile> saveProfile(ProfileSaveData data) async => profile;
+  Future<UserProfile> saveProfile(ProfileSaveData data) async {
+    saveCalls += 1;
+    return profile;
+  }
 }

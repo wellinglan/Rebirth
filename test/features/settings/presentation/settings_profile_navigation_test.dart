@@ -9,6 +9,9 @@ import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/features/account/data/account_repository_provider.dart';
+import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/domain/auth_session.dart';
 
 void main() {
   testWidgets('Settings opens globally and Profile returns an updated name', (
@@ -26,6 +29,7 @@ void main() {
           dateTimeServiceProvider.overrideWithValue(
             DateTimeService(now: () => DateTime(2026, 7, 15, 9)),
           ),
+          authSessionStoreProvider.overrideWithValue(_MemorySessionStore()),
         ],
         child: const RebirthApp(),
       ),
@@ -95,4 +99,21 @@ void main() {
       expect(pubspec, isNot(contains('oauth')));
     },
   );
+}
+
+final class _MemorySessionStore implements AuthSessionStore {
+  AuthSession? session;
+
+  @override
+  Future<AuthSession?> read() async => session;
+
+  @override
+  Future<void> save(AuthSession session) async {
+    this.session = session;
+  }
+
+  @override
+  Future<void> clear() async {
+    session = null;
+  }
 }
