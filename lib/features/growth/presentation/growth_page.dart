@@ -9,6 +9,7 @@ import 'growth_presentation_mapper.dart';
 import 'growth_view_state.dart';
 import 'widgets/exercise_trend_chart.dart';
 import 'widgets/focus_trend_chart.dart';
+import 'widgets/growth_daily_details.dart';
 import 'widgets/growth_empty_state.dart';
 import 'widgets/growth_error_state.dart';
 import 'widgets/growth_period_selector.dart';
@@ -67,102 +68,181 @@ class _GrowthContent extends StatelessWidget {
     final snapshot = state.snapshot;
     final presentation = const GrowthPresentationMapper().map(snapshot);
 
-    return ListView(
-      key: const ValueKey('growthDataState'),
-      padding: AppLayout.pagePadding,
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppLayout.wideContentWidth,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Growth',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '看见缓慢而真实的变化。',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GrowthPeriodSelector(
-                    period: state.period,
-                    onChanged: onPeriodChanged,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  GrowthFormatters.dateRange(
-                    snapshot.startDate,
-                    snapshot.endDate,
-                  ),
-                  key: const ValueKey('growthDateRange'),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                if (state.isRefreshing) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  const LinearProgressIndicator(
-                    key: ValueKey('growthRefreshingIndicator'),
-                  ),
-                ],
-                if (state.refreshFailed) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  _RefreshFailure(onRetry: onReload),
-                ],
-                const SizedBox(height: AppLayout.sectionGap),
-                if (state.isCompletelyEmpty)
-                  const GrowthEmptyState()
-                else ...[
-                  Text('周期概览', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: AppLayout.cardGap),
-                  GrowthSummaryGrid(snapshot: snapshot),
-                  const SizedBox(height: AppLayout.sectionGap),
-                  FocusTrendChart(
-                    research: presentation.research,
-                    learning: presentation.learning,
-                    period: snapshot.period,
-                  ),
-                  const SizedBox(height: AppLayout.sectionGap),
-                  Text('身体恢复', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: AppLayout.cardGap),
-                  _RecoveryCharts(
-                    sleep: SleepTrendChart(
-                      sleep: presentation.sleep,
-                      period: snapshot.period,
-                    ),
-                    exercise: ExerciseTrendChart(
-                      exercise: presentation.exercise,
-                      period: snapshot.period,
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: ListView(
+        key: const ValueKey('growthDataState'),
+        padding: AppLayout.pagePadding,
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppLayout.wideContentWidth,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Semantics(
+                    key: const ValueKey('growthTitleSemantics'),
+                    label: 'Growth 成长趋势',
+                    header: true,
+                    container: true,
+                    excludeSemantics: true,
+                    child: Text(
+                      'Growth',
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
-                  const SizedBox(height: AppLayout.sectionGap),
-                  MoodEnergyChart(
-                    mood: presentation.mood,
-                    energy: presentation.energy,
-                    period: snapshot.period,
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    '看见缓慢而真实的变化。',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      FocusTraversalOrder(
+                        order: const NumericFocusOrder(1),
+                        child: GrowthPeriodSelector(
+                          period: state.period,
+                          onChanged: onPeriodChanged,
+                        ),
+                      ),
+                      FocusTraversalOrder(
+                        order: const NumericFocusOrder(2),
+                        child: _GrowthRefreshButton(
+                          isRefreshing: state.isRefreshing,
+                          onReload: onReload,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Semantics(
+                    label:
+                        '当前周期，${GrowthFormatters.periodLabel(state.period)}，'
+                        '日期范围，${GrowthFormatters.dateRange(snapshot.startDate, snapshot.endDate)}',
+                    container: true,
+                    excludeSemantics: true,
+                    child: Text(
+                      GrowthFormatters.dateRange(
+                        snapshot.startDate,
+                        snapshot.endDate,
+                      ),
+                      key: const ValueKey('growthDateRange'),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  if (state.isRefreshing) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Semantics(
+                      label: '正在刷新成长趋势',
+                      liveRegion: true,
+                      container: true,
+                      excludeSemantics: true,
+                      child: const LinearProgressIndicator(
+                        key: ValueKey('growthRefreshingIndicator'),
+                      ),
+                    ),
+                  ],
+                  if (state.refreshFailed) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    _RefreshFailure(onRetry: onReload),
+                  ],
                   const SizedBox(height: AppLayout.sectionGap),
-                  JournalCoverageGrid(
-                    days: presentation.journalDays,
-                    recordedDays: snapshot.journalRecordedDays,
-                    completedDays: snapshot.journalCompletedDays,
+                  if (state.isCompletelyEmpty)
+                    const GrowthEmptyState()
+                  else ...[
+                    Text('周期概览', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppLayout.cardGap),
+                    GrowthSummaryGrid(snapshot: snapshot),
+                    const SizedBox(height: AppLayout.sectionGap),
+                    FocusTrendChart(
+                      research: presentation.research,
+                      learning: presentation.learning,
+                      period: snapshot.period,
+                    ),
+                    const SizedBox(height: AppLayout.sectionGap),
+                    Text('身体恢复', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppLayout.cardGap),
+                    _RecoveryCharts(
+                      sleep: SleepTrendChart(
+                        sleep: presentation.sleep,
+                        period: snapshot.period,
+                      ),
+                      exercise: ExerciseTrendChart(
+                        exercise: presentation.exercise,
+                        period: snapshot.period,
+                      ),
+                    ),
+                    const SizedBox(height: AppLayout.sectionGap),
+                    MoodEnergyChart(
+                      mood: presentation.mood,
+                      energy: presentation.energy,
+                      period: snapshot.period,
+                    ),
+                    const SizedBox(height: AppLayout.sectionGap),
+                    JournalCoverageGrid(
+                      days: presentation.journalDays,
+                      recordedDays: snapshot.journalRecordedDays,
+                      completedDays: snapshot.journalCompletedDays,
+                    ),
+                  ],
+                  const SizedBox(height: AppLayout.sectionGap),
+                  FocusTraversalOrder(
+                    order: const NumericFocusOrder(3),
+                    child: GrowthDailyDetails(days: snapshot.days),
                   ),
                 ],
-              ],
+              ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GrowthRefreshButton extends StatelessWidget {
+  const _GrowthRefreshButton({
+    required this.isRefreshing,
+    required this.onReload,
+  });
+
+  final bool isRefreshing;
+  final VoidCallback onReload;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '刷新成长趋势',
+      value: isRefreshing ? '正在刷新' : '可用',
+      button: true,
+      enabled: !isRefreshing,
+      onTap: isRefreshing ? null : onReload,
+      container: true,
+      child: ExcludeSemantics(
+        child: Tooltip(
+          message: '刷新成长趋势',
+          child: IconButton(
+            key: const ValueKey('refreshGrowthButton'),
+            onPressed: isRefreshing ? null : onReload,
+            icon: isRefreshing
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+          ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -223,9 +303,15 @@ class _RefreshFailure extends StatelessWidget {
           Icon(Icons.info_outline, color: colors.onErrorContainer),
           const SizedBox(width: AppSpacing.xs),
           Expanded(
-            child: Text(
-              '刷新失败，已保留上次数据。',
-              style: TextStyle(color: colors.onErrorContainer),
+            child: Semantics(
+              label: '刷新失败，已保留上次数据',
+              liveRegion: true,
+              container: true,
+              excludeSemantics: true,
+              child: Text(
+                '刷新失败，已保留上次数据。',
+                style: TextStyle(color: colors.onErrorContainer),
+              ),
             ),
           ),
           IconButton(

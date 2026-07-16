@@ -196,6 +196,104 @@ void main() {
 
     expect(repository.calls, [GrowthPeriod.sevenDays, GrowthPeriod.sevenDays]);
   });
+
+  test('duplicate reload while refreshing issues only one request', () async {
+    await container.read(growthControllerProvider.future);
+    final gate = Completer<GrowthSnapshot>();
+    repository.enqueue(GrowthPeriod.sevenDays, gate.future);
+    final notifier = container.read(growthControllerProvider.notifier);
+
+    final first = notifier.reload();
+    await Future<void>.delayed(Duration.zero);
+    await notifier.reload();
+
+    expect(repository.calls, [GrowthPeriod.sevenDays, GrowthPeriod.sevenDays]);
+    expect(
+      container.read(growthControllerProvider).requireValue.isRefreshing,
+      isTrue,
+    );
+
+    gate.complete(growthTestSnapshot());
+    await first;
+  });
+
+  test(
+    'refresh failure retains diagnostics and a later retry recovers',
+    () async {
+      await container.read(growthControllerProvider.future);
+      final error = StateError('refresh failed');
+      final trace = StackTrace.current;
+      repository.enqueue(
+        GrowthPeriod.sevenDays,
+        Future<GrowthSnapshot>.error(error, trace),
+      );
+      final notifier = container.read(growthControllerProvider.notifier);
+
+      await notifier.reload();
+
+      final failed = container.read(growthControllerProvider).requireValue;
+      expect(failed.refreshFailed, isTrue);
+      expect(failed.refreshError, same(error));
+      expect(failed.refreshStackTrace, same(trace));
+
+      repository.enqueue(
+        GrowthPeriod.sevenDays,
+        Future.value(growthTestSnapshot()),
+      );
+      await notifier.reload();
+
+      final recovered = container.read(growthControllerProvider).requireValue;
+      expect(recovered.refreshFailed, isFalse);
+      expect(recovered.refreshError, isNull);
+      expect(recovered.refreshStackTrace, isNull);
+    },
+  );
+
+  test(
+    'reload during a period switch does not create an equivalent request',
+    () async {
+      await container.read(growthControllerProvider.future);
+      final gate = Completer<GrowthSnapshot>();
+      repository.enqueue(GrowthPeriod.thirtyDays, gate.future);
+      final notifier = container.read(growthControllerProvider.notifier);
+
+      final switchOperation = notifier.selectPeriod(GrowthPeriod.thirtyDays);
+      await Future<void>.delayed(Duration.zero);
+      await notifier.reload();
+
+      expect(repository.calls, [
+        GrowthPeriod.sevenDays,
+        GrowthPeriod.thirtyDays,
+      ]);
+
+      gate.complete(growthTestSnapshot(period: GrowthPeriod.thirtyDays));
+      await switchOperation;
+    },
+  );
+
+  test(
+    'disposing during an in-flight request does not publish late state',
+    () async {
+      final localRepository = _FakeGrowthRepository();
+      final localContainer = ProviderContainer(
+        overrides: [
+          growthRepositoryProvider.overrideWithValue(localRepository),
+        ],
+      );
+      await localContainer.read(growthControllerProvider.future);
+      final gate = Completer<GrowthSnapshot>();
+      localRepository.enqueue(GrowthPeriod.thirtyDays, gate.future);
+
+      final operation = localContainer
+          .read(growthControllerProvider.notifier)
+          .selectPeriod(GrowthPeriod.thirtyDays);
+      await Future<void>.delayed(Duration.zero);
+      localContainer.dispose();
+      gate.complete(growthTestSnapshot(period: GrowthPeriod.thirtyDays));
+
+      await expectLater(operation, completes);
+    },
+  );
 }
 
 final class _FakeGrowthRepository implements GrowthRepository {

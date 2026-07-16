@@ -37,6 +37,10 @@ class GrowthController extends AsyncNotifier<GrowthViewState> {
   }
 
   Future<void> reload() async {
+    if (state.isLoading || state.asData?.value.isRefreshing == true) {
+      return;
+    }
+
     final current = state.asData?.value;
     if (current == null) {
       await _loadWithoutData();
@@ -56,12 +60,16 @@ class GrowthController extends AsyncNotifier<GrowthViewState> {
       final snapshot = await ref
           .read(growthRepositoryProvider)
           .loadRecent(period);
-      if (request != _requestSequence || period != _selectedPeriod) {
+      if (!ref.mounted ||
+          request != _requestSequence ||
+          period != _selectedPeriod) {
         return;
       }
       state = AsyncData(GrowthViewState(period: period, snapshot: snapshot));
     } catch (error, stackTrace) {
-      if (request != _requestSequence || period != _selectedPeriod) {
+      if (!ref.mounted ||
+          request != _requestSequence ||
+          period != _selectedPeriod) {
         return;
       }
       state = AsyncError(error, stackTrace);
@@ -79,6 +87,7 @@ class GrowthController extends AsyncNotifier<GrowthViewState> {
         period: period,
         isRefreshing: true,
         refreshFailed: false,
+        clearRefreshDiagnostic: true,
       ),
     );
 
@@ -86,12 +95,16 @@ class GrowthController extends AsyncNotifier<GrowthViewState> {
       final snapshot = await ref
           .read(growthRepositoryProvider)
           .loadRecent(period);
-      if (request != _requestSequence || period != _selectedPeriod) {
+      if (!ref.mounted ||
+          request != _requestSequence ||
+          period != _selectedPeriod) {
         return;
       }
       state = AsyncData(GrowthViewState(period: period, snapshot: snapshot));
-    } catch (_) {
-      if (request != _requestSequence || period != _selectedPeriod) {
+    } catch (error, stackTrace) {
+      if (!ref.mounted ||
+          request != _requestSequence ||
+          period != _selectedPeriod) {
         return;
       }
       _selectedPeriod = stablePeriod;
@@ -100,6 +113,8 @@ class GrowthController extends AsyncNotifier<GrowthViewState> {
           period: stablePeriod,
           isRefreshing: false,
           refreshFailed: true,
+          refreshError: error,
+          refreshStackTrace: stackTrace,
         ),
       );
     }

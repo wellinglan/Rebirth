@@ -3,6 +3,7 @@ import 'package:rebirth/features/growth/domain/growth_period.dart';
 
 abstract final class GrowthFormatters {
   static const String noData = '暂无数据';
+  static const String notRecorded = '未记录';
 
   static String duration(int? minutes) {
     if (minutes == null) {
@@ -34,6 +35,36 @@ abstract final class GrowthFormatters {
 
   static String scorePoint(int value) => '$value / 5';
 
+  static String detailDuration(int? minutes) {
+    return minutes == null ? notRecorded : duration(minutes);
+  }
+
+  static String detailScore(int? value) {
+    return value == null ? notRecorded : scorePoint(value);
+  }
+
+  static String journalStatus({
+    required bool recorded,
+    required bool completed,
+  }) {
+    if (completed) {
+      return '已完成';
+    }
+    return recorded ? '已记录，未完成' : notRecorded;
+  }
+
+  static String fullDate(String date) {
+    final parsed = _parse(date);
+    return '${parsed.year}年${parsed.month}月${parsed.day}日';
+  }
+
+  static String periodLabel(GrowthPeriod period) {
+    return switch (period) {
+      GrowthPeriod.sevenDays => '近 7 天',
+      GrowthPeriod.thirtyDays => '近 30 天',
+    };
+  }
+
   static String dateRange(String startDate, String endDate) {
     final start = _parse(startDate);
     final end = _parse(endDate);
@@ -58,25 +89,42 @@ abstract final class GrowthFormatters {
     required int index,
     required int pointCount,
     required GrowthPeriod period,
+    bool compact = false,
   }) {
     if (index < 0 || index >= pointCount) {
       return false;
     }
     if (period == GrowthPeriod.sevenDays) {
-      return true;
+      return !compact || index == 0 || index == pointCount - 1 || index.isEven;
     }
-    return index == 0 || index == pointCount - 1 || index % 6 == 0;
+    final interval = compact ? 12 : 6;
+    return index == 0 || index == pointCount - 1 || index % interval == 0;
   }
 
   static String minutesAxis(double value) {
+    if (value.abs() >= 1000000) {
+      return '${_compactDecimal(value / 1000000)}m';
+    }
+    if (value.abs() >= 1000) {
+      return '${_compactDecimal(value / 1000)}k';
+    }
     return value.round().toString();
   }
 
   static String sleepAxis(double value) {
     final hours = value / 60;
+    if (hours.abs() >= 1000) {
+      return '${_compactDecimal(hours / 1000)}kh';
+    }
     return hours == hours.roundToDouble()
         ? '${hours.round()}h'
         : '${hours.toStringAsFixed(1)}h';
+  }
+
+  static String _compactDecimal(double value) {
+    return value == value.roundToDouble()
+        ? value.round().toString()
+        : value.toStringAsFixed(1);
   }
 
   static ({int year, int month, int day}) _parse(String date) {

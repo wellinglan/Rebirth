@@ -1,6 +1,6 @@
 # Rebirth Growth Analytics
 
-> Status: Sprint 7B Growth UI MVP  
+> Status: Sprint 7C Growth MVP feature frozen
 > Scope: local read-only aggregation and visualization for 7-day and 30-day snapshots
 
 ## Product Positioning
@@ -10,9 +10,10 @@ learning, health, mood, energy, and reflection patterns without judging the
 result. The page uses neutral, factual summaries and does not calculate a
 growth score, streak, reward, previous-period comparison, or AI conclusion.
 
-Sprint 7A established the Domain/Data foundation. Sprint 7B adds the read-only
-controller and Material 3 presentation layer while retaining the same data
-semantics.
+Sprint 7A established the Domain/Data foundation. Sprint 7B added the read-only
+controller and Material 3 presentation layer. Sprint 7C closes the MVP with a
+manual refresh action, accessible daily details, keyboard navigation, and
+responsive hardening while retaining the same data semantics.
 
 ## Architecture Boundary
 
@@ -51,7 +52,9 @@ error states. A request sequence guards every refresh. If the user switches
 periods rapidly, only the newest request may replace the state. Existing data
 stays visible during refresh. A refresh failure retains the last successful
 snapshot and displays a non-blocking message; an initial failure uses the full
-error state and retry action.
+error state and retry action. Equivalent reloads are suppressed while a
+refresh is active. Refresh failures retain the error and stack trace in
+controller state for diagnostics without logging user content.
 
 ## Complete Date Skeleton
 
@@ -91,6 +94,7 @@ zero. Growth preserves the distinction end to end:
 - A missing exercise value has no bar rod.
 - An explicit zero remains a point or bar at the baseline.
 - Tooltips and summaries do not invent values for missing data.
+- Daily details display `null` as `未记录` and explicit zero as `0 分钟`.
 
 A completely missing series displays a local empty message rather than a fake
 all-zero chart.
@@ -116,12 +120,14 @@ decimal place on the original 1-5 scale. Missing summaries display `暂无数据
 The Material 3 page is a constrained `ListView` using `AppLayout.pagePadding`
 and `AppLayout.wideContentWidth`. It contains:
 
-1. Header, 7/30-day segmented selector, and formatted date range.
+1. Header, 7/30-day segmented selector, refresh action, and formatted date range.
 2. Responsive seven-metric summary grid.
 3. Research and Learning dual line chart.
 4. Independent Sleep line chart and Exercise bar chart.
 5. Mood and Energy dual line chart on the 1-5 scale.
 6. Journal coverage cells for missing, recorded draft, and completed days.
+7. A collapsed, read-only Daily Details section built directly from
+   `GrowthSnapshot.days`.
 
 On narrow screens summary cards wrap to one or two columns and recovery charts
 stack vertically. On wider Windows content they use three or four summary
@@ -132,7 +138,14 @@ dates.
 Series are differentiated by text legends and line styles in addition to
 color. Period controls expose selected semantics, summary cards expose their
 label and value, charts expose objective aggregate descriptions, and each
-Journal cell exposes its date and state.
+Journal cell exposes its date and state. The Daily Details rows provide the
+exact date, six numeric metrics, and Journal state as a non-visual alternative
+to chart tooltips. The section shows all 7 or 30 dates in ascending order and
+does not issue another Repository query.
+
+Keyboard traversal follows the visible controls: 7 days, 30 days, refresh,
+then Daily Details. Enter and Space activate Material controls. Responsive
+tests cover text scales 1.0, 1.3, 1.5, and 2.0 at widths from 320 to 1200 pixels.
 
 ## Empty And Partial States
 
@@ -151,7 +164,16 @@ data does not hide Today trends.
 cached, uploaded, or synchronized. Loading Growth requires no server, Docker,
 FastAPI, login, or network connection. Profile sync behavior is unchanged.
 
-Sprint 7B has no previous-period comparison, streak, growth score, medical
+Sprint 7C has no previous-period comparison, streak, growth score, medical
 interpretation, AI explanation, or cloud synchronization. A future AI Coach
 may consume a snapshot only after explicit authorization and data-sharing
 design; it must not mutate source facts.
+
+## Feature Freeze
+
+Growth MVP enters feature freeze after Sprint 7C. Daily details remain read
+only, and Growth remains local derived data with no comparison, scoring, AI,
+network, or synchronization behavior. Follow-up work should fix a concrete
+defect or accessibility regression rather than add unbounded metrics or
+analytics. Any future AI Coach foundation must remain outside Growth
+aggregation, require explicit user action, and preserve nullable source facts.

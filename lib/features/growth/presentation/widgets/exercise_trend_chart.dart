@@ -56,6 +56,10 @@ class _ExerciseBarChart extends StatelessWidget {
         .whereType<int>()
         .fold<int>(0, math.max);
     final maxY = math.max(30.0, largest * 1.15);
+    final labelScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactAxisLabels = labelScale >= 1.3;
+    final leftReservedSize = math.min(72.0, 42 * labelScale);
+    final bottomReservedSize = math.min(52.0, 30 * labelScale);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,7 +111,7 @@ class _ExerciseBarChart extends StatelessWidget {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 42,
+                        reservedSize: leftReservedSize,
                         getTitlesWidget: (value, meta) => SideTitleWidget(
                           meta: meta,
                           space: AppSpacing.xs,
@@ -122,7 +126,7 @@ class _ExerciseBarChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         interval: 1,
-                        reservedSize: 30,
+                        reservedSize: bottomReservedSize,
                         getTitlesWidget: (value, meta) {
                           final index = value.round();
                           if (value != index ||
@@ -130,6 +134,7 @@ class _ExerciseBarChart extends StatelessWidget {
                                 index: index,
                                 pointCount: exercise.points.length,
                                 period: period,
+                                compact: compactAxisLabels,
                               )) {
                             return const SizedBox.shrink();
                           }

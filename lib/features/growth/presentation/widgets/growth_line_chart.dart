@@ -67,6 +67,10 @@ class GrowthLineChart extends StatelessWidget {
         .whereType<int>();
     final largest = recordedValues.fold<int>(0, math.max);
     final maxY = fixedMaxY ?? math.max(minY + minimumRange, largest * 1.15);
+    final labelScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactAxisLabels = labelScale >= 1.3;
+    final leftReservedSize = math.min(72.0, 42 * labelScale);
+    final bottomReservedSize = math.min(52.0, 30 * labelScale);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +120,7 @@ class GrowthLineChart extends StatelessWidget {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 42,
+                        reservedSize: leftReservedSize,
                         getTitlesWidget: (value, meta) => SideTitleWidget(
                           meta: meta,
                           space: AppSpacing.xs,
@@ -131,7 +135,7 @@ class GrowthLineChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         interval: 1,
-                        reservedSize: 30,
+                        reservedSize: bottomReservedSize,
                         getTitlesWidget: (value, meta) {
                           final index = value.round();
                           if (value != index ||
@@ -139,6 +143,7 @@ class GrowthLineChart extends StatelessWidget {
                                 index: index,
                                 pointCount: pointCount,
                                 period: period,
+                                compact: compactAxisLabels,
                               )) {
                             return const SizedBox.shrink();
                           }
@@ -166,10 +171,14 @@ class GrowthLineChart extends StatelessWidget {
                             final styledSeries = series[spot.barIndex];
                             final point =
                                 styledSeries.series.points[spot.x.round()];
+                            final value = point.value;
+                            if (value == null) {
+                              return null;
+                            }
                             return LineTooltipItem(
                               '${GrowthFormatters.tooltipDate(point.date)}\n'
                               '${styledSeries.series.label} '
-                              '${tooltipValue(point.value!)}',
+                              '${tooltipValue(value)}',
                               TextStyle(color: colors.onInverseSurface),
                             );
                           })
@@ -195,7 +204,9 @@ class GrowthLineChart extends StatelessWidget {
                         barWidth: 2.4,
                         dashArray: item.dashArray,
                         dotData: FlDotData(
-                          show: period == GrowthPeriod.sevenDays,
+                          show:
+                              period == GrowthPeriod.sevenDays ||
+                              item.series.recordedPointCount == 1,
                         ),
                         belowBarData: BarAreaData(show: false),
                       ),

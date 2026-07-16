@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,6 +45,7 @@ void main() {
   testWidgets(
     'complete empty data keeps header, selector, range, and calm empty card',
     (tester) async {
+      final semantics = tester.ensureSemantics();
       final repository = _FakeGrowthRepository();
       await _pumpGrowthPage(tester, repository);
       await tester.pumpAndSettle();
@@ -51,12 +53,21 @@ void main() {
       expect(find.text('Growth'), findsOneWidget);
       expect(find.text('看见缓慢而真实的变化。'), findsOneWidget);
       expect(find.byType(GrowthPeriodSelector), findsOneWidget);
+      expect(find.byKey(const ValueKey('refreshGrowthButton')), findsOneWidget);
       expect(find.text('7月10日 — 7月16日'), findsOneWidget);
       expect(find.byKey(const ValueKey('growthEmptyState')), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          '当前周期暂无成长趋势数据。随着 Today、Health 和 Journal 数据逐渐积累，这里会显示变化。',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('growthDailyDetails')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('growthSummary_research')),
         findsNothing,
       );
+      semantics.dispose();
     },
   );
 
@@ -180,6 +191,170 @@ void main() {
     },
   );
 
+  testWidgets('refresh button reloads the currently selected period', (
+    tester,
+  ) async {
+    final repository = _FakeGrowthRepository(
+      snapshots: {
+        GrowthPeriod.sevenDays: _completeSnapshot(),
+        GrowthPeriod.thirtyDays: _completeSnapshot(
+          period: GrowthPeriod.thirtyDays,
+        ),
+      },
+    );
+    await _pumpGrowthPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('growthPeriodThirtyDays')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('refreshGrowthButton')));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, [
+      GrowthPeriod.sevenDays,
+      GrowthPeriod.thirtyDays,
+      GrowthPeriod.thirtyDays,
+    ]);
+  });
+
+  testWidgets('refresh keeps old content and disables the refresh button', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final gate = Completer<GrowthSnapshot>();
+    final repository = _FakeGrowthRepository(
+      snapshots: {GrowthPeriod.sevenDays: _completeSnapshot()},
+    );
+    await _pumpGrowthPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    repository.enqueue(GrowthPeriod.sevenDays, gate.future);
+    await tester.tap(find.byKey(const ValueKey('refreshGrowthButton')));
+    await tester.pump();
+
+    final button = tester.widget<IconButton>(
+      find.byKey(const ValueKey('refreshGrowthButton')),
+    );
+    expect(button.onPressed, isNull);
+    expect(
+      find.byKey(const ValueKey('growthRefreshingIndicator')),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('正在刷新成长趋势'), findsOneWidget);
+    final refreshSemantics = tester.widget<Semantics>(
+      find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == '刷新成长趋势',
+      ),
+    );
+    expect(refreshSemantics.properties.enabled, isFalse);
+    expect(find.byKey(const ValueKey('growthFocusLineChart')), findsOneWidget);
+
+    gate.complete(_completeSnapshot());
+    await tester.pump();
+    await tester.pump();
+    semantics.dispose();
+  });
+
+  testWidgets('successful refresh atomically replaces the snapshot', (
+    tester,
+  ) async {
+    final replacement = growthTestSnapshot(
+      dataForDay: (index, date) =>
+          const GrowthDayTestData(researchMinutes: 100),
+    );
+    final repository = _FakeGrowthRepository(
+      snapshots: {GrowthPeriod.sevenDays: _completeSnapshot()},
+    );
+    await _pumpGrowthPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    expect(find.text('11 小时 40 分钟'), findsNothing);
+    repository.enqueue(GrowthPeriod.sevenDays, Future.value(replacement));
+    await tester.tap(find.byKey(const ValueKey('refreshGrowthButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('11 小时 40 分钟'), findsWidgets);
+  });
+
+  testWidgets('refresh error can be retried without losing old content', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final repository = _FakeGrowthRepository(
+      snapshots: {GrowthPeriod.sevenDays: _completeSnapshot()},
+    );
+    await _pumpGrowthPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    final failure = Completer<GrowthSnapshot>();
+    repository.enqueue(GrowthPeriod.sevenDays, failure.future);
+    await tester.tap(find.byKey(const ValueKey('refreshGrowthButton')));
+    await tester.pump();
+    failure.completeError(StateError('refresh failed'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('growthRefreshError')), findsOneWidget);
+    expect(find.byKey(const ValueKey('growthFocusLineChart')), findsOneWidget);
+    final failureSemantics = tester.widget<Semantics>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == '刷新失败，已保留上次数据',
+      ),
+    );
+    expect(failureSemantics.properties.liveRegion, isTrue);
+
+    repository.enqueue(
+      GrowthPeriod.sevenDays,
+      Future.value(_completeSnapshot()),
+    );
+    await tester.tap(find.byTooltip('重新加载成长趋势'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('growthRefreshError')), findsNothing);
+    expect(repository.calls, [
+      GrowthPeriod.sevenDays,
+      GrowthPeriod.sevenDays,
+      GrowthPeriod.sevenDays,
+    ]);
+    semantics.dispose();
+  });
+
+  testWidgets('keyboard can activate refresh and daily details', (
+    tester,
+  ) async {
+    final repository = _FakeGrowthRepository(
+      snapshots: {GrowthPeriod.sevenDays: _completeSnapshot()},
+    );
+    await _pumpGrowthPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, [GrowthPeriod.sevenDays, GrowthPeriod.thirtyDays]);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, [
+      GrowthPeriod.sevenDays,
+      GrowthPeriod.thirtyDays,
+      GrowthPeriod.thirtyDays,
+    ]);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('growthDailyDetailsContent')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('key period and chart semantics are exposed', (tester) async {
     final semantics = tester.ensureSemantics();
     final repository = _FakeGrowthRepository(
@@ -190,6 +365,18 @@ void main() {
 
     expect(find.bySemanticsLabel('成长趋势周期选择'), findsOneWidget);
     expect(find.bySemanticsLabel('近 7 天趋势'), findsOneWidget);
+    final selectedPeriodSemantics = tester.widget<Semantics>(
+      find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == '近 7 天趋势',
+      ),
+    );
+    expect(selectedPeriodSemantics.properties.selected, isTrue);
+    expect(find.bySemanticsLabel('Growth 成长趋势'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('当前周期，近 7 天，日期范围，7月10日 — 7月16日'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('刷新成长趋势'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('科研记录 7 天，学习记录 7 天')), findsOneWidget);
     semantics.dispose();
   });
@@ -222,13 +409,22 @@ Future<void> _pumpGrowthPage(
   WidgetTester tester,
   GrowthRepository repository, {
   Size size = const Size(900, 1200),
+  double textScale = 1,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
       overrides: [growthRepositoryProvider.overrideWithValue(repository)],
-      child: const MaterialApp(home: Scaffold(body: GrowthPage())),
+      child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: const Scaffold(body: GrowthPage()),
+      ),
     ),
   );
 }

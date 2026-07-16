@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 
@@ -72,6 +74,8 @@ class _JournalDayCell extends StatelessWidget {
     final visual = _visualFor(context, day.status);
     final statusLabel = _labelFor(day.status);
     final dateLabel = GrowthFormatters.tooltipDate(day.date);
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final cellHeight = math.max(52.0, 36 + 14 * textScale);
 
     return Semantics(
       label: '$dateLabel，$statusLabel',
@@ -82,7 +86,7 @@ class _JournalDayCell extends StatelessWidget {
         child: Container(
           key: ValueKey('growthJournalDay_${day.date}'),
           width: 48,
-          height: 52,
+          height: cellHeight,
           decoration: BoxDecoration(
             color: visual.background,
             border: Border.all(color: visual.border),

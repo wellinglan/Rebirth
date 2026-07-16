@@ -1,5 +1,8 @@
 # Growth UI MVP Manual Test
 
+> Sprint 7B baseline checklist. Sprint 7C interaction and accessibility checks
+> are tracked in `docs/manual_tests/15_growth_ui_hardening.md`.
+
 ## Preconditions
 
 - Use a Sprint 7B build with Flutter database `schemaVersion` 3.
