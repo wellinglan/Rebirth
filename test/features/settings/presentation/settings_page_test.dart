@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rebirth/core/config/server_endpoint.dart';
+import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_exception.dart';
@@ -25,6 +27,7 @@ import 'package:rebirth/features/sync/domain/profile_sync_direction.dart';
 import 'package:rebirth/features/sync/domain/profile_sync_repository.dart';
 import 'package:rebirth/features/sync/domain/profile_sync_result.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('SettingsPage shows loading state', (tester) async {
@@ -465,6 +468,98 @@ void main() {
     expect(find.text('Local user'), findsOneWidget);
   });
 
+  testWidgets('server endpoint validates, tests, saves, and restores', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+      endpointTester: const _FakeEndpointTester(),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('http://127.0.0.1:8000'), findsWidgets);
+    expect(find.text('应用默认值'), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const ValueKey('settingsDataState')),
+      const Offset(0, -900),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('editServerEndpointButton')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('serverEndpointField')),
+      'ftp://invalid.example.com',
+    );
+    await tester.tap(find.byKey(const ValueKey('testServerEndpointButton')));
+    await tester.pump();
+    expect(find.textContaining('HTTP 或 HTTPS'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('serverEndpointField')),
+      'http://server-b:8000/',
+    );
+    await tester.tap(find.byKey(const ValueKey('testServerEndpointButton')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('serverEndpointTestSuccess')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('saveServerEndpointButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('http://server-b:8000'), findsWidgets);
+    expect(find.text('用户设置'), findsOneWidget);
+    await _tapByKey(tester, 'restoreServerEndpointButton');
+    expect(find.text('应用默认值'), findsOneWidget);
+  });
+
+  testWidgets('changing endpoint confirms logout and preserves local profile', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final auth = _signedInAuthRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      auth,
+      endpointTester: const _FakeEndpointTester(),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.byKey(const ValueKey('settingsDataState')),
+      const Offset(0, -900),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('editServerEndpointButton')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('serverEndpointField')),
+      'http://server-b:8000',
+    );
+    await tester.tap(find.byKey(const ValueKey('testServerEndpointButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('saveServerEndpointButton')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('confirmServerEndpointChangeDialog')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('不会删除 Profile'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('confirmServerEndpointChangeButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(auth.logoutCalls, 1);
+    expect(find.text('Local user'), findsOneWidget);
+    expect(find.textContaining('请在新服务器重新登录'), findsOneWidget);
+  });
+
   test('identifier formatting exposes only a short local value', () {
     expect(formatLocalIdentifier(_installationId), '12345678...cdef');
     expect(formatLocalIdentifier('short-id'), 'short-id');
@@ -490,8 +585,8 @@ Future<void> _pumpSettings(
   ProfileRepository profileRepository,
   AuthRepository authRepository, {
   ProfileSyncRepository? syncRepository,
-}
-) async {
+  ServerEndpointConnectionTester? endpointTester,
+}) async {
   await tester.binding.setSurfaceSize(const Size(900, 1100));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
@@ -502,6 +597,10 @@ Future<void> _pumpSettings(
         profileSyncRepositoryProvider.overrideWithValue(
           syncRepository ?? _FakeProfileSyncRepository(),
         ),
+        if (endpointTester != null)
+          serverEndpointConnectionTesterProvider.overrideWithValue(
+            endpointTester,
+          ),
       ],
       child: const MaterialApp(home: SettingsPage()),
     ),
@@ -664,6 +763,21 @@ final class _FakeAuthRepository implements AuthRepository {
   @override
   Future<void> refreshSession() async {
     throw UnsupportedError('Not available in this sprint.');
+  }
+}
+
+final class _FakeEndpointTester implements ServerEndpointConnectionTester {
+  const _FakeEndpointTester();
+
+  @override
+  Future<ServerEndpointHealth> test(String baseUrl) async {
+    return const ServerEndpointHealth(
+      status: 'ok',
+      service: 'rebirth-api',
+      apiVersion: 1,
+      syncProtocolVersion: 2,
+      environment: 'development',
+    );
   }
 }
 

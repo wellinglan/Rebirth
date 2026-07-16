@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/config/app_config_provider.dart';
+import 'package:rebirth/core/config/server_endpoint.dart';
+import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
@@ -12,10 +14,13 @@ import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart'
 
 import 'settings_controller.dart';
 import 'settings_view_state.dart';
+import 'server_endpoint_settings_controller.dart';
 import 'widgets/account_status_card.dart';
 import 'widgets/device_status_card.dart';
 import 'widgets/settings_section.dart';
 import 'widgets/settings_tile.dart';
+import 'widgets/server_endpoint_card.dart';
+import 'widgets/server_endpoint_dialog.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -26,6 +31,8 @@ class SettingsPage extends ConsumerWidget {
     final accountState = ref.watch(accountControllerProvider);
     final profileSyncState = ref.watch(profileSyncControllerProvider);
     final config = ref.watch(appConfigProvider);
+    final endpoint = ref.watch(effectiveServerEndpointProvider);
+    final endpointSettings = ref.watch(serverEndpointSettingsControllerProvider);
     return Scaffold(
       key: const ValueKey('settingsPage'),
       appBar: AppBar(title: const Text('Settings')),
@@ -49,7 +56,11 @@ class SettingsPage extends ConsumerWidget {
             data: (account) => _SettingsContent(
               state: value,
               account: account,
-              apiBaseUrl: config.apiBaseUrl,
+              apiBaseUrl: endpoint.baseUrl,
+              endpoint: endpoint,
+              endpointHealth: endpointSettings.health,
+              onEditEndpoint: () => _editEndpoint(context, ref),
+              onRestoreEndpoint: () => _restoreEndpoint(context, ref),
               enableDevLogin: config.enableDevLogin,
               onCheckBackend: () => _checkBackend(context, ref),
               onDevLogin: () => _devLogin(context, ref),
@@ -78,6 +89,98 @@ class SettingsPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _editEndpoint(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(effectiveServerEndpointProvider);
+    final candidate = await showDialog<String>(
+      context: context,
+      builder: (context) => ServerEndpointDialog(initialValue: current.baseUrl),
+    );
+    if (candidate == null || !context.mounted) return;
+    final normalized = ref.read(serverEndpointValidatorProvider).normalize(candidate);
+    final changed = normalized != current.baseUrl;
+    final signedIn = ref
+            .read(accountControllerProvider)
+            .value
+            ?.status
+            .isAuthenticated ==
+        true;
+    if (changed && signedIn) {
+      final confirmed = await _confirmEndpointChange(context);
+      if (!confirmed || !context.mounted) return;
+    }
+    try {
+      await ref
+          .read(serverEndpointSettingsControllerProvider.notifier)
+          .save(candidate);
+      if (changed && signedIn) {
+        await ref.read(accountControllerProvider.notifier).logout();
+      } else {
+        await ref.read(accountControllerProvider.notifier).reload();
+      }
+      if (!context.mounted) return;
+      _showMessage(
+        context,
+        changed && signedIn
+            ? '服务器已切换，请在新服务器重新登录；本地数据保持不变'
+            : '服务器地址已保存',
+      );
+    } catch (_) {
+      if (context.mounted) _showMessage(context, '服务器地址保存失败，旧设置保持不变');
+    }
+  }
+
+  Future<void> _restoreEndpoint(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(effectiveServerEndpointProvider);
+    final fallback = ref.read(fallbackServerEndpointProvider);
+    final changed = current.baseUrl != fallback.baseUrl;
+    final signedIn = ref
+            .read(accountControllerProvider)
+            .value
+            ?.status
+            .isAuthenticated ==
+        true;
+    if (changed && signedIn) {
+      final confirmed = await _confirmEndpointChange(context);
+      if (!confirmed || !context.mounted) return;
+    }
+    await ref
+        .read(serverEndpointSettingsControllerProvider.notifier)
+        .restoreDefault();
+    if (changed && signedIn) {
+      await ref.read(accountControllerProvider.notifier).logout();
+    } else {
+      await ref.read(accountControllerProvider.notifier).reload();
+    }
+    if (!context.mounted) return;
+    _showMessage(context, '已恢复 ${fallback.sourceLabel}：${fallback.baseUrl}');
+  }
+
+  Future<bool> _confirmEndpointChange(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            key: const ValueKey('confirmServerEndpointChangeDialog'),
+            title: const Text('切换服务器并退出登录？'),
+            content: const Text(
+              '当前 token 和设备注册只属于旧服务器。切换后将退出登录，但不会删除 '
+              'Profile、Today、Journal、Plan、Health 或本地数据库。',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmServerEndpointChangeButton'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('切换并退出'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _reload(WidgetRef ref) {
@@ -224,6 +327,10 @@ class _SettingsContent extends StatelessWidget {
     required this.state,
     required this.account,
     required this.apiBaseUrl,
+    required this.endpoint,
+    required this.endpointHealth,
+    required this.onEditEndpoint,
+    required this.onRestoreEndpoint,
     required this.enableDevLogin,
     required this.onCheckBackend,
     required this.onDevLogin,
@@ -240,6 +347,10 @@ class _SettingsContent extends StatelessWidget {
   final SettingsViewState state;
   final AccountViewState account;
   final String apiBaseUrl;
+  final ServerEndpoint endpoint;
+  final ServerEndpointHealth? endpointHealth;
+  final VoidCallback onEditEndpoint;
+  final VoidCallback onRestoreEndpoint;
   final bool enableDevLogin;
   final VoidCallback onCheckBackend;
   final VoidCallback onDevLogin;
@@ -314,6 +425,17 @@ class _SettingsContent extends StatelessWidget {
                           icon: Icons.device_unknown_outlined,
                         )
                       : DeviceStatusCard(status: state.deviceStatus!),
+                ),
+                const SizedBox(height: AppLayout.sectionGap),
+                SettingsSection(
+                  title: '开发服务器',
+                  child: ServerEndpointCard(
+                    endpoint: endpoint,
+                    backendReachable: account.status.backendReachable,
+                    health: endpointHealth,
+                    onEdit: onEditEndpoint,
+                    onRestoreDefault: onRestoreEndpoint,
+                  ),
                 ),
                 const SizedBox(height: AppLayout.sectionGap),
                 const SettingsSection(

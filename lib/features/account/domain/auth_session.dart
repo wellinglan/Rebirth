@@ -7,6 +7,7 @@ final class AuthSession {
     required this.refreshToken,
     required this.user,
     this.tokenType = 'bearer',
+    this.serverBaseUrl = '',
     this.deviceRegistration,
   });
 
@@ -14,14 +15,19 @@ final class AuthSession {
   final String refreshToken;
   final String tokenType;
   final AuthUser user;
+  final String serverBaseUrl;
   final DeviceRegistration? deviceRegistration;
 
-  AuthSession copyWith({DeviceRegistration? deviceRegistration}) {
+  AuthSession copyWith({
+    String? serverBaseUrl,
+    DeviceRegistration? deviceRegistration,
+  }) {
     return AuthSession(
       accessToken: accessToken,
       refreshToken: refreshToken,
       tokenType: tokenType,
       user: user,
+      serverBaseUrl: serverBaseUrl ?? this.serverBaseUrl,
       deviceRegistration: deviceRegistration ?? this.deviceRegistration,
     );
   }

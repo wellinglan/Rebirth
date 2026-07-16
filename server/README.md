@@ -1,72 +1,106 @@
-# Rebirth Development API
+# Rebirth Cloud-Ready Development API
 
-This directory contains the development backend introduced in Sprint 6B, connected to Flutter account flows in Sprint 6C and Profile-only manual sync in Sprint 6D. It is a local FastAPI service for validating Rebirth account, device, and incremental sync contracts. It is not a production cloud deployment.
+Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, and manual canonical Profile sync only. It is not a production-safe cloud deployment.
 
-## Requirements
+## Health Contract
 
-- Python 3.11 or newer
-- A local virtual environment
-
-## Setup on Windows
-
-```powershell
-cd server
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
-
-## Run
-
-```powershell
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Open `http://127.0.0.1:8000/health`. The expected response is:
+`GET /health` returns:
 
 ```json
-{"status":"ok","service":"rebirth-api"}
+{
+  "status": "ok",
+  "service": "rebirth-api",
+  "api_version": 1,
+  "sync_protocol_version": 2,
+  "environment": "development"
+}
 ```
 
-## Test
+No secret, token, database credential, user data, or local path is exposed.
+
+## Windows + SQLite
 
 ```powershell
-pytest
+cd E:\Projects\Rebirth\server
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## Current Capabilities
+The default database is `server/rebirth_dev.sqlite`. Back it up before migration or manual experiments:
 
-- Development-only `POST /auth/dev-login`
-- JWT access and refresh token issuance
-- Authenticated, idempotent `POST /devices/register`
-- Authenticated `POST /sync/push` and `POST /sync/pull` contract
-- Tombstone transport through `deleted_at`
-- WeChat endpoint placeholders that return `not_implemented`
+```powershell
+Copy-Item .\rebirth_dev.sqlite .\rebirth_dev.backup.sqlite
+```
 
-The Flutter app calls `/health`, `/auth/dev-login`, and `/devices/register` for development account diagnostics. It manually calls the sync endpoints only for `user_profiles`. Today, Journal, Plan, and Health remain local-first and continue using their existing local repositories without sync.
+For a new database, set `REBIRTH_DATABASE_URL` and run:
 
-## Configuration
+```powershell
+.\.venv\Scripts\python.exe -m alembic upgrade head
+```
 
-Environment variables:
+For a Sprint 6D SQLite database already created by SQLAlchemy, first back it up. Running the Sprint 6E server once adds the non-destructive `sync_clock` table through `create_all`; then mark the equivalent migration state:
+
+```powershell
+.\.venv\Scripts\python.exe -m alembic stamp 20260716_0001
+```
+
+Restore a development database by stopping the server and replacing it with the backup. Never automate deletion of the database file.
+
+## Docker + PostgreSQL
+
+Copy `.env.example` to a local `.env` and replace development passwords/secrets. `.env` is ignored by Git.
+
+```powershell
+cd E:\Projects\Rebirth\server
+docker compose -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.dev.yml ps
+docker compose -f docker-compose.dev.yml down
+```
+
+The API waits for PostgreSQL readiness, runs `alembic upgrade head`, listens on `0.0.0.0:8000`, and exposes `/health` for container health checks. Normal `down` retains the named PostgreSQL volume.
+
+To deliberately delete all container database data:
+
+```powershell
+# WARNING: destructive; this permanently deletes the development PostgreSQL volume.
+docker compose -f docker-compose.dev.yml down --volumes
+```
+
+No startup script removes a SQLite file or Docker volume.
+
+## Tests
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+Ordinary tests use temporary SQLite. PostgreSQL integration is opt-in:
+
+```powershell
+$env:REBIRTH_POSTGRES_TEST_URL = 'postgresql+psycopg://rebirth:password@127.0.0.1:5432/rebirth_test'
+.\.venv\Scripts\python.exe -m pytest -m postgres
+```
+
+The PostgreSQL test runs Alembic and concurrent sync writes. It is skipped, not passed, when `REBIRTH_POSTGRES_TEST_URL` is absent.
+
+## Sync Identity and Versioning
+
+- Profile cloud identity is `<cloud-user-id>/user_profiles/profile`.
+- Windows and Android keep independent local Flutter Profile UUIDs.
+- Sprint 6D UUID-shaped cloud Profile rows are lazily copied to canonical `profile`; the newest undeleted legacy version wins and all legacy rows remain.
+- `sync_clock` allocates versions with a database-level atomic `UPDATE ... RETURNING`; no Python global lock or `max()+1` allocator is used.
+- The clock initializes at or above the greatest existing SyncItem version.
+- Flutter record `server_version` and client pull cursor are separate.
+
+## Configuration and Security Boundary
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `REBIRTH_ENV` | `development` | Runtime environment |
-| `REBIRTH_DATABASE_URL` | `sqlite:///.../server/rebirth_dev.sqlite` | SQLAlchemy database URL |
+| `REBIRTH_DATABASE_URL` | local SQLite URL | SQLAlchemy SQLite/PostgreSQL URL |
 | `REBIRTH_JWT_SECRET` | development-only placeholder | JWT signing secret |
-| `REBIRTH_ACCESS_TOKEN_MINUTES` | `30` | Access token lifetime |
-| `REBIRTH_REFRESH_TOKEN_DAYS` | `30` | Refresh token lifetime |
+| `REBIRTH_ACCESS_TOKEN_MINUTES` | `30` | Access-token lifetime |
+| `REBIRTH_REFRESH_TOKEN_DAYS` | `30` | Refresh-token lifetime |
 
-The built-in JWT secret is deliberately labelled development-only. A non-development environment refuses to start unless `REBIRTH_JWT_SECRET` is set. Production must use a strong secret from a managed secret store, HTTPS, PostgreSQL, token revocation and rotation, rate limiting, structured audit logging, and an explicit deployment security review.
-
-No WeChat AppID or AppSecret belongs in this repository. Future WeChat credentials must be backend-only secrets. Refresh tokens are signed tokens and are not persisted in plaintext by this service.
-
-The local SQLite file, `.env` files, virtual environment, and secret files are ignored by Git and must not be committed.
-
-## Known Limits
-
-- No real WeChat SDK or Open Platform call
-- No production refresh endpoint or token revocation
-- No background jobs or pagination
-- Basic conflict reporting only; no domain-specific merge workflow
-- SQLite and the current server-version allocator are development-only
+Outside `development`, `REBIRTH_JWT_SECRET` is mandatory. Production must use HTTPS, managed secrets, PostgreSQL backups, secure client token storage, token refresh/revoke, rate limiting, observability, and a security review. The current SharedPreferences session is development-level only. There is no real WeChat login, background sync, field-level conflict merge, or Today/Journal/Plan/Health sync.

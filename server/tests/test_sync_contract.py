@@ -193,6 +193,7 @@ def test_second_device_can_pull_profile_for_the_same_user(
         json=_profile_push_body(registered_device, "windows-profile-id"),
     )
     assert pushed.status_code == 200
+    assert pushed.json()["accepted"][0]["id"] == "profile"
     second_device = _register_device(
         client,
         auth_headers,
@@ -208,6 +209,7 @@ def test_second_device_can_pull_profile_for_the_same_user(
     assert pulled.status_code == 200
     assert len(pulled.json()["items"]) == 1
     assert pulled.json()["items"][0]["table"] == "user_profiles"
+    assert pulled.json()["items"][0]["id"] == "profile"
     assert pulled.json()["items"][0]["payload"]["display_name"] == "Synced profile"
 
 
@@ -244,3 +246,31 @@ def test_profile_items_are_isolated_between_users(
 
     assert pulled.status_code == 200
     assert pulled.json()["items"] == []
+
+
+def test_two_local_profile_ids_map_to_one_canonical_profile(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    first = client.post(
+        "/sync/push",
+        headers=auth_headers,
+        json=_profile_push_body(registered_device, "windows-local-profile"),
+    )
+    second = client.post(
+        "/sync/push",
+        headers=auth_headers,
+        json=_profile_push_body(registered_device, "android-local-profile"),
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["accepted"][0]["id"] == "profile"
+    assert second.json()["accepted"][0]["id"] == "profile"
+    pulled = client.post(
+        "/sync/pull",
+        headers=auth_headers,
+        json=_profile_pull_body(registered_device),
+    )
+    assert [item["id"] for item in pulled.json()["items"]] == ["profile"]

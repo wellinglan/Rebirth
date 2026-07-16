@@ -10,6 +10,8 @@ import 'package:rebirth/features/sync/domain/profile_sync_repository.dart';
 import 'package:rebirth/features/sync/domain/profile_sync_result.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
 import 'package:rebirth/features/sync/domain/sync_item.dart';
+import 'package:rebirth/features/sync/domain/sync_cursor_store.dart';
+import 'package:rebirth/features/sync/domain/sync_record_keys.dart';
 
 import 'profile_local_data_source.dart';
 
@@ -19,6 +21,8 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
     required this.sessionStore,
     required this.remoteDataSource,
     required this.dateTimeService,
+    required this.cursorStore,
+    required this.endpoint,
   }) : _database = database,
        _localDataSource = ProfileLocalDataSource(database);
 
@@ -29,6 +33,8 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
   final AuthSessionStore sessionStore;
   final SyncRemoteDataSource remoteDataSource;
   final DateTimeService dateTimeService;
+  final SyncCursorStore cursorStore;
+  final String endpoint;
 
   @override
   Future<ProfileSyncResult> pushProfile() async {
@@ -40,7 +46,7 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
         items: [
           SyncItem(
             tableName: _tableName,
-            recordId: local.id,
+            recordId: SyncRecordKeys.profile,
             payload: {
               'display_name': local.displayName,
               'growth_focus': local.growthFocus,
@@ -60,7 +66,8 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
     final conflict = response.conflicts
         .where(
           (item) =>
-              item.tableName == _tableName && item.recordId == local.id,
+              item.tableName == _tableName &&
+              item.recordId == SyncRecordKeys.profile,
         )
         .firstOrNull;
     if (conflict != null) {
@@ -79,7 +86,8 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
     final accepted = response.accepted
         .where(
           (item) =>
-              item.tableName == _tableName && item.recordId == local.id,
+              item.tableName == _tableName &&
+              item.recordId == SyncRecordKeys.profile,
         )
         .firstOrNull;
     if (accepted == null) {
@@ -109,19 +117,29 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
   Future<ProfileSyncResult> pullProfile() async {
     final context = await _loadContext();
     final local = context.profile;
+    final cursor = await cursorStore.read(
+      endpoint: endpoint,
+      cloudUserId: context.session.user.id,
+      scope: _tableName,
+    );
     final response = await remoteDataSource.pull(
       SyncPullRequestDto(
         deviceId: context.deviceId,
-        sinceServerVersion: local.serverVersion ?? 0,
+        sinceServerVersion: cursor,
         tables: const [_tableName],
       ),
       accessToken: context.session.accessToken,
     );
     final candidates = response.items
-        .where((item) => item.tableName == _tableName)
+        .where(
+          (item) =>
+              item.tableName == _tableName &&
+              item.recordId == SyncRecordKeys.profile,
+        )
         .toList(growable: false)
       ..sort((left, right) => right.serverVersion.compareTo(left.serverVersion));
     if (candidates.isEmpty) {
+      await _writeCursor(context, response.serverVersion);
       return ProfileSyncResult(
         success: true,
         direction: ProfileSyncDirection.pull,
@@ -179,6 +197,7 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
       lastSyncedAt: now,
       originDeviceId: originDeviceId,
     );
+    await _writeCursor(context, response.serverVersion);
     return ProfileSyncResult(
       success: true,
       direction: ProfileSyncDirection.pull,
@@ -188,6 +207,18 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
       conflict: false,
       serverVersion: latest.serverVersion,
       updatedProfile: _toDomain(updated),
+    );
+  }
+
+  Future<void> _writeCursor(
+    _ProfileSyncContext context,
+    int serverVersion,
+  ) {
+    return cursorStore.write(
+      endpoint: endpoint,
+      cloudUserId: context.session.user.id,
+      scope: _tableName,
+      serverVersion: serverVersion,
     );
   }
 

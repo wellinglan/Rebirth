@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/sync/data/sync_repository_provider.dart';
@@ -13,5 +14,7 @@ final profileSyncRepositoryProvider = Provider<ProfileSyncRepository>((ref) {
     sessionStore: ref.watch(authSessionStoreProvider),
     remoteDataSource: ref.watch(syncRemoteDataSourceProvider),
     dateTimeService: ref.watch(dateTimeServiceProvider),
+    cursorStore: ref.watch(syncCursorStoreProvider),
+    endpoint: ref.watch(effectiveServerEndpointProvider).baseUrl,
   );
 });

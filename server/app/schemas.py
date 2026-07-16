@@ -19,6 +19,9 @@ SyncTable = Literal[
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     service: Literal["rebirth-api"] = "rebirth-api"
+    api_version: Literal[1] = 1
+    sync_protocol_version: Literal[2] = 2
+    environment: str
 
 
 class DevLoginRequest(BaseModel):

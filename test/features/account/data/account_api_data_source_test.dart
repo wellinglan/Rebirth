@@ -7,7 +7,13 @@ import 'package:rebirth/features/account/domain/device_registration.dart';
 void main() {
   test('getHealth requests /health and converts DTO', () async {
     final client = _FakeApiClient(
-      getResponse: const {'status': 'ok', 'service': 'rebirth-api'},
+      getResponse: const {
+        'status': 'ok',
+        'service': 'rebirth-api',
+        'api_version': 1,
+        'sync_protocol_version': 2,
+        'environment': 'development',
+      },
     );
     final dataSource = AccountApiDataSource(client);
 

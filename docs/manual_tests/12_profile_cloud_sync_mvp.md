@@ -44,11 +44,13 @@
 3. Android 使用同一 `dev_user_key` 登录并注册为另一台设备。
 4. Android 拉取 Profile，确认昵称、成长方向和时区更新，本地 Profile UUID 不被云端 ID 替换。
 5. 在 Android 修改并上传 Profile，再由 Windows 拉取，确认反向更新成立。
-6. 当前 Settings 尚不能编辑 API Base URL；Android 真机联调使用编译期覆盖：
+6. Android 在 Settings 的“开发服务器”中输入局域网地址，测试成功后保存；IP 改变时只修改这里，无需重建 APK。`dart-define` 仅保留为构建 fallback：
 
    ```powershell
    flutter run -d <android-device-id> --dart-define=REBIRTH_API_BASE_URL=http://192.168.x.x:8000
    ```
+7. 确认 Windows 与 Android 的本地 Profile UUID 不同，但云端 pull/push 的 `record_id` 恒为 `profile`，同一账号只有一个 canonical Profile。
+8. endpoint 切换后确认旧会话和设备注册被清除，本地 Profile 与其他业务数据不变。
 
 ## 冲突测试
 
@@ -58,6 +60,7 @@
 4. Windows 点击“拉取 Profile”。
 5. 确认提示“检测到本地与云端都有修改，暂未自动覆盖”。
 6. 确认 Windows 本地未上传内容仍然存在，且 `sync_status` 标记为 `conflict`。
+7. 确认该客户端 pull cursor 未推进，下次 pull 仍能取得同一服务端变更。
 
 ## 登录与故障测试
 
@@ -74,3 +77,4 @@
 - 不上传 Today、Journal、Plan 或 Health。
 - 不实现真实微信登录。
 - 不在日志、错误、截图或测试快照中暴露 access token。
+- HTTP 仅用于本机、局域网和 alpha 测试；正式云部署必须使用 HTTPS。

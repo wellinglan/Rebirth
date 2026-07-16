@@ -35,6 +35,7 @@ void main() {
         isWeb: false,
       ),
       config: const AppConfig.development(),
+      serverBaseUrl: AppConfig.defaultApiBaseUrl,
     );
   });
 
@@ -69,6 +70,7 @@ void main() {
 
     expect(remote.lastDevUserKey, 'local-test-user');
     expect(store.session, same(session));
+    expect(session.serverBaseUrl, AppConfig.defaultApiBaseUrl);
   });
 
   test('logout clears only the account session', () async {

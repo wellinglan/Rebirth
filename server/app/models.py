@@ -102,3 +102,10 @@ class SyncItem(Base):
     server_updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     deleted_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     origin_device_id: Mapped[str] = mapped_column(String(128), nullable=False)
+
+
+class SyncClock(Base):
+    __tablename__ = "sync_clock"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    current_version: Mapped[int] = mapped_column(BigInteger, nullable=False)

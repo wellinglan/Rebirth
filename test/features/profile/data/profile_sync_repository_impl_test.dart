@@ -14,6 +14,7 @@ import 'package:rebirth/features/profile/domain/profile_save_data.dart';
 import 'package:rebirth/features/sync/data/dto/sync_dto.dart';
 import 'package:rebirth/features/sync/data/sync_api_data_source.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict.dart';
+import 'package:rebirth/features/sync/domain/sync_cursor_store.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
 import 'package:rebirth/features/sync/domain/sync_result.dart';
 
@@ -21,6 +22,7 @@ void main() {
   late AppDatabase database;
   late _MemorySessionStore sessionStore;
   late _FakeSyncRemoteDataSource remote;
+  late _MemorySyncCursorStore cursorStore;
   late DateTime now;
   late ProfileSyncRepositoryImpl repository;
 
@@ -28,12 +30,15 @@ void main() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
     sessionStore = _MemorySessionStore(session: _registeredSession);
     remote = _FakeSyncRemoteDataSource();
+    cursorStore = _MemorySyncCursorStore();
     now = DateTime.utc(2030, 1, 2, 3, 4, 5);
     repository = ProfileSyncRepositoryImpl(
       database: database,
       sessionStore: sessionStore,
       remoteDataSource: remote,
       dateTimeService: DateTimeService(now: () => now),
+      cursorStore: cursorStore,
+      endpoint: 'http://127.0.0.1:8000',
     );
     await database.bootstrapDao.bootstrap();
   });
@@ -52,7 +57,7 @@ void main() {
       accepted: [
         SyncedRecord(
           tableName: 'user_profiles',
-          recordId: profile.id,
+          recordId: 'profile',
           serverVersion: 4,
         ),
       ],
@@ -65,7 +70,8 @@ void main() {
     expect(request.deviceId, _deviceId);
     expect(request.items, hasLength(1));
     expect(request.items.single.tableName, 'user_profiles');
-    expect(request.items.single.recordId, profile.id);
+    expect(request.items.single.recordId, 'profile');
+    expect(request.items.single.recordId, isNot(profile.id));
     expect(request.items.single.payload, {
       'display_name': 'Local user',
       'growth_focus': 'Research',
@@ -75,6 +81,7 @@ void main() {
     expect(request.items.single.updatedAt, now.millisecondsSinceEpoch);
     expect(request.items.single.deletedAt, isNull);
     expect(request.items.single.clientVersion, 0);
+    expect(cursorStore.value, 0);
   });
 
   test('pushProfile success writes all local sync metadata', () async {
@@ -83,7 +90,7 @@ void main() {
       accepted: [
         SyncedRecord(
           tableName: 'user_profiles',
-          recordId: bootstrap.activeUserId,
+          recordId: 'profile',
           serverVersion: 9,
         ),
       ],
@@ -102,13 +109,12 @@ void main() {
   });
 
   test('pushProfile conflict is explicit and keeps the local version', () async {
-    final bootstrap = await database.bootstrapDao.bootstrap();
     remote.pushResponse = SyncPushResponseDto(
       accepted: const [],
       conflicts: [
         SyncConflict(
           tableName: 'user_profiles',
-          recordId: bootstrap.activeUserId,
+          recordId: 'profile',
           serverVersion: 6,
           reason: 'stale_client',
         ),
@@ -149,7 +155,7 @@ void main() {
     );
   });
 
-  test('pullProfile no update returns a no-op and uses local version', () async {
+  test('pullProfile no update uses and advances the independent cursor', () async {
     final bootstrap = await database.bootstrapDao.bootstrap();
     await ProfileLocalDataSource(database).updateSyncMetadata(
       userId: bootstrap.activeUserId,
@@ -159,14 +165,16 @@ void main() {
       originDeviceId: bootstrap.localInstallationId,
     );
     remote.pullResponse = SyncPullResponseDto(serverVersion: 5, items: const []);
+    cursorStore.value = 3;
 
     final result = await repository.pullProfile();
 
     expect(result.success, isTrue);
     expect(result.pulled, isFalse);
     expect(result.message, '没有新的 Profile 更新');
-    expect(remote.lastPullRequest?.sinceServerVersion, 5);
+    expect(remote.lastPullRequest?.sinceServerVersion, 3);
     expect(remote.lastPullRequest?.tables, ['user_profiles']);
+    expect(cursorStore.value, 5);
   });
 
   test('pullProfile applies the newest cloud Profile to the local UUID', () async {
@@ -175,12 +183,12 @@ void main() {
       serverVersion: 8,
       items: [
         _pulledProfile(
-          recordId: 'remote-profile-id',
+          recordId: 'legacy-profile-id',
           serverVersion: 7,
           displayName: 'Older cloud name',
         ),
         _pulledProfile(
-          recordId: 'another-remote-profile-id',
+          recordId: 'profile',
           serverVersion: 8,
           displayName: 'Newest cloud name',
         ),
@@ -192,7 +200,7 @@ void main() {
 
     expect(result.pulled, isTrue);
     expect(stored.id, bootstrap.activeUserId);
-    expect(stored.id, isNot('another-remote-profile-id'));
+    expect(stored.id, isNot('profile'));
     expect(stored.displayName, 'Newest cloud name');
     expect(stored.growthFocus, 'Cloud focus');
     expect(stored.timezoneId, 'Asia/Shanghai');
@@ -200,6 +208,7 @@ void main() {
     expect(stored.syncStatus, 'synced');
     expect(stored.serverVersion, 8);
     expect(stored.lastSyncedAt, now.millisecondsSinceEpoch);
+    expect(cursorStore.value, 8);
   });
 
   test('pullProfile detects local pending changes and never overwrites them', () async {
@@ -229,6 +238,7 @@ void main() {
     expect(stored.displayName, 'Unsynced local name');
     expect(stored.syncStatus, 'conflict');
     expect(stored.serverVersion, 1);
+    expect(cursorStore.value, 0);
   });
 
   test('network failure leaves the complete local Profile untouched', () async {
@@ -253,6 +263,32 @@ void main() {
     expect(after.growthFocus, before.growthFocus);
     expect(after.updatedAt, before.updatedAt);
     expect(after.syncStatus, before.syncStatus);
+    expect(cursorStore.value, 0);
+  });
+
+  test('invalid canonical payload does not advance pull cursor', () async {
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 4,
+      items: [
+        PulledSyncItemDto(
+          tableName: 'user_profiles',
+          recordId: 'profile',
+          payload: const {
+            'display_name': 'Invalid cloud value',
+            'timezone_id': 123,
+            'updated_at': 400,
+          },
+          updatedAt: 400,
+          deletedAt: null,
+          originDeviceId: '22222222-2222-4222-8222-222222222222',
+          serverVersion: 4,
+        ),
+      ],
+    );
+
+    await expectLater(repository.pullProfile(), throwsA(isA<SyncException>()));
+
+    expect(cursorStore.value, 0);
   });
 
   test('schemaVersion remains 3', () {
@@ -261,7 +297,7 @@ void main() {
 }
 
 PulledSyncItemDto _pulledProfile({
-  String recordId = 'remote-profile-id',
+  String recordId = 'profile',
   required int serverVersion,
   required String displayName,
 }) {
@@ -345,5 +381,35 @@ final class _FakeSyncRemoteDataSource implements SyncRemoteDataSource {
     if (error case final value?) throw value;
     lastPullRequest = request;
     return pullResponse;
+  }
+}
+
+final class _MemorySyncCursorStore implements SyncCursorStore {
+  int value = 0;
+
+  @override
+  Future<int> read({
+    required String endpoint,
+    required String cloudUserId,
+    required String scope,
+  }) async => value;
+
+  @override
+  Future<void> write({
+    required String endpoint,
+    required String cloudUserId,
+    required String scope,
+    required int serverVersion,
+  }) async {
+    value = serverVersion;
+  }
+
+  @override
+  Future<void> clear({
+    required String endpoint,
+    required String cloudUserId,
+    String? scope,
+  }) async {
+    value = 0;
   }
 }

@@ -35,6 +35,34 @@ void main() {
     expect(await store.read(), isNull);
   });
 
+  test('session is restored only for the server that issued it', () async {
+    final store = LocalAuthSessionStore();
+    await store.save(
+      _session.copyWith(serverBaseUrl: 'http://server-a:8000'),
+    );
+
+    final restored = await LocalAuthSessionStore(
+      expectedServerBaseUrl: 'http://server-a:8000/',
+    ).read();
+
+    expect(restored?.user.id, _session.user.id);
+    expect(restored?.serverBaseUrl, 'http://server-a:8000');
+  });
+
+  test('different endpoint rejects and clears old session and device', () async {
+    final store = LocalAuthSessionStore();
+    await store.save(
+      _session.copyWith(serverBaseUrl: 'http://server-a:8000'),
+    );
+
+    final restored = await LocalAuthSessionStore(
+      expectedServerBaseUrl: 'http://server-b:8000',
+    ).read();
+
+    expect(restored, isNull);
+    expect(await store.read(), isNull);
+  });
+
   test('AuthSession toString does not expose tokens', () {
     expect(_session.toString(), isNot(contains('test-access-token')));
     expect(_session.toString(), isNot(contains('test-refresh-token')));

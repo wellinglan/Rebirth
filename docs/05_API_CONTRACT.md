@@ -1,13 +1,14 @@
 # Rebirth API Contract Draft
 
-> Status: Sprint 6D development contract and Profile sync client
+> Status: Sprint 6E cloud-ready development contract and Profile sync client
 > Authentication: `Authorization: Bearer <Rebirth access token>` where marked
 
 ## Base URL
 
 - Development: `http://127.0.0.1:8000`
 - LAN test: `http://<local-ip>:8000`
-- Production: TBD and must use HTTPS
+- Runtime selection: Settings saved endpoint > `REBIRTH_API_BASE_URL` > `http://127.0.0.1:8000`
+- Production: must use HTTPS
 
 Timestamps are UTC milliseconds since epoch. IDs are opaque UUID strings. Error payloads use FastAPI's standard `detail` field unless an endpoint defines a domain response.
 
@@ -20,9 +21,14 @@ Response `200`:
 ```json
 {
   "status": "ok",
-  "service": "rebirth-api"
+  "service": "rebirth-api",
+  "api_version": 1,
+  "sync_protocol_version": 2,
+  "environment": "development"
 }
 ```
+
+The response contains no credentials, database URL, user data, or local file path. Flutter accepts API version 1 and sync protocol version 2.
 
 ## Authentication
 
@@ -118,6 +124,8 @@ Registration is idempotent for `user + local_installation_id`. Re-registering up
 
 ## Sync
 
+For `user_profiles`, `id` is always the canonical value `profile`. Flutter local Profile UUIDs are device-local identities and never replace this cloud key. Other table IDs retain the general opaque record-ID contract, although Flutter Sprint 6E does not sync those tables.
+
 Supported Sprint 6B table names:
 
 - `user_profiles`
@@ -209,12 +217,16 @@ Response `200`:
 }
 ```
 
-Only items with `server_version > since_server_version` and a requested table are returned. Deleted records remain in the response with `deleted_at` as tombstones.
+Only items with `server_version > since_server_version` and a requested table are returned. For `user_profiles`, only canonical `id=profile` is returned. If only Sprint 6D legacy UUID rows exist, Server lazily creates canonical Profile from the newest undeleted legacy version and retains the legacy rows. Deleted records for other generic scopes remain tombstones.
+
+`server_version` on a record and the client's pull cursor are distinct. Flutter advances its endpoint/user/scope cursor to response `server_version` only after every returned Profile item is parsed and applied successfully; an empty successful response can also advance it. Conflict, parse failure, network failure, or local write failure does not advance cursor.
 
 ## Current Contract Limits
 
 - There is no production refresh endpoint, token revocation, account linking, device management UI, background sync, batch pagination, encryption-at-rest policy, or business-specific conflict resolution yet.
-- The development SQLite service is not a production deployment topology.
+- Windows SQLite and Docker PostgreSQL expose the same API contract; Base URL is an environment difference, not a business-layer difference.
+- SharedPreferences token storage is development-only; secure storage and complete refresh/revoke are not implemented.
+- HTTP is development-only. Production requires HTTPS and a deployment security review.
 - Flutter 调用 `/health`、`/auth/dev-login` 和 `/devices/register`。
 - Flutter Sprint 6D 只为 `user_profiles` 手动调用 `/sync/push` 和 `/sync/pull`。
 - Today、Journal、Plan、Health 继续只走本地 Repository，且不会在登录后自动上传。

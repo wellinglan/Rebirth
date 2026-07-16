@@ -34,8 +34,8 @@ class AccountController extends AsyncNotifier<AccountViewState> {
       final health = await ref
           .read(accountRepositoryProvider)
           .checkBackendHealth();
-      if (!health.isHealthy) {
-        throw const ApiException(message: '开发后端健康状态异常。');
+      if (!health.isCompatible) {
+        throw const ApiException(message: '开发后端 API 或同步协议版本不兼容。');
       }
       _finish(
         current.status.copyWith(

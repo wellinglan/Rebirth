@@ -17,6 +17,7 @@ final class AccountRepositoryImpl implements AuthRepository {
     required this.loadLocalInstallationId,
     required this.deviceInfoService,
     required this.config,
+    required this.serverBaseUrl,
   });
 
   final AccountRemoteDataSource remoteDataSource;
@@ -24,11 +25,12 @@ final class AccountRepositoryImpl implements AuthRepository {
   final Future<String> Function() loadLocalInstallationId;
   final DeviceInfoService deviceInfoService;
   final AppConfig config;
+  final String serverBaseUrl;
 
   @override
   Future<AccountStatus> getAccountStatus() async {
     final session = await sessionStore.read();
-    final backendConfigured = config.apiBaseUrl.trim().isNotEmpty;
+    final backendConfigured = serverBaseUrl.trim().isNotEmpty;
     if (session == null) {
       return AccountStatus.localOnly(backendConfigured: backendConfigured);
     }
@@ -56,7 +58,9 @@ final class AccountRepositoryImpl implements AuthRepository {
     if (key.isEmpty) {
       throw ArgumentError.value(devUserKey, 'devUserKey', 'Must not be empty.');
     }
-    final session = await remoteDataSource.devLogin(key);
+    final session = (await remoteDataSource.devLogin(key)).copyWith(
+      serverBaseUrl: serverBaseUrl,
+    );
     await sessionStore.save(session);
     return session;
   }

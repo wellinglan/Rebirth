@@ -4,16 +4,22 @@ import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/account/domain/device_registration.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rebirth/core/config/server_endpoint_validator.dart';
 
 import 'auth_session_store.dart';
 
 final class LocalAuthSessionStore implements AuthSessionStore {
-  LocalAuthSessionStore({Future<SharedPreferences> Function()? loadPreferences})
-    : _loadPreferences = loadPreferences ?? SharedPreferences.getInstance;
+  LocalAuthSessionStore({
+    Future<SharedPreferences> Function()? loadPreferences,
+    this.expectedServerBaseUrl,
+    this.endpointValidator = const ServerEndpointValidator(),
+  }) : _loadPreferences = loadPreferences ?? SharedPreferences.getInstance;
 
   static const _sessionKey = 'rebirth.dev.auth_session.v1';
 
   final Future<SharedPreferences> Function() _loadPreferences;
+  final String? expectedServerBaseUrl;
+  final ServerEndpointValidator endpointValidator;
 
   @override
   Future<AuthSession?> read() async {
@@ -24,7 +30,16 @@ final class LocalAuthSessionStore implements AuthSessionStore {
     try {
       final json = jsonDecode(encoded);
       if (json is! Map) throw const FormatException('Invalid session data.');
-      return _decodeSession(Map<String, Object?>.from(json));
+      final session = _decodeSession(Map<String, Object?>.from(json));
+      final expected = expectedServerBaseUrl;
+      if (expected != null &&
+          (session.serverBaseUrl.isEmpty ||
+              endpointValidator.normalize(session.serverBaseUrl) !=
+                  endpointValidator.normalize(expected))) {
+        await preferences.remove(_sessionKey);
+        return null;
+      }
+      return session;
     } on FormatException {
       await preferences.remove(_sessionKey);
       return null;
@@ -42,6 +57,7 @@ final class LocalAuthSessionStore implements AuthSessionStore {
       'access_token': session.accessToken,
       'refresh_token': session.refreshToken,
       'token_type': session.tokenType,
+      'server_base_url': session.serverBaseUrl,
       'user': {'id': session.user.id, 'display_name': session.user.displayName},
       'device': device == null
           ? null
@@ -72,6 +88,7 @@ final class LocalAuthSessionStore implements AuthSessionStore {
       accessToken: json['access_token'] as String,
       refreshToken: json['refresh_token'] as String,
       tokenType: json['token_type'] as String,
+      serverBaseUrl: json['server_base_url'] as String? ?? '',
       user: AuthUser(
         id: user['id'] as String,
         displayName: user['display_name'] as String?,

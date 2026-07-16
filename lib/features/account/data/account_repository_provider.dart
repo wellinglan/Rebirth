@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/config/app_config_provider.dart';
+import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/network/api_client_provider.dart';
 import 'package:rebirth/features/account/domain/auth_repository.dart';
 import 'package:rebirth/features/profile/data/profile_repository_provider.dart';
@@ -11,7 +12,9 @@ import 'device_info_service.dart';
 import 'local_auth_session_store.dart';
 
 final authSessionStoreProvider = Provider<AuthSessionStore>(
-  (ref) => LocalAuthSessionStore(),
+  (ref) => LocalAuthSessionStore(
+    expectedServerBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
+  ),
 );
 
 final deviceInfoServiceProvider = Provider<DeviceInfoService>(
@@ -33,5 +36,6 @@ final accountRepositoryProvider = Provider<AuthRepository>((ref) {
     },
     deviceInfoService: ref.watch(deviceInfoServiceProvider),
     config: ref.watch(appConfigProvider),
+    serverBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
   );
 });

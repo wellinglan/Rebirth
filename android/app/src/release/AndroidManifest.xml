@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Alpha LAN testing only. Production endpoints must use HTTPS. -->
+    <application android:usesCleartextTraffic="true"/>
+</manifest>
