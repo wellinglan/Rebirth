@@ -625,7 +625,7 @@ AIReport 可引用以下输入：
 | `locale` | `TEXT` | 是 | `zh_CN` | UI 语言标识 |
 | `first_day_of_week` | `INTEGER` | 是 | `1` | ISO 星期值，`1` 表示星期一 |
 | `onboarding_completed` | `INTEGER` | 是 | `0` | 是否完成初始设置，取值 `0/1` |
-| `ai_data_sharing_enabled` | `INTEGER` | 是 | `0` | 是否明确允许向 AI 服务发送必要数据 |
+| `ai_data_sharing_enabled` | `INTEGER` | 是 | `0` | 是否明确允许 App 在用户主动操作时准备所选 AI 输入；不等于自动发送 |
 | `ai_data_sharing_consent_at` | `INTEGER` | 否 | `NULL` | 最近一次开启 AI 数据共享的时间 |
 | `cloud_sync_enabled` | `INTEGER` | 是 | `0` | 未来云同步开关，v1.0 保持关闭 |
 | `created_at` | `INTEGER` | 是 | 应用写入当前 UTC 时间 | 创建时间 |
@@ -643,7 +643,7 @@ AIReport 可引用以下输入：
 - 云端恢复其他设备的数据时，不得用远端值覆盖当前安装的 `local_installation_id`；
 - 所有布尔字段只允许 `0/1`；
 - `first_day_of_week` 只允许 `1-7`；
-- 关闭 AI 数据共享时不删除本地历史报告，只停止新的远程数据发送；
+- 关闭 AI 数据共享时保留最近一次 `ai_data_sharing_consent_at`，不删除本地历史报告或原始记录，并阻止新的 AI 输入准备和 pending 报告创建；
 - `app_settings` 不进行常规软删除，重置应用时按明确流程硬删除并重新创建默认设置。
 
 ---

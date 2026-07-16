@@ -7,6 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/config/server_endpoint.dart';
 import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/network/api_exception.dart';
+import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_exception.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
@@ -586,6 +589,7 @@ Future<void> _pumpSettings(
   AuthRepository authRepository, {
   ProfileSyncRepository? syncRepository,
   ServerEndpointConnectionTester? endpointTester,
+  AiConsentRepository? aiConsentRepository,
 }) async {
   await tester.binding.setSurfaceSize(const Size(900, 1100));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -594,6 +598,9 @@ Future<void> _pumpSettings(
       overrides: [
         profileRepositoryProvider.overrideWithValue(profileRepository),
         accountRepositoryProvider.overrideWithValue(authRepository),
+        aiConsentRepositoryProvider.overrideWithValue(
+          aiConsentRepository ?? _FakeAiConsentRepository(),
+        ),
         profileSyncRepositoryProvider.overrideWithValue(
           syncRepository ?? _FakeProfileSyncRepository(),
         ),
@@ -605,6 +612,26 @@ Future<void> _pumpSettings(
       child: const MaterialApp(home: SettingsPage()),
     ),
   );
+}
+
+final class _FakeAiConsentRepository implements AiConsentRepository {
+  AiDataAuthorization authorization = const AiDataAuthorization.disabled();
+
+  @override
+  Future<AiDataAuthorization> read() async => authorization;
+
+  @override
+  Future<AiDataAuthorization> grant() async {
+    return authorization = AiDataAuthorization(enabled: true, consentAt: 1);
+  }
+
+  @override
+  Future<AiDataAuthorization> revoke() async {
+    return authorization = AiDataAuthorization(
+      enabled: false,
+      consentAt: authorization.consentAt,
+    );
+  }
 }
 
 Future<void> _tapByKey(WidgetTester tester, String key) async {

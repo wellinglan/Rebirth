@@ -456,16 +456,22 @@ AI 相关能力应抽象为独立服务：
 features/
   ai_coach/
     data/
-      ai_api_client.dart
-      ai_report_repository_impl.dart
+      ai_coach_input_assembler_impl.dart
+      canonical_json_encoder_impl.dart
+      sha256_input_hash_service.dart
+      local_ai_consent_repository.dart
+      local_ai_report_repository.dart
 
     domain/
+      ai_data_selection.dart
+      ai_coach_input_bundle.dart
       ai_report.dart
       ai_report_repository.dart
-
-    presentation/
-      ai_coach_page.dart
 ```
+
+Sprint 8A 不包含 AI API Client 或 AI Coach 页面。Settings 的授权入口通过 Controller 调用
+`AiConsentRepository`，Widget 不访问 Drift。未来 Provider 必须消费
+`AiCoachInputBundle`，不得直接读取或发送数据库行。
 
 ### 10.2 AI 输入
 
@@ -477,6 +483,10 @@ AI 分析输入来自本地结构化数据，例如：
 - Goal；
 - GrowthSummary。
 
+全局 Consent 与单次 `AiDataSelection` 相互独立。Consent 默认关闭；启用后也不会自动选择数据、
+发送网络请求或生成报告。Weekly Report 输入只能由 Input Assembler 按显式 scope 最小化构建，
+并在完整输入形成后生成 Canonical JSON 与 SHA-256 hash。
+
 ### 10.3 AI 输出
 
 AI 输出应保存为 AIReport，而不是只显示一次。
@@ -487,6 +497,10 @@ AI 输出应保存为 AIReport，而不是只显示一次。
 - 便于长期分析；
 - 便于未来训练用户画像；
 - 便于避免重复生成。
+
+AIReport 与 Today、Journal、Health、Goal 和 Growth 原始事实分离。报告生命周期只能更新
+`ai_reports`，AI 输出不得覆盖用户事实。Sprint 8A 只建立本地 pending、completed、failed
+生命周期，不生成真实或模板伪造内容，也不进行云同步。
 
 ### 10.4 Prompt 管理
 

@@ -16,6 +16,7 @@ import 'settings_controller.dart';
 import 'settings_view_state.dart';
 import 'server_endpoint_settings_controller.dart';
 import 'widgets/account_status_card.dart';
+import 'widgets/ai_data_privacy_card.dart';
 import 'widgets/device_status_card.dart';
 import 'widgets/settings_section.dart';
 import 'widgets/settings_tile.dart';
@@ -425,6 +426,11 @@ class _SettingsContent extends StatelessWidget {
                           icon: Icons.device_unknown_outlined,
                         )
                       : DeviceStatusCard(status: state.deviceStatus!),
+                ),
+                const SizedBox(height: AppLayout.sectionGap),
+                const SettingsSection(
+                  title: 'AI 数据与隐私',
+                  child: AiDataPrivacyCard(),
                 ),
                 const SizedBox(height: AppLayout.sectionGap),
                 SettingsSection(
