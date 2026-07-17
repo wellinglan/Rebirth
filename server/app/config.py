@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -74,21 +75,35 @@ def load_settings(
         if not resolved_ai_model:
             raise RuntimeError("REBIRTH_AI_MODEL is required for the OpenAI provider.")
 
-    result_retention_hours = int(
-        os.getenv("REBIRTH_AI_RESULT_RETENTION_HOURS", "24")
+    ai_timeout_seconds = _positive_float("REBIRTH_AI_TIMEOUT_SECONDS", "90")
+    ai_max_output_tokens = _positive_int("REBIRTH_AI_MAX_OUTPUT_TOKENS", "1600")
+    result_retention_hours = _positive_int(
+        "REBIRTH_AI_RESULT_RETENTION_HOURS", "24"
     )
-    dedupe_retention_days = int(
-        os.getenv("REBIRTH_AI_DEDUPE_RETENTION_DAYS", "30")
+    dedupe_retention_days = _positive_int(
+        "REBIRTH_AI_DEDUPE_RETENTION_DAYS", "30"
     )
-    processing_lease_minutes = int(
-        os.getenv("REBIRTH_AI_PROCESSING_LEASE_MINUTES", "5")
+    processing_lease_minutes = _positive_int(
+        "REBIRTH_AI_PROCESSING_LEASE_MINUTES", "5"
     )
-    if min(
-        result_retention_hours,
-        dedupe_retention_days,
-        processing_lease_minutes,
-    ) <= 0:
-        raise RuntimeError("AI retention and lease settings must be positive.")
+    result_retention_seconds = result_retention_hours * 60 * 60
+    dedupe_retention_seconds = dedupe_retention_days * 24 * 60 * 60
+    processing_lease_seconds = processing_lease_minutes * 60
+    if processing_lease_seconds < ai_timeout_seconds + 30:
+        raise RuntimeError(
+            "REBIRTH_AI_PROCESSING_LEASE_MINUTES must allow at least 30 seconds "
+            "beyond REBIRTH_AI_TIMEOUT_SECONDS."
+        )
+    if dedupe_retention_seconds < result_retention_seconds:
+        raise RuntimeError(
+            "REBIRTH_AI_DEDUPE_RETENTION_DAYS must not be shorter than "
+            "REBIRTH_AI_RESULT_RETENTION_HOURS."
+        )
+    if dedupe_retention_seconds <= processing_lease_seconds:
+        raise RuntimeError(
+            "REBIRTH_AI_DEDUPE_RETENTION_DAYS must be longer than "
+            "REBIRTH_AI_PROCESSING_LEASE_MINUTES."
+        )
 
     return Settings(
         environment=resolved_environment,
@@ -101,12 +116,30 @@ def load_settings(
         ai_provider=resolved_ai_provider,
         openai_api_key=resolved_api_key,
         ai_model=resolved_ai_model,
-        ai_timeout_seconds=float(os.getenv("REBIRTH_AI_TIMEOUT_SECONDS", "90")),
-        ai_max_output_tokens=int(
-            os.getenv("REBIRTH_AI_MAX_OUTPUT_TOKENS", "1600")
-        ),
+        ai_timeout_seconds=ai_timeout_seconds,
+        ai_max_output_tokens=ai_max_output_tokens,
         ai_fake_scenario=os.getenv("REBIRTH_AI_FAKE_SCENARIO", "success").lower(),
         ai_result_retention_hours=result_retention_hours,
         ai_dedupe_retention_days=dedupe_retention_days,
         ai_processing_lease_minutes=processing_lease_minutes,
     )
+
+
+def _positive_int(name: str, default: str) -> int:
+    try:
+        value = int(os.getenv(name, default))
+    except (TypeError, ValueError):
+        raise RuntimeError(f"{name} must be a positive integer.") from None
+    if value <= 0:
+        raise RuntimeError(f"{name} must be a positive integer.")
+    return value
+
+
+def _positive_float(name: str, default: str) -> float:
+    try:
+        value = float(os.getenv(name, default))
+    except (TypeError, ValueError):
+        raise RuntimeError(f"{name} must be a finite positive number.") from None
+    if not math.isfinite(value) or value <= 0:
+        raise RuntimeError(f"{name} must be a finite positive number.")
+    return value

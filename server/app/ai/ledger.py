@@ -4,11 +4,12 @@ import json
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.ai.errors import AiGatewayError
+from app.ai.observability import log_ai_event
 from app.ai.schemas import (
     AiRequestStatusResponse,
     AiWeeklyGenerateRequest,
@@ -30,32 +31,94 @@ class LedgerClaim:
     owns_provider_call: bool
 
 
+@dataclass(frozen=True)
+class AiLedgerCleanupResult:
+    result_candidate_count: int
+    tombstone_candidate_count: int
+    result_purge_count: int
+    tombstone_delete_count: int
+
+
 class AiRequestLedger:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
-    def cleanup(self, session: Session, *, now: int) -> None:
-        session.execute(
-            update(AiGenerationRequest)
-            .where(
-                AiGenerationRequest.status == "completed",
-                AiGenerationRequest.result_expires_at.is_not(None),
-                AiGenerationRequest.result_expires_at <= now,
-                AiGenerationRequest.result_purged_at.is_(None),
-            )
-            .values(
-                report_content=None,
-                structured_output_json=None,
-                result_purged_at=now,
-                updated_at=now,
-            )
+    def cleanup(
+        self,
+        session: Session,
+        *,
+        now: int,
+        dry_run: bool = False,
+        emit_logs: bool = True,
+    ) -> AiLedgerCleanupResult:
+        purge_filter = (
+            AiGenerationRequest.status == "completed",
+            AiGenerationRequest.result_expires_at.is_not(None),
+            AiGenerationRequest.result_expires_at <= now,
+            AiGenerationRequest.result_purged_at.is_(None),
         )
-        session.execute(
-            delete(AiGenerationRequest).where(
-                AiGenerationRequest.dedupe_expires_at <= now
+        delete_filter = (AiGenerationRequest.dedupe_expires_at <= now,)
+        result_candidates = int(
+            session.scalar(
+                select(func.count())
+                .select_from(AiGenerationRequest)
+                .where(*purge_filter)
             )
+            or 0
         )
-        session.commit()
+        tombstone_candidates = int(
+            session.scalar(
+                select(func.count())
+                .select_from(AiGenerationRequest)
+                .where(*delete_filter)
+            )
+            or 0
+        )
+        if dry_run:
+            session.rollback()
+            return AiLedgerCleanupResult(
+                result_candidate_count=result_candidates,
+                tombstone_candidate_count=tombstone_candidates,
+                result_purge_count=0,
+                tombstone_delete_count=0,
+            )
+        try:
+            purged = session.execute(
+                update(AiGenerationRequest)
+                .where(*purge_filter)
+                .values(
+                    report_content=None,
+                    structured_output_json=None,
+                    result_purged_at=now,
+                    updated_at=now,
+                )
+            ).rowcount
+            deleted = session.execute(
+                delete(AiGenerationRequest).where(*delete_filter)
+            ).rowcount
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        result = AiLedgerCleanupResult(
+            result_candidate_count=result_candidates,
+            tombstone_candidate_count=tombstone_candidates,
+            result_purge_count=max(purged or 0, 0),
+            tombstone_delete_count=max(deleted or 0, 0),
+        )
+        if emit_logs and result.result_purge_count:
+            log_ai_event(
+                "ai_result_purged",
+                environment=self._settings.environment,
+                result_purge_count=result.result_purge_count,
+            )
+        if emit_logs and result.tombstone_delete_count:
+            log_ai_event(
+                "ai_tombstone_deleted",
+                environment=self._settings.environment,
+                tombstone_delete_count=result.tombstone_delete_count,
+            )
+        return result
 
     def find(
         self, session: Session, *, user_id: str, request_id: str
@@ -129,27 +192,34 @@ class AiRequestLedger:
             row.result_purged_at = now
             row.updated_at = now
             session.commit()
-        if (
-            row.status == "processing"
-            and row.lease_expires_at is not None
-            and row.lease_expires_at <= now
-        ):
-            changed = session.execute(
-                update(AiGenerationRequest)
-                .where(
-                    AiGenerationRequest.id == row.id,
-                    AiGenerationRequest.status == "processing",
-                    AiGenerationRequest.lease_expires_at <= now,
-                )
-                .values(status="outcome_unknown", updated_at=now)
-            ).rowcount
-            session.commit()
-            if changed:
-                row.status = "outcome_unknown"
-                row.updated_at = now
-            else:
-                session.refresh(row)
+        self.expire_stale_processing(session, row, now=now)
         return row
+
+    def expire_stale_processing(
+        self, session: Session, row: AiGenerationRequest, *, now: int
+    ) -> bool:
+        if (
+            row.status != "processing"
+            or row.lease_expires_at is None
+            or row.lease_expires_at > now
+        ):
+            return False
+        changed = session.execute(
+            update(AiGenerationRequest)
+            .where(
+                AiGenerationRequest.id == row.id,
+                AiGenerationRequest.status == "processing",
+                AiGenerationRequest.lease_expires_at <= now,
+            )
+            .values(status="outcome_unknown", updated_at=now)
+        ).rowcount
+        session.commit()
+        if changed:
+            row.status = "outcome_unknown"
+            row.updated_at = now
+            return True
+        session.refresh(row)
+        return False
 
     def mark_completed(
         self,

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.ai.errors import AiGatewayError
 from app.ai.schemas import (
     AiCapabilitiesResponse,
+    AiErrorResponse,
     AiRequestStatusResponse,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
@@ -30,7 +31,31 @@ def capabilities(
 @router.post(
     "/reports/weekly/generate",
     response_model=AiWeeklyGenerateResponse,
-    responses={422: {"description": "Controlled AI input error"}},
+    responses={
+        202: {
+            "model": AiRequestStatusResponse,
+            "description": "The request is already processing.",
+        },
+        409: {
+            "model": AiErrorResponse,
+            "description": "Idempotency conflict or unknown provider outcome.",
+        },
+        410: {
+            "model": AiErrorResponse,
+            "description": "The temporary result has expired.",
+        },
+        422: {
+            "model": AiErrorResponse,
+            "description": "Invalid input or unsupported AI contract.",
+        },
+        429: {"model": AiErrorResponse, "description": "Provider rate limited."},
+        502: {
+            "model": AiErrorResponse,
+            "description": "Provider, request, or response failure.",
+        },
+        503: {"model": AiErrorResponse, "description": "Provider unavailable."},
+        504: {"model": AiErrorResponse, "description": "Provider timeout."},
+    },
 )
 async def generate_weekly(
     body: AiWeeklyGenerateRequest,
@@ -58,6 +83,10 @@ async def generate_weekly(
 @router.get(
     "/requests/{request_id}",
     response_model=AiRequestStatusResponse,
+    responses={
+        401: {"model": AiErrorResponse, "description": "Authentication required."},
+        404: {"model": AiErrorResponse, "description": "Request not found."},
+    },
 )
 def request_status(
     request_id: str,

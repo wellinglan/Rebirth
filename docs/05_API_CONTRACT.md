@@ -225,6 +225,8 @@ Only items with `server_version > since_server_version` and a requested table ar
 
 ## AI Manual Weekly Generation And Recovery (Sprint 8D)
 
+Sprint 8E completes the OpenAPI response contract. `POST /ai/reports/weekly/generate` declares `200` completed, `202` processing, and controlled `409`, `410`, `422`, `429`, `502`, `503`, and `504` responses. `GET /ai/requests/{request_id}` declares `200`, `401`, and non-disclosing `404`. Error bodies use `AiErrorResponse`; the OpenAPI document contains no Server database model or secret.
+
 `GET /ai/capabilities` and `POST /ai/reports/weekly/generate` require the existing bearer JWT. The only report contract is input schema 1, `weekly_report`, `weekly-report-v1`, and output schema 1. Generation accepts the existing typed canonical payload plus its SHA-256; Server normalizes/recomputes the hash before Provider invocation and rejects extra fields. Responses return the echoed request identity/hash, actual provider/model, server-rendered Markdown, and validated structured output.
 
 The Server persists a minimal request ledger, not user report history. It temporarily retains only validated output for replay and never persists input payloads, sources, canonical JSON, source IDs, Journal text, Provider request/raw response, credentials, stack traces, database URLs, or local paths. Flutter local `ai_reports` remains report history.

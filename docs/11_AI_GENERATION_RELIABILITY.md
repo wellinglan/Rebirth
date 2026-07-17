@@ -33,6 +33,8 @@ The output itself can contain an AI summary of sensitive selected data. It is re
 
 AI request entry performs lazy cleanup. Result expiry clears Markdown and structured output and sets `result_purged_at`; request identity and hash remain until dedupe expiry. Dedupe expiry permits physical row deletion. There is no background cleanup scheduler.
 
+Startup enforces a processing lease at least 30 seconds longer than Provider timeout, dedupe retention at least as long as result retention, and dedupe retention strictly longer than the lease. The maintenance CLI reuses the same cleanup core as lazy cleanup; it does not add a scheduler.
+
 ## Flutter Binding And Recovery
 
 `AiGenerationRequestBindingStore` persists only local report ID, request ID, normalized endpoint, cloud user ID, input hash, report type, prompt version, and creation time in SharedPreferences. It contains no bundle, canonical JSON, Journal, token, or report body. Binding save occurs after local pending creation and before POST; failure marks the local report with `request_binding_failed` and sends no POST.

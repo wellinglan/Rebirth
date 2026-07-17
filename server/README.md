@@ -14,6 +14,8 @@ OpenAI requires `OPENAI_API_KEY` and `REBIRTH_AI_MODEL`. Calls use strict struct
 
 The `ai_generation_requests` ledger provides at-most-once Provider ownership for one JWT user and request ID. It stores minimal request identity and temporarily stores only validated output for recovery. It never stores the input payload, canonical JSON, sources, Journal text, Provider request body, raw Provider response, token, or API key. Defaults are 24 hours for recoverable output, 30 days for the dedupe tombstone, and 5 minutes for a processing lease. Cleanup is lazy on AI request entry. This is not exactly-once: a crash after Provider return but before the completed update becomes `outcome_unknown` after lease expiry and is never automatically retried.
 
+Sprint 8E validates configuration relationships at startup, declares the complete Generate/Status OpenAPI responses, emits allowlisted body-free JSON events, adds a reusable cleanup CLI, and provides PostgreSQL multiprocessing plus Uvicorn multi-worker verification. Operational details are in `../docs/12_AI_OPERATIONS_AND_OBSERVABILITY.md`.
+
 ## Health Contract
 
 `GET /health` returns:
@@ -97,6 +99,27 @@ $env:REBIRTH_POSTGRES_TEST_URL = 'postgresql+psycopg://rebirth:password@127.0.0.
 ```
 
 The PostgreSQL test runs Alembic and concurrent sync writes. It is skipped, not passed, when `REBIRTH_POSTGRES_TEST_URL` is absent.
+
+For an isolated PostgreSQL 17 AI reliability run:
+
+```powershell
+docker compose -f docker-compose.test.yml up -d
+$env:REBIRTH_POSTGRES_TEST_URL = 'postgresql+psycopg://rebirth_test@127.0.0.1:55432/rebirth_test'
+$env:REBIRTH_DATABASE_URL = $env:REBIRTH_POSTGRES_TEST_URL
+.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m pytest -m postgres
+.\.venv\Scripts\python.exe scripts/verify_ai_multiworker.py --workers 2
+docker compose -f docker-compose.test.yml down -v
+```
+
+Cleanup uses the same rules as request-entry lazy cleanup:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.maintenance.ai_ledger_cleanup --dry-run
+.\.venv\Scripts\python.exe -m app.maintenance.ai_ledger_cleanup
+```
+
+GitHub Actions runs Server SQLite, PostgreSQL multiprocessing/multi-worker, Flutter analyze/test, and Android debug build jobs. A checked-in workflow is not evidence of a CI PASS until GitHub executes it.
 
 ## Sync Identity and Versioning
 

@@ -232,3 +232,12 @@ class AiRequestStatusResponse(StrictModel):
     lease_expires_at: int | None = None
     result_expires_at: int | None = None
     outcome_note: str | None = None
+
+
+class AiErrorDetail(StrictModel):
+    code: str
+    message: str
+
+
+class AiErrorResponse(StrictModel):
+    detail: AiErrorDetail

@@ -59,6 +59,8 @@ Development rollback restores the backup file or a PostgreSQL backup. Do not run
 
 Sprint 8D adds the `ai_generation_requests` durable ledger through Alembic revision `20260717_0002`. Provider defaults to disabled; OpenAI credentials and model selection are Server environment secrets, and Fake is development/test only. OpenAI calls use Responses API structured output with `store=false`, no streaming/tools/background mode, explicit timeout/output limit, and no SDK retries. `store=false` is not an absolute zero-retention guarantee.
 
+Sprint 8E adds an isolated PostgreSQL 17 test Compose file, four-process Claim verification, a two-worker Uvicorn HTTP verifier, and four GitHub Actions quality jobs. These are verification and operational guardrails, not a production deployment. Local results remain `NOT EXECUTED` when Docker/PostgreSQL is unavailable, and workflow jobs count as passed only after GitHub actually runs them.
+
 The ledger temporarily stores validated output for recovery and retains a minimal dedupe tombstone. Configure result, dedupe, and processing-lease retention explicitly for each environment. Lazy request cleanup is sufficient for alpha but production needs enforced retention monitoring, encryption at rest, database access controls, backup/deletion procedures, privacy/legal review, and observability that never logs input payloads or sensitive summaries. The at-most-once claim is not exactly-once and the Provider-return/database-commit crash gap remains.
 
 - HTTP cleartext is limited to localhost, LAN, and alpha builds; production must use HTTPS.

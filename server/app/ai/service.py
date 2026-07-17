@@ -16,6 +16,7 @@ from app.ai.errors import (
     UnsupportedContractError,
 )
 from app.ai.ledger import AiRequestLedger
+from app.ai.observability import log_ai_event
 from app.ai.prompts import WEEKLY_PROMPT_VERSION, get_prompt
 from app.ai.providers import AiProvider, ProviderPromptPayload, safety_identifier
 from app.ai.schemas import (
@@ -83,7 +84,11 @@ class AiGenerationService:
             if verified_hash != request.input_hash:
                 raise InputHashMismatchError()
             return self._resolve_existing(
-                session, existing, request=request, now=now
+                session,
+                existing,
+                request=request,
+                user_id=user_id,
+                now=now,
             )
 
         prompt = self._validate_supported_contract(request)
@@ -98,10 +103,34 @@ class AiGenerationService:
         )
         if not claim.owns_provider_call:
             return self._resolve_existing(
-                session, claim.row, request=request, now=now
+                session,
+                claim.row,
+                request=request,
+                user_id=user_id,
+                now=now,
             )
 
+        log_ai_event(
+            "ai_request_claimed",
+            environment=self.settings.environment,
+            user_id=user_id,
+            request_id=str(request.request_id),
+            input_hash=verified_hash,
+            status="processing",
+        )
+
         provider_payload = _provider_payload(request)
+        provider_started = time.perf_counter_ns()
+        log_ai_event(
+            "ai_provider_started",
+            environment=self.settings.environment,
+            user_id=user_id,
+            request_id=str(request.request_id),
+            input_hash=verified_hash,
+            provider=self.provider.name,
+            model=self.provider.model,
+            status="processing",
+        )
         try:
             generation = await self.provider.generate(
                 payload=provider_payload,
@@ -125,6 +154,19 @@ class AiGenerationService:
                 structured_output=structured,
             )
         except AiGatewayError as error:
+            latency_ms = (time.perf_counter_ns() - provider_started) // 1_000_000
+            log_ai_event(
+                "ai_provider_failed",
+                environment=self.settings.environment,
+                user_id=user_id,
+                request_id=str(request.request_id),
+                input_hash=verified_hash,
+                provider=self.provider.name,
+                model=self.provider.model,
+                status="failed",
+                error_code=error.code,
+                latency_ms=latency_ms,
+            )
             self.ledger.mark_failed(
                 session,
                 claim.row,
@@ -136,6 +178,19 @@ class AiGenerationService:
             raise
         except Exception:
             controlled = AiGatewayError("request_failed")
+            latency_ms = (time.perf_counter_ns() - provider_started) // 1_000_000
+            log_ai_event(
+                "ai_provider_failed",
+                environment=self.settings.environment,
+                user_id=user_id,
+                request_id=str(request.request_id),
+                input_hash=verified_hash,
+                provider=self.provider.name,
+                model=self.provider.model,
+                status="failed",
+                error_code=controlled.code,
+                latency_ms=latency_ms,
+            )
             self.ledger.mark_failed(
                 session,
                 claim.row,
@@ -148,6 +203,17 @@ class AiGenerationService:
 
         self.ledger.mark_completed(
             session, claim.row, result, now=self.clock()
+        )
+        log_ai_event(
+            "ai_provider_completed",
+            environment=self.settings.environment,
+            user_id=user_id,
+            request_id=str(request.request_id),
+            input_hash=verified_hash,
+            provider=result.provider,
+            model=result.model,
+            status="completed",
+            latency_ms=(time.perf_counter_ns() - provider_started) // 1_000_000,
         )
         return result
 
@@ -166,6 +232,17 @@ class AiGenerationService:
         if row is None:
             return None
         row = self.ledger.normalize_existing(session, row, now=now)
+        log_ai_event(
+            "ai_status_recovered",
+            environment=self.settings.environment,
+            user_id=user_id,
+            request_id=row.request_id,
+            input_hash=row.input_hash,
+            provider=row.provider,
+            model=row.model,
+            status=row.status,
+            error_code=row.error_code,
+        )
         return self.ledger.status_response(row)
 
     def _validate_supported_contract(self, request: AiWeeklyGenerateRequest):
@@ -187,6 +264,7 @@ class AiGenerationService:
         row: AiGenerationRequest,
         *,
         request: AiWeeklyGenerateRequest,
+        user_id: str,
         now: int,
     ) -> AiWeeklyGenerateResponse | AiRequestStatusResponse:
         if (
@@ -194,15 +272,66 @@ class AiGenerationService:
             or row.report_type != request.payload.report_type
             or row.prompt_version != request.payload.prompt_version
         ):
+            log_ai_event(
+                "ai_request_conflict",
+                environment=self.settings.environment,
+                user_id=user_id,
+                request_id=row.request_id,
+                input_hash=request.input_hash,
+                status=row.status,
+                error_code="idempotency_conflict",
+            )
             raise IdempotencyConflictError()
         row = self.ledger.normalize_existing(session, row, now=now)
         if row.status == "completed":
+            log_ai_event(
+                "ai_request_replayed",
+                environment=self.settings.environment,
+                user_id=user_id,
+                request_id=row.request_id,
+                input_hash=row.input_hash,
+                provider=row.provider,
+                model=row.model,
+                status=(
+                    "result_expired"
+                    if row.result_purged_at is not None
+                    else "completed"
+                ),
+            )
             return self.ledger.replay_completed(row)
         if row.status == "failed":
             code = row.error_code or "request_failed"
+            log_ai_event(
+                "ai_request_replayed",
+                environment=self.settings.environment,
+                user_id=user_id,
+                request_id=row.request_id,
+                input_hash=row.input_hash,
+                provider=row.provider,
+                model=row.model,
+                status="failed",
+                error_code=code,
+            )
             raise AiGatewayError(code, status_code=_failure_status(code))
         if row.status == "outcome_unknown":
+            log_ai_event(
+                "ai_request_outcome_unknown",
+                environment=self.settings.environment,
+                user_id=user_id,
+                request_id=row.request_id,
+                input_hash=row.input_hash,
+                status="outcome_unknown",
+                error_code="outcome_unknown",
+            )
             raise AiGatewayError("outcome_unknown", status_code=409)
+        log_ai_event(
+            "ai_request_processing",
+            environment=self.settings.environment,
+            user_id=user_id,
+            request_id=row.request_id,
+            input_hash=row.input_hash,
+            status="processing",
+        )
         return self.ledger.status_response(row)
 
 

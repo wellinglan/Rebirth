@@ -77,4 +77,6 @@ Flutter stores endpoint/account/request identity in a SharedPreferences Binding 
 
 ## Current Limits
 
+AI runtime events use the `rebirth.ai` JSON logger and the allowlist documented in `12_AI_OPERATIONS_AND_OBSERVABILITY.md`. Provider events include latency; replay has a distinct event. No input or output body is logged. Startup rejects timeout/lease/retention relationships that could invalidate request ownership.
+
 The ledger provides at-most-once ownership for one database and retained request ID, not exactly-once. Provider invocation and result commit are not atomic; the crash gap can become `outcome_unknown`, and duplicate-cost risk cannot be completely eliminated across external Provider behavior or dedupe expiry. Reports remain local-only and source data is read-only. Real OpenAI smoke testing is opt-in with `REBIRTH_RUN_OPENAI_SMOKE=1`; normal tests use Fake/Mocks only.
