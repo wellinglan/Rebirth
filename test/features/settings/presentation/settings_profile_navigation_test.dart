@@ -48,8 +48,24 @@ void main() {
 
     expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('预览 AI 将使用的数据，并查看本地报告'), findsOneWidget);
+    final aiCoachTile = find.byKey(const ValueKey('aiCoachSettingsTile'));
+    final settingsScroll = find.byKey(const ValueKey('settingsDataState'));
+    await tester.fling(settingsScroll, const Offset(0, -1200), 1200);
+    await tester.pumpAndSettle();
+    await tester.tap(aiCoachTile);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('aiCoachPage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiConsentGate')), findsOneWidget);
+    expect(find.byType(NavigationDestination), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     final profileTile = find.byKey(const ValueKey('profileSettingsTile'));
-    await Scrollable.ensureVisible(tester.element(profileTile));
+    await tester.fling(settingsScroll, const Offset(0, 1200), 1200);
+    await tester.pumpAndSettle();
     await tester.tap(profileTile);
     await tester.pumpAndSettle();
 

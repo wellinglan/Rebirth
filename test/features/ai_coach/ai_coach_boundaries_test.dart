@@ -26,18 +26,35 @@ void main() {
     }
   });
 
-  test('schema remains version 3 and no AI Coach page is introduced', () {
-    final database = File(
-      'lib/core/database/app_database.dart',
-    ).readAsStringSync();
-    expect(database, contains('int get schemaVersion => 3;'));
-    expect(
-      Directory('lib/features/ai_coach/presentation')
-          .listSync()
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.dart')),
-      isEmpty,
-    );
+  test(
+    'schema remains version 3 and presentation keeps local-only boundaries',
+    () {
+      final database = File(
+        'lib/core/database/app_database.dart',
+      ).readAsStringSync();
+      expect(database, contains('int get schemaVersion => 3;'));
+      final presentation = _dartSources('lib/features/ai_coach/presentation');
+      expect(presentation, isNotEmpty);
+      for (final source in presentation) {
+        expect(source, isNot(contains('package:drift')));
+        expect(source, isNot(contains('app_database')));
+        expect(source, isNot(contains('local_ai_')));
+        expect(source, isNot(contains('core/network')));
+        expect(source, isNot(contains('ApiClient')));
+        expect(source, isNot(contains('createPending(')));
+        expect(source, isNot(contains('markCompleted(')));
+        expect(source, isNot(contains('markFailed(')));
+        expect(source, isNot(contains('DateTime.now')));
+      }
+    },
+  );
+
+  test('AI Coach UI does not expose canonical JSON or snapshot bodies', () {
+    final presentation = _dartSources('lib/features/ai_coach/presentation');
+    for (final source in presentation) {
+      expect(source, isNot(contains('.canonicalJson')));
+      expect(source, isNot(contains('inputSnapshotJson')));
+    }
   });
 }
 

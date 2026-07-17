@@ -20,6 +20,7 @@ final class AiReport {
     required this.status,
     required this.reportContent,
     required this.structuredOutputJson,
+    required this.hasInputSnapshot,
     required this.errorCode,
     required this.requestedAt,
     required this.generatedAt,
@@ -62,6 +63,7 @@ final class AiReport {
   final AiReportStatus status;
   final String? reportContent;
   final String? structuredOutputJson;
+  final bool hasInputSnapshot;
   final String? errorCode;
   final int requestedAt;
   final int? generatedAt;

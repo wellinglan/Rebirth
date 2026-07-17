@@ -6,6 +6,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_selection.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_input_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/domain/canonical_json_encoder.dart';
 import 'package:rebirth/features/ai_coach/domain/input_hash_service.dart';
@@ -31,9 +32,6 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     required this.canonicalJsonEncoder,
     required this.inputHashService,
   });
-
-  static const schemaVersion = 1;
-  static const weeklyPromptVersion = 'weekly-report-v1';
 
   final AiConsentRepository consentRepository;
   final GrowthRepository growthRepository;
@@ -72,7 +70,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
 
     final snapshot = dateTimeService.currentSnapshot();
     final dates = dateTimeService.recentLocalDateRange(
-      GrowthPeriod.sevenDays.days,
+      AiInputContract.weeklyPeriodDays,
       endingAt: snapshot.now,
     );
     final startDate = dates.first;
@@ -174,13 +172,13 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
 
     final normalizedSources = _normalizeSources(sources);
     final scopes = selection.scopes
-        .map((scope) => scope.contractValue)
-        .toList(growable: false)
-      ..sort();
+            .map((scope) => scope.contractValue)
+            .toList(growable: false)
+          ..sort();
     final payload = <String, Object?>{
-      'schema_version': schemaVersion,
+      'schema_version': AiInputContract.schemaVersion,
       'report_type': reportType.databaseValue,
-      'prompt_version': weeklyPromptVersion,
+      'prompt_version': AiInputContract.weeklyPromptVersion,
       'period': <String, Object?>{
         'start_date': startDate,
         'end_date': endDate,
@@ -195,7 +193,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     final inputHash = inputHashService.hashCanonicalJson(canonicalJson);
     return AiCoachInputBundle(
       reportType: reportType,
-      promptVersion: weeklyPromptVersion,
+      promptVersion: AiInputContract.weeklyPromptVersion,
       periodStartDate: startDate,
       periodEndDate: endDate,
       selection: selection,

@@ -85,6 +85,7 @@ class SettingsPage extends ConsumerWidget {
                     '暂未同步；同步失败不会删除本地数据。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
+              onOpenAiCoach: () => context.push(RoutePaths.aiCoach),
             ),
           ),
         ),
@@ -343,6 +344,7 @@ class _SettingsContent extends StatelessWidget {
     required this.onWeChatLogin,
     required this.onSyncSettings,
     required this.onOpenProfile,
+    required this.onOpenAiCoach,
   });
 
   final SettingsViewState state;
@@ -363,6 +365,7 @@ class _SettingsContent extends StatelessWidget {
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
+  final VoidCallback onOpenAiCoach;
 
   @override
   Widget build(BuildContext context) {
@@ -441,6 +444,17 @@ class _SettingsContent extends StatelessWidget {
                     health: endpointHealth,
                     onEdit: onEditEndpoint,
                     onRestoreDefault: onRestoreEndpoint,
+                  ),
+                ),
+                const SizedBox(height: AppLayout.sectionGap),
+                SettingsSection(
+                  title: 'AI Coach',
+                  child: SettingsTile(
+                    key: const ValueKey('aiCoachSettingsTile'),
+                    title: 'AI Coach',
+                    subtitle: '预览 AI 将使用的数据，并查看本地报告',
+                    icon: Icons.psychology_outlined,
+                    onTap: onOpenAiCoach,
                   ),
                 ),
                 const SizedBox(height: AppLayout.sectionGap),

@@ -8,6 +8,8 @@ abstract final class RouteNames {
   static const health = 'health';
   static const settings = 'settings';
   static const settingsProfile = 'settingsProfile';
+  static const aiCoach = 'aiCoach';
+  static const aiCoachReport = 'aiCoachReport';
 }
 
 abstract final class RoutePaths {
@@ -20,4 +22,9 @@ abstract final class RoutePaths {
   static const health = '/health';
   static const settings = '/settings';
   static const settingsProfile = '/settings/profile';
+  static const aiCoach = '/ai-coach';
+
+  static String aiCoachReport(String reportId) {
+    return '$aiCoach/reports/${Uri.encodeComponent(reportId)}';
+  }
 }

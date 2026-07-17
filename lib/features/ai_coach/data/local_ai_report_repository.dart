@@ -207,11 +207,11 @@ final class LocalAiReportRepository implements AiReportRepository {
     await _getActiveRow(id, bootstrap.activeUserId);
     await (database.update(database.aiReports)
           ..where(
-            (row) =>
-                row.id.equals(id) &
-                row.userId.equals(bootstrap.activeUserId) &
-                row.deletedAt.isNull(),
-          ))
+          (row) =>
+              row.id.equals(id) &
+              row.userId.equals(bootstrap.activeUserId) &
+              row.deletedAt.isNull(),
+        ))
         .write(
           db.AiReportsCompanion(
             deletedAt: Value(now),
@@ -259,6 +259,7 @@ final class LocalAiReportRepository implements AiReportRepository {
       status: AiReportStatus.fromDatabaseValue(row.reportStatus),
       reportContent: row.reportContent,
       structuredOutputJson: row.structuredOutputJson,
+      hasInputSnapshot: row.inputSnapshotJson != null,
       errorCode: row.errorCode,
       requestedAt: row.requestedAt,
       generatedAt: row.generatedAt,

@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/ai_coach/presentation/ai_coach_page.dart';
+import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
 import '../../features/growth/presentation/growth_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
@@ -76,6 +78,20 @@ final GoRouter appRouter = GoRouter(
               builder: (context, state) => const GrowthPage(),
             ),
           ],
+        ),
+      ],
+    ),
+    GoRoute(
+      path: RoutePaths.aiCoach,
+      name: RouteNames.aiCoach,
+      builder: (context, state) => const AiCoachPage(),
+      routes: [
+        GoRoute(
+          path: 'reports/:reportId',
+          name: RouteNames.aiCoachReport,
+          builder: (context, state) => AiReportDetailPage(
+            reportId: state.pathParameters['reportId'] ?? '',
+          ),
         ),
       ],
     ),
