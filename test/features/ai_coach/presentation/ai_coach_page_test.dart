@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/features/account/data/account_repository_provider.dart';
+import 'package:rebirth/features/account/domain/auth_session.dart';
+import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
@@ -30,7 +33,7 @@ void main() {
     expect(find.byKey(const ValueKey('aiConsentGate')), findsOneWidget);
     expect(find.text('AI 数据使用尚未启用'), findsOneWidget);
     expect(find.textContaining('当前不会准备任何 AI 输入'), findsOneWidget);
-    expect(find.textContaining('不会将数据发送给服务器或 AI 模型'), findsOneWidget);
+    expect(find.textContaining('只有最终确认后'), findsOneWidget);
     expect(assembler.buildCalls, 0);
     expect(consent.grantCalls, 0);
   });
@@ -391,6 +394,18 @@ Future<void> _pumpAiCoach(
         aiConsentRepositoryProvider.overrideWithValue(consent),
         aiCoachInputAssemblerProvider.overrideWithValue(assembler),
         aiReportRepositoryProvider.overrideWithValue(reports),
+        aiGenerationGatewayProvider.overrideWithValue(
+          FakeAiGenerationGateway(),
+        ),
+        authSessionStoreProvider.overrideWithValue(
+          FakeAuthSessionStore(
+            session: const AuthSession(
+              accessToken: 'token',
+              refreshToken: 'refresh',
+              user: AuthUser(id: 'user', displayName: 'Test'),
+            ),
+          ),
+        ),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 16, 9)),
         ),

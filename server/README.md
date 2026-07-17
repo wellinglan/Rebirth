@@ -2,6 +2,15 @@
 
 Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, and manual canonical Profile sync only. It is not a production-safe cloud deployment.
 
+Sprint 8C also provides a stateless, JWT-protected AI Provider gateway for explicit weekly generation. Provider defaults to `disabled`; `fake` is development/test only; `openai` uses the official Python SDK Responses API. Flutter never receives or stores `OPENAI_API_KEY`.
+
+AI endpoints:
+
+- `GET /ai/capabilities`
+- `POST /ai/reports/weekly/generate`
+
+OpenAI requires `OPENAI_API_KEY` and `REBIRTH_AI_MODEL`. Optional limits are `REBIRTH_AI_TIMEOUT_SECONDS=90` and `REBIRTH_AI_MAX_OUTPUT_TOKENS=1600`. Calls use strict structured output, `store=false`, no streaming/tools/background mode, and no automatic SDK retry. `store=false` is not an absolute zero-retention promise. The Server verifies canonical SHA-256, strips sources/identities before Provider forwarding, and does not persist reports.
+
 ## Health Contract
 
 `GET /health` returns:
@@ -102,5 +111,12 @@ The PostgreSQL test runs Alembic and concurrent sync writes. It is skipped, not 
 | `REBIRTH_JWT_SECRET` | development-only placeholder | JWT signing secret |
 | `REBIRTH_ACCESS_TOKEN_MINUTES` | `30` | Access-token lifetime |
 | `REBIRTH_REFRESH_TOKEN_DAYS` | `30` | Refresh-token lifetime |
+| `REBIRTH_AI_PROVIDER` | `disabled` | `disabled`, development `fake`, or `openai` |
+| `OPENAI_API_KEY` | none | Server-only Provider secret |
+| `REBIRTH_AI_MODEL` | none | Configured OpenAI model ID |
+| `REBIRTH_AI_TIMEOUT_SECONDS` | `90` | Provider timeout |
+| `REBIRTH_AI_MAX_OUTPUT_TOKENS` | `1600` | Provider output limit |
+
+Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Manual flows are documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`.
 
 Outside `development`, `REBIRTH_JWT_SECRET` is mandatory. Production must use HTTPS, managed secrets, PostgreSQL backups, secure client token storage, token refresh/revoke, rate limiting, observability, and a security review. The current SharedPreferences session is development-level only. There is no real WeChat login, background sync, field-level conflict merge, or Today/Journal/Plan/Health sync.

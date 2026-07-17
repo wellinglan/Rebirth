@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/ai_coach/data/canonical_json_encoder_impl.dart';
 import 'package:rebirth/features/ai_coach/data/sha256_input_hash_service.dart';
@@ -100,5 +103,20 @@ void main() {
 
     expect(runtimeMetadataA, isNot(runtimeMetadataB));
     expect(hashService.hashCanonicalJson(contract), hash);
+  });
+
+  test('shared Python and Dart weekly fixture has identical canonical hash', () {
+    final payload = jsonDecode(
+      File('test/fixtures/ai_weekly_input_v1.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final expected = File(
+      'test/fixtures/ai_weekly_input_v1_expected_hash.txt',
+    ).readAsStringSync().trim();
+    final canonical = encoder.encode(Map<String, Object?>.from(payload));
+
+    expect(hashService.hashCanonicalJson(canonical), expected);
+    expect(canonical, contains('中文'));
+    expect(canonical, contains('"research_minutes":0'));
+    expect(canonical, contains('"learning_minutes":null'));
   });
 }

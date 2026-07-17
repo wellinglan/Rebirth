@@ -21,7 +21,7 @@ class AiReusableReportCard extends StatelessWidget {
         key: ValueKey('aiNoReusableReportCard'),
         child: Padding(
           padding: EdgeInsets.all(16),
-          child: Text('当前没有相同输入的已完成报告。AI Provider 尚未接入，因此本版本只能预览输入。'),
+          child: Text('当前没有相同输入的已完成报告。'),
         ),
       );
     }

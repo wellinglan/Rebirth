@@ -20,6 +20,12 @@ services:
       REBIRTH_ENV: development
       REBIRTH_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-rebirth}:${POSTGRES_PASSWORD:-rebirth-development-password}@postgres:5432/${POSTGRES_DB:-rebirth}
       REBIRTH_JWT_SECRET: ${REBIRTH_JWT_SECRET:-rebirth-docker-development-only-secret-change-me}
+      REBIRTH_AI_PROVIDER: ${REBIRTH_AI_PROVIDER:-disabled}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      REBIRTH_AI_MODEL: ${REBIRTH_AI_MODEL:-}
+      REBIRTH_AI_TIMEOUT_SECONDS: ${REBIRTH_AI_TIMEOUT_SECONDS:-90}
+      REBIRTH_AI_MAX_OUTPUT_TOKENS: ${REBIRTH_AI_MAX_OUTPUT_TOKENS:-1600}
+      REBIRTH_AI_FAKE_SCENARIO: ${REBIRTH_AI_FAKE_SCENARIO:-success}
     command: >-
       sh -c "alembic upgrade head &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000"
@@ -42,4 +48,3 @@ services:
 
 volumes:
   rebirth_postgres_data:
-

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "report_type": "weekly_report",
+  "prompt_version": "weekly-report-v1",
+  "period": {
+    "start_date": "2026-07-10",
+    "end_date": "2026-07-16"
+  },
+  "scopes": [
+    "health_metrics",
+    "today_metrics"
+  ],
+  "data": {
+    "today_metrics": [
+      {
+        "record_date": "2026-07-10",
+        "research_minutes": 0,
+        "learning_minutes": null,
+        "mood_score": null,
+        "energy_score": 3,
+        "populated_priority_count": 0,
+        "completed_priority_count": 0,
+        "status": "draft"
+      },
+      {
+        "record_date": "2026-07-16",
+        "research_minutes": 90,
+        "learning_minutes": 30,
+        "mood_score": 4,
+        "energy_score": 4,
+        "populated_priority_count": 2,
+        "completed_priority_count": 1,
+        "status": "completed"
+      }
+    ],
+    "health_metrics": [
+      {
+        "record_date": "2026-07-16",
+        "sleep_duration_minutes": 450,
+        "exercise_duration_minutes": 0,
+        "physical_state_score": 4,
+        "water_intake_ml": 1800,
+        "weight_kg": 60.5
+      }
+    ]
+  },
+  "sources": [
+    {
+      "table": "health_records",
+      "id": "health-中文",
+      "updated_at": 1784163600000
+    },
+    {
+      "table": "today_records",
+      "id": "today-zero",
+      "updated_at": 1783645200000
+    }
+  ]
+}

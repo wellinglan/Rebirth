@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/core/network/api_client_provider.dart';
+import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_assembler.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/canonical_json_encoder.dart';
 import 'package:rebirth/features/ai_coach/domain/input_hash_service.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/growth/data/growth_repository_provider.dart';
 import 'package:rebirth/features/health/data/health_repository_provider.dart';
 import 'package:rebirth/features/journal/data/journal_repository_provider.dart';
@@ -16,6 +19,14 @@ import 'canonical_json_encoder_impl.dart';
 import 'local_ai_consent_repository.dart';
 import 'local_ai_report_repository.dart';
 import 'sha256_input_hash_service.dart';
+import 'remote_ai_generation_gateway.dart';
+
+final aiGenerationGatewayProvider = Provider<AiGenerationGateway>((ref) {
+  return RemoteAiGenerationGateway(
+    apiClient: ref.watch(apiClientProvider),
+    sessionStore: ref.watch(authSessionStoreProvider),
+  );
+});
 
 final canonicalJsonEncoderProvider = Provider<CanonicalJsonEncoder>((ref) {
   return const CanonicalJsonEncoderImpl();

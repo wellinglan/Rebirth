@@ -72,6 +72,9 @@ def require_user_id(
 def _unauthorized() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Valid Rebirth access token required.",
+        detail={
+            "code": "authentication_required",
+            "message": "Valid Rebirth access token required.",
+        },
         headers={"WWW-Authenticate": "Bearer"},
     )

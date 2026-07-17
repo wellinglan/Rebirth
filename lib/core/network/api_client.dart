@@ -119,11 +119,13 @@ final class DioApiClient implements ApiClient {
         );
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
+        final errorCode = _readErrorCode(error.response?.data);
         return ApiException(
           message: statusCode == 401
               ? '登录状态已失效，请重新登录。'
               : '后端返回错误${statusCode == null ? '' : '（$statusCode）'}。',
           statusCode: statusCode,
+          errorCode: errorCode,
         );
       case DioExceptionType.cancel:
         return const ApiException(message: '请求已取消。');
@@ -136,6 +138,14 @@ final class DioApiClient implements ApiClient {
           isNetworkError: true,
         );
     }
+  }
+
+  String? _readErrorCode(Object? data) {
+    if (data is! Map) return null;
+    final detail = data['detail'];
+    if (detail is! Map) return null;
+    final code = detail['code'];
+    return code is String && code.isNotEmpty ? code : null;
   }
 
   static String _normalizeBaseUrl(String value) {

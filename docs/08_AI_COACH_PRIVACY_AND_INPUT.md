@@ -134,6 +134,12 @@ Input Assembler；Future UI 不得直接把 Drift 行或数据库查询结果发
 
 ## 8. Sprint 8B Preview 与 History 边界
 
+## 9. Sprint 8C Provider 发送边界
+
+Preview 仍是纯本地操作且不创建 pending。只有登录、Consent、capabilities、合同版本、reusable 检查和最终发送确认全部通过后，Controller 才创建本地 pending 并调用 Rebirth Server。Server 对完整 Canonical payload 重算 hash，但向模型移除 `sources`、所有记录 ID、请求/hash/用户/设备/token/endpoint/sync 元数据，只转发明确选择的最小化 scope data。
+
+OpenAI Key 只存在于 Server 环境；客户端不持有、不保存也不提供设置 UI。Provider 请求使用 `store=false`、无 tools、无 streaming，但产品文案不得将此描述为绝对零保留。报告输出只读，不修改任何原始记录；AIReport 继续 local-only 且 input snapshot 默认为空。
+
 - Settings 是 AI Coach 的唯一入口，独立路由为 `/ai-coach`，不增加 Bottom Navigation 项；
 - 全局 Consent 与单次 Scope Selection 分离，所有 Scope 默认关闭；
 - Journal 每次加入当前 Selection 前都需单独确认，确认不持久化，也不改变 Global Consent；

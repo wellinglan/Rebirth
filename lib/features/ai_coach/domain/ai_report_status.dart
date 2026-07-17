@@ -16,7 +16,19 @@ enum AiReportStatus {
 }
 
 enum AiReportFailureCode {
+  gatewayDisabled('gateway_disabled'),
+  authenticationRequired('authentication_required'),
+  invalidRequest('invalid_request'),
+  invalidInput('invalid_input'),
+  inputHashMismatch('input_hash_mismatch'),
+  unsupportedReportType('unsupported_report_type'),
+  unsupportedPromptVersion('unsupported_prompt_version'),
+  unsupportedScope('unsupported_scope'),
+  providerAuthenticationFailed('provider_authentication_failed'),
+  providerRateLimited('provider_rate_limited'),
+  providerTimeout('provider_timeout'),
   providerUnavailable('provider_unavailable'),
+  providerRefused('provider_refused'),
   requestFailed('request_failed'),
   responseInvalid('response_invalid'),
   cancelled('cancelled'),

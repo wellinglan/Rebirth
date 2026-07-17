@@ -57,6 +57,8 @@ Development rollback restores the backup file or a PostgreSQL backup. Do not run
 
 ## Production Gaps
 
+Sprint 8C adds a stateless AI gateway. Provider defaults to disabled; OpenAI credentials and model selection are Server environment secrets, and Fake is development/test only. OpenAI calls use Responses API structured output with `store=false`, no streaming/tools/background mode, explicit timeout/output limit, and no SDK retries. `store=false` is not an absolute zero-retention guarantee. Before production, complete privacy/legal/provider-retention/cost/rate-limit/observability reviews and design durable idempotency without storing unnecessary user content.
+
 - HTTP cleartext is limited to localhost, LAN, and alpha builds; production must use HTTPS.
 - JWT secret and database credentials must come from a managed secret system.
 - Flutter tokens still use development-level SharedPreferences, not secure storage.
@@ -66,4 +68,3 @@ Development rollback restores the backup file or a PostgreSQL backup. Do not run
 - No field-level Profile conflict resolution or background synchronization exists.
 
 These gaps mean Sprint 6E is cloud-compatible scaffolding, not production security readiness.
-

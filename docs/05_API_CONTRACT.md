@@ -223,6 +223,12 @@ Only items with `server_version > since_server_version` and a requested table ar
 
 ## Current Contract Limits
 
+## AI Manual Weekly Generation (Sprint 8C)
+
+`GET /ai/capabilities` and `POST /ai/reports/weekly/generate` require the existing bearer JWT. The only report contract is input schema 1, `weekly_report`, `weekly-report-v1`, and output schema 1. Generation accepts the existing typed canonical payload plus its SHA-256; Server normalizes/recomputes the hash before Provider invocation and rejects extra fields. Responses return the echoed request identity/hash, actual provider/model, server-rendered Markdown, and validated structured output.
+
+The Server does not persist AI reports. Flutter stores the completed/failed local lifecycle only after explicit final confirmation. Error bodies use `detail.code` from the controlled list documented in `docs/10_AI_PROVIDER_GATEWAY.md`; they never return credentials, raw Provider bodies, canonical JSON, Journal text, stack traces, database URLs, or local paths.
+
 - There is no production refresh endpoint, token revocation, account linking, device management UI, background sync, batch pagination, encryption-at-rest policy, or business-specific conflict resolution yet.
 - Windows SQLite and Docker PostgreSQL expose the same API contract; Base URL is an environment difference, not a business-layer difference.
 - SharedPreferences token storage is development-only; secure storage and complete refresh/revoke are not implemented.

@@ -13,16 +13,11 @@ void main() {
     }
   });
 
-  test('AI foundation adds no network client, vendor, or API key path', () {
-    final sources = _dartSources('lib/features/ai_coach');
+  test('AI gateway contains no vendor URL or provider API key path', () {
+    final sources = _dartSources('lib');
     for (final source in sources) {
-      expect(source, isNot(contains('package:dio')));
-      expect(source, isNot(contains('core/network')));
-      expect(source, isNot(contains('ApiClient')));
-      expect(source, isNot(contains('OpenAI')));
-      expect(source, isNot(contains('Anthropic')));
-      expect(source, isNot(contains('Gemini')));
-      expect(source.toLowerCase(), isNot(contains('api_key')));
+      expect(source, isNot(contains('api.openai.com')));
+      expect(source, isNot(contains('OPENAI_API_KEY')));
     }
   });
 
@@ -33,7 +28,15 @@ void main() {
         'lib/core/database/app_database.dart',
       ).readAsStringSync();
       expect(database, contains('int get schemaVersion => 3;'));
-      final presentation = _dartSources('lib/features/ai_coach/presentation');
+      final presentation = [
+        ..._dartSources('lib/features/ai_coach/presentation/widgets'),
+        File(
+          'lib/features/ai_coach/presentation/ai_coach_page.dart',
+        ).readAsStringSync(),
+        File(
+          'lib/features/ai_coach/presentation/ai_report_detail_page.dart',
+        ).readAsStringSync(),
+      ];
       expect(presentation, isNotEmpty);
       for (final source in presentation) {
         expect(source, isNot(contains('package:drift')));

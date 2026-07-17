@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_assembler.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
@@ -7,6 +9,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_selection.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_mode.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
@@ -98,6 +101,11 @@ final class FakeAiReportRepository implements AiReportRepository {
   String? lastDeletedId;
   String? lastReusableHash;
   String? lastReusablePromptVersion;
+  AiCoachInputBundle? lastPendingInput;
+  String? lastCompletedId;
+  String? lastFailedId;
+  String? lastFailureCode;
+  String? lastStructuredOutput;
 
   @override
   Future<AiReport?> findReusableCompleted({
@@ -135,9 +143,15 @@ final class FakeAiReportRepository implements AiReportRepository {
   }
 
   @override
-  Future<AiReport> createPending({required AiCoachInputBundle input}) {
+  Future<AiReport> createPending({required AiCoachInputBundle input}) async {
     createPendingCalls += 1;
-    throw UnsupportedError('Not available in preview tests.');
+    lastPendingInput = input;
+    final report = buildAiReport(
+      id: 'pending-$createPendingCalls',
+      status: AiReportStatus.pending,
+    );
+    reports.insert(0, report);
+    return report;
   }
 
   @override
@@ -147,19 +161,145 @@ final class FakeAiReportRepository implements AiReportRepository {
     String? structuredOutputJson,
     String? provider,
     String? model,
-  }) {
+  }) async {
     markCompletedCalls += 1;
-    throw UnsupportedError('Not available in preview tests.');
+    lastCompletedId = reportId;
+    lastStructuredOutput = structuredOutputJson;
+    final report = _replace(
+      reportId,
+      status: AiReportStatus.completed,
+      reportContent: reportContent,
+      structuredOutputJson: structuredOutputJson,
+      provider: provider,
+      model: model,
+    );
+    return report;
   }
 
   @override
   Future<AiReport> markFailed({
     required String reportId,
     required String errorCode,
-  }) {
+  }) async {
     markFailedCalls += 1;
-    throw UnsupportedError('Not available in preview tests.');
+    lastFailedId = reportId;
+    lastFailureCode = errorCode;
+    return _replace(
+      reportId,
+      status: AiReportStatus.failed,
+      errorCode: errorCode,
+    );
   }
+
+  AiReport _replace(
+    String id, {
+    required AiReportStatus status,
+    String? reportContent,
+    String? structuredOutputJson,
+    String? provider,
+    String? model,
+    String? errorCode,
+  }) {
+    final index = reports.indexWhere((report) => report.id == id);
+    final existing = reports[index];
+    final updated = AiReport(
+      id: existing.id,
+      userId: existing.userId,
+      reportType: existing.reportType,
+      periodStartDate: existing.periodStartDate,
+      periodEndDate: existing.periodEndDate,
+      inputSources: existing.inputSources,
+      inputHash: existing.inputHash,
+      promptVersion: existing.promptVersion,
+      provider: provider,
+      model: model,
+      generationMode: existing.generationMode,
+      status: status,
+      reportContent: reportContent,
+      structuredOutputJson: structuredOutputJson,
+      hasInputSnapshot: existing.hasInputSnapshot,
+      errorCode: errorCode,
+      requestedAt: existing.requestedAt,
+      generatedAt: status == AiReportStatus.completed
+          ? existing.requestedAt + 1000
+          : null,
+      createdAt: existing.createdAt,
+      updatedAt: existing.updatedAt + 1000,
+    );
+    reports[index] = updated;
+    return updated;
+  }
+}
+
+final class FakeAiGenerationGateway implements AiGenerationGateway {
+  FakeAiGenerationGateway({AiGenerationCapabilities? capabilities})
+    : capabilities =
+          capabilities ??
+          AiGenerationCapabilities(
+            enabled: true,
+            provider: 'fake',
+            providerLabel: 'Development Fake',
+            model: 'deterministic-test-provider',
+            supportedReportTypes: const ['weekly_report'],
+            promptVersions: const ['weekly-report-v1'],
+            inputSchemaVersion: 1,
+            outputSchemaVersion: 1,
+            streaming: false,
+            responseStorageRequested: false,
+          );
+
+  AiGenerationCapabilities capabilities;
+  Object? capabilitiesError;
+  Object? generationError;
+  int capabilitiesCalls = 0;
+  int generationCalls = 0;
+  String? lastRequestId;
+  AiCoachInputBundle? lastBundle;
+
+  @override
+  Future<AiGenerationCapabilities> getCapabilities() async {
+    capabilitiesCalls += 1;
+    if (capabilitiesError case final error?) throw error;
+    return capabilities;
+  }
+
+  @override
+  Future<AiGenerationResult> generateWeekly({
+    required String requestId,
+    required AiCoachInputBundle bundle,
+  }) async {
+    generationCalls += 1;
+    lastRequestId = requestId;
+    lastBundle = bundle;
+    if (generationError case final error?) throw error;
+    return AiGenerationResult(
+      requestId: requestId,
+      reportType: 'weekly_report',
+      promptVersion: bundle.promptVersion,
+      inputHash: bundle.inputHash,
+      provider: 'fake',
+      model: 'deterministic-test-provider',
+      outputSchemaVersion: 1,
+      reportContent: '# 开发测试每周回顾',
+      structuredOutputJson:
+          '{"title":"测试","summary":"测试摘要","observations":[],"suggestions":[],"data_limitations":[]}',
+    );
+  }
+}
+
+final class FakeAuthSessionStore implements AuthSessionStore {
+  FakeAuthSessionStore({this.session});
+
+  AuthSession? session;
+
+  @override
+  Future<AuthSession?> read() async => session;
+
+  @override
+  Future<void> save(AuthSession session) async => this.session = session;
+
+  @override
+  Future<void> clear() async => session = null;
 }
 
 AiCoachInputBundle buildAiBundle({

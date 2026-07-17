@@ -4,12 +4,14 @@ final class ApiException implements Exception {
     this.statusCode,
     this.cause,
     this.isNetworkError = false,
+    this.errorCode,
   });
 
   final String message;
   final int? statusCode;
   final Object? cause;
   final bool isNetworkError;
+  final String? errorCode;
 
   bool get isUnauthorized => statusCode == 401;
 

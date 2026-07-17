@@ -8,6 +8,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'ai_request_preview_controller.dart';
 import 'ai_request_preview_view_state.dart';
 import 'widgets/ai_consent_gate.dart';
+import 'widgets/ai_generation_section.dart';
 import 'widgets/ai_journal_scope_dialog.dart';
 import 'widgets/ai_report_history_tab.dart';
 import 'widgets/ai_request_preview.dart';
@@ -70,7 +71,7 @@ class _PageIntroduction extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '当前版本只在本机准备预览，不会将数据发送给服务器或 AI 模型。',
+                '预览只在本机准备；只有最终确认后，才会通过 Rebirth Server 请求生成。',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -207,6 +208,10 @@ class _AuthorizedPreview extends ConsumerWidget {
             report: state.reusableCompletedReport,
             onOpenReport: (id) => context.push(RoutePaths.aiCoachReport(id)),
           ),
+          if (state.reusableCompletedReport == null && state.bundle != null) ...[
+            const SizedBox(height: 16),
+            AiGenerationSection(bundle: state.bundle!),
+          ],
         ],
       ],
     );

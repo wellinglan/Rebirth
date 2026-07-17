@@ -74,6 +74,17 @@ abstract final class AiCoachFormatters {
   static String failureCode(String? code) {
     return switch (code) {
       'provider_unavailable' => '生成服务暂不可用',
+      'gateway_disabled' => '服务器未启用 AI 生成',
+      'authentication_required' => '需要重新登录',
+      'provider_authentication_failed' => '服务器无法认证 AI Provider',
+      'provider_rate_limited' => 'AI Provider 请求受限',
+      'provider_timeout' => '生成请求超时',
+      'provider_refused' => 'AI Provider 拒绝生成',
+      'input_hash_mismatch' => '输入完整性校验失败',
+      'unsupported_report_type' => '报告类型不受支持',
+      'unsupported_prompt_version' => 'Prompt Version 不受支持',
+      'unsupported_scope' => '数据范围不受支持',
+      'invalid_request' || 'invalid_input' => '生成请求无效',
       'request_failed' => '请求未能完成',
       'response_invalid' => '返回内容无法读取',
       'cancelled' => '请求已取消',
