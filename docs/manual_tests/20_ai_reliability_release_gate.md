@@ -6,16 +6,16 @@ Record only observed manual behavior. Automated tests and APK compilation do not
 
 | Item | Result | Notes |
 |---|---|---|
-| Windows build/start | PASS | Final debug build started, exposed Dart VM Service, and exited normally on 2026-07-17. |
-| Automated single-worker Fake full-stack | PASS | Real Uvicorn + JWT + Dio + Ledger + Fake Provider + Drift test passed; this is not the manual Windows matrix. |
-| PostgreSQL integration | PASS | Local PostgreSQL 17.10; Alembic head and 7 PostgreSQL marker tests passed, including four spawned Claim processes. Test database/role were removed afterward. |
-| Uvicorn multi-worker HTTP | PASS | 2 workers, 8 duplicate HTTP requests, 1 Ledger row, 1 provider-start event, final completed; port/workers cleaned. |
-| Android debug APK build | PASS | `flutter build apk --debug` completed on 2026-07-17; physical-device rows remain NOT EXECUTED. |
+| Windows release build/start | PASS | `flutter build windows --release` and `flutter run -d windows --release` completed on 2026-07-18; the App launched and exited normally. This is not the manual Windows matrix. |
+| Automated single-worker Fake full-stack | PASS | Real Uvicorn + JWT + Dio + PostgreSQL Ledger + Fake Provider + local Drift report lifecycle passed on 2026-07-18; this is not the manual Windows matrix. |
+| PostgreSQL integration | PASS | Isolated PostgreSQL 17.10; Alembic head and 7 PostgreSQL marker tests passed, including four spawned Claim processes. The temporary cluster was stopped and removed. |
+| Uvicorn multi-worker HTTP | PASS | 2 workers, 8 duplicate HTTP requests, 1 Ledger row, 1 provider-start event, final completed; temporary ports/workers were cleaned. |
+| Android release APK build | PASS | `flutter build apk --release --split-per-abi` produced arm64-v8a, armeabi-v7a, and x86_64 APKs. Physical-device rows remain NOT EXECUTED. |
 | OpenAI real smoke | NOT EXECUTED | Optional paid test; never part of normal CI. |
-| CI Server SQLite | NOT EXECUTED | Workflow is present but has not been pushed/executed by GitHub. |
-| CI PostgreSQL | NOT EXECUTED | Workflow is present but has not been pushed/executed by GitHub. |
-| CI Flutter | NOT EXECUTED | Workflow is present but has not been pushed/executed by GitHub. |
-| CI Android build | NOT EXECUTED | Workflow is present but has not been pushed/executed by GitHub. |
+| CI Server SQLite | PASS | Quality Run `29620976480`, Job `88015814557`, completed in 21 seconds. |
+| CI PostgreSQL | PASS | Quality Run `29620976480`, Job `88015814524`; Alembic, postgres marker, and 2-worker script all ran successfully. |
+| CI Flutter | PASS | Quality Run `29620976480`, Job `88015814552`; pub get, analyze, and test all ran successfully. |
+| CI Android build | PASS | Quality Run `29620976480`, Job `88015814568`; debug APK build completed in 4 minutes 37 seconds. |
 
 ## Windows Manual Matrix
 
@@ -66,4 +66,6 @@ Record only observed manual behavior. Automated tests and APK compilation do not
 
 ## Release Decision
 
-Do not label Sprint 8E a complete release PASS while PostgreSQL, multi-worker HTTP, required Windows manual cases, or required Android physical-device cases remain `NOT EXECUTED` or `FAIL`.
+Automated CI, local PostgreSQL/Fake full-stack verification, and release builds pass. The Windows matrix is `0 PASS / 0 FAIL / 20 NOT EXECUTED`; the Android physical-device matrix is `0 PASS / 0 FAIL / 17 NOT EXECUTED`. Do not label Sprint 8F a complete Alpha release PASS, publish a release, or start the next product Sprint until the required manual cases are actually executed or explicitly waived by the product owner.
+
+No product defect was found by the automated gate. The initial parallel Flutter build collision and one transient occupied verification port were execution-environment incidents; sequential reruns passed and required no product-code change.
