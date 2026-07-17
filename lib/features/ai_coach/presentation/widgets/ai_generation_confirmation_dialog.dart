@@ -73,6 +73,18 @@ class AiGenerationConfirmationDialog extends StatelessWidget {
                 const SizedBox(height: 6),
                 const Text('请求明确设置 store=false，但这不代表绝对零保留。'),
                 const SizedBox(height: 6),
+                Text(
+                  '服务器会临时保留已验证的生成结果 ${capabilities.resultRetentionHours} 小时，用于恢复丢失响应；结果可能包含对敏感数据的总结。',
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '最小请求 Tombstone 会保留 ${capabilities.dedupeRetentionDays} 天用于防止相同 request_id 重复调用。服务器不保存输入 Payload、Sources 或 Canonical JSON。',
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  '这不是 exactly-once 保证；极端崩溃窗口下结果可能变为 outcome unknown，无法确定是否已经产生结果或费用。',
+                ),
+                const SizedBox(height: 6),
                 const Text('AI 输出可能不准确，本次操作可能产生 Provider 费用，当前不会自动重试。'),
                 if (journalIncluded) ...[
                   const SizedBox(height: 10),

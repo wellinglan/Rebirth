@@ -21,3 +21,8 @@ class InputHashMismatchError(AiGatewayError):
 class UnsupportedContractError(AiGatewayError):
     def __init__(self, code: str) -> None:
         super().__init__(code, status_code=422)
+
+
+class IdempotencyConflictError(AiGatewayError):
+    def __init__(self) -> None:
+        super().__init__("idempotency_conflict", status_code=409)

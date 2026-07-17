@@ -4,6 +4,8 @@ import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dar
 import 'ai_report_history_view_state.dart';
 import 'ai_report_presentation_mapper.dart';
 import 'models/ai_report_presentation_models.dart';
+import 'ai_pending_recovery_controller.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
 final aiReportPresentationMapperProvider = Provider<AiReportPresentationMapper>(
   (ref) => const AiReportPresentationMapper(),
@@ -27,7 +29,15 @@ class AiReportHistoryController
     extends AsyncNotifier<AiReportHistoryViewState> {
   @override
   Future<AiReportHistoryViewState> build() async {
-    return AiReportHistoryViewState(reports: await _loadReports());
+    final reports = await _loadReports();
+    return AiReportHistoryViewState(
+      reports: reports,
+      pendingRecoveryStates: {
+        for (final report in reports)
+          if (report.status == AiReportStatus.pending)
+            report.id: AiPendingRecoveryState.awaitingCheck,
+      },
+    );
   }
 
   Future<void> reload() async {
@@ -75,6 +85,13 @@ class AiReportHistoryController
     );
     try {
       await ref.read(aiReportRepositoryProvider).softDelete(reportId);
+      try {
+        await ref
+            .read(aiGenerationRequestBindingStoreProvider)
+            .delete(reportId);
+      } catch (_) {
+        // The deleted report remains authoritative; stale metadata is ignored.
+      }
       final reports = await _loadReports();
       if (!ref.mounted) return false;
       state = AsyncData(AiReportHistoryViewState(reports: reports));
@@ -89,6 +106,67 @@ class AiReportHistoryController
           operationError: '本地报告删除失败，请重试。',
         ),
       );
+      return false;
+    }
+  }
+
+  Future<void> checkPending(String reportId) async {
+    final current = state.asData?.value;
+    if (current == null ||
+        current.pendingRecoveryStates[reportId] ==
+            AiPendingRecoveryState.checking) {
+      return;
+    }
+    final report = await ref.read(aiReportRepositoryProvider).getById(reportId);
+    if (report == null || report.status != AiReportStatus.pending) return;
+    final checking = {...current.pendingRecoveryStates}
+      ..[reportId] = AiPendingRecoveryState.checking;
+    state = AsyncData(
+      current.copyWith(
+        pendingRecoveryStates: checking,
+        clearOperationError: true,
+      ),
+    );
+    final result = await ref
+        .read(aiPendingRecoveryControllerProvider)
+        .check(report);
+    if (!ref.mounted) return;
+    final reports = await _loadReports();
+    final latest = state.asData?.value ?? current;
+    final recovery = {...latest.pendingRecoveryStates};
+    if (reports.any(
+      (item) => item.id == reportId && item.status == AiReportStatus.pending,
+    )) {
+      recovery[reportId] = result;
+    } else {
+      recovery.remove(reportId);
+    }
+    state = AsyncData(
+      AiReportHistoryViewState(
+        reports: reports,
+        pendingRecoveryStates: recovery,
+      ),
+    );
+    ref.invalidate(aiReportDetailProvider(reportId));
+  }
+
+  Future<bool> confirmServerNotFound(String reportId) async {
+    final current = state.asData?.value;
+    if (current == null) return false;
+    final report = await ref.read(aiReportRepositoryProvider).getById(reportId);
+    if (report == null || report.status != AiReportStatus.pending) return false;
+    try {
+      await ref
+          .read(aiPendingRecoveryControllerProvider)
+          .confirmServerNotFound(report);
+      if (!ref.mounted) return false;
+      final reports = await _loadReports();
+      state = AsyncData(AiReportHistoryViewState(reports: reports));
+      ref.invalidate(aiReportDetailProvider(reportId));
+      return true;
+    } catch (_) {
+      if (!ref.mounted) return false;
+      state = AsyncData(current.copyWith(operationError: '本地报告状态更新失败，请重试。'));
       return false;
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/core/network/api_client_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
@@ -20,6 +21,8 @@ import 'local_ai_consent_repository.dart';
 import 'local_ai_report_repository.dart';
 import 'sha256_input_hash_service.dart';
 import 'remote_ai_generation_gateway.dart';
+import 'local_ai_generation_request_binding_store.dart';
+import '../domain/ai_generation_request_binding.dart';
 
 final aiGenerationGatewayProvider = Provider<AiGenerationGateway>((ref) {
   return RemoteAiGenerationGateway(
@@ -27,6 +30,13 @@ final aiGenerationGatewayProvider = Provider<AiGenerationGateway>((ref) {
     sessionStore: ref.watch(authSessionStoreProvider),
   );
 });
+
+final aiGenerationRequestBindingStoreProvider =
+    Provider<AiGenerationRequestBindingStore>((ref) {
+      return LocalAiGenerationRequestBindingStore(
+        endpointValidator: ref.watch(serverEndpointValidatorProvider),
+      );
+    });
 
 final canonicalJsonEncoderProvider = Provider<CanonicalJsonEncoder>((ref) {
   return const CanonicalJsonEncoderImpl();

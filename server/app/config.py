@@ -21,6 +21,9 @@ class Settings:
     ai_timeout_seconds: float = 90.0
     ai_max_output_tokens: int = 1600
     ai_fake_scenario: str = "success"
+    ai_result_retention_hours: int = 24
+    ai_dedupe_retention_days: int = 30
+    ai_processing_lease_minutes: int = 5
 
     @property
     def is_development(self) -> bool:
@@ -71,6 +74,22 @@ def load_settings(
         if not resolved_ai_model:
             raise RuntimeError("REBIRTH_AI_MODEL is required for the OpenAI provider.")
 
+    result_retention_hours = int(
+        os.getenv("REBIRTH_AI_RESULT_RETENTION_HOURS", "24")
+    )
+    dedupe_retention_days = int(
+        os.getenv("REBIRTH_AI_DEDUPE_RETENTION_DAYS", "30")
+    )
+    processing_lease_minutes = int(
+        os.getenv("REBIRTH_AI_PROCESSING_LEASE_MINUTES", "5")
+    )
+    if min(
+        result_retention_hours,
+        dedupe_retention_days,
+        processing_lease_minutes,
+    ) <= 0:
+        raise RuntimeError("AI retention and lease settings must be positive.")
+
     return Settings(
         environment=resolved_environment,
         database_url=resolved_database_url,
@@ -87,4 +106,7 @@ def load_settings(
             os.getenv("REBIRTH_AI_MAX_OUTPUT_TOKENS", "1600")
         ),
         ai_fake_scenario=os.getenv("REBIRTH_AI_FAKE_SCENARIO", "success").lower(),
+        ai_result_retention_hours=result_retention_hours,
+        ai_dedupe_retention_days=dedupe_retention_days,
+        ai_processing_lease_minutes=processing_lease_minutes,
     )

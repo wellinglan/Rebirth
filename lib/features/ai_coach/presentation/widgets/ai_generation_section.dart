@@ -72,6 +72,19 @@ class AiGenerationSection extends ConsumerWidget {
             ),
           ],
         );
+      case AiManualGenerationPhase.pendingRecovery:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('网络响应中断或服务器仍在处理，请到本地报告中检查服务器状态。'),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => context.push(RoutePaths.aiCoach),
+              icon: const Icon(Icons.history),
+              label: const Text('查看本地报告'),
+            ),
+          ],
+        );
       case AiManualGenerationPhase.failure:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,6 +161,10 @@ class AiGenerationSection extends ConsumerWidget {
     if (!context.mounted || outcome == null) return;
     if (outcome.completed) {
       await context.push(RoutePaths.aiCoachReport(outcome.reportId));
+    } else if (outcome.awaitingRecovery) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请求结果待确认，请在本地报告中检查服务器状态。')),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('每周回顾生成失败，已保存受控失败记录。')),
@@ -163,6 +180,11 @@ class AiGenerationSection extends ConsumerWidget {
     AiReportFailureCode.providerRefused => 'AI Provider 拒绝了本次生成请求。',
     AiReportFailureCode.providerAuthenticationFailed => '服务器暂时无法认证 AI Provider。',
     AiReportFailureCode.responseInvalid => 'AI Provider 返回内容未通过结构校验。',
+    AiReportFailureCode.outcomeUnknown =>
+      '无法确定 Provider 是否产生过结果或费用；不会自动重试。',
+    AiReportFailureCode.resultExpired => '服务器临时结果已过保留期，无法恢复正文。',
+    AiReportFailureCode.requestBindingFailed => '无法保存恢复信息，未向服务器发送生成请求。',
+    AiReportFailureCode.networkOutcomeUnknown => '网络中断，请检查服务器状态。',
     AiReportFailureCode.unsupportedPromptVersion => '服务器不支持当前 Prompt Version。',
     AiReportFailureCode.unsupportedReportType => '服务器不支持当前报告类型。',
     AiReportFailureCode.unsupportedScope => '服务器不支持当前数据范围。',

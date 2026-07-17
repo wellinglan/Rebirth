@@ -27,6 +27,7 @@ void main() {
   late FakeAiGenerationGateway gateway;
   late FakeSessionStore sessions;
   late FakeAiCoachInputAssembler assembler;
+  late FakeAiGenerationRequestBindingStore bindings;
 
   setUp(() {
     consent = FakeAiConsentRepository(
@@ -38,11 +39,13 @@ void main() {
     assembler = FakeAiCoachInputAssembler(
       bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
     );
+    bindings = FakeAiGenerationRequestBindingStore();
     container = ProviderContainer(
       overrides: [
         aiConsentRepositoryProvider.overrideWithValue(consent),
         aiReportRepositoryProvider.overrideWithValue(reports),
         aiGenerationGatewayProvider.overrideWithValue(gateway),
+        aiGenerationRequestBindingStoreProvider.overrideWithValue(bindings),
         authSessionStoreProvider.overrideWithValue(sessions),
         aiCoachInputAssemblerProvider.overrideWithValue(assembler),
         dateTimeServiceProvider.overrideWithValue(
@@ -81,6 +84,8 @@ void main() {
     expect(reports.lastCompletedId, 'pending-1');
     expect(reports.lastStructuredOutput, contains('data_limitations'));
     expect(reports.markFailedCalls, 0);
+    expect(bindings.saveCalls, 1);
+    expect(bindings.deleteCalls, 1);
   });
 
   test('gateway failure marks only a controlled failure code', () async {
@@ -99,6 +104,7 @@ void main() {
     expect(reports.markFailedCalls, 1);
     expect(reports.lastFailureCode, 'provider_timeout');
     expect(gateway.generationCalls, 1);
+    expect(bindings.values, isEmpty);
     expect(
       container
           .read(aiManualGenerationControllerProvider)
@@ -106,6 +112,38 @@ void main() {
           .phase,
       AiManualGenerationPhase.failure,
     );
+  });
+
+  test('binding save failure blocks POST and marks controlled failure', () async {
+    final bundle = await _buildPreview(container);
+    bindings.saveError = StateError('disk unavailable');
+    await container.read(aiManualGenerationControllerProvider.future);
+
+    final result = await container
+        .read(aiManualGenerationControllerProvider.notifier)
+        .submit(bundle);
+
+    expect(result?.completed, isFalse);
+    expect(gateway.generationCalls, 0);
+    expect(reports.lastFailureCode, 'request_binding_failed');
+  });
+
+  test('network timeout keeps pending and binding without POST retry', () async {
+    final bundle = await _buildPreview(container);
+    gateway.generationError = const AiGenerationException(
+      AiReportFailureCode.networkOutcomeUnknown,
+    );
+    await container.read(aiManualGenerationControllerProvider.future);
+
+    final result = await container
+        .read(aiManualGenerationControllerProvider.notifier)
+        .submit(bundle);
+
+    expect(result?.awaitingRecovery, isTrue);
+    expect(reports.markFailedCalls, 0);
+    expect(reports.reports.single.status, AiReportStatus.pending);
+    expect(bindings.values, contains('pending-1'));
+    expect(gateway.generationCalls, 1);
   });
 
   test('disabled provider blocks before pending creation', () async {
@@ -169,6 +207,7 @@ void main() {
         aiConsentRepositoryProvider.overrideWithValue(consent),
         aiReportRepositoryProvider.overrideWithValue(reports),
         aiGenerationGatewayProvider.overrideWithValue(delayed),
+        aiGenerationRequestBindingStoreProvider.overrideWithValue(bindings),
         authSessionStoreProvider.overrideWithValue(sessions),
         aiCoachInputAssemblerProvider.overrideWithValue(assembler),
         dateTimeServiceProvider.overrideWithValue(
@@ -238,13 +277,13 @@ final class DelayedAiGenerationGateway implements AiGenerationGateway {
   }
 
   @override
-  Future<AiGenerationResult> generateWeekly({
+  Future<AiRemoteRequestResult> generateWeekly({
     required String requestId,
     required AiCoachInputBundle bundle,
   }) async {
     generationCalls += 1;
     await _completer.future;
-    return AiGenerationResult(
+    final completed = AiGenerationResult(
       requestId: requestId,
       reportType: 'weekly_report',
       promptVersion: bundle.promptVersion,
@@ -256,5 +295,21 @@ final class DelayedAiGenerationGateway implements AiGenerationGateway {
       structuredOutputJson:
           '{"title":"t","summary":"s","observations":[],"suggestions":[],"data_limitations":[]}',
     );
+    return AiRemoteRequestResult(
+      status: AiRemoteRequestStatus.completed,
+      requestId: requestId,
+      inputHash: bundle.inputHash,
+      reportType: 'weekly_report',
+      promptVersion: bundle.promptVersion,
+      completedResult: completed,
+    );
   }
+
+  @override
+  Future<AiRemoteRequestResult> getRequestStatus({
+    required String requestId,
+    required String inputHash,
+    required String reportType,
+    required String promptVersion,
+  }) => throw UnimplementedError();
 }

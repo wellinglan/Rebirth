@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
+import 'package:rebirth/core/config/server_endpoint_provider.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
 import 'ai_manual_generation_view_state.dart';
@@ -165,10 +168,86 @@ class AiManualGenerationController
       );
       final pending = await reports.createPending(input: bundle);
       pendingId = pending.id;
-      final result = await gateway.generateWeekly(
+      try {
+        await ref.read(aiGenerationRequestBindingStoreProvider).save(
+          AiGenerationRequestBinding(
+            localReportId: pending.id,
+            requestId: pending.id,
+            normalizedEndpoint: ref.read(effectiveServerEndpointProvider).baseUrl,
+            cloudUserId: session.user.id,
+            inputHash: bundle.inputHash,
+            reportType: bundle.reportType.databaseValue,
+            promptVersion: bundle.promptVersion,
+            createdAt: ref
+                .read(dateTimeServiceProvider)
+                .currentSnapshot()
+                .utcMilliseconds,
+          ),
+        );
+      } catch (_) {
+        await reports.markFailed(
+          reportId: pending.id,
+          errorCode: AiReportFailureCode.requestBindingFailed.databaseValue,
+        );
+        _setIfMounted(
+          AiManualGenerationViewState(
+            phase: AiManualGenerationPhase.failure,
+            capabilities: activeCapabilities,
+            reportId: pending.id,
+            failureCode: AiReportFailureCode.requestBindingFailed,
+          ),
+        );
+        return AiManualGenerationOutcome(
+          reportId: pending.id,
+          completed: false,
+        );
+      }
+      final remote = await gateway.generateWeekly(
         requestId: pending.id,
         bundle: bundle,
       );
+      if (remote.status == AiRemoteRequestStatus.processing) {
+        _setIfMounted(
+          AiManualGenerationViewState(
+            phase: AiManualGenerationPhase.pendingRecovery,
+            capabilities: capabilities,
+            reportId: pending.id,
+          ),
+        );
+        return AiManualGenerationOutcome(
+          reportId: pending.id,
+          completed: false,
+          awaitingRecovery: true,
+        );
+      }
+      if (remote.status == AiRemoteRequestStatus.outcomeUnknown ||
+          remote.status == AiRemoteRequestStatus.resultExpired) {
+        final code = remote.status == AiRemoteRequestStatus.outcomeUnknown
+            ? AiReportFailureCode.outcomeUnknown
+            : AiReportFailureCode.resultExpired;
+        await reports.markFailed(
+          reportId: pending.id,
+          errorCode: code.databaseValue,
+        );
+        await _deleteBinding(pending.id);
+        _setIfMounted(
+          AiManualGenerationViewState(
+            phase: AiManualGenerationPhase.failure,
+            capabilities: capabilities,
+            reportId: pending.id,
+            failureCode: code,
+          ),
+        );
+        return AiManualGenerationOutcome(
+          reportId: pending.id,
+          completed: false,
+        );
+      }
+      if (remote.status == AiRemoteRequestStatus.failed) {
+        final code = remote.failureCode ?? AiReportFailureCode.requestFailed;
+        throw AiGenerationException(code);
+      }
+      final result = remote.completedResult!;
       await reports.markCompleted(
         reportId: pending.id,
         reportContent: result.reportContent,
@@ -176,6 +255,7 @@ class AiManualGenerationController
         provider: result.provider,
         model: result.model,
       );
+      await _deleteBinding(pending.id);
       if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
       final stillCurrent = ref.mounted && _isCurrentBundle(bundle);
       if (stillCurrent) {
@@ -191,6 +271,22 @@ class AiManualGenerationController
           ? AiManualGenerationOutcome(reportId: pending.id, completed: true)
           : null;
     } on AiGenerationException catch (error) {
+      if (pendingId != null &&
+          error.code == AiReportFailureCode.networkOutcomeUnknown) {
+        _setIfMounted(
+          AiManualGenerationViewState(
+            phase: AiManualGenerationPhase.pendingRecovery,
+            capabilities: activeCapabilities,
+            reportId: pendingId,
+            failureCode: error.code,
+          ),
+        );
+        return AiManualGenerationOutcome(
+          reportId: pendingId,
+          completed: false,
+          awaitingRecovery: true,
+        );
+      }
       if (pendingId != null) {
         try {
           await reports.markFailed(
@@ -201,6 +297,7 @@ class AiManualGenerationController
           // The original controlled error remains the only UI-visible failure.
         }
         if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
+        await _deleteBinding(pendingId);
       }
       _setIfMounted(
         AiManualGenerationViewState(
@@ -299,7 +396,10 @@ class AiManualGenerationController
     if (capabilities.inputSchemaVersion != 1 ||
         capabilities.outputSchemaVersion != 1 ||
         capabilities.streaming ||
-        capabilities.responseStorageRequested) {
+        capabilities.responseStorageRequested ||
+        !capabilities.durableRequestLedger ||
+        !capabilities.requestStatusRecovery ||
+        capabilities.exactlyOnceGuaranteed) {
       throw const AiGenerationException(AiReportFailureCode.invalidInput);
     }
   }
@@ -316,5 +416,13 @@ class AiManualGenerationController
 
   void _setIfMounted(AiManualGenerationViewState value) {
     if (ref.mounted) state = AsyncData(value);
+  }
+
+  Future<void> _deleteBinding(String reportId) async {
+    try {
+      await ref.read(aiGenerationRequestBindingStoreProvider).delete(reportId);
+    } catch (_) {
+      // A terminal local report is authoritative; stale metadata is harmless.
+    }
   }
 }

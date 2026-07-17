@@ -57,7 +57,9 @@ Development rollback restores the backup file or a PostgreSQL backup. Do not run
 
 ## Production Gaps
 
-Sprint 8C adds a stateless AI gateway. Provider defaults to disabled; OpenAI credentials and model selection are Server environment secrets, and Fake is development/test only. OpenAI calls use Responses API structured output with `store=false`, no streaming/tools/background mode, explicit timeout/output limit, and no SDK retries. `store=false` is not an absolute zero-retention guarantee. Before production, complete privacy/legal/provider-retention/cost/rate-limit/observability reviews and design durable idempotency without storing unnecessary user content.
+Sprint 8D adds the `ai_generation_requests` durable ledger through Alembic revision `20260717_0002`. Provider defaults to disabled; OpenAI credentials and model selection are Server environment secrets, and Fake is development/test only. OpenAI calls use Responses API structured output with `store=false`, no streaming/tools/background mode, explicit timeout/output limit, and no SDK retries. `store=false` is not an absolute zero-retention guarantee.
+
+The ledger temporarily stores validated output for recovery and retains a minimal dedupe tombstone. Configure result, dedupe, and processing-lease retention explicitly for each environment. Lazy request cleanup is sufficient for alpha but production needs enforced retention monitoring, encryption at rest, database access controls, backup/deletion procedures, privacy/legal review, and observability that never logs input payloads or sensitive summaries. The at-most-once claim is not exactly-once and the Provider-return/database-commit crash gap remains.
 
 - HTTP cleartext is limited to localhost, LAN, and alpha builds; production must use HTTPS.
 - JWT secret and database credentials must come from a managed secret system.

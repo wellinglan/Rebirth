@@ -6,6 +6,7 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
 import '../ai_report_history_controller.dart';
+import '../ai_pending_recovery_controller.dart';
 import '../models/ai_report_presentation_models.dart';
 import 'ai_report_delete_dialog.dart';
 
@@ -84,9 +85,15 @@ class AiReportHistoryTab extends ConsumerWidget {
                       _ReportCard(
                         report: report,
                         isDeleting: state.deletingReportIds.contains(report.id),
+                        recoveryState: state.pendingRecoveryStates[report.id],
                         onOpen: () =>
                             context.push(RoutePaths.aiCoachReport(report.id)),
                         onDelete: () => _delete(context, ref, report.id),
+                        onCheckStatus: () => ref
+                            .read(aiReportHistoryControllerProvider.notifier)
+                            .checkPending(report.id),
+                        onConfirmNotFound: () =>
+                            _confirmServerNotFound(context, ref, report.id),
                       ),
                       const SizedBox(height: 8),
                     ],
@@ -115,6 +122,42 @@ class AiReportHistoryTab extends ConsumerWidget {
         ..showSnackBar(const SnackBar(content: Text('本地报告删除失败，请重试。')));
     }
   }
+
+  Future<void> _confirmServerNotFound(
+    BuildContext context,
+    WidgetRef ref,
+    String reportId,
+  ) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('确认服务器无此请求'),
+            content: const Text('这只会将本地待处理报告标记为失败，不会重新生成，也不会删除任何源数据。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmServerNotFoundButton'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('标记为失败'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !context.mounted) return;
+    final updated = await ref
+        .read(aiReportHistoryControllerProvider.notifier)
+        .confirmServerNotFound(reportId);
+    if (!updated && context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('本地报告状态更新失败，请重试。')));
+    }
+  }
 }
 
 class _ReportCard extends StatelessWidget {
@@ -123,12 +166,18 @@ class _ReportCard extends StatelessWidget {
     required this.isDeleting,
     required this.onOpen,
     required this.onDelete,
+    required this.onCheckStatus,
+    required this.onConfirmNotFound,
+    required this.recoveryState,
   });
 
   final AiReportListItemModel report;
   final bool isDeleting;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
+  final VoidCallback onCheckStatus;
+  final VoidCallback onConfirmNotFound;
+  final AiPendingRecoveryState? recoveryState;
 
   @override
   Widget build(BuildContext context) {
@@ -201,12 +250,55 @@ class _ReportCard extends StatelessWidget {
                 const Divider(height: 20),
                 Text(content, maxLines: 3, overflow: TextOverflow.ellipsis),
               ],
+              if (report.status == AiReportStatus.pending) ...[
+                const Divider(height: 20),
+                Text(
+                  _pendingMessage(recoveryState),
+                  key: ValueKey('aiPendingStatus-${report.id}'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  key: ValueKey('checkAiRequestStatus-${report.id}'),
+                  onPressed: recoveryState == AiPendingRecoveryState.checking
+                      ? null
+                      : onCheckStatus,
+                  icon: recoveryState == AiPendingRecoveryState.checking
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.sync),
+                  label: Text(
+                    recoveryState == AiPendingRecoveryState.checking
+                        ? '检查中...'
+                        : '检查服务器状态',
+                  ),
+                ),
+                if (recoveryState == AiPendingRecoveryState.serverNotFound)
+                  TextButton.icon(
+                    key: ValueKey('markServerNotFoundFailed-${report.id}'),
+                    onPressed: onConfirmNotFound,
+                    icon: const Icon(Icons.report_outlined),
+                    label: const Text('将本地记录标记为失败'),
+                  ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+
+  String _pendingMessage(AiPendingRecoveryState? state) => switch (state) {
+    AiPendingRecoveryState.processing => '服务器仍在处理；这不代表请求必然会完成。',
+    AiPendingRecoveryState.networkUnknown => '网络中断，结果待确认。不会自动重新生成。',
+    AiPendingRecoveryState.endpointMismatch => '请切回原服务器后再检查状态。',
+    AiPendingRecoveryState.accountMismatch => '请切回原账号后再检查状态。',
+    AiPendingRecoveryState.missingBinding => '缺少请求绑定，无法自动确认服务器状态。',
+    AiPendingRecoveryState.serverNotFound => '原服务器未找到该请求；不会自动重试生成。',
+    AiPendingRecoveryState.checking => '正在向原服务器查询状态...',
+    _ => '请求结果待确认，可安全查询服务器状态。',
+  };
 }
 
 class _HistoryLine extends StatelessWidget {

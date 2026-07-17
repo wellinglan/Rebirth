@@ -10,6 +10,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_selection.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_mode.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
@@ -127,6 +128,11 @@ final class FakeAiReportRepository implements AiReportRepository {
     if (listError case final error?) throw error;
     return List<AiReport>.unmodifiable(reports.take(limit));
   }
+
+  @override
+  Future<List<AiReport>> listPending() async => reports
+      .where((report) => report.status == AiReportStatus.pending)
+      .toList(growable: false);
 
   @override
   Future<AiReport?> getById(String id) async {
@@ -251,8 +257,12 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
   AiGenerationCapabilities capabilities;
   Object? capabilitiesError;
   Object? generationError;
+  Object? statusError;
+  AiRemoteRequestResult? statusResult;
+  Completer<AiRemoteRequestResult>? statusCompleter;
   int capabilitiesCalls = 0;
   int generationCalls = 0;
+  int statusCalls = 0;
   String? lastRequestId;
   AiCoachInputBundle? lastBundle;
 
@@ -264,7 +274,7 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
   }
 
   @override
-  Future<AiGenerationResult> generateWeekly({
+  Future<AiRemoteRequestResult> generateWeekly({
     required String requestId,
     required AiCoachInputBundle bundle,
   }) async {
@@ -272,7 +282,7 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
     lastRequestId = requestId;
     lastBundle = bundle;
     if (generationError case final error?) throw error;
-    return AiGenerationResult(
+    final completed = AiGenerationResult(
       requestId: requestId,
       reportType: 'weekly_report',
       promptVersion: bundle.promptVersion,
@@ -284,6 +294,63 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
       structuredOutputJson:
           '{"title":"测试","summary":"测试摘要","observations":[],"suggestions":[],"data_limitations":[]}',
     );
+    return AiRemoteRequestResult(
+      status: AiRemoteRequestStatus.completed,
+      requestId: requestId,
+      inputHash: bundle.inputHash,
+      reportType: 'weekly_report',
+      promptVersion: bundle.promptVersion,
+      completedResult: completed,
+    );
+  }
+
+  @override
+  Future<AiRemoteRequestResult> getRequestStatus({
+    required String requestId,
+    required String inputHash,
+    required String reportType,
+    required String promptVersion,
+  }) async {
+    statusCalls += 1;
+    if (statusError case final error?) throw error;
+    if (statusCompleter case final completer?) return completer.future;
+    if (statusResult case final result?) return result;
+    return AiRemoteRequestResult(
+      status: AiRemoteRequestStatus.processing,
+      requestId: requestId,
+      inputHash: inputHash,
+      reportType: reportType,
+      promptVersion: promptVersion,
+    );
+  }
+}
+
+final class FakeAiGenerationRequestBindingStore
+    implements AiGenerationRequestBindingStore {
+  final Map<String, AiGenerationRequestBinding> values = {};
+  Object? saveError;
+  int saveCalls = 0;
+  int deleteCalls = 0;
+
+  @override
+  Future<void> save(AiGenerationRequestBinding binding) async {
+    saveCalls += 1;
+    if (saveError case final error?) throw error;
+    values[binding.localReportId] = binding;
+  }
+
+  @override
+  Future<AiGenerationRequestBinding?> read(String localReportId) async =>
+      values[localReportId];
+
+  @override
+  Future<List<AiGenerationRequestBinding>> readAll() async =>
+      List.unmodifiable(values.values);
+
+  @override
+  Future<void> delete(String localReportId) async {
+    deleteCalls += 1;
+    values.remove(localReportId);
   }
 }
 

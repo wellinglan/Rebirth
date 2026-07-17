@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from app.ai.errors import AiGatewayError
 from app.ai.schemas import (
     AiCapabilitiesResponse,
+    AiRequestStatusResponse,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
 )
+from app.database import get_session
 from app.security import require_user_id
 
 
@@ -33,16 +36,59 @@ async def generate_weekly(
     body: AiWeeklyGenerateRequest,
     request: Request,
     user_id: str = Depends(require_user_id),
-) -> AiWeeklyGenerateResponse | JSONResponse:
+    session: Session = Depends(get_session),
+) -> AiWeeklyGenerateResponse | AiRequestStatusResponse | JSONResponse:
     try:
-        return await request.app.state.ai_generation_service.generate_weekly(
-            body, user_id=user_id
+        result = await request.app.state.ai_generation_service.generate_weekly(
+            body, user_id=user_id, session=session
         )
+        if isinstance(result, AiRequestStatusResponse):
+            return JSONResponse(
+                status_code=202,
+                content=result.model_dump(mode="json"),
+            )
+        return result
     except AiGatewayError as error:
         return JSONResponse(
             status_code=error.status_code,
             content={"detail": {"code": error.code, "message": _message(error.code)}},
         )
+
+
+@router.get(
+    "/requests/{request_id}",
+    response_model=AiRequestStatusResponse,
+)
+def request_status(
+    request_id: str,
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiRequestStatusResponse | JSONResponse:
+    try:
+        from uuid import UUID
+
+        normalized_id = str(UUID(request_id))
+    except ValueError:
+        return _error_response("not_found", status_code=404)
+    try:
+        result = request.app.state.ai_generation_service.get_request_status(
+            normalized_id,
+            user_id=user_id,
+            session=session,
+        )
+    except AiGatewayError as error:
+        return _error_response(error.code, status_code=error.status_code)
+    if result is None:
+        return _error_response("not_found", status_code=404)
+    return result
+
+
+def _error_response(code: str, *, status_code: int) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={"detail": {"code": code, "message": _message(code)}},
+    )
 
 
 def _message(code: str) -> str:
@@ -58,5 +104,10 @@ def _message(code: str) -> str:
         "provider_unavailable": "The AI provider is temporarily unavailable.",
         "provider_refused": "The AI provider refused this request.",
         "response_invalid": "The AI provider returned an invalid response.",
+        "idempotency_conflict": "The request ID is already bound to different input.",
+        "request_in_progress": "The request is still processing.",
+        "outcome_unknown": "The provider outcome cannot be determined safely.",
+        "result_expired": "The temporary server result is no longer available.",
+        "not_found": "The AI request was not found.",
     }
     return messages.get(code, "The AI request could not be completed.")

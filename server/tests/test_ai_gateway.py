@@ -120,6 +120,12 @@ def test_disabled_capabilities_are_safe(
         "output_schema_version": 1,
         "streaming": False,
         "response_storage_requested": False,
+        "durable_request_ledger": True,
+        "request_status_recovery": True,
+        "result_retention_hours": 24,
+        "dedupe_retention_days": 30,
+        "processing_lease_minutes": 5,
+        "exactly_once_guaranteed": False,
     }
     assert "key" not in response.text.lower()
 

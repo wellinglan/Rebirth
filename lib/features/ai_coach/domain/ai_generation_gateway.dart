@@ -13,6 +13,12 @@ final class AiGenerationCapabilities {
     required this.outputSchemaVersion,
     required this.streaming,
     required this.responseStorageRequested,
+    this.durableRequestLedger = true,
+    this.requestStatusRecovery = true,
+    this.resultRetentionHours = 24,
+    this.dedupeRetentionDays = 30,
+    this.processingLeaseMinutes = 5,
+    this.exactlyOnceGuaranteed = false,
   }) : supportedReportTypes = List.unmodifiable(supportedReportTypes),
        promptVersions = List.unmodifiable(promptVersions) {
     if (provider.trim().isEmpty || providerLabel.trim().isEmpty) {
@@ -20,6 +26,12 @@ final class AiGenerationCapabilities {
     }
     if (enabled && (model == null || model!.trim().isEmpty)) {
       throw const FormatException('Enabled AI capabilities require a model.');
+    }
+    if (resultRetentionHours <= 0 ||
+        dedupeRetentionDays <= 0 ||
+        processingLeaseMinutes <= 0 ||
+        exactlyOnceGuaranteed) {
+      throw const FormatException('Invalid AI reliability capabilities.');
     }
   }
 
@@ -33,6 +45,41 @@ final class AiGenerationCapabilities {
   final int outputSchemaVersion;
   final bool streaming;
   final bool responseStorageRequested;
+  final bool durableRequestLedger;
+  final bool requestStatusRecovery;
+  final int resultRetentionHours;
+  final int dedupeRetentionDays;
+  final int processingLeaseMinutes;
+  final bool exactlyOnceGuaranteed;
+}
+
+enum AiRemoteRequestStatus {
+  processing,
+  completed,
+  failed,
+  outcomeUnknown,
+  resultExpired,
+  notFound,
+}
+
+final class AiRemoteRequestResult {
+  const AiRemoteRequestResult({
+    required this.status,
+    required this.requestId,
+    required this.inputHash,
+    required this.reportType,
+    required this.promptVersion,
+    this.completedResult,
+    this.failureCode,
+  });
+
+  final AiRemoteRequestStatus status;
+  final String requestId;
+  final String inputHash;
+  final String reportType;
+  final String promptVersion;
+  final AiGenerationResult? completedResult;
+  final AiReportFailureCode? failureCode;
 }
 
 final class AiGenerationResult {
@@ -71,8 +118,15 @@ final class AiGenerationException implements Exception {
 abstract interface class AiGenerationGateway {
   Future<AiGenerationCapabilities> getCapabilities();
 
-  Future<AiGenerationResult> generateWeekly({
+  Future<AiRemoteRequestResult> generateWeekly({
     required String requestId,
     required AiCoachInputBundle bundle,
+  });
+
+  Future<AiRemoteRequestResult> getRequestStatus({
+    required String requestId,
+    required String inputHash,
+    required String reportType,
+    required String promptVersion,
   });
 }

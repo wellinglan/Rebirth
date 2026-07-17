@@ -125,6 +125,8 @@ Sprint 6B 仅预留 start/callback endpoint 合同，不实现浏览器回调、
 
 ## Sprint 6E 当前限制
 
+Sprint 8D 的 AI pending recovery 额外将 request ID 绑定到 normalized endpoint 与当前 Rebirth cloud user ID。切换 endpoint 或账号后不会向新 Server/其他账号查询旧请求；用户切回原绑定后才能检查。Binding 不保存 token、业务 payload 或报告正文。
+
 - Windows 开发仍可使用 SQLite；Docker 开发拓扑提供 FastAPI + PostgreSQL，但这不代表正式生产部署。
 - JWT refresh 生命周期、撤销列表、密钥轮换和安全存储尚未实现。
 - Profile 同步冲突只检测并提示，不提供字段级合并或覆盖选择 UI。

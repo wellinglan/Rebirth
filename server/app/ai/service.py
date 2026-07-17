@@ -1,25 +1,32 @@
 from __future__ import annotations
 
 import copy
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from pydantic import ValidationError
+from sqlalchemy.orm import Session
 
 from app.ai.canonical import input_hash
 from app.ai.errors import (
     AiGatewayError,
+    IdempotencyConflictError,
     InputHashMismatchError,
     UnsupportedContractError,
 )
+from app.ai.ledger import AiRequestLedger
 from app.ai.prompts import WEEKLY_PROMPT_VERSION, get_prompt
 from app.ai.providers import AiProvider, ProviderPromptPayload, safety_identifier
 from app.ai.schemas import (
     AiCapabilitiesResponse,
+    AiRequestStatusResponse,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
     AiWeeklyStructuredOutput,
 )
 from app.config import Settings
+from app.models import AiGenerationRequest
 
 
 SUPPORTED_SCOPES = {
@@ -30,10 +37,19 @@ SUPPORTED_SCOPES = {
 }
 
 
+def utc_milliseconds() -> int:
+    return time.time_ns() // 1_000_000
+
+
 @dataclass(frozen=True)
 class AiGenerationService:
     settings: Settings
     provider: AiProvider
+    clock: Callable[[], int] = utc_milliseconds
+
+    @property
+    def ledger(self) -> AiRequestLedger:
+        return AiRequestLedger(self.settings)
 
     def capabilities(self) -> AiCapabilitiesResponse:
         return AiCapabilitiesResponse(
@@ -43,11 +59,116 @@ class AiGenerationService:
             model=self.provider.model,
             supported_report_types=["weekly_report"],
             prompt_versions=[WEEKLY_PROMPT_VERSION],
+            result_retention_hours=self.settings.ai_result_retention_hours,
+            dedupe_retention_days=self.settings.ai_dedupe_retention_days,
+            processing_lease_minutes=self.settings.ai_processing_lease_minutes,
         )
 
     async def generate_weekly(
-        self, request: AiWeeklyGenerateRequest, *, user_id: str
-    ) -> AiWeeklyGenerateResponse:
+        self,
+        request: AiWeeklyGenerateRequest,
+        *,
+        user_id: str,
+        session: Session,
+    ) -> AiWeeklyGenerateResponse | AiRequestStatusResponse:
+        now = self.clock()
+        self.ledger.cleanup(session, now=now)
+        existing = self.ledger.find(
+            session,
+            user_id=user_id,
+            request_id=str(request.request_id),
+        )
+        if existing is not None:
+            verified_hash = input_hash(request.payload)
+            if verified_hash != request.input_hash:
+                raise InputHashMismatchError()
+            return self._resolve_existing(
+                session, existing, request=request, now=now
+            )
+
+        prompt = self._validate_supported_contract(request)
+        verified_hash = input_hash(request.payload)
+        if verified_hash != request.input_hash:
+            raise InputHashMismatchError()
+        claim = self.ledger.claim(
+            session,
+            user_id=user_id,
+            request=request,
+            now=now,
+        )
+        if not claim.owns_provider_call:
+            return self._resolve_existing(
+                session, claim.row, request=request, now=now
+            )
+
+        provider_payload = _provider_payload(request)
+        try:
+            generation = await self.provider.generate(
+                payload=provider_payload,
+                prompt=prompt,
+                safety_identifier=safety_identifier(
+                    user_id, self.settings.environment
+                ),
+            )
+            try:
+                structured = AiWeeklyStructuredOutput.model_validate(
+                    generation.structured_output
+                )
+            except ValidationError:
+                raise AiGatewayError("response_invalid") from None
+            result = AiWeeklyGenerateResponse(
+                request_id=request.request_id,
+                input_hash=verified_hash,
+                provider=generation.provider,
+                model=generation.model,
+                report_content=render_markdown(structured),
+                structured_output=structured,
+            )
+        except AiGatewayError as error:
+            self.ledger.mark_failed(
+                session,
+                claim.row,
+                error,
+                provider=self.provider.name if self.provider.enabled else None,
+                model=self.provider.model,
+                now=self.clock(),
+            )
+            raise
+        except Exception:
+            controlled = AiGatewayError("request_failed")
+            self.ledger.mark_failed(
+                session,
+                claim.row,
+                controlled,
+                provider=self.provider.name if self.provider.enabled else None,
+                model=self.provider.model,
+                now=self.clock(),
+            )
+            raise controlled from None
+
+        self.ledger.mark_completed(
+            session, claim.row, result, now=self.clock()
+        )
+        return result
+
+    def get_request_status(
+        self,
+        request_id: str,
+        *,
+        user_id: str,
+        session: Session,
+    ) -> AiRequestStatusResponse | None:
+        now = self.clock()
+        self.ledger.cleanup(session, now=now)
+        row = self.ledger.find(
+            session, user_id=user_id, request_id=request_id
+        )
+        if row is None:
+            return None
+        row = self.ledger.normalize_existing(session, row, now=now)
+        return self.ledger.status_response(row)
+
+    def _validate_supported_contract(self, request: AiWeeklyGenerateRequest):
         payload = request.payload
         if payload.schema_version != 1:
             raise UnsupportedContractError("invalid_input")
@@ -58,30 +179,41 @@ class AiGenerationService:
             raise UnsupportedContractError("unsupported_prompt_version")
         if any(scope not in SUPPORTED_SCOPES for scope in payload.scopes):
             raise UnsupportedContractError("unsupported_scope")
-        verified_hash = input_hash(payload)
-        if verified_hash != request.input_hash:
-            raise InputHashMismatchError()
+        return prompt
 
-        provider_payload = _provider_payload(request)
-        generation = await self.provider.generate(
-            payload=provider_payload,
-            prompt=prompt,
-            safety_identifier=safety_identifier(user_id, self.settings.environment),
-        )
-        try:
-            structured = AiWeeklyStructuredOutput.model_validate(
-                generation.structured_output
-            )
-        except ValidationError:
-            raise AiGatewayError("response_invalid") from None
-        return AiWeeklyGenerateResponse(
-            request_id=request.request_id,
-            input_hash=verified_hash,
-            provider=generation.provider,
-            model=generation.model,
-            report_content=render_markdown(structured),
-            structured_output=structured,
-        )
+    def _resolve_existing(
+        self,
+        session: Session,
+        row: AiGenerationRequest,
+        *,
+        request: AiWeeklyGenerateRequest,
+        now: int,
+    ) -> AiWeeklyGenerateResponse | AiRequestStatusResponse:
+        if (
+            row.input_hash != request.input_hash
+            or row.report_type != request.payload.report_type
+            or row.prompt_version != request.payload.prompt_version
+        ):
+            raise IdempotencyConflictError()
+        row = self.ledger.normalize_existing(session, row, now=now)
+        if row.status == "completed":
+            return self.ledger.replay_completed(row)
+        if row.status == "failed":
+            code = row.error_code or "request_failed"
+            raise AiGatewayError(code, status_code=_failure_status(code))
+        if row.status == "outcome_unknown":
+            raise AiGatewayError("outcome_unknown", status_code=409)
+        return self.ledger.status_response(row)
+
+
+def _failure_status(code: str) -> int:
+    return {
+        "provider_rate_limited": 429,
+        "provider_timeout": 504,
+        "provider_unavailable": 503,
+        "provider_refused": 422,
+        "result_expired": 410,
+    }.get(code, 502)
 
 
 def _provider_payload(request: AiWeeklyGenerateRequest) -> ProviderPromptPayload:

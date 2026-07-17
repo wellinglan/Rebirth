@@ -223,11 +223,17 @@ Only items with `server_version > since_server_version` and a requested table ar
 
 ## Current Contract Limits
 
-## AI Manual Weekly Generation (Sprint 8C)
+## AI Manual Weekly Generation And Recovery (Sprint 8D)
 
 `GET /ai/capabilities` and `POST /ai/reports/weekly/generate` require the existing bearer JWT. The only report contract is input schema 1, `weekly_report`, `weekly-report-v1`, and output schema 1. Generation accepts the existing typed canonical payload plus its SHA-256; Server normalizes/recomputes the hash before Provider invocation and rejects extra fields. Responses return the echoed request identity/hash, actual provider/model, server-rendered Markdown, and validated structured output.
 
-The Server does not persist AI reports. Flutter stores the completed/failed local lifecycle only after explicit final confirmation. Error bodies use `detail.code` from the controlled list documented in `docs/10_AI_PROVIDER_GATEWAY.md`; they never return credentials, raw Provider bodies, canonical JSON, Journal text, stack traces, database URLs, or local paths.
+The Server persists a minimal request ledger, not user report history. It temporarily retains only validated output for replay and never persists input payloads, sources, canonical JSON, source IDs, Journal text, Provider request/raw response, credentials, stack traces, database URLs, or local paths. Flutter local `ai_reports` remains report history.
+
+`GET /ai/capabilities` additionally returns `durable_request_ledger`, `request_status_recovery`, `result_retention_hours`, `dedupe_retention_days`, `processing_lease_minutes`, and `exactly_once_guaranteed=false`.
+
+`POST /ai/reports/weekly/generate` atomically binds one JWT user/request ID. A retained completed request replays; active processing returns HTTP 202 with status metadata; conflicting identity returns `409 idempotency_conflict`; stale processing becomes `outcome_unknown`; failed and expired requests never call Provider again.
+
+`GET /ai/requests/{request_id}` is JWT protected and returns the current user's `processing`, `completed`, `failed`, `outcome_unknown`, or `result_expired` status. Completed includes retained validated output; processing includes lease metadata; failed includes only a controlled code. Missing and other-user requests both return 404 `not_found`. There is no Server request-list endpoint.
 
 - There is no production refresh endpoint, token revocation, account linking, device management UI, background sync, batch pagination, encryption-at-rest policy, or business-specific conflict resolution yet.
 - Windows SQLite and Docker PostgreSQL expose the same API contract; Base URL is an environment difference, not a business-layer difference.

@@ -37,7 +37,7 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
   }
 
   @override
-  Future<AiGenerationResult> generateWeekly({
+  Future<AiRemoteRequestResult> generateWeekly({
     required String requestId,
     required AiCoachInputBundle bundle,
   }) async {
@@ -53,8 +53,56 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
           'payload': bundle.canonicalPayload,
         },
       );
-      return _decodeResult(json, requestId: requestId, bundle: bundle);
+      return _decodeRemoteResult(
+        json,
+        requestId: requestId,
+        inputHash: bundle.inputHash,
+        reportType: bundle.reportType.databaseValue,
+        promptVersion: bundle.promptVersion,
+      );
     } on ApiException catch (error) {
+      return _mapGenerateError(
+        error,
+        requestId: requestId,
+        bundle: bundle,
+      );
+    } on FormatException {
+      throw const AiGenerationException(AiReportFailureCode.responseInvalid);
+    } on TypeError {
+      throw const AiGenerationException(AiReportFailureCode.responseInvalid);
+    }
+  }
+
+  @override
+  Future<AiRemoteRequestResult> getRequestStatus({
+    required String requestId,
+    required String inputHash,
+    required String reportType,
+    required String promptVersion,
+  }) async {
+    final token = await _accessToken();
+    try {
+      final json = await apiClient.getJson(
+        '/ai/requests/$requestId',
+        accessToken: token,
+      );
+      return _decodeRemoteResult(
+        json,
+        requestId: requestId,
+        inputHash: inputHash,
+        reportType: reportType,
+        promptVersion: promptVersion,
+      );
+    } on ApiException catch (error) {
+      if (error.statusCode == 404 || error.errorCode == 'not_found') {
+        return AiRemoteRequestResult(
+          status: AiRemoteRequestStatus.notFound,
+          requestId: requestId,
+          inputHash: inputHash,
+          reportType: reportType,
+          promptVersion: promptVersion,
+        );
+      }
       throw AiGenerationException(_failureCode(error));
     } on FormatException {
       throw const AiGenerationException(AiReportFailureCode.responseInvalid);
@@ -85,24 +133,86 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
       outputSchemaVersion: json['output_schema_version'] as int,
       streaming: json['streaming'] as bool,
       responseStorageRequested: json['response_storage_requested'] as bool,
+      durableRequestLedger: json['durable_request_ledger'] as bool,
+      requestStatusRecovery: json['request_status_recovery'] as bool,
+      resultRetentionHours: json['result_retention_hours'] as int,
+      dedupeRetentionDays: json['dedupe_retention_days'] as int,
+      processingLeaseMinutes: json['processing_lease_minutes'] as int,
+      exactlyOnceGuaranteed: json['exactly_once_guaranteed'] as bool,
+    );
+  }
+
+  AiRemoteRequestResult _decodeRemoteResult(
+    Map<String, Object?> json, {
+    required String requestId,
+    required String inputHash,
+    required String reportType,
+    required String promptVersion,
+  }) {
+    final responseRequestId = json['request_id'] as String;
+    final responseHash = json['input_hash'] as String;
+    final responseReportType = json['report_type'] as String;
+    final responsePromptVersion = json['prompt_version'] as String;
+    if (responseRequestId != requestId ||
+        responseHash != inputHash ||
+        responseReportType != reportType ||
+        responsePromptVersion != promptVersion) {
+      throw const FormatException('Mismatched AI request status response.');
+    }
+    final status = json['status'] as String? ?? 'completed';
+    if (status == 'completed') {
+      final completed = _decodeResult(
+        json,
+        requestId: requestId,
+        inputHash: inputHash,
+        reportType: reportType,
+        promptVersion: promptVersion,
+      );
+      return AiRemoteRequestResult(
+        status: AiRemoteRequestStatus.completed,
+        requestId: requestId,
+        inputHash: inputHash,
+        reportType: reportType,
+        promptVersion: promptVersion,
+        completedResult: completed,
+      );
+    }
+    final mappedStatus = switch (status) {
+      'processing' => AiRemoteRequestStatus.processing,
+      'failed' => AiRemoteRequestStatus.failed,
+      'outcome_unknown' => AiRemoteRequestStatus.outcomeUnknown,
+      'result_expired' => AiRemoteRequestStatus.resultExpired,
+      _ => throw const FormatException('Unknown AI request status.'),
+    };
+    return AiRemoteRequestResult(
+      status: mappedStatus,
+      requestId: requestId,
+      inputHash: inputHash,
+      reportType: reportType,
+      promptVersion: promptVersion,
+      failureCode: status == 'failed'
+          ? _codeFromValue(json['error_code'] as String?)
+          : null,
     );
   }
 
   AiGenerationResult _decodeResult(
     Map<String, Object?> json, {
     required String requestId,
-    required AiCoachInputBundle bundle,
+    required String inputHash,
+    required String reportType,
+    required String promptVersion,
   }) {
     final responseRequestId = json['request_id'] as String;
-    final reportType = json['report_type'] as String;
-    final promptVersion = json['prompt_version'] as String;
-    final inputHash = json['input_hash'] as String;
+    final responseReportType = json['report_type'] as String;
+    final responsePromptVersion = json['prompt_version'] as String;
+    final responseInputHash = json['input_hash'] as String;
     final content = (json['report_content'] as String).trim();
     final structured = json['structured_output'];
     if (responseRequestId != requestId ||
-        reportType != bundle.reportType.databaseValue ||
-        promptVersion != bundle.promptVersion ||
-        inputHash != bundle.inputHash ||
+        responseReportType != reportType ||
+        responsePromptVersion != promptVersion ||
+        responseInputHash != inputHash ||
         content.isEmpty ||
         structured is! Map) {
       throw const FormatException('Mismatched AI generation response.');
@@ -111,14 +221,56 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
     _validateStructuredOutput(output);
     return AiGenerationResult(
       requestId: responseRequestId,
-      reportType: reportType,
-      promptVersion: promptVersion,
-      inputHash: inputHash,
+      reportType: responseReportType,
+      promptVersion: responsePromptVersion,
+      inputHash: responseInputHash,
       provider: json['provider'] as String,
       model: json['model'] as String,
       outputSchemaVersion: json['output_schema_version'] as int,
       reportContent: content,
       structuredOutputJson: jsonEncode(output),
+    );
+  }
+
+  AiRemoteRequestResult _mapGenerateError(
+    ApiException error, {
+    required String requestId,
+    required AiCoachInputBundle bundle,
+  }) {
+    final code = _failureCode(error);
+    if (error.isNetworkError) {
+      throw const AiGenerationException(
+        AiReportFailureCode.networkOutcomeUnknown,
+      );
+    }
+    final status = switch (code) {
+      AiReportFailureCode.outcomeUnknown =>
+        AiRemoteRequestStatus.outcomeUnknown,
+      AiReportFailureCode.resultExpired => AiRemoteRequestStatus.resultExpired,
+      AiReportFailureCode.providerAuthenticationFailed ||
+      AiReportFailureCode.providerRateLimited ||
+      AiReportFailureCode.providerTimeout ||
+      AiReportFailureCode.providerUnavailable ||
+      AiReportFailureCode.providerRefused ||
+      AiReportFailureCode.responseInvalid ||
+      AiReportFailureCode.requestFailed => AiRemoteRequestStatus.failed,
+      _ => throw AiGenerationException(code),
+    };
+    return AiRemoteRequestResult(
+      status: status,
+      requestId: requestId,
+      inputHash: bundle.inputHash,
+      reportType: bundle.reportType.databaseValue,
+      promptVersion: bundle.promptVersion,
+      failureCode: status == AiRemoteRequestStatus.failed ? code : null,
+    );
+  }
+
+  AiReportFailureCode _codeFromValue(String? value) {
+    if (value == null) return AiReportFailureCode.requestFailed;
+    return AiReportFailureCode.values.firstWhere(
+      (code) => code.databaseValue == value,
+      orElse: () => AiReportFailureCode.requestFailed,
     );
   }
 

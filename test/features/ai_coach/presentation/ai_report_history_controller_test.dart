@@ -10,10 +10,15 @@ void main() {
   late FakeAiReportRepository repository;
   late ProviderContainer container;
   late ProviderSubscription subscription;
+  late FakeAiGenerationRequestBindingStore bindings;
 
   void createContainer() {
+    bindings = FakeAiGenerationRequestBindingStore();
     container = ProviderContainer(
-      overrides: [aiReportRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        aiReportRepositoryProvider.overrideWithValue(repository),
+        aiGenerationRequestBindingStoreProvider.overrideWithValue(bindings),
+      ],
     );
     subscription = container.listen(
       aiReportHistoryControllerProvider,

@@ -5,6 +5,7 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
 import 'ai_report_history_controller.dart';
+import 'ai_pending_recovery_controller.dart';
 import 'models/ai_report_presentation_models.dart';
 import 'widgets/ai_report_delete_dialog.dart';
 
@@ -108,7 +109,13 @@ class _DetailContent extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _StatusContent(detail: detail),
+                _StatusContent(
+                  detail: detail,
+                  recoveryState: history?.pendingRecoveryStates[detail.id],
+                  onCheckStatus: () => ref
+                      .read(aiReportHistoryControllerProvider.notifier)
+                      .checkPending(detail.id),
+                ),
                 const SizedBox(height: 16),
                 const Card(
                   child: Padding(
@@ -156,9 +163,15 @@ class _DetailContent extends ConsumerWidget {
 }
 
 class _StatusContent extends StatelessWidget {
-  const _StatusContent({required this.detail});
+  const _StatusContent({
+    required this.detail,
+    required this.recoveryState,
+    required this.onCheckStatus,
+  });
 
   final AiReportDetailModel detail;
+  final AiPendingRecoveryState? recoveryState;
+  final VoidCallback onCheckStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -175,8 +188,20 @@ class _StatusContent extends StatelessWidget {
               SelectableText(detail.reportContent ?? '报告正文不可用。'),
             ],
           ),
-          AiReportStatus.pending => const Text(
-            '此请求尚未完成。当前版本没有 AI Provider，因此不提供继续处理按钮。',
+          AiReportStatus.pending => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(_pendingMessage(recoveryState)),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const ValueKey('checkAiRequestStatusDetailButton'),
+                onPressed: recoveryState == AiPendingRecoveryState.checking
+                    ? null
+                    : onCheckStatus,
+                icon: const Icon(Icons.sync),
+                label: const Text('检查服务器状态'),
+              ),
+            ],
           ),
           AiReportStatus.failed => Text(
             '失败原因：${detail.failureMessage ?? '生成未完成'}。这里不会显示底层异常、StackTrace 或 HTTP 内容。',
@@ -185,6 +210,16 @@ class _StatusContent extends StatelessWidget {
       ),
     );
   }
+
+  String _pendingMessage(AiPendingRecoveryState? state) => switch (state) {
+    AiPendingRecoveryState.processing =>
+      '服务器仍在处理；这不代表请求必然会完成。',
+    AiPendingRecoveryState.endpointMismatch => '请切回原服务器和账号检查状态。',
+    AiPendingRecoveryState.accountMismatch => '请切回原服务器和账号检查状态。',
+    AiPendingRecoveryState.missingBinding => '缺少请求绑定，无法自动确认。',
+    AiPendingRecoveryState.serverNotFound => '服务器未找到该请求，不会自动重新生成。',
+    _ => '请求结果待确认。状态检查只发送 GET，不会再次调用 Provider。',
+  };
 }
 
 class _DetailLine extends StatelessWidget {

@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from collections.abc import Callable
 
 from app.ai.providers import build_provider
 from app.ai.service import AiGenerationService
@@ -20,6 +21,7 @@ def create_app(
     openai_api_key: str | None = None,
     ai_model: str | None = None,
     openai_client: object | None = None,
+    ai_clock: Callable[[], int] | None = None,
 ) -> FastAPI:
     settings = load_settings(
         database_url=database_url,
@@ -35,9 +37,15 @@ def create_app(
     application = FastAPI(title="Rebirth API", version="0.1.0-dev")
     application.state.settings = settings
     application.state.database = database
-    application.state.ai_generation_service = AiGenerationService(
-        settings=settings,
-        provider=build_provider(settings, openai_client=openai_client),
+    provider = build_provider(settings, openai_client=openai_client)
+    application.state.ai_generation_service = (
+        AiGenerationService(settings=settings, provider=provider)
+        if ai_clock is None
+        else AiGenerationService(
+            settings=settings,
+            provider=provider,
+            clock=ai_clock,
+        )
     )
 
     @application.exception_handler(RequestValidationError)

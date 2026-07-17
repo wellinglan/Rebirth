@@ -201,6 +201,21 @@ final class LocalAiReportRepository implements AiReportRepository {
   }
 
   @override
+  Future<List<domain.AiReport>> listPending() async {
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final rows = await (database.select(database.aiReports)
+          ..where(
+            (row) =>
+                row.userId.equals(bootstrap.activeUserId) &
+                row.reportStatus.equals('pending') &
+                row.deletedAt.isNull(),
+          )
+          ..orderBy([(row) => OrderingTerm.asc(row.requestedAt)]))
+        .get();
+    return rows.map(_toDomain).toList(growable: false);
+  }
+
+  @override
   Future<void> softDelete(String id) async {
     final bootstrap = await database.bootstrapDao.bootstrap();
     final now = dateTimeService.currentSnapshot().utcMilliseconds;

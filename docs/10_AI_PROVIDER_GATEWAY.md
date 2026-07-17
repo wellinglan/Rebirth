@@ -63,10 +63,18 @@ The adapter uses the official Python SDK Responses API with the configured model
 
 Output schema v1 requires `title`, `summary`, up to five observations with evidence, up to three suggestions with reasons, and `data_limitations`; nested models reject additional fields. The Server validates output before rendering deterministic Markdown. Arbitrary Provider text is never accepted as report content.
 
-Controlled errors are: `gateway_disabled`, `authentication_required`, `invalid_request`, `invalid_input`, `input_hash_mismatch`, `unsupported_report_type`, `unsupported_prompt_version`, `unsupported_scope`, `provider_authentication_failed`, `provider_rate_limited`, `provider_timeout`, `provider_unavailable`, `provider_refused`, `response_invalid`, `request_failed`, and `unknown`.
+Controlled errors are: `gateway_disabled`, `authentication_required`, `invalid_request`, `invalid_input`, `input_hash_mismatch`, `idempotency_conflict`, `unsupported_report_type`, `unsupported_prompt_version`, `unsupported_scope`, `provider_authentication_failed`, `provider_rate_limited`, `provider_timeout`, `provider_unavailable`, `provider_refused`, `response_invalid`, `request_failed`, `outcome_unknown`, `result_expired`, `not_found`, and `unknown`.
 
 After confirmation, a failure marks the local pending report failed with only one controlled text code. Timeout is never retried automatically because another call can incur cost. A crash can leave `pending`; Sprint 8C displays it as-is and does not recover/resend it.
 
+## Sprint 8D Durable Request Ledger
+
+The Server now persists a minimal `ai_generation_requests` ledger and exposes `GET /ai/requests/{request_id}`. A unique JWT-user/request ID claim prevents the same request ID from invoking the Provider more than once while the tombstone exists. Completed output is temporarily replayable; active processing returns 202; failed, stale/outcome-unknown, and expired requests never invoke Provider again.
+
+The ledger never stores the input payload, Canonical JSON, sources, source IDs, Journal text, Provider request body, raw Provider response, token, or API key. It temporarily stores validated structured output and rendered Markdown, which can contain sensitive summaries. Defaults are 24-hour result retention, 30-day dedupe retention, and a 5-minute processing lease, all reported by capabilities. Cleanup is lazy.
+
+Flutter stores endpoint/account/request identity in a SharedPreferences Binding before POST. Network timeout keeps local pending and permits explicit status GET; Provider timeout is a terminal controlled failure. Consent revocation still permits recovery of an already-sent request. No status path retries POST.
+
 ## Current Limits
 
-The gateway is stateless and does not store reports or implement cross-process strong idempotency. `request_id` is tracing identity, not a guarantee against duplicate Provider cost. Reports remain local-only and source data is read-only. Real OpenAI smoke testing is opt-in with `REBIRTH_RUN_OPENAI_SMOKE=1`; normal tests use Fake/Mocks only.
+The ledger provides at-most-once ownership for one database and retained request ID, not exactly-once. Provider invocation and result commit are not atomic; the crash gap can become `outcome_unknown`, and duplicate-cost risk cannot be completely eliminated across external Provider behavior or dedupe expiry. Reports remain local-only and source data is read-only. Real OpenAI smoke testing is opt-in with `REBIRTH_RUN_OPENAI_SMOKE=1`; normal tests use Fake/Mocks only.

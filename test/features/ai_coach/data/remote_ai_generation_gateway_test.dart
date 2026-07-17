@@ -64,8 +64,11 @@ void main() {
     expect(api.lastBody?['input_hash'], bundle.inputHash);
     expect(api.lastBody?['payload'], same(bundle.canonicalPayload));
     expect(api.lastBody, isNot(contains('canonical_json')));
-    expect(result.provider, 'fake');
-    expect(result.structuredOutputJson, contains('data_limitations'));
+    expect(result.completedResult?.provider, 'fake');
+    expect(
+      result.completedResult?.structuredOutputJson,
+      contains('data_limitations'),
+    );
   });
 
   for (final mismatch in ['request', 'hash', 'prompt', 'report']) {
@@ -125,16 +128,76 @@ void main() {
       statusCode: 500,
       errorCode: 'future_unknown_code',
     );
+    final result = await gateway.generateWeekly(
+      requestId: 'local-report-id',
+      bundle: buildAiBundle(),
+    );
+    expect(result.status, AiRemoteRequestStatus.failed);
+    expect(result.failureCode, AiReportFailureCode.requestFailed);
+    expect(api.postCalls, 1);
+  });
+
+  test('status GET validates identity and decodes completed recovery', () async {
+    final bundle = buildAiBundle();
+    api.getResponse = {
+      ..._generation(bundle, requestId: 'local-report-id'),
+      'status': 'completed',
+      'created_at': 1,
+    };
+    final result = await gateway.getRequestStatus(
+      requestId: 'local-report-id',
+      inputHash: bundle.inputHash,
+      reportType: 'weekly_report',
+      promptVersion: bundle.promptVersion,
+    );
+    expect(result.status, AiRemoteRequestStatus.completed);
+    expect(result.completedResult?.reportContent, startsWith('#'));
+    expect(api.lastPath, '/ai/requests/local-report-id');
+
+    api.getResponse!['input_hash'] = '0' * 64;
     await expectLater(
-      gateway.generateWeekly(
+      gateway.getRequestStatus(
         requestId: 'local-report-id',
-        bundle: buildAiBundle(),
+        inputHash: bundle.inputHash,
+        reportType: 'weekly_report',
+        promptVersion: bundle.promptVersion,
       ),
       throwsA(
         isA<AiGenerationException>().having(
           (error) => error.code,
           'code',
-          AiReportFailureCode.requestFailed,
+          AiReportFailureCode.responseInvalid,
+        ),
+      ),
+    );
+  });
+
+  test('status not found is safe and POST network loss is outcome unknown', () async {
+    final bundle = buildAiBundle();
+    api.getError = const ApiException(
+      message: 'not found',
+      statusCode: 404,
+      errorCode: 'not_found',
+    );
+    final missing = await gateway.getRequestStatus(
+      requestId: 'local-report-id',
+      inputHash: bundle.inputHash,
+      reportType: 'weekly_report',
+      promptVersion: bundle.promptVersion,
+    );
+    expect(missing.status, AiRemoteRequestStatus.notFound);
+
+    api.postError = const ApiException(
+      message: 'connection lost',
+      isNetworkError: true,
+    );
+    await expectLater(
+      gateway.generateWeekly(requestId: 'local-report-id', bundle: bundle),
+      throwsA(
+        isA<AiGenerationException>().having(
+          (error) => error.code,
+          'code',
+          AiReportFailureCode.networkOutcomeUnknown,
         ),
       ),
     );
@@ -153,6 +216,12 @@ Map<String, Object?> _capabilities() => {
   'output_schema_version': 1,
   'streaming': false,
   'response_storage_requested': false,
+  'durable_request_ledger': true,
+  'request_status_recovery': true,
+  'result_retention_hours': 24,
+  'dedupe_retention_days': 30,
+  'processing_lease_minutes': 5,
+  'exactly_once_guaranteed': false,
 };
 
 Map<String, Object?> _generation(

@@ -30,5 +30,7 @@ abstract interface class AiReportRepository {
 
   Future<List<AiReport>> listRecent({int limit = 20});
 
+  Future<List<AiReport>> listPending();
+
   Future<void> softDelete(String id);
 }

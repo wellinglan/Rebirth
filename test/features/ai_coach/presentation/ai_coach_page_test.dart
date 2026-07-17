@@ -9,6 +9,8 @@ import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
@@ -235,6 +237,7 @@ void main() {
     expect(find.text('已完成'), findsOneWidget);
     expect(find.text('待处理'), findsOneWidget);
     expect(find.text('生成失败'), findsOneWidget);
+    expect(find.text('检查服务器状态'), findsOneWidget);
     expect(find.byTooltip('删除本地报告'), findsNWidgets(3));
     expect(
       find.descendant(
@@ -280,8 +283,11 @@ void main() {
       expect(find.textContaining('not displayed'), findsNothing);
 
       await _pumpDetail(tester, reports, 'pending');
-      expect(find.textContaining('此请求尚未完成'), findsOneWidget);
-      expect(find.textContaining('不提供继续处理按钮'), findsOneWidget);
+      expect(find.textContaining('请求结果待确认'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('checkAiRequestStatusDetailButton')),
+        findsOneWidget,
+      );
 
       await _pumpDetail(tester, reports, 'failed');
       expect(find.textContaining('请求未能完成'), findsOneWidget);
@@ -329,7 +335,12 @@ void main() {
       addTearDown(router.dispose);
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [aiReportRepositoryProvider.overrideWithValue(reports)],
+          overrides: [
+            aiReportRepositoryProvider.overrideWithValue(reports),
+            aiGenerationRequestBindingStoreProvider.overrideWithValue(
+              FakeAiGenerationRequestBindingStore(),
+            ),
+          ],
           child: MaterialApp.router(routerConfig: router),
         ),
       );
@@ -369,6 +380,101 @@ void main() {
       }
     },
   );
+
+  testWidgets('pending recovery controls fit a narrow history view', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(320, 720));
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: FakeAiReportRepository(
+        reports: [buildAiReport(id: 'pending', status: AiReportStatus.pending)],
+      ),
+      textScale: 2,
+    );
+    await tester.tap(find.widgetWithText(Tab, '本地报告'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('checkAiRequestStatus-pending')),
+      100,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('aiReportHistoryList')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(
+      find.byKey(const ValueKey('checkAiRequestStatus-pending')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('not found requires confirmation before marking pending failed', (
+    tester,
+  ) async {
+    final gateway = FakeAiGenerationGateway()
+      ..statusResult = const AiRemoteRequestResult(
+        status: AiRemoteRequestStatus.notFound,
+        requestId: 'pending',
+        inputHash:
+            '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
+        reportType: 'weekly_report',
+        promptVersion: 'weekly-report-v1',
+      );
+    final bindings = FakeAiGenerationRequestBindingStore();
+    bindings.values['pending'] = const AiGenerationRequestBinding(
+      localReportId: 'pending',
+      requestId: 'pending',
+      normalizedEndpoint: 'http://127.0.0.1:8000',
+      cloudUserId: 'user',
+      inputHash:
+          '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
+      reportType: 'weekly_report',
+      promptVersion: 'weekly-report-v1',
+      createdAt: 1,
+    );
+    final reports = FakeAiReportRepository(
+      reports: [buildAiReport(id: 'pending', status: AiReportStatus.pending)],
+    );
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: reports,
+      gateway: gateway,
+      bindings: bindings,
+    );
+
+    await tester.tap(find.widgetWithText(Tab, '本地报告'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('checkAiRequestStatus-pending')),
+    );
+    await tester.pumpAndSettle();
+    final markFailed = find.byKey(
+      const ValueKey('markServerNotFoundFailed-pending'),
+    );
+    expect(markFailed, findsOneWidget);
+
+    await _tapAfterScrolling(tester, markFailed);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '取消'));
+    await tester.pumpAndSettle();
+    expect(reports.reports.single.status, AiReportStatus.pending);
+
+    await _tapAfterScrolling(tester, markFailed);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirmServerNotFoundButton')));
+    await tester.pumpAndSettle();
+    expect(reports.reports.single.status, AiReportStatus.failed);
+    expect(reports.lastFailureCode, 'server_state_not_found');
+    expect(bindings.values, isEmpty);
+    expect(gateway.statusCalls, 1);
+    expect(gateway.generationCalls, 0);
+  });
 }
 
 FakeAiConsentRepository _enabledConsent() {
@@ -384,6 +490,8 @@ Future<void> _pumpAiCoach(
   required FakeAiReportRepository reports,
   GoRouter? router,
   double textScale = 1,
+  FakeAiGenerationGateway? gateway,
+  FakeAiGenerationRequestBindingStore? bindings,
 }) async {
   final child = router == null
       ? MaterialApp(home: const AiCoachPage(), builder: _scaled(textScale))
@@ -394,8 +502,11 @@ Future<void> _pumpAiCoach(
         aiConsentRepositoryProvider.overrideWithValue(consent),
         aiCoachInputAssemblerProvider.overrideWithValue(assembler),
         aiReportRepositoryProvider.overrideWithValue(reports),
+        aiGenerationRequestBindingStoreProvider.overrideWithValue(
+          bindings ?? FakeAiGenerationRequestBindingStore(),
+        ),
         aiGenerationGatewayProvider.overrideWithValue(
-          FakeAiGenerationGateway(),
+          gateway ?? FakeAiGenerationGateway(),
         ),
         authSessionStoreProvider.overrideWithValue(
           FakeAuthSessionStore(
@@ -423,7 +534,12 @@ Future<void> _pumpDetail(
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [aiReportRepositoryProvider.overrideWithValue(reports)],
+      overrides: [
+        aiReportRepositoryProvider.overrideWithValue(reports),
+        aiGenerationRequestBindingStoreProvider.overrideWithValue(
+          FakeAiGenerationRequestBindingStore(),
+        ),
+      ],
       child: MaterialApp(home: AiReportDetailPage(reportId: reportId)),
     ),
   );
@@ -437,14 +553,8 @@ TransitionBuilder _scaled(double scale) {
   );
 }
 
-Future<void> _tapAfterScrolling(
-  WidgetTester tester,
-  Finder finder,
-) async {
-  await Scrollable.ensureVisible(
-    tester.element(finder),
-    alignment: 0.5,
-  );
+Future<void> _tapAfterScrolling(WidgetTester tester, Finder finder) async {
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(finder);
 }

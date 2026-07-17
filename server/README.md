@@ -2,14 +2,17 @@
 
 Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, and manual canonical Profile sync only. It is not a production-safe cloud deployment.
 
-Sprint 8C also provides a stateless, JWT-protected AI Provider gateway for explicit weekly generation. Provider defaults to `disabled`; `fake` is development/test only; `openai` uses the official Python SDK Responses API. Flutter never receives or stores `OPENAI_API_KEY`.
+Sprint 8D adds a durable, JWT-user-isolated AI request ledger to the explicit weekly generation gateway. Provider defaults to `disabled`; `fake` is development/test only; `openai` uses the official Python SDK Responses API. Flutter never receives or stores `OPENAI_API_KEY`.
 
 AI endpoints:
 
 - `GET /ai/capabilities`
 - `POST /ai/reports/weekly/generate`
+- `GET /ai/requests/{request_id}`
 
-OpenAI requires `OPENAI_API_KEY` and `REBIRTH_AI_MODEL`. Optional limits are `REBIRTH_AI_TIMEOUT_SECONDS=90` and `REBIRTH_AI_MAX_OUTPUT_TOKENS=1600`. Calls use strict structured output, `store=false`, no streaming/tools/background mode, and no automatic SDK retry. `store=false` is not an absolute zero-retention promise. The Server verifies canonical SHA-256, strips sources/identities before Provider forwarding, and does not persist reports.
+OpenAI requires `OPENAI_API_KEY` and `REBIRTH_AI_MODEL`. Calls use strict structured output, `store=false`, no streaming/tools/background mode, and no automatic SDK retry. `store=false` is not an absolute zero-retention promise. The Server verifies canonical SHA-256 and strips sources/identities before Provider forwarding.
+
+The `ai_generation_requests` ledger provides at-most-once Provider ownership for one JWT user and request ID. It stores minimal request identity and temporarily stores only validated output for recovery. It never stores the input payload, canonical JSON, sources, Journal text, Provider request body, raw Provider response, token, or API key. Defaults are 24 hours for recoverable output, 30 days for the dedupe tombstone, and 5 minutes for a processing lease. Cleanup is lazy on AI request entry. This is not exactly-once: a crash after Provider return but before the completed update becomes `outcome_unknown` after lease expiry and is never automatically retried.
 
 ## Health Contract
 
@@ -47,6 +50,8 @@ For a new database, set `REBIRTH_DATABASE_URL` and run:
 ```powershell
 .\.venv\Scripts\python.exe -m alembic upgrade head
 ```
+
+Before applying Sprint 8D to an existing database, stop the API and make a backup, then run `alembic upgrade head`. Revision `20260717_0002` adds the ledger without dropping existing account or sync data. Application startup never drops or recreates tables.
 
 For a Sprint 6D SQLite database already created by SQLAlchemy, first back it up. Running the Sprint 6E server once adds the non-destructive `sync_clock` table through `create_all`; then mark the equivalent migration state:
 
@@ -116,6 +121,9 @@ The PostgreSQL test runs Alembic and concurrent sync writes. It is skipped, not 
 | `REBIRTH_AI_MODEL` | none | Configured OpenAI model ID |
 | `REBIRTH_AI_TIMEOUT_SECONDS` | `90` | Provider timeout |
 | `REBIRTH_AI_MAX_OUTPUT_TOKENS` | `1600` | Provider output limit |
+| `REBIRTH_AI_RESULT_RETENTION_HOURS` | `24` | Recoverable validated result TTL |
+| `REBIRTH_AI_DEDUPE_RETENTION_DAYS` | `30` | Minimal request tombstone TTL |
+| `REBIRTH_AI_PROCESSING_LEASE_MINUTES` | `5` | Processing ownership lease |
 
 Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Manual flows are documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`.
 

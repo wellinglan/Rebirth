@@ -187,6 +187,12 @@ class AiCapabilitiesResponse(StrictModel):
     output_schema_version: Literal[1] = 1
     streaming: Literal[False] = False
     response_storage_requested: Literal[False] = False
+    durable_request_ledger: Literal[True] = True
+    request_status_recovery: Literal[True] = True
+    result_retention_hours: int = Field(gt=0)
+    dedupe_retention_days: int = Field(gt=0)
+    processing_lease_minutes: int = Field(gt=0)
+    exactly_once_guaranteed: Literal[False] = False
 
 
 class AiWeeklyGenerateResponse(StrictModel):
@@ -199,3 +205,30 @@ class AiWeeklyGenerateResponse(StrictModel):
     output_schema_version: Literal[1] = 1
     report_content: str = Field(min_length=1)
     structured_output: AiWeeklyStructuredOutput
+
+
+AiRequestStatus = Literal[
+    "processing",
+    "completed",
+    "failed",
+    "outcome_unknown",
+    "result_expired",
+]
+
+
+class AiRequestStatusResponse(StrictModel):
+    request_id: UUID
+    input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    report_type: str
+    prompt_version: str
+    status: AiRequestStatus
+    provider: str | None = None
+    model: str | None = None
+    output_schema_version: int | None = None
+    report_content: str | None = None
+    structured_output: AiWeeklyStructuredOutput | None = None
+    error_code: str | None = None
+    created_at: int
+    lease_expires_at: int | None = None
+    result_expires_at: int | None = None
+    outcome_note: str | None = None

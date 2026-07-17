@@ -48,6 +48,10 @@ void main() {
       '不代表绝对零保留',
       '可能产生 Provider 费用',
       '不会自动重试',
+      '临时保留已验证的生成结果 24 小时',
+      'Tombstone 会保留 30 天',
+      '不是 exactly-once',
+      '不保存输入 Payload',
     ]) {
       expect(find.textContaining(text), findsOneWidget);
     }

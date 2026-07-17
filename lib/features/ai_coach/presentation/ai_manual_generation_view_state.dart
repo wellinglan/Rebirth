@@ -6,6 +6,7 @@ enum AiManualGenerationPhase {
   disabled,
   ready,
   submitting,
+  pendingRecovery,
   success,
   failure,
 }
@@ -30,8 +31,10 @@ final class AiManualGenerationOutcome {
   const AiManualGenerationOutcome({
     required this.reportId,
     required this.completed,
+    this.awaitingRecovery = false,
   });
 
   final String reportId;
   final bool completed;
+  final bool awaitingRecovery;
 }

@@ -31,6 +31,12 @@ enum AiReportFailureCode {
   providerRefused('provider_refused'),
   requestFailed('request_failed'),
   responseInvalid('response_invalid'),
+  idempotencyConflict('idempotency_conflict'),
+  outcomeUnknown('outcome_unknown'),
+  resultExpired('result_expired'),
+  serverStateNotFound('server_state_not_found'),
+  requestBindingFailed('request_binding_failed'),
+  networkOutcomeUnknown('network_outcome_unknown'),
   cancelled('cancelled'),
   unknown('unknown');
 
