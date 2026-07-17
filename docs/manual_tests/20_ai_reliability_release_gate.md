@@ -19,45 +19,50 @@ Record only observed manual behavior. Automated tests and APK compilation do not
 
 ## Windows Manual Matrix
 
-| # | Scenario | Result | Evidence / Notes |
-|---:|---|---|---|
-| 1 | Fake success | NOT EXECUTED | |
-| 2 | Fake Provider timeout | NOT EXECUTED | |
-| 3 | Client network interruption | NOT EXECUTED | |
-| 4 | Status GET after network recovery | NOT EXECUTED | |
-| 5 | Completed recovery | NOT EXECUTED | |
-| 6 | Failed recovery | NOT EXECUTED | |
-| 7 | Active processing | NOT EXECUTED | |
-| 8 | Stale processing to outcome_unknown | NOT EXECUTED | |
-| 9 | Result expired | NOT EXECUTED | |
-| 10 | Not-found user confirmation | NOT EXECUTED | |
-| 11 | Endpoint mismatch | NOT EXECUTED | |
-| 12 | Account mismatch | NOT EXECUTED | |
-| 13 | Recovery after Consent revoke | NOT EXECUTED | |
-| 14 | Duplicate request invokes Provider once | NOT EXECUTED | |
-| 15 | Report soft delete preserves source data | NOT EXECUTED | |
-| 16 | Binding recovery after App restart | NOT EXECUTED | |
-| 17 | Narrow window has no overflow | NOT EXECUTED | |
-| 18 | Final confirmation retention/cost text | NOT EXECUTED | |
-| 19 | History states and actions | NOT EXECUTED | |
-| 20 | Detail states and recovery action | NOT EXECUTED | |
+| # | Scenario | Result | Evidence | Defect ID |
+|---:|---|---|---|---|
+| 1 | Fake success | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 2 | Fake Provider timeout | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 3 | Client network interruption | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 4 | Status GET after network recovery | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 5 | Completed recovery | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 6 | Failed recovery | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 7 | Active processing | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 8 | Stale processing to outcome_unknown | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 9 | Result expired | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 10 | Not-found user confirmation | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 11 | Endpoint mismatch | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 12 | Account mismatch | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 13 | Recovery after Consent revoke | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 14 | Duplicate request invokes Provider once | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 15 | Report soft delete preserves source data | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 16 | Binding recovery after App restart | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 17 | Narrow window has no overflow | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 18 | Final confirmation retention/cost text | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 19 | History states and actions | NOT EXECUTED | No interactive Windows session recorded. | - |
+| 20 | Detail states and recovery action | NOT EXECUTED | No interactive Windows session recorded. | - |
 
 ## Android Physical-Device Matrix
 
-| # | Scenario | Result | Evidence / Notes |
-|---:|---|---|---|
-| 1 | Login | NOT EXECUTED | |
-| 2 | Build Preview | NOT EXECUTED | |
-| 3 | Final confirmation | NOT EXECUTED | |
-| 4 | Fake success | NOT EXECUTED | |
-| 5 | Close and reopen App | NOT EXECUTED | |
-| 6 | Pending recovery | NOT EXECUTED | |
-| 7 | History | NOT EXECUTED | |
-| 8 | Detail | NOT EXECUTED | |
-| 9 | Endpoint switch | NOT EXECUTED | |
-| 10 | Large font | NOT EXECUTED | |
-| 11 | No horizontal overflow | NOT EXECUTED | |
-| 12 | No unexpected exit | NOT EXECUTED | |
+| # | Scenario | Result | Evidence | Defect ID |
+|---:|---|---|---|---|
+| 1 | Install arm64-v8a release APK | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 2 | Configure runtime Server endpoint | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 3 | Log in with development account | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 4 | Enable AI Consent | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 5 | Build Preview | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 6 | Final confirmation | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 7 | Fake Provider success | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 8 | Force-close and reopen App | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 9 | Pending recovery | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 10 | History and Detail | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 11 | Endpoint mismatch | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 12 | Account mismatch | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 13 | Large font | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 14 | Full-page scrolling | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 15 | Bottom navigation | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 16 | No horizontal overflow | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
+| 17 | No unexpected exit | NOT EXECUTED | No Android device connected on 2026-07-18. | - |
 
 ## Release Decision
 
