@@ -15,13 +15,18 @@ from sqlalchemy import func, select, text
 from app.ai.canonical import input_hash
 from app.ai.ledger import AiRequestLedger
 from app.ai.providers import FakeAiProvider
-from app.ai.schemas import AiWeeklyGenerateRequest, AiWeeklyPayload
+from app.ai.schemas import (
+    AiDailyGenerateRequest,
+    AiWeeklyGenerateRequest,
+    AiWeeklyPayload,
+)
 from app.ai.service import AiGenerationService
 from app.config import load_settings
 from app.database import Database
 from app.main import create_app
 from app.models import AiGenerationRequest, CloudUser
 from tests.test_ai_gateway import request_body
+from tests.test_ai_daily_insight import daily_request_body
 
 
 pytestmark = [
@@ -120,6 +125,31 @@ def _expire_worker(
         database.engine.dispose()
 
 
+def _daily_claim_worker(
+    database_url: str,
+    user_id: str,
+    body: dict[str, Any],
+    barrier: Any,
+    queue: Any,
+) -> None:
+    settings = load_settings(
+        database_url=database_url,
+        environment="test",
+        jwt_secret="postgres-multiprocess-test-secret",
+    )
+    database = Database(database_url)
+    try:
+        request = AiDailyGenerateRequest.model_validate(body)
+        barrier.wait(timeout=20)
+        with database.session_factory() as session:
+            claim = AiRequestLedger(settings).claim(
+                session, user_id=user_id, request=request, now=_NOW
+            )
+            queue.put((claim.owns_provider_call, claim.row.status))
+    finally:
+        database.engine.dispose()
+
+
 def _run_processes(target: Any, arguments: list[tuple[Any, ...]]) -> list[Any]:
     context = multiprocessing.get_context("spawn")
     barrier = context.Barrier(len(arguments))
@@ -180,6 +210,36 @@ def test_four_processes_have_exactly_one_claim_owner() -> None:
                     AiGenerationRequest.request_id == request_id,
                 )
             ) == 1
+    finally:
+        database.engine.dispose()
+
+
+def test_daily_four_processes_have_exactly_one_claim_owner() -> None:
+    _upgrade()
+    user_id = str(uuid.uuid4())
+    request_id = str(uuid.uuid4())
+    _seed_users(user_id)
+    body = daily_request_body()
+    body["request_id"] = request_id
+
+    results = _run_processes(
+        _daily_claim_worker,
+        [(_database_url(), user_id, body) for _ in range(_PROCESS_COUNT)],
+    )
+    assert sum(1 for owns, _ in results if owns) == 1
+    assert {status for _, status in results} == {"processing"}
+
+    database = Database(_database_url())
+    try:
+        with database.session_factory() as session:
+            rows = session.scalars(
+                select(AiGenerationRequest).where(
+                    AiGenerationRequest.user_id == user_id,
+                    AiGenerationRequest.request_id == request_id,
+                )
+            ).all()
+            assert len(rows) == 1
+            assert rows[0].report_type == "daily_insight"
     finally:
         database.engine.dispose()
 

@@ -114,10 +114,37 @@ def test_disabled_capabilities_are_safe(
         "provider": "disabled",
         "provider_label": "Disabled",
         "model": None,
-        "supported_report_types": ["weekly_report"],
-        "prompt_versions": ["weekly-report-v1"],
+        "supported_report_types": ["daily_insight", "weekly_report"],
+        "prompt_versions": ["daily-insight-v1", "weekly-report-v1"],
         "input_schema_version": 1,
         "output_schema_version": 1,
+        "report_contracts": [
+            {
+                "report_type": "daily_insight",
+                "prompt_versions": ["daily-insight-v1"],
+                "input_schema_version": 1,
+                "output_schema_version": 1,
+                "period_kind": "single_day",
+                "supported_scopes": [
+                    "today_metrics",
+                    "health_metrics",
+                    "journal_reflections",
+                ],
+            },
+            {
+                "report_type": "weekly_report",
+                "prompt_versions": ["weekly-report-v1"],
+                "input_schema_version": 1,
+                "output_schema_version": 1,
+                "period_kind": "seven_days",
+                "supported_scopes": [
+                    "growth_summary",
+                    "today_metrics",
+                    "health_metrics",
+                    "journal_reflections",
+                ],
+            },
+        ],
         "streaming": False,
         "response_storage_requested": False,
         "durable_request_ledger": True,
@@ -370,7 +397,7 @@ def test_openai_adapter_uses_stateless_strict_responses_api() -> None:
         ai_model="configured-model",
     )
     provider = OpenAiResponsesProvider(settings, client=client)
-    prompt = get_prompt("weekly-report-v1")
+    prompt = get_prompt("weekly_report", "weekly-report-v1")
     assert prompt is not None
     result = asyncio.run(
         provider.generate(

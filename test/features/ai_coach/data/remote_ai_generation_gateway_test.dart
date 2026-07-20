@@ -7,7 +7,9 @@ import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/ai_coach/data/remote_ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 
 import '../ai_coach_test_support.dart';
 
@@ -19,10 +21,7 @@ void main() {
   setUp(() {
     api = FakeApiClient();
     sessions = FakeSessionStore(session: _session());
-    gateway = RemoteAiGenerationGateway(
-      apiClient: api,
-      sessionStore: sessions,
-    );
+    gateway = RemoteAiGenerationGateway(apiClient: api, sessionStore: sessions);
   });
 
   test('capabilities require a current Rebirth session', () async {
@@ -46,6 +45,13 @@ void main() {
     expect(result.enabled, isTrue);
     expect(result.provider, 'fake');
     expect(result.model, 'deterministic-test-provider');
+    expect(result.contractFor('daily_insight')?.promptVersions, [
+      'daily-insight-v1',
+    ]);
+    expect(
+      result.contractFor('weekly_report')?.periodKind.contractValue,
+      'seven_days',
+    );
     expect(api.lastAccessToken, 'access-token');
     expect(api.lastPath, '/ai/capabilities');
   });
@@ -71,6 +77,82 @@ void main() {
     );
   });
 
+  test(
+    'daily generation uses its endpoint and strict output contract',
+    () async {
+      final bundle = _dailyBundle();
+      api.postResponse = _dailyGeneration(bundle, requestId: 'daily-report-id');
+
+      final result = await gateway.generateDaily(
+        requestId: 'daily-report-id',
+        bundle: bundle,
+      );
+
+      expect(api.lastPath, '/ai/reports/daily/generate');
+      expect(result.status, AiRemoteRequestStatus.completed);
+      expect(result.completedResult?.reportType, 'daily_insight');
+      expect(
+        result.completedResult?.structuredOutputJson,
+        contains('possible_factors'),
+      );
+
+      api.postResponse!['structured_output'] = {
+        ...api.postResponse!['structured_output'] as Map<String, Object?>,
+        'unexpected': true,
+      };
+      await expectLater(
+        gateway.generateDaily(requestId: 'daily-report-id', bundle: bundle),
+        throwsA(isA<AiGenerationException>()),
+      );
+    },
+  );
+
+  test(
+    'daily status decodes completed and terminal states by report type',
+    () async {
+      final bundle = _dailyBundle();
+      api.getResponse = {
+        ..._dailyGeneration(bundle, requestId: 'daily-report-id'),
+        'status': 'completed',
+        'created_at': 1,
+      };
+      final completed = await gateway.getRequestStatus(
+        requestId: 'daily-report-id',
+        inputHash: bundle.inputHash,
+        reportType: 'daily_insight',
+        promptVersion: 'daily-insight-v1',
+      );
+      expect(completed.status, AiRemoteRequestStatus.completed);
+      expect(
+        completed.completedResult?.structuredOutputJson,
+        contains('tomorrow_adjustments'),
+      );
+
+      for (final status in {
+        'processing': AiRemoteRequestStatus.processing,
+        'failed': AiRemoteRequestStatus.failed,
+        'outcome_unknown': AiRemoteRequestStatus.outcomeUnknown,
+        'result_expired': AiRemoteRequestStatus.resultExpired,
+      }.entries) {
+        api.getResponse = {
+          'request_id': 'daily-report-id',
+          'input_hash': bundle.inputHash,
+          'report_type': 'daily_insight',
+          'prompt_version': 'daily-insight-v1',
+          'status': status.key,
+          'error_code': status.key == 'failed' ? 'provider_timeout' : null,
+        };
+        final result = await gateway.getRequestStatus(
+          requestId: 'daily-report-id',
+          inputHash: bundle.inputHash,
+          reportType: 'daily_insight',
+          promptVersion: 'daily-insight-v1',
+        );
+        expect(result.status, status.value);
+      }
+    },
+  );
+
   for (final mismatch in ['request', 'hash', 'prompt', 'report']) {
     test('$mismatch mismatch rejects the response', () async {
       final bundle = buildAiBundle();
@@ -87,10 +169,7 @@ void main() {
       }
       api.postResponse = response;
       await expectLater(
-        gateway.generateWeekly(
-          requestId: 'local-report-id',
-          bundle: bundle,
-        ),
+        gateway.generateWeekly(requestId: 'local-report-id', bundle: bundle),
         throwsA(
           isA<AiGenerationException>().having(
             (error) => error.code,
@@ -137,72 +216,78 @@ void main() {
     expect(api.postCalls, 1);
   });
 
-  test('status GET validates identity and decodes completed recovery', () async {
-    final bundle = buildAiBundle();
-    api.getResponse = {
-      ..._generation(bundle, requestId: 'local-report-id'),
-      'status': 'completed',
-      'created_at': 1,
-    };
-    final result = await gateway.getRequestStatus(
-      requestId: 'local-report-id',
-      inputHash: bundle.inputHash,
-      reportType: 'weekly_report',
-      promptVersion: bundle.promptVersion,
-    );
-    expect(result.status, AiRemoteRequestStatus.completed);
-    expect(result.completedResult?.reportContent, startsWith('#'));
-    expect(api.lastPath, '/ai/requests/local-report-id');
-
-    api.getResponse!['input_hash'] = '0' * 64;
-    await expectLater(
-      gateway.getRequestStatus(
+  test(
+    'status GET validates identity and decodes completed recovery',
+    () async {
+      final bundle = buildAiBundle();
+      api.getResponse = {
+        ..._generation(bundle, requestId: 'local-report-id'),
+        'status': 'completed',
+        'created_at': 1,
+      };
+      final result = await gateway.getRequestStatus(
         requestId: 'local-report-id',
         inputHash: bundle.inputHash,
         reportType: 'weekly_report',
         promptVersion: bundle.promptVersion,
-      ),
-      throwsA(
-        isA<AiGenerationException>().having(
-          (error) => error.code,
-          'code',
-          AiReportFailureCode.responseInvalid,
-        ),
-      ),
-    );
-  });
+      );
+      expect(result.status, AiRemoteRequestStatus.completed);
+      expect(result.completedResult?.reportContent, startsWith('#'));
+      expect(api.lastPath, '/ai/requests/local-report-id');
 
-  test('status not found is safe and POST network loss is outcome unknown', () async {
-    final bundle = buildAiBundle();
-    api.getError = const ApiException(
-      message: 'not found',
-      statusCode: 404,
-      errorCode: 'not_found',
-    );
-    final missing = await gateway.getRequestStatus(
-      requestId: 'local-report-id',
-      inputHash: bundle.inputHash,
-      reportType: 'weekly_report',
-      promptVersion: bundle.promptVersion,
-    );
-    expect(missing.status, AiRemoteRequestStatus.notFound);
-
-    api.postError = const ApiException(
-      message: 'connection lost',
-      isNetworkError: true,
-    );
-    await expectLater(
-      gateway.generateWeekly(requestId: 'local-report-id', bundle: bundle),
-      throwsA(
-        isA<AiGenerationException>().having(
-          (error) => error.code,
-          'code',
-          AiReportFailureCode.networkOutcomeUnknown,
+      api.getResponse!['input_hash'] = '0' * 64;
+      await expectLater(
+        gateway.getRequestStatus(
+          requestId: 'local-report-id',
+          inputHash: bundle.inputHash,
+          reportType: 'weekly_report',
+          promptVersion: bundle.promptVersion,
         ),
-      ),
-    );
-    expect(api.postCalls, 1);
-  });
+        throwsA(
+          isA<AiGenerationException>().having(
+            (error) => error.code,
+            'code',
+            AiReportFailureCode.responseInvalid,
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'status not found is safe and POST network loss is outcome unknown',
+    () async {
+      final bundle = buildAiBundle();
+      api.getError = const ApiException(
+        message: 'not found',
+        statusCode: 404,
+        errorCode: 'not_found',
+      );
+      final missing = await gateway.getRequestStatus(
+        requestId: 'local-report-id',
+        inputHash: bundle.inputHash,
+        reportType: 'weekly_report',
+        promptVersion: bundle.promptVersion,
+      );
+      expect(missing.status, AiRemoteRequestStatus.notFound);
+
+      api.postError = const ApiException(
+        message: 'connection lost',
+        isNetworkError: true,
+      );
+      await expectLater(
+        gateway.generateWeekly(requestId: 'local-report-id', bundle: bundle),
+        throwsA(
+          isA<AiGenerationException>().having(
+            (error) => error.code,
+            'code',
+            AiReportFailureCode.networkOutcomeUnknown,
+          ),
+        ),
+      );
+      expect(api.postCalls, 1);
+    },
+  );
 }
 
 Map<String, Object?> _capabilities() => {
@@ -210,10 +295,37 @@ Map<String, Object?> _capabilities() => {
   'provider': 'fake',
   'provider_label': 'Development Fake',
   'model': 'deterministic-test-provider',
-  'supported_report_types': ['weekly_report'],
-  'prompt_versions': ['weekly-report-v1'],
+  'supported_report_types': ['daily_insight', 'weekly_report'],
+  'prompt_versions': ['daily-insight-v1', 'weekly-report-v1'],
   'input_schema_version': 1,
   'output_schema_version': 1,
+  'report_contracts': [
+    {
+      'report_type': 'daily_insight',
+      'prompt_versions': ['daily-insight-v1'],
+      'input_schema_version': 1,
+      'output_schema_version': 1,
+      'period_kind': 'single_day',
+      'supported_scopes': [
+        'today_metrics',
+        'health_metrics',
+        'journal_reflections',
+      ],
+    },
+    {
+      'report_type': 'weekly_report',
+      'prompt_versions': ['weekly-report-v1'],
+      'input_schema_version': 1,
+      'output_schema_version': 1,
+      'period_kind': 'seven_days',
+      'supported_scopes': [
+        'growth_summary',
+        'today_metrics',
+        'health_metrics',
+        'journal_reflections',
+      ],
+    },
+  ],
   'streaming': false,
   'response_storage_requested': false,
   'durable_request_ledger': true,
@@ -242,6 +354,51 @@ Map<String, Object?> _generation(
     'observations': [],
     'suggestions': [],
     'data_limitations': [],
+  },
+};
+
+AiCoachInputBundle _dailyBundle() {
+  final weekly = buildAiBundle(scopes: {AiDataScope.todayMetrics});
+  return AiCoachInputBundle(
+    reportType: AiReportType.dailyInsight,
+    promptVersion: 'daily-insight-v1',
+    periodStartDate: '2026-07-20',
+    periodEndDate: '2026-07-20',
+    selection: weekly.selection,
+    sources: weekly.sources,
+    canonicalPayload: {
+      'schema_version': 1,
+      'report_type': 'daily_insight',
+      'prompt_version': 'daily-insight-v1',
+      'period': {'start_date': '2026-07-20', 'end_date': '2026-07-20'},
+      'scopes': ['today_metrics'],
+      'data': {'today_metrics': <Object?>[]},
+      'sources': <Object?>[],
+    },
+    canonicalJson: '{}',
+    inputHash: weekly.inputHash,
+  );
+}
+
+Map<String, Object?> _dailyGeneration(
+  AiCoachInputBundle bundle, {
+  required String requestId,
+}) => {
+  'request_id': requestId,
+  'report_type': 'daily_insight',
+  'prompt_version': 'daily-insight-v1',
+  'input_hash': bundle.inputHash,
+  'provider': 'fake',
+  'model': 'deterministic-test-provider',
+  'output_schema_version': 1,
+  'report_content': '# Daily Insight',
+  'structured_output': {
+    'title': 'Daily Insight',
+    'summary': 'A concise daily summary.',
+    'observations': <Object?>[],
+    'possible_factors': <Object?>[],
+    'tomorrow_adjustments': <Object?>[],
+    'data_limitations': <Object?>[],
   },
 };
 

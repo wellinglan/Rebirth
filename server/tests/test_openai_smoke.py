@@ -25,7 +25,7 @@ def test_real_openai_weekly_structured_output_smoke() -> None:
         ai_provider="openai",
     )
     provider = OpenAiResponsesProvider(settings)
-    prompt = get_prompt("weekly-report-v1")
+    prompt = get_prompt("weekly_report", "weekly-report-v1")
     assert prompt is not None
     result = asyncio.run(
         provider.generate(

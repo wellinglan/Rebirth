@@ -47,23 +47,26 @@ void main() {
     await database.close();
   });
 
-  test('createPending stores a manual local-only report and stable sources', () async {
-    final input = _bundle();
-    final report = await repository.createPending(input: input);
-    final raw = await database.select(database.aiReports).getSingle();
+  test(
+    'createPending stores a manual local-only report and stable sources',
+    () async {
+      final input = _bundle();
+      final report = await repository.createPending(input: input);
+      final raw = await database.select(database.aiReports).getSingle();
 
-    expect(report.status, AiReportStatus.pending);
-    expect(report.generationMode, AiGenerationMode.manual);
-    expect(report.reportContent, isNull);
-    expect(report.generatedAt, isNull);
-    expect(raw.syncStatus, 'local_only');
-    expect(raw.inputSnapshotJson, isNull);
-    expect(
-      raw.inputSourcesJson,
-      '[{"id":"source-a","table":"today_records","updated_at":10}]',
-    );
-    expect(raw.requestedAt, currentTime.millisecondsSinceEpoch);
-  });
+      expect(report.status, AiReportStatus.pending);
+      expect(report.generationMode, AiGenerationMode.manual);
+      expect(report.reportContent, isNull);
+      expect(report.generatedAt, isNull);
+      expect(raw.syncStatus, 'local_only');
+      expect(raw.inputSnapshotJson, isNull);
+      expect(
+        raw.inputSourcesJson,
+        '[{"id":"source-a","table":"today_records","updated_at":10}]',
+      );
+      expect(raw.requestedAt, currentTime.millisecondsSinceEpoch);
+    },
+  );
 
   test('createPending rechecks consent before writing', () async {
     consent.authorization = const AiDataAuthorization.disabled();
@@ -83,36 +86,84 @@ void main() {
     expect(raw.inputSnapshotJson, input.canonicalJson);
   });
 
-  test('markCompleted trims content and writes completion metadata atomically', () async {
-    final pending = await repository.createPending(input: _bundle());
-    currentTime = currentTime.add(const Duration(minutes: 5));
+  test(
+    'daily pending and completed reuse use the single-day contract',
+    () async {
+      final input = _bundle(
+        reportType: AiReportType.dailyInsight,
+        periodStartDate: '2026-07-20',
+        periodEndDate: '2026-07-20',
+      );
+      final pending = await repository.createPending(input: input);
+      final raw = await database.select(database.aiReports).getSingle();
+      expect(raw.reportType, 'daily_insight');
+      expect(raw.promptVersion, 'daily-insight-v1');
+      expect(raw.inputSnapshotJson, isNull);
 
-    final completed = await repository.markCompleted(
-      reportId: pending.id,
-      reportContent: '  local result  ',
-      structuredOutputJson: ' {"kind":"weekly"} ',
-      provider: ' future-provider ',
-      model: ' future-model ',
-    );
+      await repository.markCompleted(
+        reportId: pending.id,
+        reportContent: 'done',
+      );
+      final reusable = await repository.findReusableCompleted(
+        reportType: AiReportType.dailyInsight,
+        periodStartDate: '2026-07-20',
+        periodEndDate: '2026-07-20',
+        promptVersion: 'daily-insight-v1',
+        inputHash: input.inputHash,
+      );
+      expect(reusable?.id, pending.id);
+      expect(
+        await repository.findReusableCompleted(
+          reportType: AiReportType.weeklyReport,
+          periodStartDate: '2026-07-20',
+          periodEndDate: '2026-07-20',
+          promptVersion: 'daily-insight-v1',
+          inputHash: input.inputHash,
+        ),
+        isNull,
+      );
+    },
+  );
 
-    expect(completed.status, AiReportStatus.completed);
-    expect(completed.reportContent, 'local result');
-    expect(completed.structuredOutputJson, '{"kind":"weekly"}');
-    expect(completed.provider, 'future-provider');
-    expect(completed.model, 'future-model');
-    expect(completed.generatedAt, currentTime.millisecondsSinceEpoch);
-    expect(completed.updatedAt, currentTime.millisecondsSinceEpoch);
-  });
+  test(
+    'markCompleted trims content and writes completion metadata atomically',
+    () async {
+      final pending = await repository.createPending(input: _bundle());
+      currentTime = currentTime.add(const Duration(minutes: 5));
 
-  test('empty completed content is rejected and leaves pending intact', () async {
-    final pending = await repository.createPending(input: _bundle());
+      final completed = await repository.markCompleted(
+        reportId: pending.id,
+        reportContent: '  local result  ',
+        structuredOutputJson: ' {"kind":"weekly"} ',
+        provider: ' future-provider ',
+        model: ' future-model ',
+      );
 
-    await expectLater(
-      repository.markCompleted(reportId: pending.id, reportContent: '  '),
-      throwsA(isA<InvalidAiInputException>()),
-    );
-    expect((await repository.getById(pending.id))!.status, AiReportStatus.pending);
-  });
+      expect(completed.status, AiReportStatus.completed);
+      expect(completed.reportContent, 'local result');
+      expect(completed.structuredOutputJson, '{"kind":"weekly"}');
+      expect(completed.provider, 'future-provider');
+      expect(completed.model, 'future-model');
+      expect(completed.generatedAt, currentTime.millisecondsSinceEpoch);
+      expect(completed.updatedAt, currentTime.millisecondsSinceEpoch);
+    },
+  );
+
+  test(
+    'empty completed content is rejected and leaves pending intact',
+    () async {
+      final pending = await repository.createPending(input: _bundle());
+
+      await expectLater(
+        repository.markCompleted(reportId: pending.id, reportContent: '  '),
+        throwsA(isA<InvalidAiInputException>()),
+      );
+      expect(
+        (await repository.getById(pending.id))!.status,
+        AiReportStatus.pending,
+      );
+    },
+  );
 
   test('markFailed stores only a controlled error classification', () async {
     final pending = await repository.createPending(input: _bundle());
@@ -162,51 +213,57 @@ void main() {
     );
   });
 
-  test('reusable completed report matches all contract identity fields', () async {
-    final input = _bundle();
-    final pending = await repository.createPending(input: input);
-    expect(
-      await repository.findReusableCompleted(
-        reportType: input.reportType,
-        periodStartDate: input.periodStartDate,
-        periodEndDate: input.periodEndDate,
-        promptVersion: input.promptVersion,
-        inputHash: input.inputHash,
-      ),
-      isNull,
-    );
-    await repository.markCompleted(reportId: pending.id, reportContent: 'done');
+  test(
+    'reusable completed report matches all contract identity fields',
+    () async {
+      final input = _bundle();
+      final pending = await repository.createPending(input: input);
+      expect(
+        await repository.findReusableCompleted(
+          reportType: input.reportType,
+          periodStartDate: input.periodStartDate,
+          periodEndDate: input.periodEndDate,
+          promptVersion: input.promptVersion,
+          inputHash: input.inputHash,
+        ),
+        isNull,
+      );
+      await repository.markCompleted(
+        reportId: pending.id,
+        reportContent: 'done',
+      );
 
-    final reusable = await repository.findReusableCompleted(
-      reportType: input.reportType,
-      periodStartDate: input.periodStartDate,
-      periodEndDate: input.periodEndDate,
-      promptVersion: input.promptVersion,
-      inputHash: input.inputHash,
-    );
-    expect(reusable?.id, pending.id);
-    expect(
-      await repository.findReusableCompleted(
-        reportType: input.reportType,
-        periodStartDate: input.periodStartDate,
-        periodEndDate: input.periodEndDate,
-        promptVersion: 'weekly-report-v2',
-        inputHash: input.inputHash,
-      ),
-      isNull,
-    );
-    expect(
-      await repository.findReusableCompleted(
+      final reusable = await repository.findReusableCompleted(
         reportType: input.reportType,
         periodStartDate: input.periodStartDate,
         periodEndDate: input.periodEndDate,
         promptVersion: input.promptVersion,
-        inputHash:
-            'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-      ),
-      isNull,
-    );
-  });
+        inputHash: input.inputHash,
+      );
+      expect(reusable?.id, pending.id);
+      expect(
+        await repository.findReusableCompleted(
+          reportType: input.reportType,
+          periodStartDate: input.periodStartDate,
+          periodEndDate: input.periodEndDate,
+          promptVersion: 'weekly-report-v2',
+          inputHash: input.inputHash,
+        ),
+        isNull,
+      );
+      expect(
+        await repository.findReusableCompleted(
+          reportType: input.reportType,
+          periodStartDate: input.periodStartDate,
+          periodEndDate: input.periodEndDate,
+          promptVersion: input.promptVersion,
+          inputHash:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        ),
+        isNull,
+      );
+    },
+  );
 
   test('failed report is not reusable', () async {
     final input = _bundle();
@@ -225,36 +282,47 @@ void main() {
     );
   });
 
-  test('listRecent sorts by request time and soft delete hides only report', () async {
-    final first = await repository.createPending(input: _bundle());
-    currentTime = currentTime.add(const Duration(minutes: 1));
-    final second = await repository.createPending(input: _bundle());
+  test(
+    'listRecent sorts by request time and soft delete hides only report',
+    () async {
+      final first = await repository.createPending(input: _bundle());
+      currentTime = currentTime.add(const Duration(minutes: 1));
+      final second = await repository.createPending(input: _bundle());
 
-    expect((await repository.listRecent()).map((report) => report.id), [
-      second.id,
-      first.id,
-    ]);
-    await repository.softDelete(second.id);
-    expect(await repository.getById(second.id), isNull);
-    expect((await repository.listRecent()).map((report) => report.id), [first.id]);
-    expect(await database.select(database.todayRecords).get(), isEmpty);
-    expect(await database.select(database.healthRecords).get(), isEmpty);
-    expect(await database.select(database.journalEntries).get(), isEmpty);
-  });
+      expect((await repository.listRecent()).map((report) => report.id), [
+        second.id,
+        first.id,
+      ]);
+      await repository.softDelete(second.id);
+      expect(await repository.getById(second.id), isNull);
+      expect((await repository.listRecent()).map((report) => report.id), [
+        first.id,
+      ]);
+      expect(await database.select(database.todayRecords).get(), isEmpty);
+      expect(await database.select(database.healthRecords).get(), isEmpty);
+      expect(await database.select(database.journalEntries).get(), isEmpty);
+    },
+  );
 
-  test('revoked consent blocks new pending but does not alter existing report', () async {
-    final existing = await repository.createPending(input: _bundle());
-    consent.authorization = AiDataAuthorization(
-      enabled: false,
-      consentAt: consent.authorization.consentAt,
-    );
+  test(
+    'revoked consent blocks new pending but does not alter existing report',
+    () async {
+      final existing = await repository.createPending(input: _bundle());
+      consent.authorization = AiDataAuthorization(
+        enabled: false,
+        consentAt: consent.authorization.consentAt,
+      );
 
-    await expectLater(
-      repository.createPending(input: _bundle()),
-      throwsA(isA<AiConsentRequiredException>()),
-    );
-    expect((await repository.getById(existing.id))?.status, AiReportStatus.pending);
-  });
+      await expectLater(
+        repository.createPending(input: _bundle()),
+        throwsA(isA<AiConsentRequiredException>()),
+      );
+      expect(
+        (await repository.getById(existing.id))?.status,
+        AiReportStatus.pending,
+      );
+    },
+  );
 }
 
 final class _FakeConsentRepository extends Fake implements AiConsentRepository {
@@ -269,7 +337,12 @@ final class _FakeConsentRepository extends Fake implements AiConsentRepository {
   Future<AiDataAuthorization> read() async => authorization;
 }
 
-AiCoachInputBundle _bundle({bool persistInputSnapshot = false}) {
+AiCoachInputBundle _bundle({
+  bool persistInputSnapshot = false,
+  AiReportType reportType = AiReportType.weeklyReport,
+  String periodStartDate = '2026-07-10',
+  String periodEndDate = '2026-07-16',
+}) {
   const encoder = CanonicalJsonEncoderImpl();
   const hashService = Sha256InputHashService();
   final selection = AiDataSelection(
@@ -283,12 +356,11 @@ AiCoachInputBundle _bundle({bool persistInputSnapshot = false}) {
   );
   final payload = <String, Object?>{
     'schema_version': 1,
-    'report_type': 'weekly_report',
-    'prompt_version': 'weekly-report-v1',
-    'period': {
-      'start_date': '2026-07-10',
-      'end_date': '2026-07-16',
-    },
+    'report_type': reportType.databaseValue,
+    'prompt_version': reportType == AiReportType.dailyInsight
+        ? 'daily-insight-v1'
+        : 'weekly-report-v1',
+    'period': {'start_date': periodStartDate, 'end_date': periodEndDate},
     'scopes': ['today_metrics'],
     'data': {
       'today_metrics': [
@@ -299,10 +371,12 @@ AiCoachInputBundle _bundle({bool persistInputSnapshot = false}) {
   };
   final canonicalJson = encoder.encode(payload);
   return AiCoachInputBundle(
-    reportType: AiReportType.weeklyReport,
-    promptVersion: 'weekly-report-v1',
-    periodStartDate: '2026-07-10',
-    periodEndDate: '2026-07-16',
+    reportType: reportType,
+    promptVersion: reportType == AiReportType.dailyInsight
+        ? 'daily-insight-v1'
+        : 'weekly-report-v1',
+    periodStartDate: periodStartDate,
+    periodEndDate: periodEndDate,
     selection: selection,
     sources: [source],
     canonicalPayload: payload,

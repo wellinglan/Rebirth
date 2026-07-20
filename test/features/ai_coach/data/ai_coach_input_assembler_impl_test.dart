@@ -89,70 +89,209 @@ void main() {
     expect(today.calls, 0);
   });
 
-  test('weekly bundle contains minimized selected data and stable period', () async {
-    final bundle = await assembler.buildWeeklyReport(
-      selection: AiDataSelection(
-        scopes: {
-          AiDataScope.journalReflections,
-          AiDataScope.todayMetrics,
-          AiDataScope.growthSummary,
-          AiDataScope.healthMetrics,
-        },
+  test(
+    'daily insight uses the explicit local date and only selected scope',
+    () async {
+      today.entries = [
+        _today(date: '2026-07-20', id: 'today-daily', research: 0),
+      ];
+
+      final bundle = await assembler.buildDailyInsight(
+        targetDate: '2026-07-20',
+        selection: AiDataSelection(scopes: {AiDataScope.todayMetrics}),
+      );
+
+      expect(bundle.reportType, AiReportType.dailyInsight);
+      expect(bundle.promptVersion, 'daily-insight-v1');
+      expect(bundle.periodStartDate, '2026-07-20');
+      expect(bundle.periodEndDate, '2026-07-20');
+      final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
+      expect(data.keys, ['today_metrics']);
+      final row =
+          (data['today_metrics']! as List).single as Map<String, Object?>;
+      expect(row['record_date'], '2026-07-20');
+      expect(row['research_minutes'], 0);
+      expect(row['learning_minutes'], 30);
+      expect(row, isNot(contains('daily_note')));
+      expect(row, isNot(contains('priority_text')));
+      expect(growth.calls, 0);
+      expect(today.calls, 1);
+      expect(health.calls, 0);
+      expect(journals.calls, 0);
+    },
+  );
+
+  test(
+    'daily selected missing data is an empty array without fake source',
+    () async {
+      health.entries = [];
+
+      final bundle = await assembler.buildDailyInsight(
+        targetDate: '2026-07-20',
+        selection: AiDataSelection(scopes: {AiDataScope.healthMetrics}),
+      );
+
+      final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
+      expect(data['health_metrics'], isEmpty);
+      expect(data, isNot(contains('today_metrics')));
+      expect(bundle.sources, isEmpty);
+    },
+  );
+
+  test('daily Journal is trimmed only when explicitly selected', () async {
+    journals.entries = [
+      _journal(
+        date: '2026-07-20',
+        id: 'journal-daily',
+        learning: ' daily learning ',
       ),
+    ];
+
+    final bundle = await assembler.buildDailyInsight(
+      targetDate: '2026-07-20',
+      selection: AiDataSelection(scopes: {AiDataScope.journalReflections}),
     );
 
-    expect(bundle.periodStartDate, '2026-07-10');
-    expect(bundle.periodEndDate, '2026-07-16');
-    expect(bundle.promptVersion, 'weekly-report-v1');
-    expect(bundle.canonicalPayload.keys, containsAll([
-      'schema_version',
-      'report_type',
-      'prompt_version',
-      'period',
-      'scopes',
-      'data',
-      'sources',
-    ]));
-    expect(
-      bundle.canonicalPayload['scopes'],
-      [
+    final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
+    final row =
+        (data['journal_reflections']! as List).single as Map<String, Object?>;
+    expect(row['learning'], 'daily learning');
+    expect(row, isNot(contains('id')));
+    expect(journals.calls, 1);
+    expect(today.calls, 0);
+  });
+
+  test(
+    'daily rejects invalid date and weekly-only scopes before reads',
+    () async {
+      await expectLater(
+        assembler.buildDailyInsight(
+          targetDate: '2026-02-30',
+          selection: AiDataSelection(scopes: {AiDataScope.todayMetrics}),
+        ),
+        throwsA(isA<InvalidAiInputException>()),
+      );
+      await expectLater(
+        assembler.buildDailyInsight(
+          targetDate: '2026-07-20',
+          selection: AiDataSelection(scopes: {AiDataScope.growthSummary}),
+        ),
+        throwsA(isA<UnsupportedAiDataScopeException>()),
+      );
+      await expectLater(
+        assembler.buildDailyInsight(
+          targetDate: '2026-07-20',
+          selection: AiDataSelection(scopes: {AiDataScope.activeGoals}),
+        ),
+        throwsA(isA<UnsupportedAiDataScopeException>()),
+      );
+      expect(growth.calls, 0);
+      expect(today.calls, 0);
+    },
+  );
+
+  test(
+    'daily rejects more than one record or a mismatched record date',
+    () async {
+      today.entries = [
+        _today(date: '2026-07-20', id: 'today-a', research: 1),
+        _today(date: '2026-07-20', id: 'today-b', research: 2),
+      ];
+      await expectLater(
+        assembler.buildDailyInsight(
+          targetDate: '2026-07-20',
+          selection: AiDataSelection(scopes: {AiDataScope.todayMetrics}),
+        ),
+        throwsA(isA<InvalidAiInputException>()),
+      );
+
+      today.entries = [_today(date: '2026-07-19', id: 'today-a', research: 1)];
+      await expectLater(
+        assembler.buildDailyInsight(
+          targetDate: '2026-07-20',
+          selection: AiDataSelection(scopes: {AiDataScope.todayMetrics}),
+        ),
+        throwsA(isA<InvalidAiInputException>()),
+      );
+    },
+  );
+
+  test(
+    'weekly bundle contains minimized selected data and stable period',
+    () async {
+      final bundle = await assembler.buildWeeklyReport(
+        selection: AiDataSelection(
+          scopes: {
+            AiDataScope.journalReflections,
+            AiDataScope.todayMetrics,
+            AiDataScope.growthSummary,
+            AiDataScope.healthMetrics,
+          },
+        ),
+      );
+
+      expect(bundle.periodStartDate, '2026-07-10');
+      expect(bundle.periodEndDate, '2026-07-16');
+      expect(bundle.promptVersion, 'weekly-report-v1');
+      expect(
+        bundle.canonicalPayload.keys,
+        containsAll([
+          'schema_version',
+          'report_type',
+          'prompt_version',
+          'period',
+          'scopes',
+          'data',
+          'sources',
+        ]),
+      );
+      expect(bundle.canonicalPayload['scopes'], [
         'growth_summary',
         'health_metrics',
         'journal_reflections',
         'today_metrics',
-      ],
-    );
+      ]);
 
-    final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
-    final todayRows = data['today_metrics']! as List<Object?>;
-    expect((todayRows.first! as Map<String, Object?>)['record_date'], '2026-07-10');
-    expect((todayRows.first! as Map<String, Object?>)['research_minutes'], isNull);
-    expect((todayRows.last! as Map<String, Object?>)['research_minutes'], 0);
-    final todayJson = const CanonicalJsonEncoderImpl().encode(todayRows);
-    expect(todayJson, isNot(contains('priority private text')));
-    expect(todayJson, isNot(contains('daily private note')));
-    expect(todayJson, isNot(contains('goal-private')));
+      final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
+      final todayRows = data['today_metrics']! as List<Object?>;
+      expect(
+        (todayRows.first! as Map<String, Object?>)['record_date'],
+        '2026-07-10',
+      );
+      expect(
+        (todayRows.first! as Map<String, Object?>)['research_minutes'],
+        isNull,
+      );
+      expect((todayRows.last! as Map<String, Object?>)['research_minutes'], 0);
+      final todayJson = const CanonicalJsonEncoderImpl().encode(todayRows);
+      expect(todayJson, isNot(contains('priority private text')));
+      expect(todayJson, isNot(contains('daily private note')));
+      expect(todayJson, isNot(contains('goal-private')));
 
-    final healthRows = data['health_metrics']! as List<Object?>;
-    final healthJson = const CanonicalJsonEncoderImpl().encode(healthRows);
-    expect(healthJson, isNot(contains('health private note')));
-    expect(healthJson, isNot(contains('source_record_id')));
-    expect(healthJson, isNot(contains('today_record_id')));
+      final healthRows = data['health_metrics']! as List<Object?>;
+      final healthJson = const CanonicalJsonEncoderImpl().encode(healthRows);
+      expect(healthJson, isNot(contains('health private note')));
+      expect(healthJson, isNot(contains('source_record_id')));
+      expect(healthJson, isNot(contains('today_record_id')));
 
-    final journalRows = data['journal_reflections']! as List<Object?>;
-    expect((journalRows.first! as Map<String, Object?>)['learning'], isNull);
-    expect((journalRows.last! as Map<String, Object?>)['learning'], 'private');
-    expect(bundle.canonicalJson, isNot(contains('local-user-private')));
-    expect(bundle.canonicalJson, isNot(contains('device-private')));
-    expect(bundle.canonicalJson, isNot(contains('access_token')));
-    expect(bundle.canonicalJson, isNot(contains('endpoint')));
-    expect(bundle.canonicalJson, isNot(contains('sync_status')));
-    expect(bundle.inputHash, matches(RegExp(r'^[0-9a-f]{64}$')));
-    expect(growth.calls, 1);
-    expect(today.calls, 1);
-    expect(health.calls, 1);
-    expect(journals.calls, 1);
-  });
+      final journalRows = data['journal_reflections']! as List<Object?>;
+      expect((journalRows.first! as Map<String, Object?>)['learning'], isNull);
+      expect(
+        (journalRows.last! as Map<String, Object?>)['learning'],
+        'private',
+      );
+      expect(bundle.canonicalJson, isNot(contains('local-user-private')));
+      expect(bundle.canonicalJson, isNot(contains('device-private')));
+      expect(bundle.canonicalJson, isNot(contains('access_token')));
+      expect(bundle.canonicalJson, isNot(contains('endpoint')));
+      expect(bundle.canonicalJson, isNot(contains('sync_status')));
+      expect(bundle.inputHash, matches(RegExp(r'^[0-9a-f]{64}$')));
+      expect(growth.calls, 1);
+      expect(today.calls, 1);
+      expect(health.calls, 1);
+      expect(journals.calls, 1);
+    },
+  );
 
   test('unselected Journal is neither queried nor represented', () async {
     final first = await assembler.buildWeeklyReport(
@@ -173,7 +312,10 @@ void main() {
     expect(journals.calls, 0);
     expect(first.inputHash, second.inputHash);
     expect(first.canonicalJson, isNot(contains('journal_reflections')));
-    expect(first.sources.any((source) => source.table == 'journal_entries'), isFalse);
+    expect(
+      first.sources.any((source) => source.table == 'journal_entries'),
+      isFalse,
+    );
   });
 
   test('selected Journal content changes the input hash', () async {
@@ -192,23 +334,26 @@ void main() {
     expect(first.inputHash, isNot(second.inputHash));
   });
 
-  test('growth summary uses derived contract tracking without fake source table', () async {
-    final bundle = await assembler.buildWeeklyReport(
-      selection: AiDataSelection(scopes: {AiDataScope.growthSummary}),
-    );
-    final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
-    final summary = data['growth_summary']! as Map<String, Object?>;
+  test(
+    'growth summary uses derived contract tracking without fake source table',
+    () async {
+      final bundle = await assembler.buildWeeklyReport(
+        selection: AiDataSelection(scopes: {AiDataScope.growthSummary}),
+      );
+      final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
+      final summary = data['growth_summary']! as Map<String, Object?>;
 
-    expect(summary['period_days'], 7);
-    expect(summary['research'], isA<Map<String, Object?>>());
-    expect(summary['journal_recorded_days'], 1);
-    expect(bundle.sources, isEmpty);
-    expect(bundle.canonicalJson, isNot(contains('growth_summary","id')));
-    expect(growth.calls, 1);
-    expect(today.calls, 0);
-    expect(health.calls, 0);
-    expect(journals.calls, 0);
-  });
+      expect(summary['period_days'], 7);
+      expect(summary['research'], isA<Map<String, Object?>>());
+      expect(summary['journal_recorded_days'], 1);
+      expect(bundle.sources, isEmpty);
+      expect(bundle.canonicalJson, isNot(contains('growth_summary","id')));
+      expect(growth.calls, 1);
+      expect(today.calls, 0);
+      expect(health.calls, 0);
+      expect(journals.calls, 0);
+    },
+  );
 
   test('source and scope input order are normalized before hashing', () async {
     final first = await assembler.buildWeeklyReport(
@@ -226,24 +371,29 @@ void main() {
 
     expect(first.canonicalJson, second.canonicalJson);
     expect(first.inputHash, second.inputHash);
-    expect(
-      first.sources.map((source) => '${source.table}/${source.id}'),
-      ['health_records/health-a', 'health_records/health-b', 'today_records/today-a', 'today_records/today-b'],
-    );
+    expect(first.sources.map((source) => '${source.table}/${source.id}'), [
+      'health_records/health-a',
+      'health_records/health-b',
+      'today_records/today-a',
+      'today_records/today-b',
+    ]);
   });
 
-  test('duplicate source identity keeps one reference with latest updatedAt', () async {
-    today.entries = [
-      _today(date: '2026-07-10', id: 'same', research: 1, updatedAt: 10),
-      _today(date: '2026-07-11', id: 'same', research: 2, updatedAt: 20),
-    ];
-    final bundle = await assembler.buildWeeklyReport(
-      selection: AiDataSelection(scopes: {AiDataScope.todayMetrics}),
-    );
+  test(
+    'duplicate source identity keeps one reference with latest updatedAt',
+    () async {
+      today.entries = [
+        _today(date: '2026-07-10', id: 'same', research: 1, updatedAt: 10),
+        _today(date: '2026-07-11', id: 'same', research: 2, updatedAt: 20),
+      ];
+      final bundle = await assembler.buildWeeklyReport(
+        selection: AiDataSelection(scopes: {AiDataScope.todayMetrics}),
+      );
 
-    expect(bundle.sources, hasLength(1));
-    expect(bundle.sources.single.updatedAt, 20);
-  });
+      expect(bundle.sources, hasLength(1));
+      expect(bundle.sources.single.updatedAt, 20);
+    },
+  );
 
   test('repository failure is propagated without a partial bundle', () async {
     health.error = StateError('range read failed');

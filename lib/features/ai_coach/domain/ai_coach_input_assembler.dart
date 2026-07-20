@@ -11,4 +11,9 @@ abstract interface class AiCoachInputAssembler {
   Future<AiCoachInputBundle> buildWeeklyReport({
     required AiDataSelection selection,
   });
+
+  Future<AiCoachInputBundle> buildDailyInsight({
+    required String targetDate,
+    required AiDataSelection selection,
+  });
 }

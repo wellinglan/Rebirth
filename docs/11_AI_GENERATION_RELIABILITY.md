@@ -2,7 +2,7 @@
 
 ## Scope
 
-Sprint 8D adds durable request identity, short-term result replay, and explicit pending reconciliation for the existing manual `weekly_report` flow. It adds no chat, streaming, background generation, scheduler, new report type, AIReport sync, Growth changes, or automatic Provider retry. Flutter `schemaVersion` remains 3.
+Sprint 8D added durable request identity, short-term result replay, and explicit pending reconciliation for the manual Weekly flow. Sprint 9A reuses the same ledger for the Daily Insight foundation without a migration. It adds no Daily UI, chat, streaming, background generation, scheduler, AIReport sync, Growth changes, or automatic Provider retry. Flutter `schemaVersion` remains 3.
 
 ## Reliability Contract
 
@@ -14,6 +14,8 @@ The Server uses `ai_generation_requests` with a unique `(user_id, request_id)` c
 - stale processing lease: persist `outcome_unknown`, without a Provider call;
 - failed: replay the same controlled failure, without a Provider call;
 - completed output purged: `result_expired`, without a Provider call.
+
+Identity includes input hash, report type, and prompt version. Reusing one request ID across Daily and Weekly is therefore an idempotency conflict. Status and replay select the proper report-specific output validator and response model from the stored report/prompt pair.
 
 This is an at-most-once ownership guard for one Server database, not distributed exactly-once. Provider invocation and the completed database update are not atomic. If the Server crashes after Provider return but before the completed update, the request eventually becomes `outcome_unknown`. The Server cannot prove whether a result or cost occurred and never reuses that request ID for another Provider call.
 

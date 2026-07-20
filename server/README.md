@@ -2,13 +2,16 @@
 
 Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, and manual canonical Profile sync only. It is not a production-safe cloud deployment.
 
-Sprint 8D adds a durable, JWT-user-isolated AI request ledger to the explicit weekly generation gateway. Provider defaults to `disabled`; `fake` is development/test only; `openai` uses the official Python SDK Responses API. Flutter never receives or stores `OPENAI_API_KEY`.
+Sprint 8D added a durable, JWT-user-isolated AI request ledger to the explicit Weekly generation gateway. Sprint 9A adds a typed Daily Insight foundation on the same ledger, without a user-facing Daily action or database migration. Provider defaults to `disabled`; `fake` is development/test only; `openai` uses the official Python SDK Responses API. Flutter never receives or stores `OPENAI_API_KEY`.
 
 AI endpoints:
 
 - `GET /ai/capabilities`
+- `POST /ai/reports/daily/generate`
 - `POST /ai/reports/weekly/generate`
 - `GET /ai/requests/{request_id}`
+
+Capabilities expose typed `report_contracts`: Daily uses `daily_insight`, `daily-insight-v1`, one local date, and Today/Health/Journal scopes; Weekly uses `weekly_report`, `weekly-report-v1`, seven local dates, and may also include Growth. Daily rejects Growth and Goals. Selected missing records are `[]`, unselected scopes are absent, and `null` remains distinct from `0`.
 
 OpenAI requires `OPENAI_API_KEY` and `REBIRTH_AI_MODEL`. Calls use strict structured output, `store=false`, no streaming/tools/background mode, and no automatic SDK retry. `store=false` is not an absolute zero-retention promise. The Server verifies canonical SHA-256 and strips sources/identities before Provider forwarding.
 
@@ -148,6 +151,6 @@ GitHub Actions runs Server SQLite, PostgreSQL multiprocessing/multi-worker, Flut
 | `REBIRTH_AI_DEDUPE_RETENTION_DAYS` | `30` | Minimal request tombstone TTL |
 | `REBIRTH_AI_PROCESSING_LEASE_MINUTES` | `5` | Processing ownership lease |
 
-Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Manual flows are documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`.
+Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Weekly manual flow is documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`; the developer-only Daily contract is documented in `docs/manual_tests/21_daily_insight_contract.md`.
 
 Outside `development`, `REBIRTH_JWT_SECRET` is mandatory. Production must use HTTPS, managed secrets, PostgreSQL backups, secure client token storage, token refresh/revoke, rate limiting, observability, and a security review. The current SharedPreferences session is development-level only. There is no real WeChat login, background sync, field-level conflict merge, or Today/Journal/Plan/Health sync.

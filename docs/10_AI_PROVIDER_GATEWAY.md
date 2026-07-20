@@ -1,8 +1,8 @@
-# AI Provider Gateway and Manual Weekly Generation
+# AI Provider Gateway And Report Contracts
 
 ## Scope
 
-Sprint 8C supports one explicit, synchronous, non-streaming operation: generating a `weekly_report` with `weekly-report-v1`. It does not add chat, tools, automatic/background generation, server report storage, AIReport sync, or source-record mutation. Flutter database `schemaVersion` remains 3.
+The user-visible flow remains the explicit, synchronous, non-streaming `weekly_report` with `weekly-report-v1`. Sprint 9A adds the typed `daily_insight` + `daily-insight-v1` foundation and developer test endpoint without adding a UI action. There is still no chat, tools, automatic/background generation, server report history, AIReport sync, or source-record mutation. Flutter database `schemaVersion` remains 3.
 
 The flow is:
 
@@ -32,12 +32,14 @@ The Server reads:
 
 ## Server Contract
 
-Both endpoints require the existing Rebirth JWT:
+All endpoints require the existing Rebirth JWT:
 
 - `GET /ai/capabilities`
+- `POST /ai/reports/daily/generate`
 - `POST /ai/reports/weekly/generate`
+- `GET /ai/requests/{request_id}`
 
-The generate request contains a UUID `request_id`, lowercase SHA-256 `input_hash`, and the existing Canonical Input payload. The Server rejects extra fields, invalid dates, periods other than seven inclusive days, unsupported schemas/types/prompts/scopes, and data that does not exactly match selected scopes.
+The generate request contains a UUID `request_id`, lowercase SHA-256 `input_hash`, and a report-specific Canonical Input payload. Daily requires one explicit natural date and only Today, Health, or Journal scopes; Weekly requires seven inclusive dates and may also use Growth. The Server rejects extra fields, invalid periods, cross-paired report/prompt identities, unsupported scopes, and data that does not exactly match selected scopes.
 
 The Server sorts map keys recursively, scopes, sources, and dated rows, serializes compact UTF-8 JSON with preserved `null`/`0`/JSON scalar types, and recomputes SHA-256. A mismatch blocks Provider invocation. Dart and Python verify `test/fixtures/ai_weekly_input_v1.json` against the same expected hash.
 
@@ -61,7 +63,7 @@ The adapter uses the official Python SDK Responses API with the configured model
 
 ## Output and Errors
 
-Output schema v1 requires `title`, `summary`, up to five observations with evidence, up to three suggestions with reasons, and `data_limitations`; nested models reject additional fields. The Server validates output before rendering deterministic Markdown. Arbitrary Provider text is never accepted as report content.
+Weekly output schema v1 requires `title`, `summary`, up to five observations, up to three suggestions, and `data_limitations`. Daily output schema v1 requires `title`, `summary`, up to four observations, up to three caveated possible factors, up to three optional tomorrow adjustments, and `data_limitations`. Nested and top-level models reject additional fields. The Server selects output schema and deterministic Markdown renderer through the typed report/prompt registry. Arbitrary Provider text is never accepted as report content.
 
 Controlled errors are: `gateway_disabled`, `authentication_required`, `invalid_request`, `invalid_input`, `input_hash_mismatch`, `idempotency_conflict`, `unsupported_report_type`, `unsupported_prompt_version`, `unsupported_scope`, `provider_authentication_failed`, `provider_rate_limited`, `provider_timeout`, `provider_unavailable`, `provider_refused`, `response_invalid`, `request_failed`, `outcome_unknown`, `result_expired`, `not_found`, and `unknown`.
 

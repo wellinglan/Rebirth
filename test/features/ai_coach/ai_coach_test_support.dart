@@ -82,6 +82,20 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
     if (error case final value?) throw value;
     return bundle;
   }
+
+  @override
+  Future<AiCoachInputBundle> buildDailyInsight({
+    required String targetDate,
+    required AiDataSelection selection,
+  }) async {
+    buildCalls += 1;
+    selections.add(selection);
+    if (queuedResponses.isNotEmpty) {
+      return queuedResponses.removeAt(0);
+    }
+    if (error case final value?) throw value;
+    return bundle;
+  }
 }
 
 final class FakeAiReportRepository implements AiReportRepository {
@@ -302,6 +316,14 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
       promptVersion: bundle.promptVersion,
       completedResult: completed,
     );
+  }
+
+  @override
+  Future<AiRemoteRequestResult> generateDaily({
+    required String requestId,
+    required AiCoachInputBundle bundle,
+  }) {
+    return generateWeekly(requestId: requestId, bundle: bundle);
   }
 
   @override

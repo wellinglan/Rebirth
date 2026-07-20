@@ -10,7 +10,6 @@ from pydantic import ValidationError
 from app.ai.canonical import canonical_json
 from app.ai.errors import AiGatewayError, GatewayDisabledError
 from app.ai.prompts import PromptDefinition
-from app.ai.schemas import AiWeeklyStructuredOutput
 from app.config import Settings
 
 
@@ -106,25 +105,7 @@ class FakeAiProvider:
         if self.scenario == "invalid":
             output: dict[str, Any] = {"title": "invalid"}
         elif self.scenario == "success":
-            output = {
-                "title": "开发测试每周回顾",
-                "summary": "这是 Fake Provider 生成的确定性开发测试结果。",
-                "observations": [
-                    {
-                        "statement": "已按明确选择的范围读取七天数据。",
-                        "evidence": [
-                            f"{payload.period['start_date']} 至 {payload.period['end_date']}"
-                        ],
-                    }
-                ],
-                "suggestions": [
-                    {
-                        "action": "结合原始记录核对本回顾。",
-                        "reason": "Fake 输出仅用于验证生成链路。",
-                    }
-                ],
-                "data_limitations": ["这不是来自真实 AI 模型的分析。"],
-            }
+            output = _fake_success_output(payload)
         else:
             raise AiGatewayError("request_failed")
         return ProviderGeneration(
@@ -178,7 +159,7 @@ class OpenAiResponsesProvider:
                 text={
                     "format": {
                         "type": "json_schema",
-                        "name": "rebirth_weekly_report_v1",
+                        "name": prompt.schema_name,
                         "schema": prompt.output_schema,
                         "strict": True,
                     }
@@ -198,7 +179,7 @@ class OpenAiResponsesProvider:
         try:
             raw_output = response.output_text
             decoded = json.loads(raw_output)
-            structured = AiWeeklyStructuredOutput.model_validate(decoded)
+            structured = prompt.output_model.model_validate(decoded)
         except (AttributeError, TypeError, json.JSONDecodeError, ValidationError):
             raise AiGatewayError("response_invalid") from None
         actual_model = getattr(response, "model", None) or self.model
@@ -220,6 +201,63 @@ def build_provider(settings: Settings, *, openai_client: Any | None = None) -> A
     if settings.ai_provider == "fake":
         return FakeAiProvider(settings.ai_fake_scenario)
     return OpenAiResponsesProvider(settings, client=openai_client)
+
+
+def _fake_success_output(payload: ProviderPromptPayload) -> dict[str, Any]:
+    if payload.report_type == "daily_insight":
+        missing_scopes = [
+            scope
+            for scope in payload.scopes
+            if isinstance(payload.data.get(scope), list)
+            and not payload.data.get(scope)
+        ]
+        limitations = ["This output comes from the deterministic Fake Provider."]
+        limitations.extend(
+            f"No record was supplied for selected scope {scope}."
+            for scope in missing_scopes
+        )
+        return {
+            "title": "Daily Insight development check",
+            "summary": "A deterministic result for the selected single-day data.",
+            "observations": [
+                {
+                    "statement": "The selected data was evaluated for one local date.",
+                    "evidence": [payload.period["start_date"]],
+                }
+            ],
+            "possible_factors": [
+                {
+                    "factor": "Recorded metrics may be related on this date.",
+                    "caveat": "One day of data cannot establish causation.",
+                }
+            ],
+            "tomorrow_adjustments": [
+                {
+                    "action": "Optionally repeat one low-burden helpful routine.",
+                    "reason": "This is a small experiment, not a required action.",
+                }
+            ],
+            "data_limitations": limitations,
+        }
+    return {
+        "title": "开发测试每周回顾",
+        "summary": "这是 Fake Provider 生成的确定性开发测试结果。",
+        "observations": [
+            {
+                "statement": "已按明确选择的范围读取七天数据。",
+                "evidence": [
+                    f"{payload.period['start_date']} 至 {payload.period['end_date']}"
+                ],
+            }
+        ],
+        "suggestions": [
+            {
+                "action": "结合原始记录核对本回顾。",
+                "reason": "Fake 输出仅用于验证生成链路。",
+            }
+        ],
+        "data_limitations": ["这不是来自真实 AI 模型的分析。"],
+    }
 
 
 def _contains_refusal(response: Any) -> bool:

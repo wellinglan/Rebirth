@@ -223,17 +223,17 @@ Only items with `server_version > since_server_version` and a requested table ar
 
 ## Current Contract Limits
 
-## AI Manual Weekly Generation And Recovery (Sprint 8D)
+## AI Report Generation And Recovery (Sprint 9A)
 
-Sprint 8E completes the OpenAPI response contract. `POST /ai/reports/weekly/generate` declares `200` completed, `202` processing, and controlled `409`, `410`, `422`, `429`, `502`, `503`, and `504` responses. `GET /ai/requests/{request_id}` declares `200`, `401`, and non-disclosing `404`. Error bodies use `AiErrorResponse`; the OpenAPI document contains no Server database model or secret.
+Sprint 8E completed the Weekly OpenAPI response contract. Sprint 9A adds the same controlled response declarations to `POST /ai/reports/daily/generate`. `GET /ai/requests/{request_id}` remains generic and declares `200`, `401`, and non-disclosing `404`. Error bodies use `AiErrorResponse`; the OpenAPI document contains no Server database model or secret.
 
-`GET /ai/capabilities` and `POST /ai/reports/weekly/generate` require the existing bearer JWT. The only report contract is input schema 1, `weekly_report`, `weekly-report-v1`, and output schema 1. Generation accepts the existing typed canonical payload plus its SHA-256; Server normalizes/recomputes the hash before Provider invocation and rejects extra fields. Responses return the echoed request identity/hash, actual provider/model, server-rendered Markdown, and validated structured output.
+`GET /ai/capabilities` and both generate endpoints require the existing bearer JWT. Typed `report_contracts` publish input/output schema 1 for `daily_insight` + `daily-insight-v1` + `single_day`, and `weekly_report` + `weekly-report-v1` + `seven_days`. Daily supports only `today_metrics`, `health_metrics`, and `journal_reflections`; Weekly additionally supports `growth_summary`. Generation accepts a typed canonical payload plus its SHA-256; Server normalizes/recomputes the hash before Provider invocation and rejects extra fields. Responses return the echoed request identity/hash, actual provider/model, server-rendered Markdown, and validated report-specific structured output.
 
 The Server persists a minimal request ledger, not user report history. It temporarily retains only validated output for replay and never persists input payloads, sources, canonical JSON, source IDs, Journal text, Provider request/raw response, credentials, stack traces, database URLs, or local paths. Flutter local `ai_reports` remains report history.
 
 `GET /ai/capabilities` additionally returns `durable_request_ledger`, `request_status_recovery`, `result_retention_hours`, `dedupe_retention_days`, `processing_lease_minutes`, and `exactly_once_guaranteed=false`.
 
-`POST /ai/reports/weekly/generate` atomically binds one JWT user/request ID. A retained completed request replays; active processing returns HTTP 202 with status metadata; conflicting identity returns `409 idempotency_conflict`; stale processing becomes `outcome_unknown`; failed and expired requests never call Provider again.
+Each generate endpoint atomically binds one JWT user/request ID. A retained completed request replays; active processing returns HTTP 202 with status metadata; conflicting hash, report type, or prompt identity returns `409 idempotency_conflict`; stale processing becomes `outcome_unknown`; failed and expired requests never call Provider again.
 
 `GET /ai/requests/{request_id}` is JWT protected and returns the current user's `processing`, `completed`, `failed`, `outcome_unknown`, or `result_expired` status. Completed includes retained validated output; processing includes lease metadata; failed includes only a controlled code. Missing and other-user requests both return 404 `not_found`. There is no Server request-list endpoint.
 

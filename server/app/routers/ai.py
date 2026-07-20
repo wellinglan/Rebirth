@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from app.ai.errors import AiGatewayError
 from app.ai.schemas import (
     AiCapabilitiesResponse,
+    AiDailyGenerateRequest,
+    AiDailyGenerateResponse,
     AiErrorResponse,
     AiRequestStatusResponse,
     AiWeeklyGenerateRequest,
@@ -65,6 +67,58 @@ async def generate_weekly(
 ) -> AiWeeklyGenerateResponse | AiRequestStatusResponse | JSONResponse:
     try:
         result = await request.app.state.ai_generation_service.generate_weekly(
+            body, user_id=user_id, session=session
+        )
+        if isinstance(result, AiRequestStatusResponse):
+            return JSONResponse(
+                status_code=202,
+                content=result.model_dump(mode="json"),
+            )
+        return result
+    except AiGatewayError as error:
+        return JSONResponse(
+            status_code=error.status_code,
+            content={"detail": {"code": error.code, "message": _message(error.code)}},
+        )
+
+
+@router.post(
+    "/reports/daily/generate",
+    response_model=AiDailyGenerateResponse,
+    responses={
+        202: {
+            "model": AiRequestStatusResponse,
+            "description": "The request is already processing.",
+        },
+        409: {
+            "model": AiErrorResponse,
+            "description": "Idempotency conflict or unknown provider outcome.",
+        },
+        410: {
+            "model": AiErrorResponse,
+            "description": "The temporary result has expired.",
+        },
+        422: {
+            "model": AiErrorResponse,
+            "description": "Invalid input or unsupported AI contract.",
+        },
+        429: {"model": AiErrorResponse, "description": "Provider rate limited."},
+        502: {
+            "model": AiErrorResponse,
+            "description": "Provider, request, or response failure.",
+        },
+        503: {"model": AiErrorResponse, "description": "Provider unavailable."},
+        504: {"model": AiErrorResponse, "description": "Provider timeout."},
+    },
+)
+async def generate_daily(
+    body: AiDailyGenerateRequest,
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiDailyGenerateResponse | AiRequestStatusResponse | JSONResponse:
+    try:
+        result = await request.app.state.ai_generation_service.generate_daily(
             body, user_id=user_id, session=session
         )
         if isinstance(result, AiRequestStatusResponse):

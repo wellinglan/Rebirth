@@ -5,10 +5,10 @@ import json
 import math
 from typing import Any
 
-from app.ai.schemas import AiWeeklyPayload
+from app.ai.schemas import AiInputPayload
 
 
-def normalized_payload(payload: AiWeeklyPayload) -> dict[str, Any]:
+def normalized_payload(payload: AiInputPayload) -> dict[str, Any]:
     value = payload.model_dump(mode="json", exclude_none=False)
     value["data"] = {
         key: item for key, item in value["data"].items() if item is not None
@@ -39,7 +39,7 @@ def canonical_json(value: Any) -> str:
     )
 
 
-def input_hash(payload: AiWeeklyPayload) -> str:
+def input_hash(payload: AiInputPayload) -> str:
     encoded = canonical_json(normalized_payload(payload)).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 

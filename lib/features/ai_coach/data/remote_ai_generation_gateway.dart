@@ -5,6 +5,7 @@ import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
 final class RemoteAiGenerationGateway implements AiGenerationGateway {
@@ -40,11 +41,35 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
   Future<AiRemoteRequestResult> generateWeekly({
     required String requestId,
     required AiCoachInputBundle bundle,
+  }) {
+    return _generate(
+      path: '/ai/reports/weekly/generate',
+      requestId: requestId,
+      bundle: bundle,
+    );
+  }
+
+  @override
+  Future<AiRemoteRequestResult> generateDaily({
+    required String requestId,
+    required AiCoachInputBundle bundle,
+  }) {
+    return _generate(
+      path: '/ai/reports/daily/generate',
+      requestId: requestId,
+      bundle: bundle,
+    );
+  }
+
+  Future<AiRemoteRequestResult> _generate({
+    required String path,
+    required String requestId,
+    required AiCoachInputBundle bundle,
   }) async {
     final token = await _accessToken();
     try {
       final json = await apiClient.postJson(
-        '/ai/reports/weekly/generate',
+        path,
         accessToken: token,
         timeout: generationTimeout,
         body: {
@@ -61,11 +86,7 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
         promptVersion: bundle.promptVersion,
       );
     } on ApiException catch (error) {
-      return _mapGenerateError(
-        error,
-        requestId: requestId,
-        bundle: bundle,
-      );
+      return _mapGenerateError(error, requestId: requestId, bundle: bundle);
     } on FormatException {
       throw const AiGenerationException(AiReportFailureCode.responseInvalid);
     } on TypeError {
@@ -129,6 +150,7 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
       model: json['model'] as String?,
       supportedReportTypes: _stringList(json['supported_report_types']),
       promptVersions: _stringList(json['prompt_versions']),
+      reportContracts: _decodeReportContracts(json['report_contracts']),
       inputSchemaVersion: json['input_schema_version'] as int,
       outputSchemaVersion: json['output_schema_version'] as int,
       streaming: json['streaming'] as bool,
@@ -218,7 +240,11 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
       throw const FormatException('Mismatched AI generation response.');
     }
     final output = Map<String, Object?>.from(structured);
-    _validateStructuredOutput(output);
+    _validateStructuredOutput(output, reportType: reportType);
+    final outputSchemaVersion = json['output_schema_version'] as int;
+    if (outputSchemaVersion != 1) {
+      throw const FormatException('Unsupported AI output schema version.');
+    }
     return AiGenerationResult(
       requestId: responseRequestId,
       reportType: responseReportType,
@@ -226,7 +252,7 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
       inputHash: responseInputHash,
       provider: json['provider'] as String,
       model: json['model'] as String,
-      outputSchemaVersion: json['output_schema_version'] as int,
+      outputSchemaVersion: outputSchemaVersion,
       reportContent: content,
       structuredOutputJson: jsonEncode(output),
     );
@@ -274,7 +300,21 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
     );
   }
 
-  void _validateStructuredOutput(Map<String, Object?> value) {
+  void _validateStructuredOutput(
+    Map<String, Object?> value, {
+    required String reportType,
+  }) {
+    if (reportType == 'daily_insight') {
+      _validateDailyStructuredOutput(value);
+      return;
+    }
+    if (reportType != 'weekly_report') {
+      throw const FormatException('Unsupported AI report output.');
+    }
+    _validateWeeklyStructuredOutput(value);
+  }
+
+  void _validateWeeklyStructuredOutput(Map<String, Object?> value) {
     const keys = {
       'title',
       'summary',
@@ -316,6 +356,104 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
         throw const FormatException('Invalid structured output.');
       }
     }
+  }
+
+  void _validateDailyStructuredOutput(Map<String, Object?> value) {
+    const keys = {
+      'title',
+      'summary',
+      'observations',
+      'possible_factors',
+      'tomorrow_adjustments',
+      'data_limitations',
+    };
+    if (!_hasExactKeys(value.keys, keys) ||
+        value['title'] is! String ||
+        (value['title'] as String).trim().isEmpty ||
+        value['summary'] is! String ||
+        (value['summary'] as String).trim().isEmpty) {
+      throw const FormatException('Invalid Daily Insight output.');
+    }
+    final observations = value['observations'];
+    final factors = value['possible_factors'];
+    final adjustments = value['tomorrow_adjustments'];
+    final limitations = value['data_limitations'];
+    if (observations is! List ||
+        observations.length > 4 ||
+        factors is! List ||
+        factors.length > 3 ||
+        adjustments is! List ||
+        adjustments.length > 3 ||
+        limitations is! List ||
+        !limitations.every((item) => item is String)) {
+      throw const FormatException('Invalid Daily Insight output.');
+    }
+    for (final item in observations) {
+      if (item is! Map ||
+          !_hasExactKeys(item.keys, {'statement', 'evidence'}) ||
+          item['statement'] is! String ||
+          (item['statement'] as String).trim().isEmpty ||
+          item['evidence'] is! List ||
+          !(item['evidence'] as List).every((value) => value is String)) {
+        throw const FormatException('Invalid Daily Insight observation.');
+      }
+    }
+    for (final item in factors) {
+      if (item is! Map ||
+          !_hasExactKeys(item.keys, {'factor', 'caveat'}) ||
+          item['factor'] is! String ||
+          (item['factor'] as String).trim().isEmpty ||
+          item['caveat'] is! String ||
+          (item['caveat'] as String).trim().isEmpty) {
+        throw const FormatException('Invalid Daily Insight factor.');
+      }
+    }
+    for (final item in adjustments) {
+      if (item is! Map ||
+          !_hasExactKeys(item.keys, {'action', 'reason'}) ||
+          item['action'] is! String ||
+          (item['action'] as String).trim().isEmpty ||
+          item['reason'] is! String ||
+          (item['reason'] as String).trim().isEmpty) {
+        throw const FormatException('Invalid Daily Insight adjustment.');
+      }
+    }
+  }
+
+  bool _hasExactKeys(Iterable<Object?> actual, Set<String> expected) {
+    final keys = actual.toSet();
+    return keys.length == expected.length && keys.containsAll(expected);
+  }
+
+  List<AiGenerationReportContract> _decodeReportContracts(Object? value) {
+    if (value is! List) {
+      throw const FormatException('Missing AI report contracts.');
+    }
+    return value
+        .map((item) {
+          if (item is! Map ||
+              !_hasExactKeys(item.keys, {
+                'report_type',
+                'prompt_versions',
+                'input_schema_version',
+                'output_schema_version',
+                'period_kind',
+                'supported_scopes',
+              })) {
+            throw const FormatException('Invalid AI report contract.');
+          }
+          return AiGenerationReportContract(
+            reportType: item['report_type'] as String,
+            promptVersions: _stringList(item['prompt_versions']),
+            inputSchemaVersion: item['input_schema_version'] as int,
+            outputSchemaVersion: item['output_schema_version'] as int,
+            periodKind: AiReportPeriodKind.fromContractValue(
+              item['period_kind'] as String,
+            ),
+            supportedScopes: _stringList(item['supported_scopes']),
+          );
+        })
+        .toList(growable: false);
   }
 
   List<String> _stringList(Object? value) {

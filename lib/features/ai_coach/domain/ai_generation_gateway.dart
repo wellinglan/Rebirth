@@ -1,4 +1,5 @@
 import 'ai_coach_input_bundle.dart';
+import 'ai_generation_report_contract.dart';
 import 'ai_report_status.dart';
 
 final class AiGenerationCapabilities {
@@ -9,6 +10,7 @@ final class AiGenerationCapabilities {
     required this.model,
     required List<String> supportedReportTypes,
     required List<String> promptVersions,
+    List<AiGenerationReportContract> reportContracts = const [],
     required this.inputSchemaVersion,
     required this.outputSchemaVersion,
     required this.streaming,
@@ -20,7 +22,8 @@ final class AiGenerationCapabilities {
     this.processingLeaseMinutes = 5,
     this.exactlyOnceGuaranteed = false,
   }) : supportedReportTypes = List.unmodifiable(supportedReportTypes),
-       promptVersions = List.unmodifiable(promptVersions) {
+       promptVersions = List.unmodifiable(promptVersions),
+       reportContracts = List.unmodifiable(reportContracts) {
     if (provider.trim().isEmpty || providerLabel.trim().isEmpty) {
       throw const FormatException('Invalid AI capabilities.');
     }
@@ -30,7 +33,9 @@ final class AiGenerationCapabilities {
     if (resultRetentionHours <= 0 ||
         dedupeRetentionDays <= 0 ||
         processingLeaseMinutes <= 0 ||
-        exactlyOnceGuaranteed) {
+        exactlyOnceGuaranteed ||
+        reportContracts.map((item) => item.reportType).toSet().length !=
+            reportContracts.length) {
       throw const FormatException('Invalid AI reliability capabilities.');
     }
   }
@@ -41,6 +46,7 @@ final class AiGenerationCapabilities {
   final String? model;
   final List<String> supportedReportTypes;
   final List<String> promptVersions;
+  final List<AiGenerationReportContract> reportContracts;
   final int inputSchemaVersion;
   final int outputSchemaVersion;
   final bool streaming;
@@ -51,6 +57,13 @@ final class AiGenerationCapabilities {
   final int dedupeRetentionDays;
   final int processingLeaseMinutes;
   final bool exactlyOnceGuaranteed;
+
+  AiGenerationReportContract? contractFor(String reportType) {
+    for (final contract in reportContracts) {
+      if (contract.reportType == reportType) return contract;
+    }
+    return null;
+  }
 }
 
 enum AiRemoteRequestStatus {
@@ -119,6 +132,11 @@ abstract interface class AiGenerationGateway {
   Future<AiGenerationCapabilities> getCapabilities();
 
   Future<AiRemoteRequestResult> generateWeekly({
+    required String requestId,
+    required AiCoachInputBundle bundle,
+  });
+
+  Future<AiRemoteRequestResult> generateDaily({
     required String requestId,
     required AiCoachInputBundle bundle,
   });

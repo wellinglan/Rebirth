@@ -17,25 +17,21 @@ from app.ai.errors import (
 )
 from app.ai.ledger import AiRequestLedger
 from app.ai.observability import log_ai_event
-from app.ai.prompts import WEEKLY_PROMPT_VERSION, get_prompt
+from app.ai.prompts import get_prompt, report_definitions
 from app.ai.providers import AiProvider, ProviderPromptPayload, safety_identifier
 from app.ai.schemas import (
     AiCapabilitiesResponse,
+    AiDailyGenerateRequest,
+    AiDailyGenerateResponse,
+    AiGenerateRequest,
+    AiGenerateResponse,
+    AiReportContractResponse,
     AiRequestStatusResponse,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
-    AiWeeklyStructuredOutput,
 )
 from app.config import Settings
 from app.models import AiGenerationRequest
-
-
-SUPPORTED_SCOPES = {
-    "growth_summary",
-    "today_metrics",
-    "health_metrics",
-    "journal_reflections",
-}
 
 
 def utc_milliseconds() -> int:
@@ -53,13 +49,23 @@ class AiGenerationService:
         return AiRequestLedger(self.settings)
 
     def capabilities(self) -> AiCapabilitiesResponse:
+        definitions = report_definitions()
         return AiCapabilitiesResponse(
             enabled=self.provider.enabled,
             provider=self.provider.name,
             provider_label=self.provider.label,
             model=self.provider.model,
-            supported_report_types=["weekly_report"],
-            prompt_versions=[WEEKLY_PROMPT_VERSION],
+            supported_report_types=[item.report_type for item in definitions],
+            prompt_versions=[item.version for item in definitions],
+            report_contracts=[
+                AiReportContractResponse(
+                    report_type=item.report_type,
+                    prompt_versions=[item.version],
+                    period_kind=item.period_kind,
+                    supported_scopes=list(item.supported_scopes),
+                )
+                for item in definitions
+            ],
             result_retention_hours=self.settings.ai_result_retention_hours,
             dedupe_retention_days=self.settings.ai_dedupe_retention_days,
             processing_lease_minutes=self.settings.ai_processing_lease_minutes,
@@ -72,6 +78,24 @@ class AiGenerationService:
         user_id: str,
         session: Session,
     ) -> AiWeeklyGenerateResponse | AiRequestStatusResponse:
+        return await self._generate(request, user_id=user_id, session=session)
+
+    async def generate_daily(
+        self,
+        request: AiDailyGenerateRequest,
+        *,
+        user_id: str,
+        session: Session,
+    ) -> AiDailyGenerateResponse | AiRequestStatusResponse:
+        return await self._generate(request, user_id=user_id, session=session)
+
+    async def _generate(
+        self,
+        request: AiGenerateRequest,
+        *,
+        user_id: str,
+        session: Session,
+    ) -> AiGenerateResponse | AiRequestStatusResponse:
         now = self.clock()
         self.ledger.cleanup(session, now=now)
         existing = self.ledger.find(
@@ -140,17 +164,17 @@ class AiGenerationService:
                 ),
             )
             try:
-                structured = AiWeeklyStructuredOutput.model_validate(
+                structured = prompt.output_model.model_validate(
                     generation.structured_output
                 )
             except ValidationError:
                 raise AiGatewayError("response_invalid") from None
-            result = AiWeeklyGenerateResponse(
+            result = prompt.response_model(
                 request_id=request.request_id,
                 input_hash=verified_hash,
                 provider=generation.provider,
                 model=generation.model,
-                report_content=render_markdown(structured),
+                report_content=prompt.renderer(structured),
                 structured_output=structured,
             )
         except AiGatewayError as error:
@@ -245,16 +269,25 @@ class AiGenerationService:
         )
         return self.ledger.status_response(row)
 
-    def _validate_supported_contract(self, request: AiWeeklyGenerateRequest):
+    def _validate_supported_contract(self, request: AiGenerateRequest):
         payload = request.payload
         if payload.schema_version != 1:
             raise UnsupportedContractError("invalid_input")
-        if payload.report_type != "weekly_report":
+        known_report_types = {item.report_type for item in report_definitions()}
+        expected_report_type = (
+            "daily_insight"
+            if isinstance(request, AiDailyGenerateRequest)
+            else "weekly_report"
+        )
+        if (
+            payload.report_type not in known_report_types
+            or payload.report_type != expected_report_type
+        ):
             raise UnsupportedContractError("unsupported_report_type")
-        prompt = get_prompt(payload.prompt_version)
+        prompt = get_prompt(payload.report_type, payload.prompt_version)
         if prompt is None:
             raise UnsupportedContractError("unsupported_prompt_version")
-        if any(scope not in SUPPORTED_SCOPES for scope in payload.scopes):
+        if any(scope not in prompt.supported_scopes for scope in payload.scopes):
             raise UnsupportedContractError("unsupported_scope")
         return prompt
 
@@ -263,10 +296,10 @@ class AiGenerationService:
         session: Session,
         row: AiGenerationRequest,
         *,
-        request: AiWeeklyGenerateRequest,
+        request: AiGenerateRequest,
         user_id: str,
         now: int,
-    ) -> AiWeeklyGenerateResponse | AiRequestStatusResponse:
+    ) -> AiGenerateResponse | AiRequestStatusResponse:
         if (
             row.input_hash != request.input_hash
             or row.report_type != request.payload.report_type
@@ -345,7 +378,7 @@ def _failure_status(code: str) -> int:
     }.get(code, 502)
 
 
-def _provider_payload(request: AiWeeklyGenerateRequest) -> ProviderPromptPayload:
+def _provider_payload(request: AiGenerateRequest) -> ProviderPromptPayload:
     payload = request.payload.model_dump(mode="json", exclude_none=False)
     payload["data"] = {
         key: item for key, item in payload["data"].items() if item is not None
@@ -363,21 +396,3 @@ def _provider_payload(request: AiWeeklyGenerateRequest) -> ProviderPromptPayload
         scopes=sorted(payload["scopes"]),
         data=selected_data,
     )
-
-
-def render_markdown(output: AiWeeklyStructuredOutput) -> str:
-    lines = [f"# {output.title}", "", output.summary]
-    if output.observations:
-        lines.extend(["", "## 观察"])
-        for item in output.observations:
-            evidence = "；".join(item.evidence)
-            suffix = f"（依据：{evidence}）" if evidence else ""
-            lines.append(f"- {item.statement}{suffix}")
-    if output.suggestions:
-        lines.extend(["", "## 可选建议"])
-        for item in output.suggestions:
-            lines.append(f"- {item.action}：{item.reason}")
-    if output.data_limitations:
-        lines.extend(["", "## 数据限制"])
-        lines.extend(f"- {item}" for item in output.data_limitations)
-    return "\n".join(lines).strip()

@@ -45,8 +45,18 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
   @override
   Future<AiCoachInputBundle> buildWeeklyReport({
     required AiDataSelection selection,
-  }) {
-    return build(reportType: AiReportType.weeklyReport, selection: selection);
+  }) async {
+    final snapshot = dateTimeService.currentSnapshot();
+    final dates = dateTimeService.recentLocalDateRange(
+      AiInputContract.weeklyPeriodDays,
+      endingAt: snapshot.now,
+    );
+    return _buildForPeriod(
+      reportType: AiReportType.weeklyReport,
+      selection: selection,
+      startDate: dates.first,
+      endDate: dates.last,
+    );
   }
 
   @override
@@ -54,27 +64,48 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     required AiReportType reportType,
     required AiDataSelection selection,
   }) async {
+    if (reportType != AiReportType.weeklyReport) {
+      throw UnsupportedAiReportTypeException(reportType.databaseValue);
+    }
+    return buildWeeklyReport(selection: selection);
+  }
+
+  @override
+  Future<AiCoachInputBundle> buildDailyInsight({
+    required String targetDate,
+    required AiDataSelection selection,
+  }) async {
+    if (!dateTimeService.isValidLocalDateString(targetDate)) {
+      throw const InvalidAiInputException('Invalid Daily Insight target date.');
+    }
+    return _buildForPeriod(
+      reportType: AiReportType.dailyInsight,
+      selection: selection,
+      startDate: targetDate,
+      endDate: targetDate,
+    );
+  }
+
+  Future<AiCoachInputBundle> _buildForPeriod({
+    required AiReportType reportType,
+    required AiDataSelection selection,
+    required String startDate,
+    required String endDate,
+  }) async {
     final authorization = await consentRepository.read();
     if (!authorization.enabled) throw const AiConsentRequiredException();
     if (selection.scopes.isEmpty) {
       throw const EmptyAiDataSelectionException();
     }
-    if (reportType != AiReportType.weeklyReport) {
+    if (!AiInputContract.isSupportedReportType(reportType)) {
       throw UnsupportedAiReportTypeException(reportType.databaseValue);
     }
+    final supportedScopes = AiInputContract.supportedScopesFor(reportType);
     for (final scope in selection.scopes) {
-      if (!scope.supported) {
+      if (!supportedScopes.contains(scope)) {
         throw UnsupportedAiDataScopeException(scope.contractValue);
       }
     }
-
-    final snapshot = dateTimeService.currentSnapshot();
-    final dates = dateTimeService.recentLocalDateRange(
-      AiInputContract.weeklyPeriodDays,
-      endingAt: snapshot.now,
-    );
-    final startDate = dates.first;
-    final endDate = dates.last;
 
     GrowthSnapshot? growth;
     List<TodayEntry>? today;
@@ -83,9 +114,9 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     final reads = <Future<void>>[];
     if (selection.scopes.contains(AiDataScope.growthSummary)) {
       reads.add(
-        growthRepository.loadRecent(GrowthPeriod.sevenDays).then<void>(
-          (value) => growth = value,
-        ),
+        growthRepository
+            .loadRecent(GrowthPeriod.sevenDays)
+            .then<void>((value) => growth = value),
       );
     }
     if (selection.scopes.contains(AiDataScope.todayMetrics)) {
@@ -120,6 +151,12 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     }
     final todayResult = today;
     if (todayResult != null) {
+      _validateRowsForPeriod(
+        reportType,
+        todayResult.map((entry) => entry.recordDate),
+        startDate,
+        endDate,
+      );
       final sorted = [...todayResult]
         ..sort((left, right) => left.recordDate.compareTo(right.recordDate));
       data[AiDataScope.todayMetrics.contractValue] = sorted
@@ -137,6 +174,12 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     }
     final healthResult = health;
     if (healthResult != null) {
+      _validateRowsForPeriod(
+        reportType,
+        healthResult.map((entry) => entry.recordDate),
+        startDate,
+        endDate,
+      );
       final sorted = [...healthResult]
         ..sort((left, right) => left.recordDate.compareTo(right.recordDate));
       data[AiDataScope.healthMetrics.contractValue] = sorted
@@ -154,6 +197,12 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     }
     final journalResult = journals;
     if (journalResult != null) {
+      _validateRowsForPeriod(
+        reportType,
+        journalResult.map((entry) => entry.entryDate),
+        startDate,
+        endDate,
+      );
       final sorted = [...journalResult]
         ..sort((left, right) => left.entryDate.compareTo(right.entryDate));
       data[AiDataScope.journalReflections.contractValue] = sorted
@@ -171,18 +220,17 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     }
 
     final normalizedSources = _normalizeSources(sources);
-    final scopes = selection.scopes
+    final promptVersion = AiInputContract.promptVersionFor(reportType);
+    final scopes =
+        selection.scopes
             .map((scope) => scope.contractValue)
             .toList(growable: false)
           ..sort();
     final payload = <String, Object?>{
       'schema_version': AiInputContract.schemaVersion,
       'report_type': reportType.databaseValue,
-      'prompt_version': AiInputContract.weeklyPromptVersion,
-      'period': <String, Object?>{
-        'start_date': startDate,
-        'end_date': endDate,
-      },
+      'prompt_version': promptVersion,
+      'period': <String, Object?>{'start_date': startDate, 'end_date': endDate},
       'scopes': scopes,
       'data': data,
       'sources': normalizedSources
@@ -193,7 +241,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     final inputHash = inputHashService.hashCanonicalJson(canonicalJson);
     return AiCoachInputBundle(
       reportType: reportType,
-      promptVersion: AiInputContract.weeklyPromptVersion,
+      promptVersion: promptVersion,
       periodStartDate: startDate,
       periodEndDate: endDate,
       selection: selection,
@@ -202,6 +250,27 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
       canonicalJson: canonicalJson,
       inputHash: inputHash,
     );
+  }
+
+  void _validateRowsForPeriod(
+    AiReportType reportType,
+    Iterable<String> dates,
+    String startDate,
+    String endDate,
+  ) {
+    final values = dates.toList(growable: false);
+    if (reportType == AiReportType.dailyInsight && values.length > 1) {
+      throw const InvalidAiInputException(
+        'Daily Insight scopes can contain at most one record.',
+      );
+    }
+    if (values.any(
+      (date) => date.compareTo(startDate) < 0 || date.compareTo(endDate) > 0,
+    )) {
+      throw const InvalidAiInputException(
+        'AI input record date does not match the requested period.',
+      );
+    }
   }
 
   void _validateGrowthPeriod(
@@ -275,9 +344,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
-  List<AiInputSourceRef> _normalizeSources(
-    Iterable<AiInputSourceRef> sources,
-  ) {
+  List<AiInputSourceRef> _normalizeSources(Iterable<AiInputSourceRef> sources) {
     final byIdentity = <String, AiInputSourceRef>{};
     for (final source in sources) {
       final key = '${source.table}\u0000${source.id}';

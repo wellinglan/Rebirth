@@ -68,11 +68,13 @@ $env:REBIRTH_DATABASE_URL = $env:REBIRTH_POSTGRES_TEST_URL
 docker compose -f docker-compose.test.yml down -v
 ```
 
-The multiprocessing test uses four spawned processes with independent SQLAlchemy Engine/Session instances. The multi-worker script starts two Uvicorn workers, sends eight concurrent duplicate requests through real HTTP, checks one Ledger row, and counts one `ai_provider_started` event. It uses Fake Provider only and adds no diagnostic HTTP endpoint.
+The multiprocessing suite uses four spawned processes with independent SQLAlchemy Engine/Session instances and includes a Daily marker that verifies one claim owner and one ledger row. The multi-worker script remains a Weekly regression: it starts two Uvicorn workers, sends eight concurrent duplicate requests through real HTTP, checks one Ledger row, and counts one `ai_provider_started` event. Both use Fake Provider only and add no diagnostic HTTP endpoint.
 
 ## CI Quality Gate
 
 `.github/workflows/quality.yml` defines four required jobs: Server SQLite, Server PostgreSQL multiprocessing/multi-worker, Flutter analyze/test, and Android debug build. Flutter is pinned to stable `3.44.4`. Normal CI never configures or invokes real OpenAI.
+
+Sprint 9A keeps the same event allowlist for Daily and Weekly. `report_type`, input/output bodies, Sources, and report content are not added to logs; existing request identity, controlled status, Provider metadata, truncated hash, and latency fields remain sufficient for operations.
 
 ## Remaining Reliability Boundary
 

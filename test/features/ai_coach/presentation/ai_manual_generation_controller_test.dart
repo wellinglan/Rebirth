@@ -106,45 +106,48 @@ void main() {
     expect(gateway.generationCalls, 1);
     expect(bindings.values, isEmpty);
     expect(
-      container
-          .read(aiManualGenerationControllerProvider)
-          .requireValue
-          .phase,
+      container.read(aiManualGenerationControllerProvider).requireValue.phase,
       AiManualGenerationPhase.failure,
     );
   });
 
-  test('binding save failure blocks POST and marks controlled failure', () async {
-    final bundle = await _buildPreview(container);
-    bindings.saveError = StateError('disk unavailable');
-    await container.read(aiManualGenerationControllerProvider.future);
+  test(
+    'binding save failure blocks POST and marks controlled failure',
+    () async {
+      final bundle = await _buildPreview(container);
+      bindings.saveError = StateError('disk unavailable');
+      await container.read(aiManualGenerationControllerProvider.future);
 
-    final result = await container
-        .read(aiManualGenerationControllerProvider.notifier)
-        .submit(bundle);
+      final result = await container
+          .read(aiManualGenerationControllerProvider.notifier)
+          .submit(bundle);
 
-    expect(result?.completed, isFalse);
-    expect(gateway.generationCalls, 0);
-    expect(reports.lastFailureCode, 'request_binding_failed');
-  });
+      expect(result?.completed, isFalse);
+      expect(gateway.generationCalls, 0);
+      expect(reports.lastFailureCode, 'request_binding_failed');
+    },
+  );
 
-  test('network timeout keeps pending and binding without POST retry', () async {
-    final bundle = await _buildPreview(container);
-    gateway.generationError = const AiGenerationException(
-      AiReportFailureCode.networkOutcomeUnknown,
-    );
-    await container.read(aiManualGenerationControllerProvider.future);
+  test(
+    'network timeout keeps pending and binding without POST retry',
+    () async {
+      final bundle = await _buildPreview(container);
+      gateway.generationError = const AiGenerationException(
+        AiReportFailureCode.networkOutcomeUnknown,
+      );
+      await container.read(aiManualGenerationControllerProvider.future);
 
-    final result = await container
-        .read(aiManualGenerationControllerProvider.notifier)
-        .submit(bundle);
+      final result = await container
+          .read(aiManualGenerationControllerProvider.notifier)
+          .submit(bundle);
 
-    expect(result?.awaitingRecovery, isTrue);
-    expect(reports.markFailedCalls, 0);
-    expect(reports.reports.single.status, AiReportStatus.pending);
-    expect(bindings.values, contains('pending-1'));
-    expect(gateway.generationCalls, 1);
-  });
+      expect(result?.awaitingRecovery, isTrue);
+      expect(reports.markFailedCalls, 0);
+      expect(reports.reports.single.status, AiReportStatus.pending);
+      expect(bindings.values, contains('pending-1'));
+      expect(gateway.generationCalls, 1);
+    },
+  );
 
   test('disabled provider blocks before pending creation', () async {
     final bundle = await _buildPreview(container);
@@ -303,6 +306,14 @@ final class DelayedAiGenerationGateway implements AiGenerationGateway {
       promptVersion: bundle.promptVersion,
       completedResult: completed,
     );
+  }
+
+  @override
+  Future<AiRemoteRequestResult> generateDaily({
+    required String requestId,
+    required AiCoachInputBundle bundle,
+  }) {
+    return generateWeekly(requestId: requestId, bundle: bundle);
   }
 
   @override

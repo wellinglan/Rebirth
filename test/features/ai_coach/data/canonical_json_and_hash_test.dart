@@ -67,7 +67,10 @@ void main() {
         {'table': 'today_records', 'id': 'a', 'updated_at': 1},
       ],
     };
-    expect(hash({...base, 'prompt_version': 'weekly-report-v2'}), isNot(hash(base)));
+    expect(
+      hash({...base, 'prompt_version': 'weekly-report-v2'}),
+      isNot(hash(base)),
+    );
     expect(hash({...base, 'report_type': 'daily_insight'}), isNot(hash(base)));
     expect(
       hash({
@@ -77,11 +80,17 @@ void main() {
       isNot(hash(base)),
     );
     expect(
-      hash({...base, 'scopes': ['health_metrics']}),
+      hash({
+        ...base,
+        'scopes': ['health_metrics'],
+      }),
       isNot(hash(base)),
     );
     expect(
-      hash({...base, 'data': {'value': 0}}),
+      hash({
+        ...base,
+        'data': {'value': 0},
+      }),
       isNot(hash(base)),
     );
     expect(
@@ -105,18 +114,59 @@ void main() {
     expect(hashService.hashCanonicalJson(contract), hash);
   });
 
-  test('shared Python and Dart weekly fixture has identical canonical hash', () {
-    final payload = jsonDecode(
-      File('test/fixtures/ai_weekly_input_v1.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+  test(
+    'shared Python and Dart weekly fixture has identical canonical hash',
+    () {
+      final payload =
+          jsonDecode(
+                File(
+                  'test/fixtures/ai_weekly_input_v1.json',
+                ).readAsStringSync(),
+              )
+              as Map<String, dynamic>;
+      final expected = File(
+        'test/fixtures/ai_weekly_input_v1_expected_hash.txt',
+      ).readAsStringSync().trim();
+      final canonical = encoder.encode(Map<String, Object?>.from(payload));
+
+      expect(hashService.hashCanonicalJson(canonical), expected);
+      expect(canonical, contains('中文'));
+      expect(canonical, contains('"research_minutes":0'));
+      expect(canonical, contains('"learning_minutes":null'));
+    },
+  );
+
+  test('shared Python and Dart Daily Insight fixture has identical hash', () {
+    final payload =
+        jsonDecode(
+              File(
+                'test/fixtures/ai_daily_insight_input_v1.json',
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>;
     final expected = File(
-      'test/fixtures/ai_weekly_input_v1_expected_hash.txt',
+      'test/fixtures/ai_daily_insight_input_v1_expected_hash.txt',
     ).readAsStringSync().trim();
     final canonical = encoder.encode(Map<String, Object?>.from(payload));
 
     expect(hashService.hashCanonicalJson(canonical), expected);
-    expect(canonical, contains('中文'));
+    expect(
+      expected,
+      '41c3116ae42c129c2b407377ccdee15a984706f259665f9f2b967fe3532b56e0',
+    );
+    expect(canonical, contains('DAILY敏感标记_仅供测试_9A'));
     expect(canonical, contains('"research_minutes":0'));
     expect(canonical, contains('"learning_minutes":null'));
+  });
+
+  test('daily empty selected array differs from an unselected missing key', () {
+    String hash(Object value) =>
+        hashService.hashCanonicalJson(encoder.encode(value));
+    final selectedMissing = {
+      'data': {'today_metrics': <Object?>[]},
+    };
+    final unselected = {'data': <String, Object?>{}};
+
+    expect(hash(selectedMissing), isNot(hash(unselected)));
   });
 }

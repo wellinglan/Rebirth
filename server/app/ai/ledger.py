@@ -10,11 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.ai.errors import AiGatewayError
 from app.ai.observability import log_ai_event
+from app.ai.prompts import get_prompt
 from app.ai.schemas import (
+    AiGenerateRequest,
+    AiGenerateResponse,
     AiRequestStatusResponse,
-    AiWeeklyGenerateRequest,
-    AiWeeklyGenerateResponse,
-    AiWeeklyStructuredOutput,
 )
 from app.config import Settings
 from app.models import AiGenerationRequest
@@ -135,7 +135,7 @@ class AiRequestLedger:
         session: Session,
         *,
         user_id: str,
-        request: AiWeeklyGenerateRequest,
+        request: AiGenerateRequest,
         now: int,
     ) -> LedgerClaim:
         row = AiGenerationRequest(
@@ -225,7 +225,7 @@ class AiRequestLedger:
         self,
         session: Session,
         row: AiGenerationRequest,
-        result: AiWeeklyGenerateResponse,
+        result: AiGenerateResponse,
         *,
         now: int,
     ) -> None:
@@ -306,7 +306,7 @@ class AiRequestLedger:
 
     def replay_completed(
         self, row: AiGenerationRequest
-    ) -> AiWeeklyGenerateResponse:
+    ) -> AiGenerateResponse:
         if (
             row.result_purged_at is not None
             or row.report_content is None
@@ -314,12 +314,15 @@ class AiRequestLedger:
         ):
             raise AiGatewayError("result_expired", status_code=410)
         try:
-            structured = AiWeeklyStructuredOutput.model_validate_json(
+            prompt = get_prompt(row.report_type, row.prompt_version)
+            if prompt is None:
+                raise ValueError("unsupported stored AI report contract")
+            structured = prompt.output_model.model_validate_json(
                 row.structured_output_json
             )
         except Exception:
             raise AiGatewayError("response_invalid") from None
-        return AiWeeklyGenerateResponse(
+        return prompt.response_model(
             request_id=row.request_id,
             input_hash=row.input_hash,
             provider=row.provider or "unknown",
@@ -346,7 +349,10 @@ class AiRequestLedger:
             else:
                 content = row.report_content
                 try:
-                    structured = AiWeeklyStructuredOutput.model_validate_json(
+                    prompt = get_prompt(row.report_type, row.prompt_version)
+                    if prompt is None:
+                        raise ValueError("unsupported stored AI report contract")
+                    structured = prompt.output_model.model_validate_json(
                         row.structured_output_json
                     )
                 except Exception:
