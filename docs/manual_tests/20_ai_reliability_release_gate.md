@@ -17,7 +17,7 @@ Record only observed manual behavior. Automated tests and APK compilation do not
 | CI Flutter | PASS | Quality Run `29620976480`, Job `88015814552`; pub get, analyze, and test all ran successfully. |
 | CI Android build | PASS | Quality Run `29620976480`, Job `88015814568`; debug APK build completed in 4 minutes 37 seconds. |
 | Windows general manual regression | PASS | User-reported Windows run on 2026-07-20 passed all manual checks using the development Fake Provider. |
-| Android physical-device general regression | PENDING | The prior run found `PLAN-ANDROID-DATE-LAYOUT-001`. Sprint 8F.1 automated layout tests and release build pass, but the rebuilt arm64-v8a APK has not yet been installed and retested. |
+| Android physical-device general regression | PASS | User confirmed the rebuilt Sprint 8F.1 arm64-v8a release APK and Plan date-layout retest passed on 2026-07-20. |
 | Sprint 8F.1 automated blocker fix | PASS | Date layout tests pass at 320/360/412/720/1200px and text scales 1.0/1.3/1.5/2.0; date policy tests, analyze, full Flutter tests, and release builds pass. |
 
 ## Windows Manual Matrix
@@ -49,7 +49,7 @@ Record only observed manual behavior. Automated tests and APK compilation do not
 
 | # | Scenario | Result | Evidence | Defect ID |
 |---:|---|---|---|---|
-| 1 | Install arm64-v8a release APK | NOT EXECUTED | The rebuilt Sprint 8F.1 arm64-v8a release APK exists but has not yet been installed on the physical device. | - |
+| 1 | Install arm64-v8a release APK | PASS | User confirmed installation and physical-device execution of the rebuilt Sprint 8F.1 candidate. | - |
 | 2 | Configure runtime Server endpoint | PASS | User-reported Android physical-device execution on 2026-07-20. | - |
 | 3 | Log in with development account | PASS | User-reported Android physical-device execution on 2026-07-20. | - |
 | 4 | Enable AI Consent | PASS | User-reported Android physical-device execution on 2026-07-20. | - |
@@ -64,13 +64,13 @@ Record only observed manual behavior. Automated tests and APK compilation do not
 | 13 | Large font | PASS | User-reported Android physical-device execution on 2026-07-20. | - |
 | 14 | Full-page scrolling | PASS | User-reported Android physical-device execution on 2026-07-20. | - |
 | 15 | Bottom navigation | PASS | User-reported Android physical-device execution on 2026-07-20. | - |
-| 16 | No horizontal overflow | NOT EXECUTED | The rebuilt candidate passes automated responsive tests, but the Plan date fix awaits physical-device verification. | `PLAN-ANDROID-DATE-LAYOUT-001` |
+| 16 | No horizontal overflow | PASS | User confirmed Plan start/target dates, four-digit year, clear action, large text, scrolling, save, and restart persistence pass on the physical device. | `PLAN-ANDROID-DATE-LAYOUT-001` closed |
 | 17 | No unexpected exit | PASS | User-reported Android physical-device execution on 2026-07-20. | - |
 
 ## Release Decision
 
-Automated CI, local PostgreSQL/Fake full-stack verification, Sprint 8F.1 Flutter validation, and release builds pass. The user-reported Windows matrix is `20 PASS / 0 FAIL / 0 NOT EXECUTED`. The rebuilt Android candidate matrix is `15 PASS / 0 FAIL / 2 NOT EXECUTED`: installing the arm64-v8a release APK and physically verifying the Plan portrait date layout are still required. Real OpenAI Provider smoke remains `NOT EXECUTED` on both platforms and is optional; Fake Provider results do not represent it as a PASS.
+Local PostgreSQL/Fake full-stack verification, Sprint 8F.1 Flutter validation, and release builds pass. The user-reported Windows matrix is `20 PASS / 0 FAIL / 0 NOT EXECUTED`; the Android physical-device matrix is `17 PASS / 0 FAIL / 0 NOT EXECUTED`. Real OpenAI Provider smoke remains `NOT EXECUTED` on both platforms and is optional; Fake Provider results do not represent it as a PASS.
 
-The earlier 2026-07-20 manual run found `PLAN-ANDROID-DATE-LAYOUT-001`: in Android portrait, the Plan start/target date controls were compressed, the four-digit year wrapped vertically, and the clear action competed for the same horizontal space. Sprint 8F.1 moves the clear action outside the date field width allocation and stacks year above month/day below the responsive breakpoint. Automated verification is complete; physical-device verification is pending.
+The earlier 2026-07-20 manual run found `PLAN-ANDROID-DATE-LAYOUT-001`: in Android portrait, the Plan start/target date controls were compressed, the four-digit year wrapped vertically, and the clear action competed for the same horizontal space. Sprint 8F.1 moves the clear action outside the date field width allocation and stacks year above month/day below the responsive breakpoint. Automated and Android physical-device verification now pass, so the defect is closed.
 
-The Alpha Release Gate remains blocked until the rebuilt arm64-v8a release APK is installed and `PLAN-ANDROID-DATE-LAYOUT-001` passes the required physical-device retest. Do not create the `v0.7.0-alpha` tag before those two Android rows are updated to PASS. GitHub CI for the Sprint 8F.1 commit must also complete successfully before tagging.
+The only remaining Alpha Release Gate condition is a successful GitHub Quality Workflow for the pushed Sprint 8F.1 commits. Do not create the `v0.7.0-alpha` tag until that run is recorded as PASS.

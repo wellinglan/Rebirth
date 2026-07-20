@@ -58,3 +58,15 @@
 - 发布构建：Windows release 与 Android split-per-ABI release 均构建成功。
 - 真机状态：`AWAITING RETEST`。必须安装新的 `app-arm64-v8a-release.apk` 后重新执行本文件的 Android 竖屏布局检查。
 - 缺陷状态：`FIXED IN BUILD / NOT YET VERIFIED ON DEVICE`。真机复测通过前，不关闭 `PLAN-ANDROID-DATE-LAYOUT-001`。
+
+## Sprint 8F.1 Android 真机复测（2026-07-20）
+
+- 结果：PASS（用户确认）。
+- 安装产物：Sprint 8F.1 重建的 `app-arm64-v8a-release.apk`。
+- Plan 新建/编辑：PASS。
+- 开始日期与目标日期：PASS。
+- 四位年份水平完整显示：PASS。
+- 月份、日期与清除按钮：PASS，无宽度争抢。
+- 大字号与页面滚动：PASS。
+- 保存目标与重启持久化：PASS。
+- 缺陷状态：`PLAN-ANDROID-DATE-LAYOUT-001` 已通过 Android 真机回归，可以关闭。
