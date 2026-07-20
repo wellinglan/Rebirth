@@ -12,10 +12,10 @@ Record only observed manual behavior. Automated tests and APK compilation do not
 | Uvicorn multi-worker HTTP | PASS | 2 workers, 8 duplicate HTTP requests, 1 Ledger row, 1 provider-start event, final completed; temporary ports/workers were cleaned. |
 | Android release APK build | PASS | Sprint 8F.1 source `f7989ce` rebuilt arm64-v8a, armeabi-v7a, and x86_64 release APKs on 2026-07-20. |
 | OpenAI real smoke | NOT EXECUTED | Neither the Windows nor Android manual run used a real AI Provider; both used the development Fake Provider. Optional paid smoke remains unexecuted. |
-| CI Server SQLite | PASS | Quality Run `29620976480`, Job `88015814557`, completed in 21 seconds. |
-| CI PostgreSQL | PASS | Quality Run `29620976480`, Job `88015814524`; Alembic, postgres marker, and 2-worker script all ran successfully. |
-| CI Flutter | PASS | Quality Run `29620976480`, Job `88015814552`; pub get, analyze, and test all ran successfully. |
-| CI Android build | PASS | Quality Run `29620976480`, Job `88015814568`; debug APK build completed in 4 minutes 37 seconds. |
+| CI Server SQLite | PASS | Sprint 8F.1 Quality Run `29720778717`, Job `88283224592`, completed successfully. |
+| CI PostgreSQL | PASS | Sprint 8F.1 Quality Run `29720778717`, Job `88283224708`; multiprocessing and multi-worker verification completed successfully. |
+| CI Flutter | PASS | Sprint 8F.1 Quality Run `29720778717`, Job `88283224606`; analyze and test completed successfully. |
+| CI Android build | PASS | Sprint 8F.1 Quality Run `29720778717`, Job `88283224589`; Android debug build completed successfully. |
 | Windows general manual regression | PASS | User-reported Windows run on 2026-07-20 passed all manual checks using the development Fake Provider. |
 | Android physical-device general regression | PASS | User confirmed the rebuilt Sprint 8F.1 arm64-v8a release APK and Plan date-layout retest passed on 2026-07-20. |
 | Sprint 8F.1 automated blocker fix | PASS | Date layout tests pass at 320/360/412/720/1200px and text scales 1.0/1.3/1.5/2.0; date policy tests, analyze, full Flutter tests, and release builds pass. |
@@ -73,4 +73,4 @@ Local PostgreSQL/Fake full-stack verification, Sprint 8F.1 Flutter validation, a
 
 The earlier 2026-07-20 manual run found `PLAN-ANDROID-DATE-LAYOUT-001`: in Android portrait, the Plan start/target date controls were compressed, the four-digit year wrapped vertically, and the clear action competed for the same horizontal space. Sprint 8F.1 moves the clear action outside the date field width allocation and stacks year above month/day below the responsive breakpoint. Automated and Android physical-device verification now pass, so the defect is closed.
 
-The only remaining Alpha Release Gate condition is a successful GitHub Quality Workflow for the pushed Sprint 8F.1 commits. Do not create the `v0.7.0-alpha` tag until that run is recorded as PASS.
+GitHub Quality Workflow Run `29720778717` passed all four required jobs for pushed Sprint 8F.1 commit `b13cb5b9eb1adaffde42f31536cdde52c58f742b`. The Alpha Release Gate is PASS, and the `v0.7.0-alpha` tag may be created from the final verified commit.
