@@ -137,18 +137,92 @@ void main() {
       isNotNull,
     );
   });
+
+  for (final testCase in <(double, bool)>[
+    (320, true),
+    (360, true),
+    (412, true),
+    (720, false),
+    (1200, false),
+  ]) {
+    testWidgets(
+      '${testCase.$1}px dialog uses the expected responsive date layout',
+      (tester) async {
+        await _pumpDialog(tester, size: Size(testCase.$1, 1400));
+
+        for (final fieldId in ['planStartDate', 'planTargetDate']) {
+          expect(
+            find.byKey(
+              ValueKey(
+                '$fieldId${testCase.$2 ? 'StackedLayout' : 'InlineLayout'}',
+              ),
+            ),
+            findsOneWidget,
+          );
+          final yearText = tester.widget<Text>(
+            find.descendant(
+              of: find.byKey(ValueKey('${fieldId}Year')),
+              matching: find.text('2026'),
+            ),
+          );
+          expect(yearText.maxLines, 1);
+          expect(yearText.softWrap, isFalse);
+        }
+
+        final startRect = tester.getRect(
+          find.byKey(const ValueKey('planGoalStartDateField')),
+        );
+        final targetRect = tester.getRect(
+          find.byKey(const ValueKey('planGoalTargetDateField')),
+        );
+        expect(startRect.bottom, lessThan(targetRect.top));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final textScale in [1.0, 1.3, 1.5, 2.0]) {
+    testWidgets('$textScale text scale keeps the date dialog overflow-free', (
+      tester,
+    ) async {
+      await _pumpDialog(
+        tester,
+        size: const Size(720, 1600),
+        textScaleFactor: textScale,
+      );
+
+      final layoutSuffix = textScale > 1.3 ? 'StackedLayout' : 'InlineLayout';
+      expect(
+        find.byKey(ValueKey('planStartDate$layoutSuffix')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(ValueKey('planTargetDate$layoutSuffix')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
 
 Future<void> _pumpDialog(
   WidgetTester tester, {
   Future<void> Function(PlanGoalSaveData data)? onSubmit,
+  Size size = const Size(1000, 1200),
+  double textScaleFactor = 1,
 }) async {
-  tester.view.physicalSize = const Size(1000, 1200);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScaleFactor)),
+        child: child!,
+      ),
       home: Scaffold(
         body: PlanGoalFormDialog(
           existingGoal: null,

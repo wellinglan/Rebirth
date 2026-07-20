@@ -35,9 +35,12 @@ class PlanDatePartsField extends StatefulWidget {
 
 class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
   static const _dateTimeService = DateTimeService();
+  static const narrowLayoutBreakpoint = 440.0;
+  static const stackedTextScaleThreshold = 1.3;
 
   final _formFieldKey = GlobalKey<FormFieldState<String?>>();
   late final TextEditingController _manualController;
+  late final Map<_DatePart, FocusNode> _partFocusNodes;
   int? _year;
   int? _month;
   int? _day;
@@ -47,6 +50,7 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
   void initState() {
     super.initState();
     _manualController = TextEditingController();
+    _partFocusNodes = {for (final part in _DatePart.values) part: FocusNode()};
     _syncFromValue(widget.value);
   }
 
@@ -67,6 +71,9 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
   @override
   void dispose() {
     _manualController.dispose();
+    for (final focusNode in _partFocusNodes.values) {
+      focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -84,40 +91,82 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
       },
       builder: (field) {
         final colors = Theme.of(context).colorScheme;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.label, style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Row(
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(1);
+            final useStackedLayout =
+                constraints.maxWidth < narrowLayoutBreakpoint ||
+                textScale > stackedTextScaleThreshold;
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _buildPart(_DatePart.year)),
-                const SizedBox(width: 8),
-                Expanded(child: _buildPart(_DatePart.month)),
-                const SizedBox(width: 8),
-                Expanded(child: _buildPart(_DatePart.day)),
-                const SizedBox(width: 4),
-                IconButton(
-                  key: ValueKey('${widget.fieldId}Clear'),
-                  tooltip: '清空${widget.label}',
-                  onPressed: widget.enabled ? _clear : null,
-                  icon: const Icon(Icons.clear),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ),
+                    IconButton(
+                      key: ValueKey('${widget.fieldId}Clear'),
+                      tooltip: '清空${widget.label}',
+                      onPressed: widget.enabled ? _clear : null,
+                      icon: const Icon(Icons.clear),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                if (useStackedLayout)
+                  _buildStackedParts()
+                else
+                  _buildInlineParts(),
+                if (field.errorText != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    field.errorText!,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colors.error),
+                  ),
+                ],
               ],
-            ),
-            if (field.errorText != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                field.errorText!,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: colors.error),
-              ),
-            ],
-          ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildStackedParts() {
+    return Column(
+      key: ValueKey('${widget.fieldId}StackedLayout'),
+      children: [
+        SizedBox(width: double.infinity, child: _buildPart(_DatePart.year)),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildPart(_DatePart.month)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildPart(_DatePart.day)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineParts() {
+    return Row(
+      key: ValueKey('${widget.fieldId}InlineLayout'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 4, child: _buildPart(_DatePart.year)),
+        const SizedBox(width: 12),
+        Expanded(flex: 3, child: _buildPart(_DatePart.month)),
+        const SizedBox(width: 12),
+        Expanded(flex: 3, child: _buildPart(_DatePart.day)),
+      ],
     );
   }
 
@@ -140,19 +189,34 @@ class _PlanDatePartsFieldState extends State<PlanDatePartsField> {
     }
 
     final value = _valueFor(part);
-    return GestureDetector(
-      key: ValueKey('${widget.fieldId}${_partName(part)}'),
-      onTap: widget.enabled ? () => _openPicker(part) : null,
-      onDoubleTap: widget.enabled ? () => _beginManual(part) : null,
-      child: InputDecorator(
-        isEmpty: value == null,
-        decoration: InputDecoration(
-          labelText: _partLabel(part),
-          enabled: widget.enabled,
-          border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.expand_more, size: 18),
+    final currentValueLabel = value?.toString() ?? '未选择';
+    return Semantics(
+      label:
+          '${widget.label}${_partLabel(part)}，当前值$currentValueLabel，点击选择，双击手动输入',
+      button: true,
+      enabled: widget.enabled,
+      excludeSemantics: true,
+      child: InkWell(
+        key: ValueKey('${widget.fieldId}${_partName(part)}'),
+        focusNode: _partFocusNodes[part],
+        canRequestFocus: widget.enabled,
+        onTap: widget.enabled ? () => _openPicker(part) : null,
+        onDoubleTap: widget.enabled ? () => _beginManual(part) : null,
+        borderRadius: BorderRadius.circular(4),
+        child: InputDecorator(
+          isEmpty: value == null,
+          decoration: InputDecoration(
+            labelText: _partLabel(part),
+            enabled: widget.enabled,
+            border: const OutlineInputBorder(),
+            suffixIcon: const Icon(Icons.expand_more, size: 18),
+          ),
+          child: Text(
+            currentValueLabel == '未选择' ? '--' : currentValueLabel,
+            maxLines: 1,
+            softWrap: false,
+          ),
         ),
-        child: Text(value?.toString() ?? '--'),
       ),
     );
   }

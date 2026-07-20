@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/plan/presentation/widgets/plan_date_parts_field.dart';
 
@@ -111,7 +112,7 @@ void main() {
     await _pumpField(tester, value: '2026-07-14', enabled: false);
 
     for (final part in ['Year', 'Month', 'Day']) {
-      final gesture = tester.widget<GestureDetector>(
+      final gesture = tester.widget<InkWell>(
         find.byKey(ValueKey('testDate$part')),
       );
       expect(gesture.onTap, isNull);
@@ -127,6 +128,111 @@ void main() {
 
     expect(find.text('请选择日期'), findsOneWidget);
   });
+
+  for (final width in [320.0, 360.0, 412.0]) {
+    testWidgets('$width px stacks year above month and day without overflow', (
+      tester,
+    ) async {
+      await _pumpField(tester, value: '2026-07-14', size: Size(width, 900));
+
+      expect(
+        find.byKey(const ValueKey('testDateStackedLayout')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('testDateInlineLayout')), findsNothing);
+
+      final yearRect = tester.getRect(
+        find.byKey(const ValueKey('testDateYear')),
+      );
+      final monthRect = tester.getRect(
+        find.byKey(const ValueKey('testDateMonth')),
+      );
+      final dayRect = tester.getRect(find.byKey(const ValueKey('testDateDay')));
+      final clearRect = tester.getRect(
+        find.byKey(const ValueKey('testDateClear')),
+      );
+      expect(yearRect.bottom, lessThanOrEqualTo(monthRect.top));
+      expect(monthRect.top, closeTo(dayRect.top, 0.1));
+      expect(clearRect.bottom, lessThanOrEqualTo(yearRect.top));
+
+      final yearText = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('testDateYear')),
+          matching: find.text('2026'),
+        ),
+      );
+      expect(yearText.maxLines, 1);
+      expect(yearText.softWrap, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final width in [720.0, 1200.0]) {
+    testWidgets('$width px keeps a compact inline Windows layout', (
+      tester,
+    ) async {
+      await _pumpField(tester, value: '2026-07-14', size: Size(width, 900));
+
+      expect(
+        find.byKey(const ValueKey('testDateInlineLayout')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('testDateStackedLayout')), findsNothing);
+      final parts = ['Year', 'Month', 'Day']
+          .map((part) => tester.getRect(find.byKey(ValueKey('testDate$part'))))
+          .toList(growable: false);
+      expect(parts[0].top, closeTo(parts[1].top, 0.1));
+      expect(parts[1].top, closeTo(parts[2].top, 0.1));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('2.0 text scaling uses readable stacked controls', (
+    tester,
+  ) async {
+    await _pumpField(
+      tester,
+      value: '2026-07-14',
+      size: const Size(720, 1200),
+      textScaleFactor: 2,
+    );
+
+    expect(find.byKey(const ValueKey('testDateStackedLayout')), findsOneWidget);
+    expect(_partHasText('testDateYear', '2026'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('date parts preserve semantics and keyboard activation', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await _pumpField(tester, value: '2026-07-14');
+    final yearFinder = find.byKey(const ValueKey('testDateYear'));
+    final monthFinder = find.byKey(const ValueKey('testDateMonth'));
+    final year = tester.widget<InkWell>(yearFinder);
+    final month = tester.widget<InkWell>(monthFinder);
+
+    expect(tester.getSemantics(yearFinder).label, contains('测试日期年，当前值2026'));
+
+    year.focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(month.focusNode!.hasFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('testDateMonthPicker')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('testDateMonthOption8')));
+    await tester.pumpAndSettle();
+
+    year.focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('testDateYearPicker')), findsOneWidget);
+    semantics.dispose();
+  });
 }
 
 Future<void> _pumpField(
@@ -135,10 +241,22 @@ Future<void> _pumpField(
   ValueChanged<String?>? onChanged,
   bool enabled = true,
   bool isRequired = false,
+  Size size = const Size(1000, 900),
+  double textScaleFactor = 1,
 }) async {
   final formKey = GlobalKey<FormState>();
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScaleFactor)),
+        child: child!,
+      ),
       home: Scaffold(
         body: Form(
           key: formKey,
@@ -197,9 +315,7 @@ Future<void> _enterManualPart(
 }
 
 void _openManual(WidgetTester tester, String part) {
-  tester
-      .widget<GestureDetector>(find.byKey(ValueKey('testDate$part')))
-      .onDoubleTap!();
+  tester.widget<InkWell>(find.byKey(ValueKey('testDate$part'))).onDoubleTap!();
 }
 
 Future<void> _openPicker(WidgetTester tester, String part) async {
