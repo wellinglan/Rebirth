@@ -7,11 +7,15 @@ class AiScopeSelector extends StatelessWidget {
   const AiScopeSelector({
     required this.selectedScopes,
     required this.onChanged,
+    this.allowedScopes,
+    this.isDaily = false,
     super.key,
   });
 
   final Set<AiDataScope> selectedScopes;
   final void Function(AiDataScope scope, bool selected) onChanged;
+  final Set<AiDataScope>? allowedScopes;
+  final bool isDaily;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +31,9 @@ class AiScopeSelector extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        for (final option in AiScopeCatalog.options) ...[
+        for (final option in AiScopeCatalog.options.where(
+          (option) => allowedScopes?.contains(option.scope) ?? true,
+        )) ...[
           Semantics(
             key: ValueKey('aiScopeSemantics-${option.scope.contractValue}'),
             container: true,
@@ -49,7 +55,12 @@ class AiScopeSelector extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(option.description),
+                      Text(
+                        isDaily &&
+                                option.scope == AiDataScope.journalReflections
+                            ? '读取该日期已保存的五项结构化复盘回答。'
+                            : option.description,
+                      ),
                       const SizedBox(height: 4),
                       Text('包含：${option.includedFields}'),
                       const SizedBox(height: 4),

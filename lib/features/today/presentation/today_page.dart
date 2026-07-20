@@ -40,6 +40,8 @@ class TodayPage extends ConsumerWidget {
           entry: entry,
           onSave: (data) => _save(context, ref, data),
           onOpenHistory: () => context.push(RoutePaths.todayHistory),
+          onOpenDailyInsight: () =>
+              context.push(RoutePaths.aiCoachDaily(entry.recordDate)),
         ),
       ),
     );

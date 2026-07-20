@@ -2,7 +2,7 @@
 
 ## Scope
 
-Sprint 9A adds the typed, testable foundation for one manually requested `daily_insight`. It does not expose a Today, Journal, or AI Coach generation button and does not add chat, streaming, automatic generation, background work, Growth changes, sync, or source-record mutation. The existing Weekly UI and contract remain supported. Flutter `schemaVersion` remains 3.
+Sprint 9A added the typed, testable foundation for one manually requested `daily_insight`. Sprint 9B exposes that unchanged contract through explicit AI Coach, Today, and Journal entry points, local Preview, final confirmation, manual generation, recovery, History, and Detail. It does not add chat, streaming, automatic generation, background work, Growth changes, sync, or source-record mutation. The existing Weekly UI and contract remain supported. Flutter `schemaVersion` remains 3.
 
 ## Contract Identity
 
@@ -58,6 +58,12 @@ Daily reuses the durable `ai_generation_requests` ledger without a migration. A 
 
 The deterministic Fake Provider supports Daily `success`, `timeout`, `refusal`, `invalid`, and `unavailable` scenarios. Normal tests and CI do not call real OpenAI. PostgreSQL includes a four-process Daily marker proving one claim owner and one ledger row without a Python global lock.
 
-## Current Boundary
+## Sprint 9B Presentation Boundary
 
-Sprint 9A is a foundation only. Ordinary users cannot trigger Daily Insight in the app, and no automatic schedule exists. Real OpenAI smoke and Android physical-device use are separate opt-in/manual verification. Production still requires the security, retention, privacy, cost, and legal controls documented for the existing gateway.
+The Daily route is `/ai-coach/daily/:targetDate`. `targetDate` is validated by `DateTimeService` and remains fixed for that page instance. `AiInsightRequestContext` plus Riverpod family providers isolate Daily dates from each other and from Weekly.
+
+Daily shows only Today, Health, and Journal scopes, all off by default. Journal selection requires a non-persistent one-time confirmation. Preview calls only `buildDailyInsight`; no capabilities or network request occurs until a non-empty-source Preview reaches the explicit generation section. All-missing selections remain visible but are blocked from paid generation.
+
+Before final confirmation and again before submit, Flutter rebuilds the same context and selection and compares report type, period, prompt, scopes, and hash. A mismatch updates the local Preview, displays “当天记录已发生变化，请重新查看预览。”, and creates no pending report, Binding, or POST.
+
+No automatic schedule exists. Real OpenAI smoke and Android physical-device use remain separate opt-in/manual verification. Production still requires the security, retention, privacy, cost, and legal controls documented for the existing gateway.

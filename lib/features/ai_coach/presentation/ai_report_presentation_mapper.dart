@@ -10,6 +10,7 @@ final class AiReportPresentationMapper {
   AiReportListItemModel toListItem(AiReport report) {
     return AiReportListItemModel(
       id: report.id,
+      reportType: report.reportType,
       reportTypeLabel: AiCoachFormatters.reportType(report.reportType),
       periodStartDate: report.periodStartDate,
       periodEndDate: report.periodEndDate,
@@ -29,6 +30,7 @@ final class AiReportPresentationMapper {
   AiReportDetailModel toDetail(AiReport report) {
     return AiReportDetailModel(
       id: report.id,
+      reportType: report.reportType,
       reportTypeLabel: AiCoachFormatters.reportType(report.reportType),
       status: report.status,
       statusLabel: AiCoachFormatters.reportStatus(report.status),

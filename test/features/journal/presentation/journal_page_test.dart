@@ -54,6 +54,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('openDailyInsightFromJournalButton')),
+      findsOneWidget,
+    );
     expect(find.text('最近复盘'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('journalHistoryEmptyState')),
@@ -122,6 +126,30 @@ void main() {
     expect(find.text('草稿'), findsNothing);
   });
 
+  testWidgets('Daily Insight entry warns before ignoring unsaved edits', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(entry: _sampleEntry());
+    await _pumpJournalPage(tester, repository);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('journalLearningField')),
+      '尚未保存的新内容',
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('openDailyInsightFromJournalButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('journalUnsavedDailyInsightDialog')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('只读取已经保存'), findsOneWidget);
+    expect(find.text('尚未保存的新内容'), findsOneWidget);
+  });
+
   testWidgets('tapping history opens a read-only detail dialog', (
     tester,
   ) async {
@@ -134,6 +162,7 @@ void main() {
     await tester.pumpAndSettle();
     final item = find.byKey(const ValueKey('journalHistoryItem_journal-id'));
     await Scrollable.ensureVisible(tester.element(item), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(item);
     await tester.pumpAndSettle();
 

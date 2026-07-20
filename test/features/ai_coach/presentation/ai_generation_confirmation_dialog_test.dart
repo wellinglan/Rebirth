@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/presentation/widgets/ai_generation_confirmation_dialog.dart';
 
 import '../ai_coach_test_support.dart';
@@ -55,10 +56,7 @@ void main() {
     ]) {
       expect(find.textContaining(text), findsOneWidget);
     }
-    expect(
-      find.byKey(const ValueKey('aiJournalFinalWarning')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('aiJournalFinalWarning')), findsOneWidget);
     final semantics = tester.widget<Semantics>(
       find.byKey(const ValueKey('aiGenerationConfirmationSemantics')),
     );
@@ -77,9 +75,7 @@ void main() {
               onPressed: () async {
                 result = await showAiGenerationConfirmationDialog(
                   context,
-                  bundle: buildAiBundle(
-                    scopes: {AiDataScope.growthSummary},
-                  ),
+                  bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
                   capabilities: _capabilities(),
                 );
               },
@@ -112,9 +108,7 @@ void main() {
               onPressed: () async {
                 result = await showAiGenerationConfirmationDialog(
                   context,
-                  bundle: buildAiBundle(
-                    scopes: {AiDataScope.growthSummary},
-                  ),
+                  bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
                   capabilities: _capabilities(),
                 );
               },
@@ -129,6 +123,42 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('confirmAiGenerationButton')));
     await tester.pumpAndSettle();
     expect(result, isTrue);
+  });
+
+  testWidgets('Daily confirmation shows single date and source count', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => FilledButton(
+              onPressed: () => showAiGenerationConfirmationDialog(
+                context,
+                bundle: buildAiBundle(
+                  reportType: AiReportType.dailyInsight,
+                  scopes: {AiDataScope.todayMetrics},
+                ),
+                capabilities: _capabilities(),
+              ),
+              child: const Text('Open Daily'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open Daily'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('报告类型：每日洞察'), findsOneWidget);
+    expect(find.text('目标日期：2026-07-16'), findsOneWidget);
+    expect(find.text('来源记录：1 条'), findsOneWidget);
+    expect(find.textContaining('2026-07-16 至'), findsNothing);
+    expect(find.text('确认并生成每日洞察'), findsOneWidget);
+    final semantics = tester.widget<Semantics>(
+      find.byKey(const ValueKey('aiGenerationConfirmationSemantics')),
+    );
+    expect(semantics.properties.label, 'AI 每日洞察最终发送确认');
   });
 
   testWidgets('dialog is scrollable on a narrow high-text viewport', (

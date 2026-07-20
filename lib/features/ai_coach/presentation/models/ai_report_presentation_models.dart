@@ -1,8 +1,10 @@
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 
 final class AiReportListItemModel {
   const AiReportListItemModel({
     required this.id,
+    required this.reportType,
     required this.reportTypeLabel,
     required this.periodStartDate,
     required this.periodEndDate,
@@ -17,6 +19,7 @@ final class AiReportListItemModel {
   });
 
   final String id;
+  final AiReportType reportType;
   final String reportTypeLabel;
   final String periodStartDate;
   final String periodEndDate;
@@ -28,11 +31,17 @@ final class AiReportListItemModel {
   final String shortInputHash;
   final bool hasInputSnapshot;
   final String? contentPreview;
+
+  bool get isDaily => reportType == AiReportType.dailyInsight;
+
+  String get periodLabel =>
+      isDaily ? periodStartDate : '$periodStartDate 至 $periodEndDate';
 }
 
 final class AiReportDetailModel {
   const AiReportDetailModel({
     required this.id,
+    required this.reportType,
     required this.reportTypeLabel,
     required this.status,
     required this.statusLabel,
@@ -51,6 +60,7 @@ final class AiReportDetailModel {
   });
 
   final String id;
+  final AiReportType reportType;
   final String reportTypeLabel;
   final AiReportStatus status;
   final String statusLabel;
@@ -66,4 +76,9 @@ final class AiReportDetailModel {
   final bool hasStructuredOutput;
   final String? failureMessage;
   final bool hasInputSnapshot;
+
+  bool get isDaily => reportType == AiReportType.dailyInsight;
+
+  String get periodLabel =>
+      isDaily ? periodStartDate : '$periodStartDate 至 $periodEndDate';
 }

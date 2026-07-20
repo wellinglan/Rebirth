@@ -7,16 +7,24 @@ import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
 import '../ai_manual_generation_controller.dart';
 import '../ai_manual_generation_view_state.dart';
+import '../models/ai_insight_request_context.dart';
 import 'ai_generation_confirmation_dialog.dart';
 
 class AiGenerationSection extends ConsumerWidget {
-  const AiGenerationSection({required this.bundle, super.key});
+  const AiGenerationSection({
+    required this.bundle,
+    this.requestContext = const AiInsightRequestContext.weekly(),
+    super.key,
+  });
 
   final AiCoachInputBundle bundle;
+  final AiInsightRequestContext requestContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final generation = ref.watch(aiManualGenerationControllerProvider);
+    final generation = ref.watch(
+      aiManualGenerationControllerFamily(requestContext),
+    );
     return Card(
       key: const ValueKey('aiGenerationSection'),
       child: Padding(
@@ -35,7 +43,9 @@ class AiGenerationSection extends ConsumerWidget {
           error: (error, stackTrace) => _RetryMessage(
             message: '暂时无法读取服务器 AI 能力。',
             onRetry: () => ref
-                .read(aiManualGenerationControllerProvider.notifier)
+                .read(
+                  aiManualGenerationControllerFamily(requestContext).notifier,
+                )
                 .reloadCapabilities(),
           ),
           data: (state) => _content(context, ref, state),
@@ -54,21 +64,23 @@ class AiGenerationSection extends ConsumerWidget {
         return _RetryMessage(
           message: '请先登录 Rebirth 云账号。',
           onRetry: () => ref
-              .read(aiManualGenerationControllerProvider.notifier)
+              .read(aiManualGenerationControllerFamily(requestContext).notifier)
               .reloadCapabilities(),
         );
       case AiManualGenerationPhase.disabled:
         return const Text('当前服务器未启用 AI 生成，本地预览仍可使用。');
       case AiManualGenerationPhase.submitting:
-        return const Column(
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            LinearProgressIndicator(key: ValueKey('aiGenerationProgress')),
-            SizedBox(height: 12),
+            const LinearProgressIndicator(
+              key: ValueKey('aiGenerationProgress'),
+            ),
+            const SizedBox(height: 12),
             FilledButton(
-              key: ValueKey('generateWeeklyReportButton'),
+              key: _generateButtonKey,
               onPressed: null,
-              child: Text('生成中...'),
+              child: const Text('生成中...'),
             ),
           ],
         );
@@ -105,7 +117,11 @@ class AiGenerationSection extends ConsumerWidget {
             else
               OutlinedButton.icon(
                 onPressed: () => ref
-                    .read(aiManualGenerationControllerProvider.notifier)
+                    .read(
+                      aiManualGenerationControllerFamily(
+                        requestContext,
+                      ).notifier,
+                    )
                     .reloadCapabilities(),
                 icon: const Icon(Icons.refresh),
                 label: const Text('重试检查'),
@@ -129,25 +145,25 @@ class AiGenerationSection extends ConsumerWidget {
             Text('${capabilities.providerLabel} · ${capabilities.model}'),
             const SizedBox(height: 12),
             FilledButton.icon(
-              key: const ValueKey('generateWeeklyReportButton'),
-              onPressed: () => _confirmAndSubmit(
-                context,
-                ref,
-              ),
+              key: _generateButtonKey,
+              onPressed: () => _confirmAndSubmit(context, ref),
               icon: const Icon(Icons.auto_awesome_outlined),
-              label: const Text('生成每周回顾'),
+              label: Text(requestContext.isDaily ? '生成每日洞察' : '生成每周回顾'),
             ),
           ],
         );
     }
   }
 
-  Future<void> _confirmAndSubmit(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  ValueKey<String> get _generateButtonKey => ValueKey(
+    requestContext.isDaily
+        ? 'generateDailyInsightButton'
+        : 'generateWeeklyReportButton',
+  );
+
+  Future<void> _confirmAndSubmit(BuildContext context, WidgetRef ref) async {
     final controller = ref.read(
-      aiManualGenerationControllerProvider.notifier,
+      aiManualGenerationControllerFamily(requestContext).notifier,
     );
     final capabilities = await controller.prepareForConfirmation(bundle);
     if (capabilities == null || !context.mounted) return;
@@ -162,12 +178,16 @@ class AiGenerationSection extends ConsumerWidget {
     if (outcome.completed) {
       await context.push(RoutePaths.aiCoachReport(outcome.reportId));
     } else if (outcome.awaitingRecovery) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请求结果待确认，请在本地报告中检查服务器状态。')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请求结果待确认，请在本地报告中检查服务器状态。')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('每周回顾生成失败，已保存受控失败记录。')),
+        SnackBar(
+          content: Text(
+            '${requestContext.isDaily ? '每日洞察' : '每周回顾'}生成失败，已保存受控失败记录。',
+          ),
+        ),
       );
     }
   }
@@ -178,10 +198,10 @@ class AiGenerationSection extends ConsumerWidget {
     AiReportFailureCode.providerTimeout => '生成请求超时；为避免重复费用，系统不会自动重试。',
     AiReportFailureCode.providerRateLimited => 'AI Provider 当前请求较多，请稍后手动重试。',
     AiReportFailureCode.providerRefused => 'AI Provider 拒绝了本次生成请求。',
-    AiReportFailureCode.providerAuthenticationFailed => '服务器暂时无法认证 AI Provider。',
+    AiReportFailureCode.providerAuthenticationFailed =>
+      '服务器暂时无法认证 AI Provider。',
     AiReportFailureCode.responseInvalid => 'AI Provider 返回内容未通过结构校验。',
-    AiReportFailureCode.outcomeUnknown =>
-      '无法确定 Provider 是否产生过结果或费用；不会自动重试。',
+    AiReportFailureCode.outcomeUnknown => '无法确定 Provider 是否产生过结果或费用；不会自动重试。',
     AiReportFailureCode.resultExpired => '服务器临时结果已过保留期，无法恢复正文。',
     AiReportFailureCode.requestBindingFailed => '无法保存恢复信息，未向服务器发送生成请求。',
     AiReportFailureCode.networkOutcomeUnknown => '网络中断，请检查服务器状态。',
@@ -189,7 +209,7 @@ class AiGenerationSection extends ConsumerWidget {
     AiReportFailureCode.unsupportedReportType => '服务器不支持当前报告类型。',
     AiReportFailureCode.unsupportedScope => '服务器不支持当前数据范围。',
     AiReportFailureCode.inputHashMismatch => '服务器校验输入 Hash 失败。',
-    _ => '每周回顾暂时无法生成，请检查服务器后手动重试。',
+    _ => '${requestContext.isDaily ? '每日洞察' : '每周回顾'}暂时无法生成，请检查服务器后手动重试。',
   };
 }
 

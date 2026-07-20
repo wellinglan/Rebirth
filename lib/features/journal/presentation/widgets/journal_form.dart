@@ -6,10 +6,19 @@ import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'journal_question_field.dart';
 
 class JournalForm extends StatefulWidget {
-  const JournalForm({required this.entry, required this.onSave, super.key});
+  const JournalForm({
+    required this.entry,
+    required this.recordDate,
+    required this.onSave,
+    this.onOpenDailyInsight,
+    super.key,
+  });
 
   final JournalEntry? entry;
+  final String recordDate;
   final Future<void> Function(JournalSaveData data) onSave;
+  final void Function(String recordDate, bool hasUnsavedChanges)?
+  onOpenDailyInsight;
 
   @override
   State<JournalForm> createState() => _JournalFormState();
@@ -74,7 +83,24 @@ class _JournalFormState extends State<JournalForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('今日复盘', style: theme.textTheme.titleLarge),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text('今日复盘', style: theme.textTheme.titleLarge),
+                  ),
+                  if (widget.onOpenDailyInsight != null)
+                    IconButton(
+                      key: const ValueKey('openDailyInsightFromJournalButton'),
+                      tooltip: '生成该日洞察（仅读取已保存记录）',
+                      onPressed: () => widget.onOpenDailyInsight!(
+                        widget.recordDate,
+                        _hasUnsavedChanges,
+                      ),
+                      icon: const Icon(Icons.auto_awesome_outlined),
+                    ),
+                ],
+              ),
               const SizedBox(height: 6),
               Text(
                 widget.entry?.entryDate ?? '写下今天值得理解的部分',
@@ -210,6 +236,23 @@ class _JournalFormState extends State<JournalForm> {
     _emotionController.text = entry?.emotionSource ?? '';
     _learningController.text = entry?.learning ?? '';
     _adjustmentController.text = entry?.tomorrowAdjustment ?? '';
+  }
+
+  bool get _hasUnsavedChanges {
+    final saved = <String?>[
+      widget.entry?.mostImportantAccomplishment,
+      widget.entry?.mostDrainingEvent,
+      widget.entry?.emotionSource,
+      widget.entry?.learning,
+      widget.entry?.tomorrowAdjustment,
+    ];
+    final current = _controllers
+        .map((controller) => _nullableText(controller.text))
+        .toList(growable: false);
+    for (var index = 0; index < current.length; index++) {
+      if (current[index] != saved[index]) return true;
+    }
+    return false;
   }
 
   String? _nullableText(String value) {

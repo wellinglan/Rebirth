@@ -50,6 +50,10 @@ void main() {
       find.byKey(const ValueKey('openTodayHistoryButton')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('openDailyInsightFromTodayButton')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('TodayPage displays values from an existing TodayEntry', (

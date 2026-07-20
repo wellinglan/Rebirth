@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 
 import 'ai_request_preview_controller.dart';
@@ -90,16 +91,42 @@ class _RequestPreviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final previewState = ref.watch(aiRequestPreviewControllerProvider);
-    return previewState.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(key: ValueKey('aiPreviewLoading')),
-      ),
-      error: (error, stackTrace) => _PreviewAuthorizationError(
-        onRetry: () => ref
-            .read(aiRequestPreviewControllerProvider.notifier)
-            .reloadAuthorization(),
-      ),
-      data: (state) => _PreviewContent(state: state),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const ValueKey('openDailyInsightFromAiCoachButton'),
+              onPressed: () {
+                final targetDate = ref
+                    .read(dateTimeServiceProvider)
+                    .currentSnapshot()
+                    .localDateString;
+                context.push(RoutePaths.aiCoachDaily(targetDate));
+              },
+              icon: const Icon(Icons.today_outlined),
+              label: const Text('手动生成每日洞察'),
+            ),
+          ),
+        ),
+        Expanded(
+          child: previewState.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                key: ValueKey('aiPreviewLoading'),
+              ),
+            ),
+            error: (error, stackTrace) => _PreviewAuthorizationError(
+              onRetry: () => ref
+                  .read(aiRequestPreviewControllerProvider.notifier)
+                  .reloadAuthorization(),
+            ),
+            data: (state) => _PreviewContent(state: state),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -208,7 +235,8 @@ class _AuthorizedPreview extends ConsumerWidget {
             report: state.reusableCompletedReport,
             onOpenReport: (id) => context.push(RoutePaths.aiCoachReport(id)),
           ),
-          if (state.reusableCompletedReport == null && state.bundle != null) ...[
+          if (state.reusableCompletedReport == null &&
+              state.bundle != null) ...[
             const SizedBox(height: 16),
             AiGenerationSection(bundle: state.bundle!),
           ],

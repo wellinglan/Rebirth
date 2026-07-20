@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
@@ -46,7 +48,14 @@ class JournalPage extends ConsumerWidget {
           children: [
             JournalForm(
               entry: entry,
+              recordDate: entry?.entryDate ?? today,
               onSave: (data) => _saveTodayEntry(ref, data),
+              onOpenDailyInsight: (recordDate, hasUnsavedChanges) =>
+                  _openDailyInsight(
+                    context,
+                    recordDate,
+                    hasUnsavedChanges: hasUnsavedChanges,
+                  ),
             ),
             const Divider(height: 1),
             JournalHistoryList(
@@ -67,6 +76,40 @@ class JournalPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openDailyInsight(
+    BuildContext context,
+    String recordDate, {
+    required bool hasUnsavedChanges,
+  }) async {
+    if (hasUnsavedChanges) {
+      final continueWithSaved =
+          await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              key: const ValueKey('journalUnsavedDailyInsightDialog'),
+              title: const Text('存在未保存的复盘修改'),
+              content: const Text(
+                '每日洞察只读取已经保存的 Journal 记录。请先保存，或继续使用上一次已保存的内容。',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('返回保存'),
+                ),
+                FilledButton(
+                  key: const ValueKey('continueWithSavedJournalButton'),
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('使用已保存内容'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+      if (!continueWithSaved || !context.mounted) return;
+    }
+    await context.push(RoutePaths.aiCoachDaily(recordDate));
   }
 
   Future<void> _saveTodayEntry(WidgetRef ref, JournalSaveData data) async {

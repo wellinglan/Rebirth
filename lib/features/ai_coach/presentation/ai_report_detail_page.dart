@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
@@ -71,9 +72,8 @@ class _DetailContent extends ConsumerWidget {
                       children: [
                         _DetailLine(label: '状态', value: detail.statusLabel),
                         _DetailLine(
-                          label: '日期范围',
-                          value:
-                              '${detail.periodStartDate} 至 ${detail.periodEndDate}',
+                          label: detail.isDaily ? '目标日期' : '日期范围',
+                          value: detail.periodLabel,
                         ),
                         _DetailLine(
                           label: 'Prompt Version',
@@ -117,6 +117,27 @@ class _DetailContent extends ConsumerWidget {
                       .checkPending(detail.id),
                 ),
                 const SizedBox(height: 16),
+                if (detail.isDaily) ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        key: const ValueKey('openDailySourceTodayButton'),
+                        onPressed: () => context.go(RoutePaths.today),
+                        icon: const Icon(Icons.today_outlined),
+                        label: Text('打开 Today（${detail.periodStartDate}）'),
+                      ),
+                      OutlinedButton.icon(
+                        key: const ValueKey('openDailySourceJournalButton'),
+                        onPressed: () => context.go(RoutePaths.journal),
+                        icon: const Icon(Icons.menu_book_outlined),
+                        label: Text('打开 Journal（${detail.periodStartDate}）'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 const Card(
                   child: Padding(
                     padding: EdgeInsets.all(16),
@@ -212,8 +233,7 @@ class _StatusContent extends StatelessWidget {
   }
 
   String _pendingMessage(AiPendingRecoveryState? state) => switch (state) {
-    AiPendingRecoveryState.processing =>
-      '服务器仍在处理；这不代表请求必然会完成。',
+    AiPendingRecoveryState.processing => '服务器仍在处理；这不代表请求必然会完成。',
     AiPendingRecoveryState.endpointMismatch => '请切回原服务器和账号检查状态。',
     AiPendingRecoveryState.accountMismatch => '请切回原服务器和账号检查状态。',
     AiPendingRecoveryState.missingBinding => '缺少请求绑定，无法自动确认。',

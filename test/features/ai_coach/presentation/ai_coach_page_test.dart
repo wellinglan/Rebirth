@@ -12,6 +12,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
 
@@ -259,6 +260,46 @@ void main() {
     expect(reports.deleteCalls, 0);
   });
 
+  testWidgets('history mixes Daily single dates with Weekly ranges', (
+    tester,
+  ) async {
+    final reports = FakeAiReportRepository(
+      reports: [
+        buildAiReport(
+          id: 'daily',
+          reportType: AiReportType.dailyInsight,
+          targetDate: '2026-07-16',
+        ),
+        buildAiReport(id: 'weekly'),
+      ],
+    );
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: reports,
+    );
+    await tester.tap(find.widgetWithText(Tab, '本地报告'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('每日洞察'), findsOneWidget);
+    expect(find.text('每周回顾'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('aiReportCard-daily')),
+        matching: find.text('2026-07-16'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('aiReportCard-daily')),
+        matching: find.textContaining('至'),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets(
     'report detail handles completed, pending, failed, and invalid IDs',
     (tester) async {
@@ -301,6 +342,34 @@ void main() {
       );
     },
   );
+
+  testWidgets('Daily detail uses one date and exposes source navigation', (
+    tester,
+  ) async {
+    final reports = FakeAiReportRepository(
+      reports: [
+        buildAiReport(
+          id: 'daily-detail',
+          reportType: AiReportType.dailyInsight,
+          targetDate: '2026-07-16',
+        ),
+      ],
+    );
+    await _pumpDetail(tester, reports, 'daily-detail');
+
+    expect(find.text('每日洞察'), findsOneWidget);
+    expect(find.text('目标日期：2026-07-16'), findsOneWidget);
+    expect(find.textContaining('2026-07-16 至'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('openDailySourceTodayButton')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('openDailySourceJournalButton')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('明日建议'), findsNothing);
+  });
 
   testWidgets(
     'detail soft delete returns to history without touching other reports',

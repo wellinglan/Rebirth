@@ -12,6 +12,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_mode.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_input_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
@@ -61,6 +62,8 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
   final List<Future<AiCoachInputBundle>> queuedResponses = [];
   final List<AiDataSelection> selections = [];
   int buildCalls = 0;
+  int weeklyBuildCalls = 0;
+  int dailyBuildCalls = 0;
 
   @override
   Future<AiCoachInputBundle> build({
@@ -75,6 +78,7 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
     required AiDataSelection selection,
   }) async {
     buildCalls += 1;
+    weeklyBuildCalls += 1;
     selections.add(selection);
     if (queuedResponses.isNotEmpty) {
       return queuedResponses.removeAt(0);
@@ -89,6 +93,7 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
     required AiDataSelection selection,
   }) async {
     buildCalls += 1;
+    dailyBuildCalls += 1;
     selections.add(selection);
     if (queuedResponses.isNotEmpty) {
       return queuedResponses.removeAt(0);
@@ -276,6 +281,8 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
   Completer<AiRemoteRequestResult>? statusCompleter;
   int capabilitiesCalls = 0;
   int generationCalls = 0;
+  int weeklyGenerationCalls = 0;
+  int dailyGenerationCalls = 0;
   int statusCalls = 0;
   String? lastRequestId;
   AiCoachInputBundle? lastBundle;
@@ -293,6 +300,7 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
     required AiCoachInputBundle bundle,
   }) async {
     generationCalls += 1;
+    weeklyGenerationCalls += 1;
     lastRequestId = requestId;
     lastBundle = bundle;
     if (generationError case final error?) throw error;
@@ -322,8 +330,32 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
   Future<AiRemoteRequestResult> generateDaily({
     required String requestId,
     required AiCoachInputBundle bundle,
-  }) {
-    return generateWeekly(requestId: requestId, bundle: bundle);
+  }) async {
+    generationCalls += 1;
+    dailyGenerationCalls += 1;
+    lastRequestId = requestId;
+    lastBundle = bundle;
+    if (generationError case final error?) throw error;
+    final completed = AiGenerationResult(
+      requestId: requestId,
+      reportType: 'daily_insight',
+      promptVersion: bundle.promptVersion,
+      inputHash: bundle.inputHash,
+      provider: 'fake',
+      model: 'deterministic-test-provider',
+      outputSchemaVersion: 1,
+      reportContent: '# 开发测试每日洞察',
+      structuredOutputJson:
+          '{"title":"测试","summary":"测试摘要","observations":[],"suggestions":[],"data_limitations":[]}',
+    );
+    return AiRemoteRequestResult(
+      status: AiRemoteRequestStatus.completed,
+      requestId: requestId,
+      inputHash: bundle.inputHash,
+      reportType: 'daily_insight',
+      promptVersion: bundle.promptVersion,
+      completedResult: completed,
+    );
   }
 
   @override
@@ -393,12 +425,14 @@ final class FakeAuthSessionStore implements AuthSessionStore {
 
 AiCoachInputBundle buildAiBundle({
   Set<AiDataScope>? scopes,
+  AiReportType reportType = AiReportType.weeklyReport,
+  String targetDate = '2026-07-16',
+  int sourceCount = 1,
   String hash =
       '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
   String canonicalJson = '{"journal":"private canonical content"}',
 }) {
-  final selected =
-      scopes ?? AiDataScope.values.where((scope) => scope.supported).toSet();
+  final selected = scopes ?? AiInputContract.supportedScopesFor(reportType);
   final data = <String, Object?>{};
   if (selected.contains(AiDataScope.growthSummary)) {
     data['growth_summary'] = {
@@ -476,19 +510,35 @@ AiCoachInputBundle buildAiBundle({
     ];
   }
   return AiCoachInputBundle(
-    reportType: AiReportType.weeklyReport,
-    promptVersion: 'weekly-report-v1',
-    periodStartDate: '2026-07-10',
-    periodEndDate: '2026-07-16',
+    reportType: reportType,
+    promptVersion: AiInputContract.promptVersionFor(reportType),
+    periodStartDate: reportType == AiReportType.dailyInsight
+        ? targetDate
+        : '2026-07-10',
+    periodEndDate: reportType == AiReportType.dailyInsight
+        ? targetDate
+        : '2026-07-16',
     selection: AiDataSelection(scopes: selected),
-    sources: [
-      AiInputSourceRef(table: 'today_records', id: 'private-id', updatedAt: 1),
-    ],
+    sources: List.generate(
+      sourceCount,
+      (index) => AiInputSourceRef(
+        table: 'today_records',
+        id: 'private-id-$index',
+        updatedAt: 1,
+      ),
+    ),
     canonicalPayload: {
       'schema_version': 1,
-      'report_type': 'weekly_report',
-      'prompt_version': 'weekly-report-v1',
-      'period': {'start_date': '2026-07-10', 'end_date': '2026-07-16'},
+      'report_type': reportType.databaseValue,
+      'prompt_version': AiInputContract.promptVersionFor(reportType),
+      'period': {
+        'start_date': reportType == AiReportType.dailyInsight
+            ? targetDate
+            : '2026-07-10',
+        'end_date': reportType == AiReportType.dailyInsight
+            ? targetDate
+            : '2026-07-16',
+      },
       'scopes': selected.map((scope) => scope.contractValue).toList(),
       'data': data,
       'sources': const [],
@@ -504,6 +554,8 @@ AiCoachInputBundle buildAiBundle({
 
 AiReport buildAiReport({
   required String id,
+  AiReportType reportType = AiReportType.weeklyReport,
+  String? targetDate,
   AiReportStatus status = AiReportStatus.completed,
   int requestedAt = 1784163600000,
   bool hasInputSnapshot = false,
@@ -513,15 +565,19 @@ AiReport buildAiReport({
   return AiReport(
     id: id,
     userId: 'private-user-id',
-    reportType: AiReportType.weeklyReport,
-    periodStartDate: '2026-07-10',
-    periodEndDate: '2026-07-16',
+    reportType: reportType,
+    periodStartDate: reportType == AiReportType.dailyInsight
+        ? (targetDate ?? '2026-07-16')
+        : '2026-07-10',
+    periodEndDate: reportType == AiReportType.dailyInsight
+        ? (targetDate ?? '2026-07-16')
+        : '2026-07-16',
     inputSources: [
       AiInputSourceRef(table: 'today_records', id: 'source-id', updatedAt: 1),
     ],
     inputHash:
         '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
-    promptVersion: 'weekly-report-v1',
+    promptVersion: AiInputContract.promptVersionFor(reportType),
     provider: provider,
     model: model,
     generationMode: AiGenerationMode.manual,

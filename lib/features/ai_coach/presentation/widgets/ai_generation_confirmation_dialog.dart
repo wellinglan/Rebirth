@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 
 import '../ai_coach_formatters.dart';
 
@@ -32,13 +33,14 @@ class AiGenerationConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDaily = bundle.reportType == AiReportType.dailyInsight;
+    final reportLabel = isDaily ? '每日洞察' : '每周回顾';
     final journalIncluded = bundle.selection.scopes.contains(
       AiDataScope.journalReflections,
     );
-    final scopes = bundle.selection.scopes
-        .map(_scopeLabel)
-        .toList(growable: false)
-      ..sort();
+    final scopes =
+        bundle.selection.scopes.map(_scopeLabel).toList(growable: false)
+          ..sort();
     return AlertDialog(
       key: const ValueKey('aiGenerationConfirmationDialog'),
       title: const Text('确认发送并生成'),
@@ -48,24 +50,24 @@ class AiGenerationConfirmationDialog extends StatelessWidget {
           key: const ValueKey('aiGenerationConfirmationScrollView'),
           child: Semantics(
             key: const ValueKey('aiGenerationConfirmationSemantics'),
-            label: 'AI 每周回顾最终发送确认',
+            label: 'AI $reportLabel最终发送确认',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _line('报告类型', '每周回顾'),
+                _line('报告类型', reportLabel),
                 _line(
-                  '日期范围',
-                  '${bundle.periodStartDate} 至 ${bundle.periodEndDate}',
+                  isDaily ? '目标日期' : '日期范围',
+                  isDaily
+                      ? bundle.periodStartDate
+                      : '${bundle.periodStartDate} 至 ${bundle.periodEndDate}',
                 ),
                 _line('Provider', capabilities.providerLabel),
                 _line('Model', capabilities.model ?? '未配置'),
                 _line('数据范围', scopes.join('、')),
-                _line(
-                  '输入 Hash',
-                  AiCoachFormatters.shortHash(bundle.inputHash),
-                ),
+                _line('输入 Hash', AiCoachFormatters.shortHash(bundle.inputHash)),
                 _line('Journal', journalIncluded ? '包含' : '不包含'),
+                _line('来源记录', '${bundle.sources.length} 条'),
                 const SizedBox(height: 12),
                 const Text('数据将发送到 Rebirth Server，再由服务器向 AI Provider 转发最小化字段。'),
                 const SizedBox(height: 6),
@@ -89,7 +91,9 @@ class AiGenerationConfirmationDialog extends StatelessWidget {
                 if (journalIncluded) ...[
                   const SizedBox(height: 10),
                   Text(
-                    '将发送最近 7 天已选择的结构化 Journal 文本。',
+                    isDaily
+                        ? '将发送该日期已保存的五项结构化 Journal 回答。'
+                        : '将发送最近 7 天已选择的结构化 Journal 文本。',
                     key: const ValueKey('aiJournalFinalWarning'),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
@@ -111,7 +115,7 @@ class AiGenerationConfirmationDialog extends StatelessWidget {
         FilledButton(
           key: const ValueKey('confirmAiGenerationButton'),
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('确认并生成每周回顾'),
+          child: Text('确认并生成$reportLabel'),
         ),
       ],
     );

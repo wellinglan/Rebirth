@@ -236,7 +236,10 @@ class _ReportCard extends StatelessWidget {
                   ),
                 ],
               ),
-              Text('${report.periodStartDate} 至 ${report.periodEndDate}'),
+              Text(
+                report.periodLabel,
+                key: ValueKey('aiReportPeriod-${report.id}'),
+              ),
               const SizedBox(height: 8),
               _HistoryLine(label: '请求时间', value: report.requestedAtLabel),
               _HistoryLine(label: '生成时间', value: report.generatedAtLabel),

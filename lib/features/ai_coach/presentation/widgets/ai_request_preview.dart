@@ -12,6 +12,7 @@ class AiRequestPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDaily = preview.periodStartDate == preview.periodEndDate;
     return Column(
       key: const ValueKey('aiRequestPreview'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -34,15 +35,15 @@ class AiRequestPreview extends StatelessWidget {
         ],
         if (preview.scopes.contains(AiDataScope.todayMetrics)) ...[
           const SizedBox(height: 16),
-          _TodayPreview(days: preview.todayDays),
+          _TodayPreview(days: preview.todayDays, isDaily: isDaily),
         ],
         if (preview.scopes.contains(AiDataScope.healthMetrics)) ...[
           const SizedBox(height: 16),
-          _HealthPreview(days: preview.healthDays),
+          _HealthPreview(days: preview.healthDays, isDaily: isDaily),
         ],
         if (preview.scopes.contains(AiDataScope.journalReflections)) ...[
           const SizedBox(height: 16),
-          _JournalPreview(days: preview.journalDays),
+          _JournalPreview(days: preview.journalDays, isDaily: isDaily),
         ],
       ],
     );
@@ -64,8 +65,12 @@ class _MetadataCard extends StatelessWidget {
           children: [
             _ValueLine(label: '报告类型', value: preview.reportTypeLabel),
             _ValueLine(
-              label: '日期范围',
-              value: '${preview.periodStartDate} 至 ${preview.periodEndDate}',
+              label: preview.periodStartDate == preview.periodEndDate
+                  ? '目标日期'
+                  : '日期范围',
+              value: preview.periodStartDate == preview.periodEndDate
+                  ? preview.periodStartDate
+                  : '${preview.periodStartDate} 至 ${preview.periodEndDate}',
             ),
             _ValueLine(label: 'Prompt Version', value: preview.promptVersion),
             _ValueLine(label: 'Input Hash', value: preview.shortInputHash),
@@ -137,16 +142,17 @@ class _GrowthPreview extends StatelessWidget {
 }
 
 class _TodayPreview extends StatelessWidget {
-  const _TodayPreview({required this.days});
+  const _TodayPreview({required this.days, required this.isDaily});
 
   final List<AiTodayDayPreviewModel> days;
+  final bool isDaily;
 
   @override
   Widget build(BuildContext context) {
     return _DatedPreviewSection(
       title: '每日状态指标',
       boundary: 'Daily Note 未包含；Priority 文本未包含。',
-      emptyMessage: '最近 7 天没有可预览的 Today 记录。',
+      emptyMessage: isDaily ? '当天没有已保存的 Today 记录。' : '最近 7 天没有可预览的 Today 记录。',
       children: days
           .map((day) {
             return _DayCard(
@@ -183,16 +189,17 @@ class _TodayPreview extends StatelessWidget {
 }
 
 class _HealthPreview extends StatelessWidget {
-  const _HealthPreview({required this.days});
+  const _HealthPreview({required this.days, required this.isDaily});
 
   final List<AiHealthDayPreviewModel> days;
+  final bool isDaily;
 
   @override
   Widget build(BuildContext context) {
     return _DatedPreviewSection(
       title: '健康指标',
       boundary: 'Health Note 未包含；外部来源标识未包含。',
-      emptyMessage: '最近 7 天没有可预览的 Health 记录。',
+      emptyMessage: isDaily ? '当天没有已保存的 Health 记录。' : '最近 7 天没有可预览的 Health 记录。',
       children: days
           .map((day) {
             return _DayCard(
@@ -229,16 +236,19 @@ class _HealthPreview extends StatelessWidget {
 }
 
 class _JournalPreview extends StatelessWidget {
-  const _JournalPreview({required this.days});
+  const _JournalPreview({required this.days, required this.isDaily});
 
   final List<AiJournalDayPreviewModel> days;
+  final bool isDaily;
 
   @override
   Widget build(BuildContext context) {
     return _DatedPreviewSection(
       title: 'Journal 复盘内容',
       boundary: '以下结构化回答仅在本机显示，不会被摘要、改写或分析。',
-      emptyMessage: '最近 7 天没有可预览的 Journal 内容。',
+      emptyMessage: isDaily
+          ? '当天没有已保存的 Journal 记录。'
+          : '最近 7 天没有可预览的 Journal 内容。',
       children: days
           .map((day) {
             return _DayCard(

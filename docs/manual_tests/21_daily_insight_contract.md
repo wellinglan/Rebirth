@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Verify the Sprint 9A developer contract without exposing a product UI or calling real OpenAI. Use only a development database and Fake Provider.
+Verify the unchanged Sprint 9A Daily contract without calling real OpenAI. Sprint 9B adds a product UI around this contract; this document remains the lower-level contract check.
 
 ## Automated Baseline
 
@@ -76,4 +76,4 @@ Confirm the Daily four-process test reports one claim owner and one ledger row. 
 
 ## Expected Result
 
-Daily assembly, canonical hashing, strict endpoint, Fake Provider, Markdown rendering, replay, status, and privacy boundaries pass. No Daily button appears in Today, Journal, or AI Coach; Flutter `schemaVersion` remains 3.
+Daily assembly, canonical hashing, strict endpoint, Fake Provider, Markdown rendering, replay, status, and privacy boundaries pass. Sprint 9B UI entries are verified separately in `22_daily_insight_manual_generation.md`; Flutter `schemaVersion` remains 3.

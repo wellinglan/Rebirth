@@ -2,7 +2,7 @@
 
 ## Scope
 
-The user-visible flow remains the explicit, synchronous, non-streaming `weekly_report` with `weekly-report-v1`. Sprint 9A adds the typed `daily_insight` + `daily-insight-v1` foundation and developer test endpoint without adding a UI action. There is still no chat, tools, automatic/background generation, server report history, AIReport sync, or source-record mutation. Flutter database `schemaVersion` remains 3.
+The user-visible flows are explicit, synchronous, non-streaming `weekly_report` and `daily_insight` requests. Sprint 9B exposes the existing typed Daily contract through local Preview and final confirmation. There is still no chat, tools, automatic/background generation, server report history, AIReport sync, or source-record mutation. Flutter database `schemaVersion` remains 3.
 
 The flow is:
 
@@ -13,7 +13,9 @@ Local Preview -> Final confirmation -> local pending AIReport
 -> local completed or failed AIReport -> History/Detail
 ```
 
-Preview remains local and never creates `pending`. Consent, login, capabilities, supported versions, reusable completed reports, and the current Preview identity are checked before `createPending`. Closing or cancelling the final dialog creates nothing.
+Preview remains local and never creates `pending`. Consent, login, typed capabilities, supported versions, reusable completed reports, and the current Preview identity are checked before `createPending`. Daily requires `period_kind=single_day`; Weekly requires `seven_days`. Closing or cancelling the final dialog creates nothing.
+
+Flutter dispatch is explicit by `AiReportType`: Daily calls `generateDaily`, Weekly calls `generateWeekly`, and unsupported types fail locally. It never guesses an endpoint from a title or prompt string. Source identity is rebuilt before opening final confirmation and again before submit; a mismatch blocks `pending -> Binding -> POST`.
 
 ## Configuration
 

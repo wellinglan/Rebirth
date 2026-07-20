@@ -6,6 +6,7 @@ import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_pending_recovery_controller.dart';
 
 import '../ai_coach_test_support.dart';
@@ -52,6 +53,32 @@ void main() {
     expect(gateway.statusCalls, 1);
     expect(gateway.generationCalls, 0);
   });
+
+  test(
+    'Daily completed recovery uses status GET and never generation POST',
+    () async {
+      reports.reports = [
+        buildAiReport(
+          id: 'pending-1',
+          status: AiReportStatus.pending,
+          reportType: AiReportType.dailyInsight,
+        ),
+      ];
+      bindings.values['pending-1'] = _binding(daily: true);
+      gateway.statusResult = _remote(
+        AiRemoteRequestStatus.completed,
+        daily: true,
+      );
+
+      final result = await controller().check(reports.reports.single);
+
+      expect(result, AiPendingRecoveryState.completed);
+      expect(reports.markCompletedCalls, 1);
+      expect(gateway.statusCalls, 1);
+      expect(gateway.generationCalls, 0);
+      expect(bindings.values, isEmpty);
+    },
+  );
 
   test(
     'failed status restores controlled failure and removes binding',
@@ -179,26 +206,29 @@ void main() {
   });
 }
 
-AiGenerationRequestBinding _binding() => const AiGenerationRequestBinding(
-  localReportId: 'pending-1',
-  requestId: 'pending-1',
-  normalizedEndpoint: 'http://127.0.0.1:8000',
-  cloudUserId: 'cloud-user',
-  inputHash: '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
-  reportType: 'weekly_report',
-  promptVersion: 'weekly-report-v1',
-  createdAt: 1,
-);
+AiGenerationRequestBinding _binding({bool daily = false}) =>
+    AiGenerationRequestBinding(
+      localReportId: 'pending-1',
+      requestId: 'pending-1',
+      normalizedEndpoint: 'http://127.0.0.1:8000',
+      cloudUserId: 'cloud-user',
+      inputHash:
+          '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
+      reportType: daily ? 'daily_insight' : 'weekly_report',
+      promptVersion: daily ? 'daily-insight-v1' : 'weekly-report-v1',
+      createdAt: 1,
+    );
 
 AiRemoteRequestResult _remote(
   AiRemoteRequestStatus status, {
   AiReportFailureCode? failureCode,
+  bool daily = false,
 }) {
   final completed = status == AiRemoteRequestStatus.completed
-      ? const AiGenerationResult(
+      ? AiGenerationResult(
           requestId: 'pending-1',
-          reportType: 'weekly_report',
-          promptVersion: 'weekly-report-v1',
+          reportType: daily ? 'daily_insight' : 'weekly_report',
+          promptVersion: daily ? 'daily-insight-v1' : 'weekly-report-v1',
           inputHash:
               '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
           provider: 'fake',
@@ -214,8 +244,8 @@ AiRemoteRequestResult _remote(
     requestId: 'pending-1',
     inputHash:
         '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
-    reportType: 'weekly_report',
-    promptVersion: 'weekly-report-v1',
+    reportType: daily ? 'daily_insight' : 'weekly_report',
+    promptVersion: daily ? 'daily-insight-v1' : 'weekly-report-v1',
     completedResult: completed,
     failureCode: failureCode,
   );

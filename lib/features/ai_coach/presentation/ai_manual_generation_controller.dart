@@ -6,21 +6,32 @@ import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dar
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 
 import 'ai_manual_generation_view_state.dart';
 import 'ai_report_history_controller.dart';
 import 'ai_request_preview_controller.dart';
+import 'models/ai_insight_request_context.dart';
 
-final aiManualGenerationControllerProvider =
-    AsyncNotifierProvider.autoDispose<
+final aiManualGenerationControllerFamily = AsyncNotifierProvider.autoDispose
+    .family<
       AiManualGenerationController,
-      AiManualGenerationViewState
+      AiManualGenerationViewState,
+      AiInsightRequestContext
     >(AiManualGenerationController.new);
+
+final aiManualGenerationControllerProvider = aiManualGenerationControllerFamily(
+  weeklyAiInsightRequestContext,
+);
 
 class AiManualGenerationController
     extends AsyncNotifier<AiManualGenerationViewState> {
+  AiManualGenerationController(this.context);
+
+  final AiInsightRequestContext context;
   bool _submissionStarted = false;
   bool _preflightStarted = false;
 
@@ -43,8 +54,11 @@ class AiManualGenerationController
     final gateway = ref.read(aiGenerationGatewayProvider);
     final reports = ref.read(aiReportRepositoryProvider);
     try {
+      if (!_bundleMatchesContext(bundle) || bundle.sources.isEmpty) {
+        throw const AiGenerationException(AiReportFailureCode.invalidInput);
+      }
       final preview = ref
-          .read(aiRequestPreviewControllerProvider)
+          .read(aiRequestPreviewControllerFamily(context))
           .asData
           ?.value;
       if (preview?.bundle?.inputHash != bundle.inputHash ||
@@ -54,6 +68,10 @@ class AiManualGenerationController
           )) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
       }
+      final unchanged = await ref
+          .read(aiRequestPreviewControllerFamily(context).notifier)
+          .verifyPreviewIntegrity(bundle);
+      if (!unchanged) return null;
       final authorization = await consentRepository.read();
       if (!authorization.enabled) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
@@ -121,8 +139,11 @@ class AiManualGenerationController
     String? pendingId;
     AiGenerationCapabilities? activeCapabilities;
     try {
+      if (!_bundleMatchesContext(bundle) || bundle.sources.isEmpty) {
+        throw const AiGenerationException(AiReportFailureCode.invalidInput);
+      }
       final preview = ref
-          .read(aiRequestPreviewControllerProvider)
+          .read(aiRequestPreviewControllerFamily(context))
           .asData
           ?.value;
       if (preview == null ||
@@ -131,6 +152,10 @@ class AiManualGenerationController
           !_sameScopes(preview.selectedScopes, bundle.selection.scopes)) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
       }
+      final unchanged = await ref
+          .read(aiRequestPreviewControllerFamily(context).notifier)
+          .verifyPreviewIntegrity(bundle);
+      if (!unchanged) return null;
       final authorization = await consentRepository.read();
       if (!authorization.enabled) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
@@ -211,7 +236,8 @@ class AiManualGenerationController
           completed: false,
         );
       }
-      final remote = await gateway.generateWeekly(
+      final remote = await _generate(
+        gateway: gateway,
         requestId: pending.id,
         bundle: bundle,
       );
@@ -349,7 +375,7 @@ class AiManualGenerationController
   Future<AiManualGenerationViewState> _loadCapabilities() async {
     final gateway = ref.read(aiGenerationGatewayProvider);
     final bundle = ref
-        .read(aiRequestPreviewControllerProvider)
+        .read(aiRequestPreviewControllerFamily(context))
         .asData
         ?.value
         .bundle;
@@ -385,11 +411,26 @@ class AiManualGenerationController
       throw const AiGenerationException(AiReportFailureCode.gatewayDisabled);
     }
     final contract = capabilities.contractFor(bundle.reportType.databaseValue);
+    if (bundle.reportType == AiReportType.dailyInsight && contract == null) {
+      throw const AiGenerationException(
+        AiReportFailureCode.unsupportedReportType,
+      );
+    }
     if (capabilities.reportContracts.isNotEmpty) {
       if (contract == null) {
         throw const AiGenerationException(
           AiReportFailureCode.unsupportedReportType,
         );
+      }
+      final expectedPeriodKind = switch (bundle.reportType) {
+        AiReportType.dailyInsight => AiReportPeriodKind.singleDay,
+        AiReportType.weeklyReport => AiReportPeriodKind.sevenDays,
+        _ => throw const AiGenerationException(
+          AiReportFailureCode.unsupportedReportType,
+        ),
+      };
+      if (contract.periodKind != expectedPeriodKind) {
+        throw const AiGenerationException(AiReportFailureCode.invalidInput);
       }
       if (!contract.supportsPrompt(bundle.promptVersion)) {
         throw const AiGenerationException(
@@ -429,12 +470,42 @@ class AiManualGenerationController
   }
 
   bool _isCurrentBundle(AiCoachInputBundle bundle) {
-    final current = ref.read(aiRequestPreviewControllerProvider).asData?.value;
+    final current = ref
+        .read(aiRequestPreviewControllerFamily(context))
+        .asData
+        ?.value;
     return current?.bundle?.inputHash == bundle.inputHash &&
         _sameScopes(
           current?.selectedScopes ?? const {},
           bundle.selection.scopes,
         );
+  }
+
+  bool _bundleMatchesContext(AiCoachInputBundle bundle) {
+    if (bundle.reportType != context.reportType) return false;
+    if (!context.isDaily) return true;
+    return bundle.periodStartDate == context.targetDate &&
+        bundle.periodEndDate == context.targetDate;
+  }
+
+  Future<AiRemoteRequestResult> _generate({
+    required AiGenerationGateway gateway,
+    required String requestId,
+    required AiCoachInputBundle bundle,
+  }) {
+    return switch (bundle.reportType) {
+      AiReportType.dailyInsight => gateway.generateDaily(
+        requestId: requestId,
+        bundle: bundle,
+      ),
+      AiReportType.weeklyReport => gateway.generateWeekly(
+        requestId: requestId,
+        bundle: bundle,
+      ),
+      _ => throw const AiGenerationException(
+        AiReportFailureCode.unsupportedReportType,
+      ),
+    };
   }
 
   bool _sameScopes(Set<AiDataScope> left, Set<AiDataScope> right) {

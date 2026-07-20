@@ -36,6 +36,9 @@ void main() {
         File(
           'lib/features/ai_coach/presentation/ai_report_detail_page.dart',
         ).readAsStringSync(),
+        File(
+          'lib/features/ai_coach/presentation/ai_daily_insight_page.dart',
+        ).readAsStringSync(),
       ];
       expect(presentation, isNotEmpty);
       for (final source in presentation) {

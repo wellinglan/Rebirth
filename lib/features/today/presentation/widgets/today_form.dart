@@ -10,12 +10,14 @@ class TodayForm extends StatefulWidget {
     required this.entry,
     required this.onSave,
     required this.onOpenHistory,
+    this.onOpenDailyInsight,
     super.key,
   });
 
   final TodayEntry entry;
   final Future<void> Function(TodaySaveData data) onSave;
   final VoidCallback onOpenHistory;
+  final VoidCallback? onOpenDailyInsight;
 
   @override
   State<TodayForm> createState() => _TodayFormState();
@@ -84,16 +86,27 @@ class _TodayFormState extends State<TodayForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
+                  Text(
+                    widget.entry.recordDate,
+                    style: AppTypography.numericStyle(
+                      theme.textTheme.titleLarge!,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      Expanded(
-                        child: Text(
-                          widget.entry.recordDate,
-                          style: AppTypography.numericStyle(
-                            theme.textTheme.titleLarge!,
+                      if (widget.onOpenDailyInsight != null)
+                        TextButton.icon(
+                          key: const ValueKey(
+                            'openDailyInsightFromTodayButton',
                           ),
+                          onPressed: widget.onOpenDailyInsight,
+                          icon: const Icon(Icons.auto_awesome_outlined),
+                          label: const Text('生成今日洞察'),
                         ),
-                      ),
                       TextButton.icon(
                         key: const ValueKey('openTodayHistoryButton'),
                         onPressed: widget.onOpenHistory,
