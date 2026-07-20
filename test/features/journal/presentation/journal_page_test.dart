@@ -232,6 +232,105 @@ void main() {
     expect(find.text('草稿'), findsNothing);
   });
 
+  testWidgets('exact date opens only the matching saved detail once', (
+    tester,
+  ) async {
+    final savedEntry = _sampleEntry();
+    final repository = _FakeJournalRepository(
+      entry: savedEntry,
+      historyEntries: [savedEntry],
+    );
+    await _pumpJournalPage(
+      tester,
+      repository,
+      targetDate: '2026-07-13',
+    );
+    await tester.pumpAndSettle();
+
+    final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('先验证最小假设')),
+      findsOneWidget,
+    );
+    expect(repository.listByDateCalls, 1);
+
+    tester
+        .element(find.byKey(const ValueKey('journalTargetNotice')))
+        .markNeedsBuild();
+    await tester.pumpAndSettle();
+    expect(dialog, findsOneWidget);
+
+    await tester.tap(find.text('关闭'));
+    await tester.pumpAndSettle();
+    expect(dialog, findsNothing);
+    tester
+        .element(find.byKey(const ValueKey('journalTargetNotice')))
+        .markNeedsBuild();
+    await tester.pumpAndSettle();
+    expect(dialog, findsNothing);
+  });
+
+  testWidgets('missing exact date stays on Journal and explains the result', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(entry: _sampleEntry());
+    await _pumpJournalPage(
+      tester,
+      repository,
+      targetDate: '2026-07-10',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('未找到 2026-07-10 的 Journal 记录。'), findsOneWidget);
+    expect(find.byKey(const ValueKey('journalEntryDetailDialog')), findsNothing);
+  });
+
+  testWidgets('invalid Journal date is safe and skips repository lookup', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(entry: _sampleEntry());
+    await _pumpJournalPage(
+      tester,
+      repository,
+      targetDate: '2026-02-30',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('日期参数无效，无法定位 Journal 记录。'), findsOneWidget);
+    expect(repository.listByDateCalls, 0);
+    expect(find.byKey(const ValueKey('journalEntryDetailDialog')), findsNothing);
+  });
+
+  testWidgets('exact-date detail reads saved data instead of unsaved form text', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(entry: _sampleEntry());
+    await _pumpJournalPage(tester, repository);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('journalLearningField')),
+      '尚未保存且不得读取',
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await _pumpJournalPage(
+      tester,
+      repository,
+      targetDate: '2026-07-13',
+    );
+    await tester.pumpAndSettle();
+
+    final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('先验证最小假设')),
+      findsOneWidget,
+    );
+    expect(find.text('尚未保存且不得读取'), findsNothing);
+  });
+
   testWidgets('all-empty form shows validation and does not save', (
     tester,
   ) async {
@@ -363,8 +462,9 @@ void main() {
 
 Future<void> _pumpJournalPage(
   WidgetTester tester,
-  JournalRepository repository,
-) async {
+  JournalRepository repository, {
+  String? targetDate,
+}) async {
   await tester.binding.setSurfaceSize(const Size(900, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
@@ -375,7 +475,9 @@ Future<void> _pumpJournalPage(
           DateTimeService(now: () => DateTime(2026, 7, 14, 9)),
         ),
       ],
-      child: const MaterialApp(home: Scaffold(body: JournalPage())),
+      child: MaterialApp(
+        home: Scaffold(body: JournalPage(targetDate: targetDate)),
+      ),
     ),
   );
 }
@@ -458,6 +560,7 @@ final class _FakeJournalRepository implements JournalRepository {
   int failuresBeforeSuccess;
   int saveAttempts = 0;
   int listRecentCalls = 0;
+  int listByDateCalls = 0;
   JournalSaveData? lastSaved;
 
   @override
@@ -505,8 +608,13 @@ final class _FakeJournalRepository implements JournalRepository {
       entry?.id == id ? entry : null;
 
   @override
-  Future<List<JournalEntry>> listByDate(String entryDate) async =>
-      entry?.entryDate == entryDate ? [entry!] : [];
+  Future<List<JournalEntry>> listByDate(String entryDate) async {
+    listByDateCalls += 1;
+    final candidates = historyEntries ?? (entry == null ? [] : [entry!]);
+    return candidates
+        .where((candidate) => candidate.entryDate == entryDate)
+        .toList(growable: false);
+  }
 
   @override
   Future<List<JournalEntry>> listByDateRange({

@@ -8,6 +8,20 @@ final journalControllerProvider =
       JournalController.new,
     );
 
+final journalEntryForDateProvider =
+    FutureProvider.autoDispose.family<JournalEntry?, String>((
+      ref,
+      entryDate,
+    ) async {
+      final entries = await ref
+          .watch(journalRepositoryProvider)
+          .listByDate(entryDate);
+      for (final entry in entries) {
+        if (entry.entryDate == entryDate) return entry;
+      }
+      return null;
+    });
+
 class JournalController extends AsyncNotifier<List<JournalEntry>> {
   int _limit = 20;
 

@@ -129,6 +129,86 @@ void main() {
     );
   });
 
+  testWidgets('exact date opens only the matching read-only detail once', (
+    tester,
+  ) async {
+    final repository = _HistoryRepository(
+      entries: [
+        _sampleHistoryEntry(),
+        _sampleHistoryEntry(
+          id: 'other-id',
+          recordDate: '2026-07-11',
+          dailyNote: '其他日期',
+        ),
+      ],
+    );
+    await _pumpHistoryPage(
+      tester,
+      repository,
+      targetDate: '2026-07-12',
+    );
+    await tester.pumpAndSettle();
+
+    final dialog = find.byKey(const ValueKey('todayEntryDetailDialog'));
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('历史记录摘要')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('其他日期')),
+      findsNothing,
+    );
+    expect(repository.getByDateCalls, 1);
+
+    tester
+        .element(find.byKey(const ValueKey('todayHistoryPage')))
+        .markNeedsBuild();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('todayEntryDetailDialog')), findsOneWidget);
+
+    await tester.tap(find.text('关闭'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('todayEntryDetailDialog')), findsNothing);
+    tester
+        .element(find.byKey(const ValueKey('todayHistoryPage')))
+        .markNeedsBuild();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('todayEntryDetailDialog')), findsNothing);
+  });
+
+  testWidgets('missing exact date stays on history and explains the result', (
+    tester,
+  ) async {
+    final repository = _HistoryRepository(entries: [_sampleHistoryEntry()]);
+    await _pumpHistoryPage(
+      tester,
+      repository,
+      targetDate: '2026-07-10',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('todayHistoryPage')), findsOneWidget);
+    expect(find.text('未找到 2026-07-10 的 Today 记录。'), findsOneWidget);
+    expect(find.byKey(const ValueKey('todayEntryDetailDialog')), findsNothing);
+  });
+
+  testWidgets('invalid exact date is safe and skips repository lookup', (
+    tester,
+  ) async {
+    final repository = _HistoryRepository(entries: [_sampleHistoryEntry()]);
+    await _pumpHistoryPage(
+      tester,
+      repository,
+      targetDate: '2026-02-30',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('日期参数无效，无法定位 Today 记录。'), findsOneWidget);
+    expect(repository.getByDateCalls, 0);
+    expect(find.byKey(const ValueKey('todayEntryDetailDialog')), findsNothing);
+  });
+
   test('Today history presentation has no database implementation imports', () {
     const paths = <String>[
       'lib/features/today/presentation/today_history_controller.dart',
@@ -150,8 +230,9 @@ void main() {
 
 Future<void> _pumpHistoryPage(
   WidgetTester tester,
-  TodayRepository repository,
-) async {
+  TodayRepository repository, {
+  String? targetDate,
+}) async {
   await tester.binding.setSurfaceSize(const Size(900, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
@@ -162,16 +243,22 @@ Future<void> _pumpHistoryPage(
           DateTimeService(now: () => DateTime(2026, 7, 14, 9)),
         ),
       ],
-      child: const MaterialApp(home: Scaffold(body: TodayHistoryPage())),
+      child: MaterialApp(
+        home: Scaffold(body: TodayHistoryPage(targetDate: targetDate)),
+      ),
     ),
   );
 }
 
-TodayEntry _sampleHistoryEntry() {
+TodayEntry _sampleHistoryEntry({
+  String id = 'history-id',
+  String recordDate = '2026-07-12',
+  String dailyNote = '历史记录摘要',
+}) {
   return TodayEntry(
-    id: 'history-id',
+    id: id,
     userId: 'user-id',
-    recordDate: '2026-07-12',
+    recordDate: recordDate,
     timezoneOffsetMinutes: 480,
     priorities: const [
       TodayPriority(text: '完成实验', completed: true),
@@ -182,7 +269,7 @@ TodayEntry _sampleHistoryEntry() {
     energyScore: 3,
     researchMinutes: 90,
     learningMinutes: 0,
-    dailyNote: '历史记录摘要',
+    dailyNote: dailyNote,
     status: TodayRecordStatus.completed,
     createdAt: 1,
     updatedAt: 2,
@@ -206,6 +293,16 @@ final class _HistoryRepository implements TodayRepository {
   final Completer<List<TodayEntry>>? pendingLoad;
   Object? loadError;
   int loadAttempts = 0;
+  int getByDateCalls = 0;
+
+  @override
+  Future<TodayEntry?> getByDate(String recordDate) async {
+    getByDateCalls += 1;
+    for (final entry in entries) {
+      if (entry.recordDate == recordDate) return entry;
+    }
+    return null;
+  }
 
   @override
   Future<List<TodayEntry>> listRecentEntries({int days = 30}) async {

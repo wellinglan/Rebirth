@@ -110,3 +110,9 @@ Windows 与 Android 共用独立路由和返回行为。Android debug APK 构建
 ## 11. Sprint 9B Daily Manual Flow
 
 `daily_insight` 复用同一个本地 `ai_reports` 生命周期、Canonical/Hash、Gateway 和状态恢复抽象。用户可从 AI Coach、Today 或 Journal 显式进入；所有 Scope 默认关闭，Journal 仍需一次性确认。所有选中 Scope 均无实际来源时，页面保留 selected-missing Preview，但不加载 capabilities、不创建 pending、不调用 Provider。完整流程见 `docs/14_DAILY_INSIGHT_MANUAL_GENERATION.md`。
+
+## 12. Sprint 9B.1 Exact-Date Sources
+
+Daily Detail 的 Today 和 Journal 来源按钮携带报告的单日日期，分别进入 `/today/history?date=YYYY-MM-DD` 和 `/journal?date=YYYY-MM-DD`。目标页面使用 `DateTimeService` 验证日期，通过已有 Repository 合同读取保存后的来源记录，并仅在 `recordDate` 或 `entryDate` 完全匹配时自动打开现有只读 Dialog。
+
+一个页面实例只处理目标日期一次，Widget rebuild 不会重复弹出 Dialog。无效日期或查无记录时页面保留并显示明确提示，不回退到今天、不创建记录、不修改来源数据。Weekly Detail 不显示这些 Daily 来源按钮。

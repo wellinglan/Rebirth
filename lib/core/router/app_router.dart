@@ -38,7 +38,9 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'history',
                   name: RouteNames.todayHistory,
-                  builder: (context, state) => const TodayHistoryPage(),
+                  builder: (context, state) => TodayHistoryPage(
+                    targetDate: state.uri.queryParameters['date'],
+                  ),
                 ),
               ],
             ),
@@ -49,7 +51,9 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: RoutePaths.journal,
               name: RouteNames.journal,
-              builder: (context, state) => const JournalPage(),
+              builder: (context, state) => JournalPage(
+                targetDate: state.uri.queryParameters['date'],
+              ),
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
@@ -369,6 +370,96 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('明日建议'), findsNothing);
+  });
+
+  testWidgets('Daily source buttons navigate with the report date', (
+    tester,
+  ) async {
+    final reports = FakeAiReportRepository(
+      reports: [
+        buildAiReport(
+          id: 'daily-navigation',
+          reportType: AiReportType.dailyInsight,
+          targetDate: '2026-07-16',
+        ),
+      ],
+    );
+    final router = GoRouter(
+      initialLocation: '/reports/daily-navigation',
+      routes: [
+        GoRoute(
+          path: '/reports/:reportId',
+          builder: (context, state) => AiReportDetailPage(
+            reportId: state.pathParameters['reportId'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: RoutePaths.todayHistory,
+          builder: (context, state) => Scaffold(
+            body: Text(
+              'Today target ${state.uri.queryParameters['date']}',
+              key: const ValueKey('todayExactDateDestination'),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: RoutePaths.journal,
+          builder: (context, state) => Scaffold(
+            body: Text(
+              'Journal target ${state.uri.queryParameters['date']}',
+              key: const ValueKey('journalExactDateDestination'),
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          aiReportRepositoryProvider.overrideWithValue(reports),
+          aiGenerationRequestBindingStoreProvider.overrideWithValue(
+            FakeAiGenerationRequestBindingStore(),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final todayButton = find.byKey(
+      const ValueKey('openDailySourceTodayButton'),
+    );
+    await _tapAfterScrolling(tester, todayButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Today target 2026-07-16'), findsOneWidget);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    final journalButton = find.byKey(
+      const ValueKey('openDailySourceJournalButton'),
+    );
+    await _tapAfterScrolling(tester, journalButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Journal target 2026-07-16'), findsOneWidget);
+  });
+
+  testWidgets('Weekly detail does not expose Daily source buttons', (
+    tester,
+  ) async {
+    final reports = FakeAiReportRepository(
+      reports: [buildAiReport(id: 'weekly-detail')],
+    );
+    await _pumpDetail(tester, reports, 'weekly-detail');
+
+    expect(
+      find.byKey(const ValueKey('openDailySourceTodayButton')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('openDailySourceJournalButton')),
+      findsNothing,
+    );
   });
 
   testWidgets(

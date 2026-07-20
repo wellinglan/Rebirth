@@ -60,7 +60,6 @@ void main() {
 
     for (final page in [
       'TodayPage',
-      'JournalPage',
       'PlanPage',
       'HealthPage',
       'GrowthPage',
@@ -68,5 +67,6 @@ void main() {
     ]) {
       expect(router, contains('const $page()'), reason: page);
     }
+    expect(router, contains('JournalPage('), reason: 'JournalPage');
   });
 }

@@ -25,6 +25,17 @@ abstract final class RoutePaths {
   static const settingsProfile = '/settings/profile';
   static const aiCoach = '/ai-coach';
 
+  static String todayHistoryForDate(String date) {
+    return Uri(
+      path: todayHistory,
+      queryParameters: {'date': date},
+    ).toString();
+  }
+
+  static String journalForDate(String date) {
+    return Uri(path: journal, queryParameters: {'date': date}).toString();
+  }
+
   static String aiCoachDaily(String targetDate) {
     return '$aiCoach/daily/${Uri.encodeComponent(targetDate)}';
   }

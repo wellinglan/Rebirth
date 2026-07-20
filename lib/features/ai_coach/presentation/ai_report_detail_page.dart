@@ -124,13 +124,19 @@ class _DetailContent extends ConsumerWidget {
                     children: [
                       OutlinedButton.icon(
                         key: const ValueKey('openDailySourceTodayButton'),
-                        onPressed: () => context.go(RoutePaths.today),
+                        onPressed: () => context.push(
+                          RoutePaths.todayHistoryForDate(
+                            detail.periodStartDate,
+                          ),
+                        ),
                         icon: const Icon(Icons.today_outlined),
                         label: Text('打开 Today（${detail.periodStartDate}）'),
                       ),
                       OutlinedButton.icon(
                         key: const ValueKey('openDailySourceJournalButton'),
-                        onPressed: () => context.go(RoutePaths.journal),
+                        onPressed: () => context.push(
+                          RoutePaths.journalForDate(detail.periodStartDate),
+                        ),
                         icon: const Icon(Icons.menu_book_outlined),
                         label: Text('打开 Journal（${detail.periodStartDate}）'),
                       ),

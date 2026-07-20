@@ -12,14 +12,42 @@ import 'widgets/journal_entry_detail_dialog.dart';
 import 'widgets/journal_form.dart';
 import 'widgets/journal_history_list.dart';
 
-class JournalPage extends ConsumerWidget {
-  const JournalPage({super.key});
+class JournalPage extends ConsumerStatefulWidget {
+  const JournalPage({this.targetDate, super.key});
+
+  final String? targetDate;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JournalPage> createState() => _JournalPageState();
+}
+
+class _JournalPageState extends ConsumerState<JournalPage> {
+  String? _handledTargetDate;
+
+  @override
+  void didUpdateWidget(covariant JournalPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.targetDate != widget.targetDate) {
+      _handledTargetDate = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final journalState = ref.watch(journalTodayControllerProvider);
     final historyState = ref.watch(journalControllerProvider);
-    final today = ref.watch(dateTimeServiceProvider).currentLocalDateString();
+    final dateTimeService = ref.watch(dateTimeServiceProvider);
+    final today = dateTimeService.currentLocalDateString();
+    final targetDate = widget.targetDate;
+    final targetDateIsValid =
+        targetDate == null || dateTimeService.isValidLocalDateString(targetDate);
+    final targetEntry = targetDate != null && targetDateIsValid
+        ? ref.watch(journalEntryForDateProvider(targetDate))
+        : null;
+    final matchedEntry = targetEntry?.asData?.value;
+    if (matchedEntry != null && matchedEntry.entryDate == targetDate) {
+      _scheduleTargetDialog(matchedEntry, today);
+    }
 
     return SafeArea(
       child: journalState.when(
@@ -46,6 +74,12 @@ class JournalPage extends ConsumerWidget {
         ),
         data: (entry) => ListView(
           children: [
+            if (targetDate != null)
+              _JournalTargetNotice(
+                targetDate: targetDate,
+                isValid: targetDateIsValid,
+                state: targetEntry,
+              ),
             JournalForm(
               entry: entry,
               recordDate: entry?.entryDate ?? today,
@@ -132,6 +166,49 @@ class JournalPage extends ConsumerWidget {
       context: context,
       builder: (context) =>
           JournalEntryDetailDialog(entry: entry, today: today),
+    );
+  }
+
+  void _scheduleTargetDialog(JournalEntry entry, String today) {
+    if (_handledTargetDate == entry.entryDate) return;
+    _handledTargetDate = entry.entryDate;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showEntryDetail(context, entry, today);
+    });
+  }
+}
+
+class _JournalTargetNotice extends StatelessWidget {
+  const _JournalTargetNotice({
+    required this.targetDate,
+    required this.isValid,
+    required this.state,
+  });
+
+  final String targetDate;
+  final bool isValid;
+  final AsyncValue<JournalEntry?>? state;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = !isValid
+        ? '日期参数无效，无法定位 Journal 记录。'
+        : state?.when(
+                loading: () => '正在查找 $targetDate 的 Journal 记录...',
+                error: (error, stackTrace) =>
+                    '$targetDate 的 Journal 记录暂时无法读取。',
+                data: (entry) => entry?.entryDate == targetDate
+                    ? '已定位 $targetDate 的 Journal 记录。'
+                    : '未找到 $targetDate 的 Journal 记录。',
+              ) ??
+              '日期参数无效，无法定位 Journal 记录。';
+    return Container(
+      key: const ValueKey('journalTargetNotice'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Text(message),
     );
   }
 }

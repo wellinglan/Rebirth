@@ -47,6 +47,17 @@ Daily recovery reuses the generic request identity and status GET. Completed, fa
 
 History mixes Daily and Weekly. Daily displays one date; Weekly displays a range. Detail remains read-only, offers Today/Journal source navigation for Daily, and never applies tomorrow adjustments automatically.
 
+## Exact-Date Source Navigation
+
+Daily Detail source actions preserve the report's `periodStartDate`:
+
+- Today opens `/today/history?date=YYYY-MM-DD`;
+- Journal opens `/journal?date=YYYY-MM-DD`.
+
+The destination validates the query value with `DateTimeService`. A valid date is queried through the existing repository contract and must exactly match `recordDate` or `entryDate` before the existing read-only Detail Dialog opens. Each page instance handles one target date once, so provider rebuilds do not reopen the Dialog. Closing the Dialog leaves the user on the destination page and normal back navigation returns to the report.
+
+An invalid date displays a safe inline message without querying the target record. A valid date with no record displays `未找到 YYYY-MM-DD 的 Today 记录。` or `未找到 YYYY-MM-DD 的 Journal 记录。`; it does not open today's record, create sample data, mutate a source record, or copy AIReport content into Today or Journal. Routes without `date` retain their existing behavior. Weekly Detail exposes no Daily source actions.
+
 ## Architecture Boundary
 
-No Flutter or Server table, migration, binding schema, Daily input contract, fixture hash, Growth behavior, sync behavior, or source domain was changed. Flutter `schemaVersion` remains 3. AI reports remain local-only. Normal tests use Fake/Mock providers; real OpenAI is opt-in only.
+No Flutter or Server table, migration, binding schema, Daily input contract, fixture hash, Growth behavior, sync behavior, source domain, or repository contract was changed. Flutter `schemaVersion` remains 3. AI reports remain local-only. Normal tests use Fake/Mock providers; real OpenAI is opt-in only.

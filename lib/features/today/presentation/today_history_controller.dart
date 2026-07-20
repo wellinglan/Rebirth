@@ -8,6 +8,11 @@ final todayHistoryControllerProvider =
       TodayHistoryController.new,
     );
 
+final todayHistoryEntryForDateProvider =
+    FutureProvider.autoDispose.family<TodayEntry?, String>((ref, recordDate) {
+      return ref.watch(todayRepositoryProvider).getByDate(recordDate);
+    });
+
 class TodayHistoryController extends AsyncNotifier<List<TodayEntry>> {
   int _days = 30;
 
