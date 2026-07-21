@@ -1,0 +1,83 @@
+name: Publish Alpha Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "server/**"
+      - ".github/workflows/publish-alpha-images.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish API And PostgreSQL Images
+    runs-on: ubuntu-latest
+    env:
+      API_IMAGE: ghcr.io/wellinglan/rebirth-api
+      POSTGRES_IMAGE: ghcr.io/wellinglan/rebirth-postgres:17-alpine
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare API image tags
+        id: api-tags
+        shell: bash
+        run: |
+          tags="${API_IMAGE}:${GITHUB_SHA},${API_IMAGE}:${GITHUB_SHA::8}"
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            tags="${tags},${API_IMAGE}:alpha-latest"
+          fi
+          echo "tags=${tags}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push Rebirth API
+        id: api-build
+        uses: docker/build-push-action@v7
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
+          tags: ${{ steps.api-tags.outputs.tags }}
+          cache-from: type=gha,scope=rebirth-api
+          cache-to: type=gha,mode=max,scope=rebirth-api
+
+      - name: Report API image digest
+        shell: bash
+        run: |
+          digest="${{ steps.api-build.outputs.digest }}"
+          test -n "${digest}"
+          echo "Rebirth API digest: ${digest}"
+          echo "### Rebirth API" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Digest: \`${digest}\`" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Mirror PostgreSQL image to GHCR
+        id: postgres-push
+        shell: bash
+        run: |
+          docker pull postgres:17-alpine
+          docker tag postgres:17-alpine "${POSTGRES_IMAGE}"
+          docker push "${POSTGRES_IMAGE}"
+          digest="$(docker buildx imagetools inspect "${POSTGRES_IMAGE}" --format '{{json .Manifest.Digest}}' | tr -d '"')"
+          test -n "${digest}"
+          echo "digest=${digest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Report PostgreSQL image digest
+        shell: bash
+        run: |
+          echo "Rebirth PostgreSQL digest: ${{ steps.postgres-push.outputs.digest }}"
+          echo "### Rebirth PostgreSQL" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Digest: \`${{ steps.postgres-push.outputs.digest }}\`" >> "${GITHUB_STEP_SUMMARY}"
