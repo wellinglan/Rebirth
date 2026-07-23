@@ -57,7 +57,7 @@ Install the newly built APK and record evidence from the physical device.
 | 10 | Mixed History/Detail | PASS | User-reported Android physical-device acceptance on 2026-07-23. | - |
 | 11 | Exact historical Today/Journal source navigation and missing-record message | PASS | User-reported Android physical-device acceptance on 2026-07-23. | `DAILY-DETAIL-SOURCE-NAV-001` |
 | 12 | Large text | PASS | User-reported Android physical-device acceptance on 2026-07-23; text remains readable. | - |
-| 13 | Complete scrolling with no overflow | FAIL | At maximum Android font size, the Plan filter area occupies about half of the page and leaves insufficient space for the actual plan list. | `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` |
+| 13 | Complete scrolling with no overflow | PASS | User-reported Android physical-device retest on 2026-07-23 passed with the rebuilt Sprint 9B.2 arm64-v8a release APK. | `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` |
 | 14 | No abnormal exit | PASS | User-reported Android physical-device acceptance on 2026-07-23. | - |
 
 ## Sprint 9B.1 Environment Record
@@ -74,7 +74,7 @@ Install the newly built APK and record evidence from the physical device.
 | Android debug build | PASS | `build/app/outputs/flutter-apk/app-debug.apk`. |
 | Android split release build | PASS | armeabi-v7a, arm64-v8a, and x86_64 APKs built successfully. |
 | Windows Matrix | PASS | `25 PASS / 0 FAIL / 0 NOT EXECUTED`; user-reported interactive execution on 2026-07-23. |
-| Android Matrix | FAIL | `13 PASS / 1 FAIL / 0 NOT EXECUTED`; item 13 failed on a physical device at maximum font size. |
+| Android Matrix | PASS | `14 PASS / 0 FAIL / 0 NOT EXECUTED`; user-reported Sprint 9B.2 physical-device retest passed on 2026-07-23. |
 | Phone model | NOT RECORDED | Physical-device execution completed, but the model was not supplied in the acceptance report. |
 | Android version | NOT RECORDED | Physical-device execution completed, but the OS version was not supplied in the acceptance report. |
 | APK ABI | PASS | User-reported physical-device execution of the Sprint 9B.1 Android candidate; the matrix requires the arm64-v8a release APK. |
@@ -88,16 +88,16 @@ Install the newly built APK and record evidence from the physical device.
 | Defect ID | Status | Verification |
 |---|---|---|
 | `DAILY-DETAIL-SOURCE-NAV-001` | CLOSED | Windows item 22 and Android item 11 passed interactive acceptance on 2026-07-23. |
-| `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` | OPEN, RELEASE GATE BLOCKER | At maximum Android font size, the expanded Plan filter controls occupy about half of the viewport and leave insufficient space for plan items. Requested UX: place a filter icon in the free area to the right of the Plan title; tapping it expands the filter panel, tapping outside collapses it, and “Show archived” appears below the other filter controls. Layout must remain readable, scrollable, and usable at maximum font size. No implementation change was made while recording this result. |
+| `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` | CLOSED | Sprint 9B.2 replaced the permanently expanded filters with a responsive collapsible panel. Windows Plan smoke and Android items 12–14 passed user-reported manual retest on 2026-07-23. |
 
 ## Sprint 9B.1 Manual Acceptance Result
 
 - Execution date: 2026-07-23.
 - Windows: `25 PASS / 0 FAIL / 0 NOT EXECUTED`.
-- Android physical device: `13 PASS / 1 FAIL / 0 NOT EXECUTED`.
+- Android physical device: `14 PASS / 0 FAIL / 0 NOT EXECUTED`.
 - AI Provider: development Fake Provider only.
 - Real OpenAI Provider: `NOT EXECUTED`.
-- Release Gate: `FAIL / BLOCKED` until `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` is fixed and Android item 13 passes physical-device retest.
+- Functional retest: `PASS`; the remaining documentation gate is limited to recording the phone model and Android version.
 - Scope note: this update records manual evidence only; no Flutter, Server, database, or schema code was changed.
 
 ## Sprint 9B.2 Plan Filter Layout Hotfix
@@ -138,21 +138,22 @@ acceptance.
 
 | Check | Status | Required evidence |
 |---|---|---|
-| Android item 12: maximum text remains readable | NOT EXECUTED | Physical-device screenshot or recording from the rebuilt arm64-v8a release APK. |
-| Android item 13: Plan filters and complete scrolling | NOT EXECUTED | Confirm collapsed default, panel scrolling, list access, no overflow, retained filters, and full-row “Show archived”. |
-| Android item 14: no abnormal exit | NOT EXECUTED | Exercise filter open/close, Android back, navigation, and restart. |
-| Windows Plan smoke | NOT EXECUTED | Confirm wide and narrow windows, mouse open/close, outside click, list access, and retained filters. |
+| Android item 12: maximum text remains readable | PASS | User-reported physical-device retest on 2026-07-23 with the rebuilt arm64-v8a release APK. |
+| Android item 13: Plan filters and complete scrolling | PASS | User confirmed collapsed default, panel scrolling, list access, no overflow, retained filters, and full-row “Show archived”. |
+| Android item 14: no abnormal exit | PASS | User confirmed filter open/close, Android back, navigation, and restart completed without abnormal exit. |
+| Windows Plan smoke | PASS | User confirmed wide and narrow windows, mouse open/close, outside click, list access, and retained filters. |
 | Phone model | NOT RECORDED | Record the physical-device model. |
 | Android version | NOT RECORDED | Record the Android OS version. |
-| APK ABI | NOT RECORDED | Confirm the installed candidate is `arm64-v8a`. |
+| APK ABI | PASS | User-reported retest used the rebuilt `app-arm64-v8a-release.apk` candidate. |
 
-Until that retest is completed:
+Sprint 9B.2 functional retest result:
 
-- Android item 13 remains `FAIL`.
-- Android Matrix remains `13 PASS / 1 FAIL / 0 NOT EXECUTED`.
-- `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` remains `OPEN`.
-- Sprint 9B.1 Release Gate remains `BLOCKED`.
-- Sprint 9C must not start.
+- Android item 13 is `PASS`.
+- Android Matrix is `14 PASS / 0 FAIL / 0 NOT EXECUTED`.
+- `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` is `CLOSED`.
+- Windows Plan smoke and Android items 12–14 are `PASS`.
+- Phone model and Android version remain `NOT RECORDED`.
+- The final documentation gate remains `BLOCKED` only until those two device fields are recorded; Sprint 9C must not start before that evidence is complete.
 
 ## Automated Evidence
 

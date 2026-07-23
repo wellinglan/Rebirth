@@ -2,9 +2,9 @@
 
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
-> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9B.1 Release Gate 因 Plan 最大字体筛选布局缺陷保持阻断。
+> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9B.2 功能复测已通过，最终文档门禁仅等待 Phone model 与 Android version 补录。
 >
-> 下一阶段：Sprint 9B.2 Android Large-Text Plan Filter Layout Hotfix；Sprint 9C 尚未开始。
+> 下一阶段：补齐 Sprint 9B.2 真机元数据后关闭 Release Gate；Sprint 9C 尚未开始。
 
 ## 1. 当前主架构
 
@@ -352,26 +352,28 @@ https://rebirth-alpha-bj.taila61d27.ts.net
 - Windows / Android Development 登录
 - Windows / Android AI Capabilities 验证
 - Sprint 9B.1 Windows 人工矩阵：`25 PASS / 0 FAIL / 0 NOT EXECUTED`
-- Sprint 9B.1 Android 人工矩阵：`13 PASS / 1 FAIL / 0 NOT EXECUTED`
+- Sprint 9B.1 Android 人工矩阵：`14 PASS / 0 FAIL / 0 NOT EXECUTED`
 - `DAILY-DETAIL-SOURCE-NAV-001` 已完成 Windows 与 Android 人工复测并标记为 `CLOSED`
 - Sprint 9B.2 Flutter 代码、Plan 测试、完整 analyze/test、Windows release 与 Android split release 构建已通过
+- Sprint 9B.2 Windows Plan smoke：`PASS`
+- Sprint 9B.2 Android Item 12、13、14 真机复测：`PASS`
+- `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001`：`CLOSED`
+- APK ABI：`arm64-v8a`，使用重建的 `app-arm64-v8a-release.apk`
 
 尚未正式完成：
 
-- `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001`：`OPEN`
-- Sprint 9B.1 Release Gate：`BLOCKED`
-- Sprint 9B.2 修复后的 Windows Plan smoke
-- Sprint 9B.2 修复后的 Android Item 12、13、14 真机复测
-- Phone model、Android version 与 APK ABI 补录
+- Phone model 补录
+- Android version 补录
+- Sprint 9B.1 最终文档 Release Gate：在上述两项补齐前保持 `BLOCKED`
 - Sprint 9C：尚未开始
 
 下一开发目标：
 
 ```text
-Sprint 9B.2 Android Large-Text Plan Filter Layout Hotfix
+补录 Sprint 9B.2 Phone model 与 Android version
 ```
 
-只有 Sprint 9B.2 人工复测关闭当前缺陷并解除 Release Gate 后，才允许进入 Sprint 9C。
+Sprint 9B.2 功能复测和缺陷关闭已经完成。只有补齐 Phone model 与 Android version 并正式解除文档门禁后，才允许进入 Sprint 9C。
 
 ## 14. Sprint 9C 方向（尚未开始）
 
@@ -434,7 +436,7 @@ Sprint 9C 不应自动：
 “当前环境是 Production”
 “当前已启用真实 OpenAI”
 “Sprint 9B.1 Release Gate 已经通过”
-“PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001 已经关闭”
+“Sprint 9B.2 Phone model 与 Android version 已经完成补录”
 ```
 
 正确理解：
@@ -442,6 +444,6 @@ Sprint 9C 不应自动：
 ```text
 云端 Server 已成为 Windows / Android 的主要 Alpha 集成后端，
 本地 Server 仍作为开发与测试后端保留；
-当前下一步是 Sprint 9B.2 Hotfix 与双端最小人工复测，
+Sprint 9B.2 功能复测已通过，当前只剩真机元数据补录与正式门禁关闭，
 Sprint 9C 尚未开始。
 ```
