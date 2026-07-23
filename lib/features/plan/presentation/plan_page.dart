@@ -9,98 +9,203 @@ import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
 import 'plan_controller.dart';
 import 'plan_filter_state.dart';
 import 'plan_view_state.dart';
-import 'widgets/plan_filter_bar.dart';
+import 'widgets/plan_filter_panel.dart';
 import 'widgets/plan_goal_actions_menu.dart';
 import 'widgets/plan_goal_card.dart';
 import 'widgets/plan_goal_form_dialog.dart';
 
-class PlanPage extends ConsumerWidget {
+class PlanPage extends ConsumerStatefulWidget {
   const PlanPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlanPage> createState() => _PlanPageState();
+}
+
+class _PlanPageState extends ConsumerState<PlanPage> {
+  var _isFilterPanelOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
     final asyncView = ref.watch(planControllerProvider);
     final view = asyncView.asData?.value;
+    final isFilterPanelVisible = _isFilterPanelOpen && view != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _PlanHeader(
-          view: view,
-          onCreate: () => _openGoalForm(
-            context,
-            ref,
-            parentGoalId: view?.currentParentGoalId,
-            defaultGoalLevel: _defaultChildLevel(view?.currentParent),
-          ),
-          onBack: () => _navigateBack(ref),
-          onRoot: () => _navigateToBreadcrumb(ref, -1),
-          onBreadcrumb: (index) => _navigateToBreadcrumb(ref, index),
-        ),
-        if (view != null)
-          PlanFilterBar(
-            filter: view.filter,
-            onChanged: (filter) => _updateFilter(ref, filter),
-          ),
-        const Divider(height: 1),
-        Expanded(
-          child: asyncView.when(
-            loading: () => const Center(
-              key: ValueKey('planLoadingState'),
-              child: CircularProgressIndicator(),
+    return PopScope(
+      canPop: !isFilterPanelVisible,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && isFilterPanelVisible) {
+          _closeFilterPanel();
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: isFilterPanelVisible ? _closeFilterPanel : null,
+            child: _PlanHeader(
+              view: view,
+              isFilterPanelOpen: isFilterPanelVisible,
+              hasActiveFilter: _hasActiveFilter(view?.filter),
+              onFilterToggle: view == null ? null : _toggleFilterPanel,
+              onCreate: () {
+                if (isFilterPanelVisible) {
+                  _closeFilterPanel();
+                  return;
+                }
+                _openGoalForm(
+                  context,
+                  ref,
+                  parentGoalId: view?.currentParentGoalId,
+                  defaultGoalLevel: _defaultChildLevel(view?.currentParent),
+                );
+              },
+              onBack: () => isFilterPanelVisible
+                  ? _closeFilterPanel()
+                  : _navigateBack(ref),
+              onRoot: () => isFilterPanelVisible
+                  ? _closeFilterPanel()
+                  : _navigateToBreadcrumb(ref, -1),
+              onBreadcrumb: (index) => isFilterPanelVisible
+                  ? _closeFilterPanel()
+                  : _navigateToBreadcrumb(ref, index),
             ),
-            error: (_, _) => Center(
-              key: const ValueKey('planErrorState'),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('计划暂时无法加载'),
-                  const SizedBox(height: 12),
-                  IconButton.filledTonal(
-                    tooltip: '重新加载',
-                    onPressed: () => _retry(ref),
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
-              ),
-            ),
-            data: (data) => data.goals.isEmpty
-                ? _PlanEmptyState(
-                    isRoot: data.isRoot,
-                    isFiltered: data.hasUnfilteredGoals,
-                    onCreate: () => _openGoalForm(
-                      context,
-                      ref,
-                      parentGoalId: data.currentParentGoalId,
-                      defaultGoalLevel: _defaultChildLevel(data.currentParent),
-                    ),
-                  )
-                : _PlanGoalList(
-                    goals: data.goals,
-                    today: data.today,
-                    onEdit: (goal) => _openGoalForm(
-                      context,
-                      ref,
-                      goal: goal,
-                      parentGoalId: goal.parentGoalId,
-                      defaultGoalLevel: goal.goalLevel,
-                    ),
-                    onOpenChildren: (goal) => _openChildren(ref, goal),
-                    onAddChild: (goal) => _openGoalForm(
-                      context,
-                      ref,
-                      parentGoalId: goal.id,
-                      defaultGoalLevel: _childLevelFor(goal.goalLevel),
-                    ),
-                    onCompletionChanged: (goal, completed) =>
-                        _updateCompletion(context, ref, goal.id, completed),
-                    onAction: (goal, action) =>
-                        _handleAction(context, ref, goal, action),
-                  ),
           ),
-        ),
-      ],
+          const Divider(height: 1),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final availablePanelHeight = constraints.maxHeight > 16
+                    ? constraints.maxHeight - 16
+                    : constraints.maxHeight;
+                final maxPanelHeight = availablePanelHeight
+                    .clamp(0.0, 440.0)
+                    .toDouble();
+
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    asyncView.when(
+                      loading: () => const Center(
+                        key: ValueKey('planLoadingState'),
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (_, _) => Center(
+                        key: const ValueKey('planErrorState'),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('计划暂时无法加载'),
+                            const SizedBox(height: 12),
+                            IconButton.filledTonal(
+                              tooltip: '重新加载',
+                              onPressed: () => _retry(ref),
+                              icon: const Icon(Icons.refresh),
+                            ),
+                          ],
+                        ),
+                      ),
+                      data: (data) => data.goals.isEmpty
+                          ? _PlanEmptyState(
+                              isRoot: data.isRoot,
+                              isFiltered: data.hasUnfilteredGoals,
+                              onCreate: () => _openGoalForm(
+                                context,
+                                ref,
+                                parentGoalId: data.currentParentGoalId,
+                                defaultGoalLevel: _defaultChildLevel(
+                                  data.currentParent,
+                                ),
+                              ),
+                            )
+                          : _PlanGoalList(
+                              goals: data.goals,
+                              today: data.today,
+                              onEdit: (goal) => _openGoalForm(
+                                context,
+                                ref,
+                                goal: goal,
+                                parentGoalId: goal.parentGoalId,
+                                defaultGoalLevel: goal.goalLevel,
+                              ),
+                              onOpenChildren: (goal) =>
+                                  _openChildren(ref, goal),
+                              onAddChild: (goal) => _openGoalForm(
+                                context,
+                                ref,
+                                parentGoalId: goal.id,
+                                defaultGoalLevel: _childLevelFor(
+                                  goal.goalLevel,
+                                ),
+                              ),
+                              onCompletionChanged: (goal, completed) =>
+                                  _updateCompletion(
+                                    context,
+                                    ref,
+                                    goal.id,
+                                    completed,
+                                  ),
+                              onAction: (goal, action) =>
+                                  _handleAction(context, ref, goal, action),
+                            ),
+                    ),
+                    if (isFilterPanelVisible) ...[
+                      ModalBarrier(
+                        key: const ValueKey('planFilterBarrier'),
+                        color: const Color(0x14000000),
+                        dismissible: true,
+                        semanticsLabel: '关闭筛选',
+                        onDismiss: _closeFilterPanel,
+                      ),
+                      Positioned(
+                        top: AppSpacing.xs,
+                        left: AppSpacing.md,
+                        right: AppSpacing.md,
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: 640,
+                              maxHeight: maxPanelHeight,
+                            ),
+                            child: PlanFilterPanel(
+                              filter: view.filter,
+                              onChanged: (filter) => _updateFilter(ref, filter),
+                              onClose: _closeFilterPanel,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  void _toggleFilterPanel() {
+    setState(() {
+      _isFilterPanelOpen = !_isFilterPanelOpen;
+    });
+  }
+
+  void _closeFilterPanel() {
+    if (!_isFilterPanelOpen) return;
+    setState(() {
+      _isFilterPanelOpen = false;
+    });
+  }
+
+  bool _hasActiveFilter(PlanFilterState? filter) {
+    if (filter == null) return false;
+    return filter.level != null ||
+        filter.lifecycle != PlanLifecycleFilter.all ||
+        filter.sortMode != PlanSortMode.priorityAsc ||
+        filter.includeArchived;
   }
 
   void _retry(WidgetRef ref) {
@@ -251,6 +356,9 @@ class PlanPage extends ConsumerWidget {
 class _PlanHeader extends StatelessWidget {
   const _PlanHeader({
     required this.view,
+    required this.isFilterPanelOpen,
+    required this.hasActiveFilter,
+    required this.onFilterToggle,
     required this.onCreate,
     required this.onBack,
     required this.onRoot,
@@ -258,6 +366,9 @@ class _PlanHeader extends StatelessWidget {
   });
 
   final PlanViewState? view;
+  final bool isFilterPanelOpen;
+  final bool hasActiveFilter;
+  final VoidCallback? onFilterToggle;
   final VoidCallback onCreate;
   final VoidCallback onBack;
   final VoidCallback onRoot;
@@ -330,17 +441,46 @@ class _PlanHeader extends StatelessWidget {
                 icon: const Icon(Icons.add),
                 label: Text(buttonLabel),
               );
+              final filterButton = IconButton(
+                key: const ValueKey('planFilterButton'),
+                tooltip: isFilterPanelOpen
+                    ? '收起筛选'
+                    : hasActiveFilter
+                    ? '展开筛选，已应用筛选条件'
+                    : '展开筛选',
+                onPressed: onFilterToggle,
+                icon: Icon(
+                  isFilterPanelOpen
+                      ? Icons.filter_alt_off
+                      : hasActiveFilter
+                      ? Icons.filter_alt
+                      : Icons.filter_list,
+                ),
+              );
 
               if (constraints.maxWidth < 420) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [title, const SizedBox(height: 12), button],
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: title),
+                        const SizedBox(width: 8),
+                        filterButton,
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    button,
+                  ],
                 );
               }
               return Row(
                 children: [
                   Expanded(child: title),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
+                  filterButton,
+                  const SizedBox(width: 8),
                   button,
                 ],
               );

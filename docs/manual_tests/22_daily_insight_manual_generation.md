@@ -100,6 +100,60 @@ Install the newly built APK and record evidence from the physical device.
 - Release Gate: `FAIL / BLOCKED` until `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` is fixed and Android item 13 passes physical-device retest.
 - Scope note: this update records manual evidence only; no Flutter, Server, database, or schema code was changed.
 
+## Sprint 9B.2 Plan Filter Layout Hotfix
+
+Sprint 9B.2 addresses only `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001`.
+The permanently expanded Plan filter bar has been replaced by a responsive
+filter panel opened from the Plan header. Closing the panel preserves the
+filter values held by the existing Plan Controller. The panel:
+
+- is collapsed by default;
+- opens and closes from the Plan header filter action;
+- closes when the user taps outside it or presses the system back action;
+- keeps filter changes visible immediately without closing the panel;
+- places the full-row “Show archived” control below the other filters;
+- scrolls when its contents exceed the available height;
+- uses available width and text scaling rather than platform detection;
+- keeps the Plan list mounted behind the temporary panel;
+- allows Plan card actions to wrap at narrow widths and large text scales.
+
+Automated widget coverage includes default collapse, toggle close, outside
+close, retained filter state, full-row archived selection, system back,
+320/360px layouts with `TextScaler 2.0`, and 720/1200px Windows layouts.
+Automated coverage does not replace physical-device or Windows interactive
+acceptance.
+
+### Sprint 9B.2 Automated and Build Evidence
+
+| Check | Result | Evidence |
+|---|---|---|
+| Plan page widget tests | PASS | `flutter test test/features/plan/presentation/plan_page_test.dart`: `25 passed`. |
+| Complete Plan test suite | PASS | `flutter test test/features/plan`: `111 passed`. |
+| Flutter analyze | PASS | `flutter analyze`: no issues found. |
+| Complete Flutter test suite | PASS | `flutter test`: `672 passed / 2 skipped`; both skips are opt-in Uvicorn Fake full-stack tests. |
+| Windows release build | PASS | `flutter build windows --release`; output `build/windows/x64/runner/Release/rebirth.exe`. This is not the Windows Plan smoke. |
+| Android split release build | PASS | `flutter build apk --release --split-per-abi`; arm64-v8a, armeabi-v7a, and x86_64 APKs built. This is not physical-device acceptance. |
+
+### Required Sprint 9B.2 Retest
+
+| Check | Status | Required evidence |
+|---|---|---|
+| Android item 12: maximum text remains readable | NOT EXECUTED | Physical-device screenshot or recording from the rebuilt arm64-v8a release APK. |
+| Android item 13: Plan filters and complete scrolling | NOT EXECUTED | Confirm collapsed default, panel scrolling, list access, no overflow, retained filters, and full-row “Show archived”. |
+| Android item 14: no abnormal exit | NOT EXECUTED | Exercise filter open/close, Android back, navigation, and restart. |
+| Windows Plan smoke | NOT EXECUTED | Confirm wide and narrow windows, mouse open/close, outside click, list access, and retained filters. |
+| Phone model | NOT RECORDED | Record the physical-device model. |
+| Android version | NOT RECORDED | Record the Android OS version. |
+| APK ABI | NOT RECORDED | Confirm the installed candidate is `arm64-v8a`. |
+
+Until that retest is completed:
+
+- Android item 13 remains `FAIL`.
+- Android Matrix remains `13 PASS / 1 FAIL / 0 NOT EXECUTED`.
+- `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` remains `OPEN`.
+- Sprint 9B.1 Release Gate remains `BLOCKED`.
+- Sprint 9C must not start.
+
 ## Automated Evidence
 
 Run:

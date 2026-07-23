@@ -70,6 +70,221 @@ void main() {
     expect(find.text('添加子目标'), findsOneWidget);
   });
 
+  testWidgets('filters are collapsed by default and the list stays visible', (
+    tester,
+  ) async {
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_rootGoal()]));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('planFilterButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
+    expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+    expect(find.text('年度研究方向'), findsOneWidget);
+  });
+
+  testWidgets('filter button opens and closes the responsive panel', (
+    tester,
+  ) async {
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_rootGoal()]));
+    await tester.pumpAndSettle();
+
+    await _openFilters(tester);
+
+    expect(find.byKey(const ValueKey('planFilterBarrier')), findsOneWidget);
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('planIncludeArchivedFilter')))
+          .dy,
+      greaterThan(
+        tester.getBottomLeft(find.byKey(const ValueKey('planSortMode'))).dy,
+      ),
+    );
+
+    await _closeFilters(tester);
+
+    expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
+    expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+  });
+
+  testWidgets('tapping outside the panel closes it without hiding the list', (
+    tester,
+  ) async {
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_rootGoal()]));
+    await tester.pumpAndSettle();
+    await _openFilters(tester);
+
+    final barrier = find.byKey(const ValueKey('planFilterBarrier'));
+    final barrierRect = tester.getRect(barrier);
+    await tester.tapAt(Offset(barrierRect.left + 8, barrierRect.bottom - 8));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
+    expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+  });
+
+  testWidgets('tapping the header outside the panel closes it', (tester) async {
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_rootGoal()]));
+    await tester.pumpAndSettle();
+    await _openFilters(tester);
+
+    await tester.tap(find.text('让今天与长期方向相连'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
+    expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+  });
+
+  testWidgets('filter state survives closing and reopening the panel', (
+    tester,
+  ) async {
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_rootGoal()]));
+    await tester.pumpAndSettle();
+    await _openFilters(tester);
+
+    tester
+        .widget<DropdownButtonFormField<String>>(
+          find.byKey(const ValueKey('planLevelFilter')),
+        )
+        .onChanged!('day');
+    await tester.pumpAndSettle();
+
+    expect(find.text('没有符合条件的目标。'), findsOneWidget);
+    expect(find.byKey(const ValueKey('planFilterPanel')), findsOneWidget);
+
+    await _closeFilters(tester);
+    await _openFilters(tester);
+
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(
+            find.byKey(const ValueKey('planLevelFilter')),
+          )
+          .initialValue,
+      'day',
+    );
+    expect(find.text('没有符合条件的目标。'), findsOneWidget);
+  });
+
+  testWidgets('show archived toggles from the whole row and stays selected', (
+    tester,
+  ) async {
+    final archived = _copyGoal(
+      _rootGoal(id: 'archived-goal', title: '已归档研究'),
+      archivedAt: 10,
+    );
+    await _pumpPlanPage(
+      tester,
+      _FakePlanRepository(goals: [_rootGoal(), archived]),
+    );
+    await tester.pumpAndSettle();
+    await _openFilters(tester);
+
+    expect(
+      tester
+          .widget<SwitchListTile>(
+            find.byKey(const ValueKey('planIncludeArchivedFilter')),
+          )
+          .value,
+      isFalse,
+    );
+    await tester.tap(find.byKey(const ValueKey('planIncludeArchivedFilter')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('planFilterPanel')), findsOneWidget);
+    expect(find.text('已归档研究'), findsOneWidget);
+    expect(
+      tester
+          .widget<SwitchListTile>(
+            find.byKey(const ValueKey('planIncludeArchivedFilter')),
+          )
+          .value,
+      isTrue,
+    );
+
+    await _closeFilters(tester);
+    await _openFilters(tester);
+    expect(
+      tester
+          .widget<SwitchListTile>(
+            find.byKey(const ValueKey('planIncludeArchivedFilter')),
+          )
+          .value,
+      isTrue,
+    );
+  });
+
+  testWidgets('system back closes the filter panel before leaving Plan', (
+    tester,
+  ) async {
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [_rootGoal()]));
+    await tester.pumpAndSettle();
+    await _openFilters(tester);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
+    expect(find.text('Plan'), findsOneWidget);
+    expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+  });
+
+  for (final width in [320.0, 360.0]) {
+    testWidgets(
+      '${width.toInt()}px with 2x text keeps filters scrollable and list reachable',
+      (tester) async {
+        await _pumpPlanPage(
+          tester,
+          _FakePlanRepository(goals: [_rootGoal()]),
+          size: Size(width, 720),
+          textScale: 2,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+        await _openFilters(tester);
+        expect(
+          find.byKey(const ValueKey('planFilterPanelScroll')),
+          findsOneWidget,
+        );
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('planIncludeArchivedFilter')),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('planIncludeArchivedFilter')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+
+        await _closeFilters(tester);
+        expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final width in [720.0, 1200.0]) {
+    testWidgets(
+      '${width.toInt()}px Windows layout opens and closes filters without overflow',
+      (tester) async {
+        await _pumpPlanPage(
+          tester,
+          _FakePlanRepository(goals: [_rootGoal()]),
+          size: Size(width, 900),
+        );
+        await tester.pumpAndSettle();
+
+        await _openFilters(tester);
+        expect(find.byKey(const ValueKey('planFilterPanel')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await _closeFilters(tester);
+        expect(find.byKey(const ValueKey('planGoalList')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets('child action enters child view and back returns to root', (
     tester,
   ) async {
@@ -194,10 +409,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('年度研究方向'), findsNothing);
 
+    await _openFilters(tester);
     await tester.tap(find.byKey(const ValueKey('planIncludeArchivedFilter')));
     await tester.pumpAndSettle();
     expect(find.text('年度研究方向'), findsOneWidget);
     expect(find.text('已归档'), findsOneWidget);
+    await _closeFilters(tester);
 
     await tester.tap(
       find.byKey(const ValueKey('planGoalActionsMenu_root-goal')),
@@ -239,6 +456,7 @@ void main() {
     final repository = _FakePlanRepository(goals: [_rootGoal()]);
     await _pumpPlanPage(tester, repository);
     await tester.pumpAndSettle();
+    await _openFilters(tester);
 
     tester
         .widget<DropdownButtonFormField<String>>(
@@ -280,6 +498,7 @@ void main() {
     );
     await _pumpPlanPage(tester, _FakePlanRepository(goals: [overdue, future]));
     await tester.pumpAndSettle();
+    await _openFilters(tester);
 
     tester
         .widget<DropdownButtonFormField<PlanLifecycleFilter>>(
@@ -340,7 +559,7 @@ void main() {
       'lib/features/plan/presentation/plan_view_state.dart',
       'lib/features/plan/presentation/plan_filter_state.dart',
       'lib/features/plan/presentation/widgets/plan_date_parts_field.dart',
-      'lib/features/plan/presentation/widgets/plan_filter_bar.dart',
+      'lib/features/plan/presentation/widgets/plan_filter_panel.dart',
       'lib/features/plan/presentation/widgets/plan_goal_actions_menu.dart',
       'lib/features/plan/presentation/widgets/plan_goal_form_dialog.dart',
       'lib/features/plan/presentation/widgets/plan_goal_card.dart',
@@ -360,9 +579,11 @@ void main() {
 
 Future<void> _pumpPlanPage(
   WidgetTester tester,
-  PlanRepository repository,
-) async {
-  await tester.binding.setSurfaceSize(const Size(1000, 1000));
+  PlanRepository repository, {
+  Size size = const Size(1000, 1000),
+  double textScale = 1,
+}) async {
+  await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
@@ -372,9 +593,31 @@ Future<void> _pumpPlanPage(
           DateTimeService(now: () => DateTime(2026, 7, 14, 10)),
         ),
       ],
-      child: const MaterialApp(home: Scaffold(body: PlanPage())),
+      child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: const Scaffold(body: PlanPage()),
+      ),
     ),
   );
+}
+
+Future<void> _openFilters(WidgetTester tester) async {
+  expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
+  await tester.tap(find.byKey(const ValueKey('planFilterButton')));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const ValueKey('planFilterPanel')), findsOneWidget);
+}
+
+Future<void> _closeFilters(WidgetTester tester) async {
+  expect(find.byKey(const ValueKey('planFilterPanel')), findsOneWidget);
+  await tester.tap(find.byKey(const ValueKey('planFilterButton')));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
 }
 
 Future<void> _submitForm(WidgetTester tester) async {

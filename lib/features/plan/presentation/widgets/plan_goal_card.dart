@@ -80,8 +80,10 @@ class PlanGoalCard extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 TextButton.icon(
                   key: ValueKey('viewPlanGoalChildren_${goal.id}'),
@@ -89,7 +91,6 @@ class PlanGoalCard extends StatelessWidget {
                   icon: const Icon(Icons.account_tree_outlined),
                   label: const Text('子目标'),
                 ),
-                const SizedBox(width: 8),
                 TextButton.icon(
                   key: ValueKey('addPlanGoalChild_${goal.id}'),
                   onPressed: isArchived ? null : onAddChild,
