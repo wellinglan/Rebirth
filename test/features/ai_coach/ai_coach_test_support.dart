@@ -173,7 +173,14 @@ final class FakeAiReportRepository implements AiReportRepository {
     lastPendingInput = input;
     final report = buildAiReport(
       id: 'pending-$createPendingCalls',
+      reportType: input.reportType,
+      targetDate: input.reportType == AiReportType.dailyInsight
+          ? input.periodStartDate
+          : null,
       status: AiReportStatus.pending,
+      selectedScopes: input.selection.scopes,
+      inputHash: input.inputHash,
+      promptVersion: input.promptVersion,
     );
     reports.insert(0, report);
     return report;
@@ -234,6 +241,9 @@ final class FakeAiReportRepository implements AiReportRepository {
       periodStartDate: existing.periodStartDate,
       periodEndDate: existing.periodEndDate,
       inputSources: existing.inputSources,
+      selectedScopes: existing.selectedScopes,
+      inputMetadataVersion: existing.inputMetadataVersion,
+      inputSchemaVersion: existing.inputSchemaVersion,
       inputHash: existing.inputHash,
       promptVersion: existing.promptVersion,
       provider: provider,
@@ -561,7 +571,19 @@ AiReport buildAiReport({
   bool hasInputSnapshot = false,
   String? provider = 'local-fixture-provider',
   String? model = 'local-fixture-model',
+  Set<AiDataScope>? selectedScopes,
+  int? inputMetadataVersion,
+  int? inputSchemaVersion,
+  bool includeFreshnessMetadata = true,
+  String inputHash =
+      '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
+  String? promptVersion,
 }) {
+  final resolvedScopes =
+      selectedScopes ??
+      (reportType == AiReportType.dailyInsight && includeFreshnessMetadata
+          ? const {AiDataScope.todayMetrics}
+          : null);
   return AiReport(
     id: id,
     userId: 'private-user-id',
@@ -575,9 +597,20 @@ AiReport buildAiReport({
     inputSources: [
       AiInputSourceRef(table: 'today_records', id: 'source-id', updatedAt: 1),
     ],
-    inputHash:
-        '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
-    promptVersion: AiInputContract.promptVersionFor(reportType),
+    selectedScopes: resolvedScopes,
+    inputMetadataVersion:
+        inputMetadataVersion ??
+        (reportType == AiReportType.dailyInsight && includeFreshnessMetadata
+            ? 1
+            : null),
+    inputSchemaVersion:
+        inputSchemaVersion ??
+        (reportType == AiReportType.dailyInsight && includeFreshnessMetadata
+            ? 1
+            : null),
+    inputHash: inputHash,
+    promptVersion:
+        promptVersion ?? AiInputContract.promptVersionFor(reportType),
     provider: provider,
     model: model,
     generationMode: AiGenerationMode.manual,

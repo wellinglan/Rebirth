@@ -7,6 +7,7 @@ import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_assembler.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
+import 'package:rebirth/features/ai_coach/domain/daily_report_freshness_service.dart';
 import 'package:rebirth/features/ai_coach/domain/canonical_json_encoder.dart';
 import 'package:rebirth/features/ai_coach/domain/input_hash_service.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
@@ -65,6 +66,13 @@ final aiCoachInputAssemblerProvider = Provider<AiCoachInputAssembler>((ref) {
     inputHashService: ref.watch(inputHashServiceProvider),
   );
 });
+
+final dailyReportFreshnessServiceProvider =
+    Provider<DailyReportFreshnessService>((ref) {
+      return DailyReportFreshnessService(
+        inputAssembler: ref.watch(aiCoachInputAssemblerProvider),
+      );
+    });
 
 final aiReportRepositoryProvider = Provider<AiReportRepository>((ref) {
   return LocalAiReportRepository(

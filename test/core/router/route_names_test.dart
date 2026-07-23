@@ -35,4 +35,18 @@ void main() {
     expect(RoutePaths.todayHistory, '/today/history');
     expect(RoutePaths.journal, '/journal');
   });
+
+  test('Daily refresh route preserves sorted original scopes', () {
+    final location = RoutePaths.aiCoachDaily(
+      '2026-07-16',
+      scopes: ['journal_reflections', 'today_metrics'],
+    );
+    final uri = Uri.parse(location);
+
+    expect(uri.path, '/ai-coach/daily/2026-07-16');
+    expect(
+      uri.queryParameters['scopes'],
+      'journal_reflections,today_metrics',
+    );
+  });
 }

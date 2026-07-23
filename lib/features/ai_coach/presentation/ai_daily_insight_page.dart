@@ -18,9 +18,14 @@ import 'widgets/ai_reusable_report_card.dart';
 import 'widgets/ai_scope_selector.dart';
 
 class AiDailyInsightPage extends ConsumerWidget {
-  const AiDailyInsightPage({required this.targetDate, super.key});
+  const AiDailyInsightPage({
+    required this.targetDate,
+    this.initialScopes = const {},
+    super.key,
+  });
 
   final String targetDate;
+  final Set<AiDataScope> initialScopes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +39,10 @@ class AiDailyInsightPage extends ConsumerWidget {
       );
     }
 
-    final requestContext = AiInsightRequestContext.daily(targetDate);
+    final requestContext = AiInsightRequestContext.daily(
+      targetDate,
+      initialScopes: initialScopes,
+    );
     final preview = ref.watch(aiRequestPreviewControllerFamily(requestContext));
     return Scaffold(
       key: const ValueKey('aiDailyInsightPage'),

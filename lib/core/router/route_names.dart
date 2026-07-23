@@ -26,18 +26,24 @@ abstract final class RoutePaths {
   static const aiCoach = '/ai-coach';
 
   static String todayHistoryForDate(String date) {
-    return Uri(
-      path: todayHistory,
-      queryParameters: {'date': date},
-    ).toString();
+    return Uri(path: todayHistory, queryParameters: {'date': date}).toString();
   }
 
   static String journalForDate(String date) {
     return Uri(path: journal, queryParameters: {'date': date}).toString();
   }
 
-  static String aiCoachDaily(String targetDate) {
-    return '$aiCoach/daily/${Uri.encodeComponent(targetDate)}';
+  static String aiCoachDaily(
+    String targetDate, {
+    Iterable<String> scopes = const [],
+  }) {
+    final sortedScopes = scopes.toSet().toList()..sort();
+    return Uri(
+      path: '$aiCoach/daily/${Uri.encodeComponent(targetDate)}',
+      queryParameters: sortedScopes.isEmpty
+          ? null
+          : {'scopes': sortedScopes.join(',')},
+    ).toString();
   }
 
   static String aiCoachReport(String reportId) {

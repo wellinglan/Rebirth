@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/daily_report_freshness.dart';
 
+import 'ai_daily_report_freshness_provider.dart';
 import 'ai_report_history_controller.dart';
 import 'ai_pending_recovery_controller.dart';
 import 'models/ai_report_presentation_models.dart';
@@ -46,6 +48,9 @@ class _DetailContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(aiReportHistoryControllerProvider).asData?.value;
+    final freshness = detail.isDaily
+        ? ref.watch(aiDailyReportFreshnessProvider(detail.id))
+        : null;
     final deleting = history?.deletingReportIds.contains(detail.id) == true;
     return ListView(
       key: const ValueKey('aiReportDetailContent'),
@@ -63,6 +68,20 @@ class _DetailContent extends ConsumerWidget {
                   detail.reportTypeLabel,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
+                if (freshness != null) ...[
+                  const SizedBox(height: 12),
+                  _DailyFreshnessCard(
+                    freshness: freshness,
+                    onRebuild: (result) => context.push(
+                      RoutePaths.aiCoachDaily(
+                        result.targetDate!,
+                        scopes: result.selectedScopes!.map(
+                          (scope) => scope.contractValue,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
@@ -124,7 +143,9 @@ class _DetailContent extends ConsumerWidget {
                     children: [
                       OutlinedButton.icon(
                         key: const ValueKey('openDailySourceTodayButton'),
-                        onPressed: () => context.push(
+                        onPressed: () => _openSource(
+                          context,
+                          ref,
                           RoutePaths.todayHistoryForDate(
                             detail.periodStartDate,
                           ),
@@ -134,7 +155,9 @@ class _DetailContent extends ConsumerWidget {
                       ),
                       OutlinedButton.icon(
                         key: const ValueKey('openDailySourceJournalButton'),
-                        onPressed: () => context.push(
+                        onPressed: () => _openSource(
+                          context,
+                          ref,
                           RoutePaths.journalForDate(detail.periodStartDate),
                         ),
                         icon: const Icon(Icons.menu_book_outlined),
@@ -186,6 +209,124 @@ class _DetailContent extends ConsumerWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(const SnackBar(content: Text('本地报告删除失败，请重试。')));
+  }
+
+  Future<void> _openSource(
+    BuildContext context,
+    WidgetRef ref,
+    String location,
+  ) async {
+    await context.push(location);
+    if (!context.mounted) return;
+    ref.invalidate(aiDailyReportFreshnessProvider(detail.id));
+  }
+}
+
+class _DailyFreshnessCard extends StatelessWidget {
+  const _DailyFreshnessCard({required this.freshness, required this.onRebuild});
+
+  final AsyncValue<DailyReportFreshnessResult?> freshness;
+  final ValueChanged<DailyReportFreshnessResult> onRebuild;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const ValueKey('dailyReportFreshnessCard'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: freshness.when(
+          loading: () => const Row(
+            key: ValueKey('dailyReportFreshnessLoading'),
+            children: [
+              SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Expanded(child: Text('正在核对当前记录...')),
+            ],
+          ),
+          error: (error, stackTrace) => const _FreshnessMessage(
+            icon: Icons.help_outline,
+            title: '暂时无法确认',
+            message: '暂时无法确认这份报告是否与当前记录一致。',
+          ),
+          data: (result) {
+            if (result == null) return const SizedBox.shrink();
+            return switch (result.status) {
+              DailyReportFreshness.current => const _FreshnessMessage(
+                key: ValueKey('dailyReportFreshnessCurrent'),
+                icon: Icons.check_circle_outline,
+                title: '与当前记录一致',
+                message: '这份报告使用的数据与当前本地记录一致。',
+              ),
+              DailyReportFreshness.stale => _FreshnessMessage(
+                key: const ValueKey('dailyReportFreshnessStale'),
+                icon: Icons.history_toggle_off,
+                title: '当前记录已发生变化',
+                message: '这份报告仍保留生成时的历史结论。',
+                action: result.canRebuildPreview
+                    ? FilledButton.icon(
+                        key: const ValueKey('rebuildDailyPreviewButton'),
+                        onPressed: () => onRebuild(result),
+                        icon: const Icon(Icons.visibility_outlined),
+                        label: const Text('重新查看预览'),
+                      )
+                    : null,
+              ),
+              DailyReportFreshness.unavailable => const _FreshnessMessage(
+                key: ValueKey('dailyReportFreshnessUnavailable'),
+                icon: Icons.help_outline,
+                title: '暂时无法确认',
+                message: '暂时无法确认这份报告是否与当前记录一致。',
+              ),
+            };
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _FreshnessMessage extends StatelessWidget {
+  const _FreshnessMessage({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, semanticLabel: title),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(message),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (action != null) ...[const SizedBox(height: 12), action!],
+      ],
+    );
   }
 }
 

@@ -418,6 +418,9 @@ void main() {
       ProviderScope(
         overrides: [
           aiReportRepositoryProvider.overrideWithValue(reports),
+          aiCoachInputAssemblerProvider.overrideWithValue(
+            FakeAiCoachInputAssembler(),
+          ),
           aiGenerationRequestBindingStoreProvider.overrideWithValue(
             FakeAiGenerationRequestBindingStore(),
           ),
@@ -696,6 +699,9 @@ Future<void> _pumpDetail(
     ProviderScope(
       overrides: [
         aiReportRepositoryProvider.overrideWithValue(reports),
+        aiCoachInputAssemblerProvider.overrideWithValue(
+          FakeAiCoachInputAssembler(),
+        ),
         aiGenerationRequestBindingStoreProvider.overrideWithValue(
           FakeAiGenerationRequestBindingStore(),
         ),

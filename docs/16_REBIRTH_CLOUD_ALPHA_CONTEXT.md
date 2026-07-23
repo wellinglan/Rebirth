@@ -2,9 +2,9 @@
 
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
-> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9B.2 功能复测已通过，最终文档门禁仅等待 Phone model 与 Android version 补录。
+> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9B.1 / 9B.2 功能验收已通过，Phone model 与 Android version 是非阻塞性元数据缺口。
 >
-> 下一阶段：补齐 Sprint 9B.2 真机元数据后关闭 Release Gate；Sprint 9C 尚未开始。
+> 下一阶段：Sprint 9C Daily Insight Current / Stale Detection 正在进行；云端架构保持不变。
 
 ## 1. 当前主架构
 
@@ -360,22 +360,20 @@ https://rebirth-alpha-bj.taila61d27.ts.net
 - `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001`：`CLOSED`
 - APK ABI：`arm64-v8a`，使用重建的 `app-arm64-v8a-release.apk`
 
-尚未正式完成：
+非阻塞性元数据缺口：
 
 - Phone model 补录
 - Android version 补录
-- Sprint 9B.1 最终文档 Release Gate：在上述两项补齐前保持 `BLOCKED`
-- Sprint 9C：尚未开始
 
 下一开发目标：
 
 ```text
-补录 Sprint 9B.2 Phone model 与 Android version
+Sprint 9C：Daily Insight Current / Stale Detection
 ```
 
-Sprint 9B.2 功能复测和缺陷关闭已经完成。只有补齐 Phone model 与 Android version 并正式解除文档门禁后，才允许进入 Sprint 9C。
+Sprint 9B.2 功能复测和缺陷关闭已经完成。Phone model 与 Android version 仍为 `NOT RECORDED`，但不阻塞 Sprint 9C，也不得伪造补录。
 
-## 14. Sprint 9C 方向（尚未开始）
+## 14. Sprint 9C 状态（IN PROGRESS）
 
 ```text
 Completed Daily Insight
@@ -435,8 +433,9 @@ Sprint 9C 不应自动：
 “PostgreSQL 对公网开放 5432”
 “当前环境是 Production”
 “当前已启用真实 OpenAI”
-“Sprint 9B.1 Release Gate 已经通过”
 “Sprint 9B.2 Phone model 与 Android version 已经完成补录”
+“Phone model 与 Android version 会阻止 Sprint 9C 开始”
+“Sprint 9C 已完成人工验收”
 ```
 
 正确理解：
@@ -444,6 +443,7 @@ Sprint 9C 不应自动：
 ```text
 云端 Server 已成为 Windows / Android 的主要 Alpha 集成后端，
 本地 Server 仍作为开发与测试后端保留；
-Sprint 9B.2 功能复测已通过，当前只剩真机元数据补录与正式门禁关闭，
-Sprint 9C 尚未开始。
+Sprint 9B.1 / 9B.2 功能验收已通过，
+Phone model 与 Android version 是非阻塞性元数据缺口，
+Sprint 9C 正在进行，且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/ai_coach/presentation/ai_coach_page.dart';
 import '../../features/ai_coach/presentation/ai_daily_insight_page.dart';
 import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
+import '../../features/ai_coach/domain/ai_data_scope.dart';
 import '../../features/growth/presentation/growth_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
@@ -51,9 +52,8 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: RoutePaths.journal,
               name: RouteNames.journal,
-              builder: (context, state) => JournalPage(
-                targetDate: state.uri.queryParameters['date'],
-              ),
+              builder: (context, state) =>
+                  JournalPage(targetDate: state.uri.queryParameters['date']),
             ),
           ],
         ),
@@ -96,6 +96,9 @@ final GoRouter appRouter = GoRouter(
           name: RouteNames.aiCoachDaily,
           builder: (context, state) => AiDailyInsightPage(
             targetDate: state.pathParameters['targetDate'] ?? '',
+            initialScopes: _dailyScopesFrom(
+              state.uri.queryParameters['scopes'],
+            ),
           ),
         ),
         GoRoute(
@@ -121,3 +124,11 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+
+Set<AiDataScope> _dailyScopesFrom(String? value) {
+  if (value == null || value.trim().isEmpty) return const {};
+  final supported = AiDataScope.values.where((scope) => scope.supported);
+  return supported
+      .where((scope) => value.split(',').contains(scope.contractValue))
+      .toSet();
+}

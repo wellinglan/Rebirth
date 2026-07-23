@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
@@ -62,8 +63,11 @@ void main() {
       expect(raw.inputSnapshotJson, isNull);
       expect(
         raw.inputSourcesJson,
-        '[{"id":"source-a","table":"today_records","updated_at":10}]',
+        '{"input_schema_version":1,"metadata_version":1,"scopes":["today_metrics"],"sources":[{"id":"source-a","table":"today_records","updated_at":10}]}',
       );
+      expect(report.selectedScopes, {AiDataScope.todayMetrics});
+      expect(report.inputMetadataVersion, 1);
+      expect(report.inputSchemaVersion, 1);
       expect(raw.requestedAt, currentTime.millisecondsSinceEpoch);
     },
   );
@@ -84,6 +88,26 @@ void main() {
     final raw = await database.select(database.aiReports).getSingle();
 
     expect(raw.inputSnapshotJson, input.canonicalJson);
+  });
+
+  test('legacy source arrays remain readable without guessed scopes', () async {
+    final pending = await repository.createPending(input: _bundle());
+    await (database.update(
+      database.aiReports,
+    )..where((row) => row.id.equals(pending.id))).write(
+      const AiReportsCompanion(
+        inputSourcesJson: Value(
+          '[{"id":"source-a","table":"today_records","updated_at":10}]',
+        ),
+      ),
+    );
+
+    final legacy = await repository.getById(pending.id);
+
+    expect(legacy?.inputSources, hasLength(1));
+    expect(legacy?.selectedScopes, isNull);
+    expect(legacy?.inputMetadataVersion, isNull);
+    expect(legacy?.inputSchemaVersion, isNull);
   });
 
   test(

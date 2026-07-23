@@ -6,6 +6,7 @@ import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_exception.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_mode.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_contract.dart';
@@ -60,9 +61,19 @@ final class LocalAiReportRepository implements AiReportRepository {
     final bootstrap = await database.bootstrapDao.bootstrap();
     final now = dateTimeService.currentSnapshot().utcMilliseconds;
     final reportId = idFactory();
-    final inputSourcesJson = canonicalJsonEncoder.encode(
-      input.sources.map((source) => source.toCanonicalMap()).toList(),
-    );
+    final scopes =
+        input.selection.scopes
+            .map((scope) => scope.contractValue)
+            .toList(growable: false)
+          ..sort();
+    final inputSourcesJson = canonicalJsonEncoder.encode({
+      'input_schema_version': AiInputContract.schemaVersion,
+      'metadata_version': 1,
+      'scopes': scopes,
+      'sources': input.sources
+          .map((source) => source.toCanonicalMap())
+          .toList(growable: false),
+    });
     await database
         .into(database.aiReports)
         .insert(
@@ -272,13 +283,17 @@ final class LocalAiReportRepository implements AiReportRepository {
   }
 
   domain.AiReport _toDomain(db.AiReport row) {
+    final metadata = _decodeInputMetadata(row.inputSourcesJson);
     return domain.AiReport(
       id: row.id,
       userId: row.userId,
       reportType: AiReportType.fromDatabaseValue(row.reportType),
       periodStartDate: row.periodStartDate,
       periodEndDate: row.periodEndDate,
-      inputSources: _decodeSources(row.inputSourcesJson),
+      inputSources: metadata.sources,
+      selectedScopes: metadata.selectedScopes,
+      inputMetadataVersion: metadata.metadataVersion,
+      inputSchemaVersion: metadata.inputSchemaVersion,
       inputHash: row.inputHash,
       promptVersion: row.promptVersion,
       provider: row.provider,
@@ -296,22 +311,36 @@ final class LocalAiReportRepository implements AiReportRepository {
     );
   }
 
-  List<AiInputSourceRef> _decodeSources(String value) {
+  _StoredInputMetadata _decodeInputMetadata(String value) {
     try {
       final decoded = jsonDecode(value);
-      if (decoded is! List) throw const FormatException();
-      return decoded
-          .map((item) {
-            if (item is! Map<String, dynamic>) throw const FormatException();
-            final table = item['table'];
-            final id = item['id'];
-            final updatedAt = item['updated_at'];
-            if (table is! String || id is! String || updatedAt is! int) {
-              throw const FormatException();
-            }
-            return AiInputSourceRef(table: table, id: id, updatedAt: updatedAt);
-          })
-          .toList(growable: false);
+      if (decoded is List) {
+        return _StoredInputMetadata(sources: _decodeSources(decoded));
+      }
+      if (decoded is! Map<String, dynamic>) throw const FormatException();
+      final metadataVersion = decoded['metadata_version'];
+      final inputSchemaVersion = decoded['input_schema_version'];
+      final rawScopes = decoded['scopes'];
+      final rawSources = decoded['sources'];
+      if (metadataVersion is! int ||
+          inputSchemaVersion is! int ||
+          rawScopes is! List ||
+          rawSources is! List) {
+        throw const FormatException();
+      }
+      final selectedScopes = rawScopes.map((value) {
+        if (value is! String) throw const FormatException();
+        return AiDataScope.values.firstWhere(
+          (scope) => scope.contractValue == value,
+          orElse: () => throw const FormatException(),
+        );
+      }).toSet();
+      return _StoredInputMetadata(
+        sources: _decodeSources(rawSources),
+        selectedScopes: selectedScopes,
+        metadataVersion: metadataVersion,
+        inputSchemaVersion: inputSchemaVersion,
+      );
     } catch (_) {
       throw const InvalidAiInputException(
         'Stored AI source references are invalid.',
@@ -319,8 +348,37 @@ final class LocalAiReportRepository implements AiReportRepository {
     }
   }
 
+  List<AiInputSourceRef> _decodeSources(List<dynamic> values) {
+    return values
+        .map((item) {
+          if (item is! Map<String, dynamic>) throw const FormatException();
+          final table = item['table'];
+          final id = item['id'];
+          final updatedAt = item['updated_at'];
+          if (table is! String || id is! String || updatedAt is! int) {
+            throw const FormatException();
+          }
+          return AiInputSourceRef(table: table, id: id, updatedAt: updatedAt);
+        })
+        .toList(growable: false);
+  }
+
   String? _trimToNull(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+}
+
+final class _StoredInputMetadata {
+  const _StoredInputMetadata({
+    required this.sources,
+    this.selectedScopes,
+    this.metadataVersion,
+    this.inputSchemaVersion,
+  });
+
+  final List<AiInputSourceRef> sources;
+  final Set<AiDataScope>? selectedScopes;
+  final int? metadataVersion;
+  final int? inputSchemaVersion;
 }

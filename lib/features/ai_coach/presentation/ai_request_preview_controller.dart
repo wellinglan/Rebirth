@@ -41,13 +41,23 @@ class AiRequestPreviewController
   @override
   Future<AiRequestPreviewViewState> build() async {
     final authorization = await ref.read(aiConsentRepositoryProvider).read();
-    return _initialState(authorization);
+    final initial = _initialState(authorization);
+    if (!authorization.enabled || initial.selectedScopes.isEmpty) {
+      return initial;
+    }
+    try {
+      return await _buildPreviewState(initial, initial.selectedScopes);
+    } catch (_) {
+      return initial.copyWith(buildError: '暂时无法构建本地预览，请重试。');
+    }
   }
 
   AiScopeToggleResult toggleScope(AiDataScope scope, {required bool selected}) {
     final current = state.asData?.value;
     if (current == null ||
-        !AiInputContract.supportedScopesFor(context.reportType).contains(scope)) {
+        !AiInputContract.supportedScopesFor(
+          context.reportType,
+        ).contains(scope)) {
       return AiScopeToggleResult.ignored;
     }
     if (scope == AiDataScope.journalReflections &&
@@ -280,10 +290,15 @@ class AiRequestPreviewController
       }
       return AiRequestPreviewViewState(
         authorization: authorization,
-        selectedScopes: const {},
+        selectedScopes: context.initialScopes.intersection(
+          AiInputContract.supportedScopesFor(AiReportType.dailyInsight),
+        ),
         periodStartDate: targetDate,
         periodEndDate: targetDate,
         promptVersion: AiInputContract.dailyPromptVersion,
+        journalSelectionConfirmed: context.initialScopes.contains(
+          AiDataScope.journalReflections,
+        ),
       );
     }
     final dateTimeService = ref.read(dateTimeServiceProvider);
@@ -298,6 +313,38 @@ class AiRequestPreviewController
       periodStartDate: dates.first,
       periodEndDate: dates.last,
       promptVersion: AiInputContract.weeklyPromptVersion,
+    );
+  }
+
+  Future<AiRequestPreviewViewState> _buildPreviewState(
+    AiRequestPreviewViewState current,
+    Set<AiDataScope> selectedScopes,
+  ) async {
+    final selection = AiDataSelection(
+      scopes: selectedScopes,
+      persistInputSnapshot: false,
+    );
+    final bundle = await _assemble(selection);
+    final preview = ref.read(aiRequestPreviewMapperProvider).map(bundle);
+    final reusable = await ref
+        .read(aiReportRepositoryProvider)
+        .findReusableCompleted(
+          reportType: bundle.reportType,
+          periodStartDate: bundle.periodStartDate,
+          periodEndDate: bundle.periodEndDate,
+          promptVersion: bundle.promptVersion,
+          inputHash: bundle.inputHash,
+        );
+    return current.copyWith(
+      periodStartDate: bundle.periodStartDate,
+      periodEndDate: bundle.periodEndDate,
+      promptVersion: bundle.promptVersion,
+      bundle: bundle,
+      preview: preview,
+      reusableCompletedReport: reusable,
+      clearReusableReport: reusable == null,
+      isBuilding: false,
+      clearBuildError: true,
     );
   }
 

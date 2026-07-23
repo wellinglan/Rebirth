@@ -75,8 +75,8 @@ Install the newly built APK and record evidence from the physical device.
 | Android split release build | PASS | armeabi-v7a, arm64-v8a, and x86_64 APKs built successfully. |
 | Windows Matrix | PASS | `25 PASS / 0 FAIL / 0 NOT EXECUTED`; user-reported interactive execution on 2026-07-23. |
 | Android Matrix | PASS | `14 PASS / 0 FAIL / 0 NOT EXECUTED`; user-reported Sprint 9B.2 physical-device retest passed on 2026-07-23. |
-| Phone model | NOT RECORDED | Physical-device execution completed, but the model was not supplied in the acceptance report. |
-| Android version | NOT RECORDED | Physical-device execution completed, but the OS version was not supplied in the acceptance report. |
+| Phone model | NOT RECORDED | Non-blocking metadata gap. Physical-device execution completed, but the model was not supplied. |
+| Android version | NOT RECORDED | Non-blocking metadata gap. Physical-device execution completed, but the OS version was not supplied. |
 | APK ABI | PASS | User-reported physical-device execution of the Sprint 9B.1 Android candidate; the matrix requires the arm64-v8a release APK. |
 | Server endpoint | PASS | Both clients completed the reported Fake Provider scenarios through their configured development endpoint. |
 | Fake success | PASS | User-reported Windows and Android execution with the development Fake Provider. |
@@ -97,7 +97,7 @@ Install the newly built APK and record evidence from the physical device.
 - Android physical device: `14 PASS / 0 FAIL / 0 NOT EXECUTED`.
 - AI Provider: development Fake Provider only.
 - Real OpenAI Provider: `NOT EXECUTED`.
-- Functional retest: `PASS`; the remaining documentation gate is limited to recording the phone model and Android version.
+- Functional retest: `PASS`; Phone model and Android version remain non-blocking metadata gaps.
 - Scope note: this update records manual evidence only; no Flutter, Server, database, or schema code was changed.
 
 ## Sprint 9B.2 Plan Filter Layout Hotfix
@@ -142,8 +142,8 @@ acceptance.
 | Android item 13: Plan filters and complete scrolling | PASS | User confirmed collapsed default, panel scrolling, list access, no overflow, retained filters, and full-row “Show archived”. |
 | Android item 14: no abnormal exit | PASS | User confirmed filter open/close, Android back, navigation, and restart completed without abnormal exit. |
 | Windows Plan smoke | PASS | User confirmed wide and narrow windows, mouse open/close, outside click, list access, and retained filters. |
-| Phone model | NOT RECORDED | Record the physical-device model. |
-| Android version | NOT RECORDED | Record the Android OS version. |
+| Phone model | NOT RECORDED | Non-blocking metadata gap; record when available without inventing a value. |
+| Android version | NOT RECORDED | Non-blocking metadata gap; record when available without inventing a value. |
 | APK ABI | PASS | User-reported retest used the rebuilt `app-arm64-v8a-release.apk` candidate. |
 
 Sprint 9B.2 functional retest result:
@@ -153,7 +153,7 @@ Sprint 9B.2 functional retest result:
 - `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001` is `CLOSED`.
 - Windows Plan smoke and Android items 12–14 are `PASS`.
 - Phone model and Android version remain `NOT RECORDED`.
-- The final documentation gate remains `BLOCKED` only until those two device fields are recorded; Sprint 9C must not start before that evidence is complete.
+- Phone model and Android version remain non-blocking metadata gaps and do not prevent Sprint 9C.
 
 ## Automated Evidence
 

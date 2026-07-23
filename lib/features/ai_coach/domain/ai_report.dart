@@ -1,4 +1,5 @@
 import 'ai_coach_exception.dart';
+import 'ai_data_scope.dart';
 import 'ai_generation_mode.dart';
 import 'ai_input_source_ref.dart';
 import 'ai_report_status.dart';
@@ -12,6 +13,9 @@ final class AiReport {
     required this.periodStartDate,
     required this.periodEndDate,
     required List<AiInputSourceRef> inputSources,
+    Set<AiDataScope>? selectedScopes,
+    this.inputMetadataVersion,
+    this.inputSchemaVersion,
     required this.inputHash,
     required this.promptVersion,
     required this.provider,
@@ -26,7 +30,10 @@ final class AiReport {
     required this.generatedAt,
     required this.createdAt,
     required this.updatedAt,
-  }) : inputSources = List<AiInputSourceRef>.unmodifiable(inputSources) {
+  }) : inputSources = List<AiInputSourceRef>.unmodifiable(inputSources),
+       selectedScopes = selectedScopes == null
+           ? null
+           : Set<AiDataScope>.unmodifiable(selectedScopes) {
     if (id.trim().isEmpty || userId.trim().isEmpty) {
       throw const InvalidAiInputException('Invalid AI report identity.');
     }
@@ -55,6 +62,9 @@ final class AiReport {
   final String periodStartDate;
   final String periodEndDate;
   final List<AiInputSourceRef> inputSources;
+  final Set<AiDataScope>? selectedScopes;
+  final int? inputMetadataVersion;
+  final int? inputSchemaVersion;
   final String inputHash;
   final String promptVersion;
   final String? provider;
