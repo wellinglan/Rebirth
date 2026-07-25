@@ -147,6 +147,46 @@ def test_since_server_version_filters_old_item(
     assert response.json()["items"] == []
 
 
+def test_sync_pull_requires_a_bearer_token(
+    client: TestClient,
+    registered_device: str,
+) -> None:
+    response = client.post(
+        "/sync/pull",
+        json=_profile_pull_body(registered_device),
+    )
+
+    assert response.status_code == 401
+    assert "payload" not in response.text.lower()
+
+
+def test_sync_rejects_an_unregistered_entity_type(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    body = _profile_push_body(registered_device, "profile")
+    body["items"][0]["table"] = "unknown_records"
+
+    response = client.post("/sync/push", headers=auth_headers, json=body)
+
+    assert response.status_code == 422
+    assert "display_name" not in response.text
+
+
+def test_sync_rejects_an_invalid_tombstone_timestamp(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    body = _profile_push_body(registered_device, "profile")
+    body["items"][0]["deleted_at"] = -1
+
+    response = client.post("/sync/push", headers=auth_headers, json=body)
+
+    assert response.status_code == 422
+
+
 def test_deleted_item_is_returned_as_tombstone(
     client: TestClient,
     auth_headers: dict[str, str],

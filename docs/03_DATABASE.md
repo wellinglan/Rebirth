@@ -871,3 +871,24 @@ v1.0 的设计重点是：
 - 为未来同步预留能力，但不提前引入云端复杂度。
 
 > 数据设计的价值，不在于字段数量，而在于多年以后仍能准确理解用户经历了什么。
+
+---
+
+## 21. Sprint 10A 同步持久化说明
+
+Sprint 10A 不修改本地表、字段、索引或 Drift migration，`schemaVersion` 保持 `3`。
+Profile Adapter 复用 `user_profiles.sync_status`、`server_version`、
+`last_synced_at` 与 `origin_device_id`。
+
+Profile pull cursor 不是业务表字段，也不等于某条记录的 `server_version`。它继续
+保存在 SharedPreferences 的 `rebirth.sync_cursor.v1` 命名空间，并按 normalized
+Endpoint、cloud user ID 与 `user_profiles` scope 隔离。沿用原 key 可保留 Sprint 6E
+客户端已有 cursor。
+
+远端 Profile 批次在 Drift transaction 中应用，成功后才写 SharedPreferences cursor。
+两种存储无法形成同一原子事务，因此崩溃可能导致“本地已应用、cursor 尚未写入”，但不会
+导致“cursor 已推进、本地尚未应用”。恢复时重拉，Profile Adapter 通过
+`remote server_version <= local server_version` 忽略重放。
+
+Server 的 `devices`、`sync_items` 与 `sync_clock` 足以支持本 Sprint；未新增 Alembic
+revision，未修改 PostgreSQL schema，也未重置 canonical 或 legacy Profile rows。

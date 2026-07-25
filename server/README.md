@@ -133,6 +133,23 @@ GitHub Actions runs Server SQLite, PostgreSQL multiprocessing/multi-worker, Flut
 - The clock initializes at or above the greatest existing SyncItem version.
 - Flutter record `server_version` and client pull cursor are separate.
 
+Sprint 10A adds a typed Flutter Coordinator and Adapter boundary without
+changing this Server runtime contract. The historical Protocol v2 schema still
+allowlists `user_profiles`, `today_records`, `journal_entries`, `goals`, and
+`health_records` for backward compatibility. The current Flutter adapter
+registry registers only Profile, so Today, Journal, Plan, and Health are not
+product sync capabilities yet.
+
+The Profile client continues to call `POST /sync/push` and
+`POST /sync/pull`. Deletion remains represented by `deleted_at`; Protocol v2
+has no separate `operation` field. The Server derives the owner only from the
+bearer JWT and requires a registered Device owned by that user.
+
+The Flutter Profile cursor remains stored outside SQLite under the existing
+endpoint/user/scope-bound SharedPreferences key. It advances only after local
+apply. No Server model, API field, `sync_clock` allocation rule, Alembic
+revision, or PostgreSQL schema changed in Sprint 10A.
+
 ## Configuration and Security Boundary
 
 | Variable | Default | Purpose |

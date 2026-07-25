@@ -2,9 +2,9 @@
 
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
-> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9B.1 / 9B.2 功能验收已通过，Phone model 与 Android version 是非阻塞性元数据缺口。
+> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9C 代码已完成但人工验收暂缓，Sprint 10A 正在进行。
 >
-> 下一阶段：Sprint 9C Daily Insight Current / Stale Detection 正在进行；云端架构保持不变。
+> 当前开发：Sprint 10A Generalized Sync Foundation & Profile Adapter；云端架构和 Sync Protocol v2 保持不变。
 
 ## 1. 当前主架构
 
@@ -359,21 +359,25 @@ https://rebirth-alpha-bj.taila61d27.ts.net
 - Sprint 9B.2 Android Item 12、13、14 真机复测：`PASS`
 - `PLAN-ANDROID-LARGE-TEXT-FILTER-LAYOUT-001`：`CLOSED`
 - APK ABI：`arm64-v8a`，使用重建的 `app-arm64-v8a-release.apk`
+- Sprint 9C Daily Insight Freshness 代码阶段完成
+- Sprint 9C 自动化验证完成
 
 非阻塞性元数据缺口：
 
 - Phone model 补录
 - Android version 补录
 
-下一开发目标：
+当前开发目标：
 
 ```text
-Sprint 9C：Daily Insight Current / Stale Detection
+Sprint 10A：Generalized Sync Foundation & Profile Adapter
 ```
 
-Sprint 9B.2 功能复测和缺陷关闭已经完成。Phone model 与 Android version 仍为 `NOT RECORDED`，但不阻塞 Sprint 9C，也不得伪造补录。
+Sprint 9C 的 Windows 与 Android 人工验收仍为 `NOT EXECUTED`，不得用自动化测试
+替代或伪造。Phone model 与 Android version 仍为 `NOT RECORDED`，但不阻塞
+Sprint 10A。
 
-## 14. Sprint 9C 状态（IN PROGRESS）
+## 14. Sprint 9C 状态（CODE COMPLETE / MANUAL DEFERRED）
 
 ```text
 Completed Daily Insight
@@ -395,7 +399,38 @@ Sprint 9C 不应自动：
 - 扩展 Growth / Goals
 - 引入聊天式 AI
 
-## 15. 对 Codex 的强制要求
+人工矩阵见 `docs/manual_tests/23_daily_insight_freshness.md`，当前全部保持
+`NOT EXECUTED`。
+
+## 15. Sprint 10A 状态（IN PROGRESS）
+
+Profile Sync 正在迁移到通用 Flutter Sync Foundation：
+
+```text
+manual Profile action
+→ Sync Coordinator
+→ explicit Adapter Registry
+→ Profile Adapter
+→ existing Sync Protocol v2
+```
+
+边界：
+
+- Cloud user 继续来自 JWT；
+- Device Registration 与稳定 local installation ID 继续复用；
+- canonical Profile cloud identity 继续为 `user_profiles/profile`；
+- Server `sync_clock` 与 `UPDATE ... RETURNING` 不变；
+- 当前只有 Profile Adapter 注册；
+- Plan、Today、Journal、Health、Growth 与 AI Report 尚未同步；
+- 没有后台、定时或启动自动同步；
+- 云端仍是 Development + Fake Provider + Tailscale 私网；
+- 当前不是 Production。
+
+Sprint 10A 人工矩阵见
+`docs/manual_tests/24_sync_foundation_profile_adapter.md`，初始全部为
+`NOT EXECUTED`。
+
+## 16. 对 Codex 的强制要求
 
 涉及 Server、部署、migration、API 或测试时：
 
@@ -421,7 +456,7 @@ Sprint 9C 不应自动：
 14. 镜像供应链继续使用 GitHub Actions + GHCR。
 15. 避免任何可能完整输出 Secret 的命令。
 
-## 16. 禁止误判
+## 17. 禁止误判
 
 以下说法均错误：
 
@@ -436,6 +471,8 @@ Sprint 9C 不应自动：
 “Sprint 9B.2 Phone model 与 Android version 已经完成补录”
 “Phone model 与 Android version 会阻止 Sprint 9C 开始”
 “Sprint 9C 已完成人工验收”
+“Sprint 10A 已实现 Plan、Today、Journal 或 Health 同步”
+“通用 Coordinator 等同于后台自动同步”
 ```
 
 正确理解：
@@ -445,5 +482,7 @@ Sprint 9C 不应自动：
 本地 Server 仍作为开发与测试后端保留；
 Sprint 9B.1 / 9B.2 功能验收已通过，
 Phone model 与 Android version 是非阻塞性元数据缺口，
-Sprint 9C 正在进行，且当前云端仍是 Development + Fake Provider + Tailscale 私网。
+Sprint 9C 代码已完成但人工验收暂缓，
+Sprint 10A 正在建立只注册 Profile Adapter 的通用同步基础，
+且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```

@@ -1,29 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict.dart';
-import 'package:rebirth/features/sync/domain/sync_item.dart';
+import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/domain/sync_result.dart';
 import 'package:rebirth/features/sync/domain/sync_status.dart';
 
 void main() {
-  test('sync item preserves payload and tombstone metadata', () {
-    final item = SyncItem(
-      tableName: 'today_records',
-      recordId: 'today-1',
-      payload: const {'record_date': '2026-07-15'},
-      updatedAt: 100,
-      deletedAt: 101,
-      originDeviceId: 'installation-1',
-      clientVersion: 2,
-    );
-
-    expect(item.payload['record_date'], '2026-07-15');
-    expect(item.isTombstone, isTrue);
-    expect(
-      () => item.payload['record_date'] = '2026-07-16',
-      throwsUnsupportedError,
-    );
-  });
-
   test('sync result keeps accepted records and explicit conflicts', () {
     final result = SyncResult(
       accepted: const [
@@ -56,5 +38,72 @@ void main() {
     expect(status.isEnabled, isFalse);
     expect(status.deviceRegistered, isFalse);
     expect(status.pendingChangeCount, 0);
+  });
+
+  test('entity wire values are explicit and unknown values are rejected', () {
+    expect(SyncEntityType.parse('user_profiles'), SyncEntityType.profile);
+    expect(SyncEntityType.plan.wireName, 'goals');
+    expect(
+      () => SyncEntityType.parse('unknown_records'),
+      throwsA(isA<SyncUnsupportedEntityException>()),
+    );
+  });
+
+  test(
+    'typed change keeps operation and server version distinct from time',
+    () {
+      const change = SyncChange(
+        entityType: SyncEntityType.profile,
+        operation: SyncOperation.delete,
+        recordId: 'profile',
+        payload: null,
+        updatedAt: 100,
+        deletedAt: 101,
+        originDeviceId: 'installation-1',
+        serverVersion: 9,
+      );
+      const cursor = SyncCursor(
+        endpoint: 'https://example.test',
+        cloudUserId: 'cloud-user',
+        scope: SyncEntityType.profile,
+        serverVersion: 8,
+      );
+
+      expect(change.operation, SyncOperation.delete);
+      expect(change.serverVersion, 9);
+      expect(change.updatedAt, 100);
+      expect(cursor.serverVersion, 8);
+    },
+  );
+
+  test('run result reports partial success without hiding failure', () {
+    final result = SyncRunResult(
+      direction: SyncRunDirection.twoWay,
+      phases: const [SyncRunPhase.push, SyncRunPhase.failed],
+      entityResults: const [
+        SyncEntityResult(
+          entityType: SyncEntityType.profile,
+          status: SyncEntityStatus.succeeded,
+          message: 'ok',
+          pushedCount: 1,
+        ),
+        SyncEntityResult(
+          entityType: SyncEntityType.plan,
+          status: SyncEntityStatus.failed,
+          message: 'failed',
+        ),
+      ],
+      startedAt: 1,
+      completedAt: 2,
+      failure: const SyncFailure(
+        reason: SyncFailureReason.unsupportedEntity,
+        phase: SyncRunPhase.failed,
+        message: 'failed',
+        entityType: SyncEntityType.plan,
+      ),
+    );
+
+    expect(result.isSuccessful, isFalse);
+    expect(result.isPartialSuccess, isTrue);
   });
 }

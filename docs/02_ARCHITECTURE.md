@@ -800,3 +800,28 @@ Rebirth 的架构目标不是炫技，而是长期稳定。
 本项目不追求一开始就完美，但必须从第一天开始保持方向正确。
 
 > 架构的意义，不是让代码看起来复杂，而是让五年后的维护仍然清晰。
+
+---
+
+## 21. Sync Foundation（Sprint 10A）
+
+跨端同步继续复用 Sync Protocol v2 的 `/sync/push` 与 `/sync/pull`，不建立第二套
+Endpoint。Flutter 同步层采用：
+
+```text
+Settings manual action
+  -> ProfileSyncController
+  -> ProfileSyncRepository
+  -> SyncCoordinator
+  -> explicit SyncEntityAdapterRegistry
+  -> ProfileSyncAdapter
+  -> existing SyncRemoteDataSource / Drift
+```
+
+`SyncCoordinator` 统一负责 Endpoint、Session、cloud user、Device、Push、Pull、
+cursor 与结构化运行结果。`SyncEntityAdapter` 负责实体 payload、pending 收集、本地
+事务应用和同步元数据，不得推进 cursor。
+
+当前 Registry 只注册 Profile。Plan、Today、Journal、Health、Growth 与 AI Report
+均未接入，且没有后台或启动自动同步。详细合同与 Sprint 10B 扩展边界见
+`docs/18_SYNC_FOUNDATION.md`。

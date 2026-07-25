@@ -4,7 +4,6 @@ import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/features/sync/data/dto/sync_dto.dart';
 import 'package:rebirth/features/sync/data/sync_api_data_source.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
-import 'package:rebirth/features/sync/domain/sync_item.dart';
 
 void main() {
   test('push hits /sync/push with the Profile item payload', () async {
@@ -131,7 +130,7 @@ void main() {
 
   test('Sprint 6D rejects every table except user_profiles', () {
     final dataSource = SyncApiDataSource(_FakeApiClient());
-    final todayItem = SyncItem(
+    final todayItem = SyncPushItemDto(
       tableName: 'today_records',
       recordId: 'today-1',
       payload: const {},
@@ -177,7 +176,7 @@ void main() {
   });
 }
 
-final _profileItem = SyncItem(
+final _profileItem = SyncPushItemDto(
   tableName: 'user_profiles',
   recordId: 'profile-1',
   payload: const {

@@ -1,13 +1,34 @@
 import 'package:rebirth/features/sync/domain/sync_conflict.dart';
-import 'package:rebirth/features/sync/domain/sync_item.dart';
 import 'package:rebirth/features/sync/domain/sync_result.dart';
 
+final class SyncPushItemDto {
+  SyncPushItemDto({
+    required this.tableName,
+    required this.recordId,
+    required Map<String, Object?> payload,
+    required this.updatedAt,
+    required this.deletedAt,
+    required this.originDeviceId,
+    required this.clientVersion,
+  }) : payload = Map.unmodifiable(payload);
+
+  final String tableName;
+  final String recordId;
+  final Map<String, Object?> payload;
+  final int updatedAt;
+  final int? deletedAt;
+  final String originDeviceId;
+  final int clientVersion;
+}
+
 final class SyncPushRequestDto {
-  SyncPushRequestDto({required this.deviceId, required List<SyncItem> items})
-    : items = List.unmodifiable(items);
+  SyncPushRequestDto({
+    required this.deviceId,
+    required List<SyncPushItemDto> items,
+  }) : items = List.unmodifiable(items);
 
   final String deviceId;
-  final List<SyncItem> items;
+  final List<SyncPushItemDto> items;
 
   Map<String, Object?> toJson() {
     return {
@@ -138,8 +159,10 @@ List<T> _mapList<T>(
   T Function(Map<String, Object?> item) mapper,
 ) {
   if (value is! List) throw const FormatException('Invalid sync list.');
-  return value.map((item) {
-    if (item is! Map) throw const FormatException('Invalid sync item.');
-    return mapper(Map<String, Object?>.from(item));
-  }).toList(growable: false);
+  return value
+      .map((item) {
+        if (item is! Map) throw const FormatException('Invalid sync item.');
+        return mapper(Map<String, Object?>.from(item));
+      })
+      .toList(growable: false);
 }
