@@ -1,6 +1,6 @@
 # Rebirth Sync Foundation
 
-> Status: Sprint 10B pushed and Quality-verified; Sprint 10B.1 persistent conflict recovery implemented locally
+> Status: Sprint 10B.1 persistent conflict recovery pushed and Quality-verified; manual acceptance pending
 > Protocol: Sync Protocol v2
 > Product scope: manual canonical Profile sync and manual Plan two-way sync
 
@@ -278,7 +278,7 @@ database URL/path, JWT secret, or Endpoint credentials.
 - Plan sync: pushed and Quality-verified, manual two-way; Alpha API deployment
   remains pending confirmation.
 - Plan conflict inbox and explicit recovery: implemented locally in Sprint
-  10B.1; CI and manual acceptance pending.
+  10B.1; manual acceptance pending.
 - Today sync: not implemented.
 - Journal sync: not implemented.
 - Health sync: not implemented.
@@ -426,3 +426,29 @@ asset warning and produced all three APKs.
 No Alpha business database or server was contacted. GitHub Quality and its
 PostgreSQL marker have not yet run for this local change set. Windows, Android,
 and cross-device manual acceptance remain `NOT EXECUTED`.
+
+## 21. Sprint 10B.1 GitHub Verification
+
+- Implementation commit:
+  `ba6cfc472ca2312aebcf5c5880ebebaa8040c333`
+
+- Quality run:
+  `30155446531`, PASS
+
+- Final documentation update:
+  `30155660865`, PASS
+
+- Server SQLite:
+  PASS
+
+- Server PostgreSQL Multiprocess And Multiworker:
+  PASS
+
+- Flutter Analyze And Test:
+  PASS
+
+- Android Debug Build:
+  PASS
+
+- Manual acceptance:
+  NOT EXECUTED
