@@ -1,6 +1,6 @@
 # Rebirth Sync Foundation
 
-> Status: Sprint 10A code foundation
+> Status: Sprint 10A.1 hardening; manual acceptance pending
 > Protocol: Sync Protocol v2
 > Product scope: manual canonical Profile sync only
 
@@ -113,9 +113,18 @@ There is no separate HTTP `operation` field in Protocol v2.
 10. advances the cursor only after successful local apply;
 11. returns phases, per-entity counts, conflicts, and a controlled failure.
 
-Overlapping calls on one Coordinator reuse the same in-flight Future. There is
-no second uncontrolled network run. The Coordinator has no Widget dependency,
-does not show SnackBars, and never logs payloads or credentials.
+Every run has an identity made from its direction and a normalized entity set.
+Entity types are deduplicated and sorted by enum declaration order, so caller
+order does not affect identity or execution order.
+
+Overlapping calls reuse the exact in-flight Future only when both direction and
+normalized entity set match. A different request immediately returns a
+structured `syncInProgress` failure. It is not queued, does not start a second
+network run, does not call an adapter, and does not read or advance a cursor.
+The original run continues normally.
+
+The Coordinator has no Widget dependency, does not show SnackBars, never logs
+payloads or credentials, and uses entity-neutral transport failure messages.
 
 Only manual Settings actions invoke the current Profile flow. There is no
 timer, lifecycle hook, startup sync, background task, realtime push, or system
@@ -151,7 +160,12 @@ The Profile adapter:
 - marks accepted pushes `synced` with server version and sync time;
 - treats same/older remote versions as idempotent replays;
 - prevents an older version from overwriting a newer local server version;
-- marks concurrent local/remote changes as `conflict`;
+- always protects `pending` and `conflict` local rows, regardless of
+  `updated_at` and `last_synced_at` ordering;
+- accepts the first remote Profile over a blank `local_only` row;
+- protects a `local_only` row when it contains an explicit display name or
+  growth focus;
+- marks protected local/remote changes as `conflict`;
 - preserves local content on network, parse, or apply failure.
 
 Profile deletion is not currently a product operation. A remote Profile
@@ -195,6 +209,11 @@ read endpoint/user/profile cursor
 An empty successful page can advance the cursor. Network failure, malformed
 payload, conflict, or local apply failure leaves it unchanged.
 
+Missing cursor data reads as `0`. A stored non-negative integer is valid. A
+negative stored cursor is treated as corruption: the client returns
+`cursorFailed`, sends no pull request, does not write a replacement value, and
+does not affect any other Endpoint/user/scope key.
+
 SQLite and SharedPreferences cannot share one atomic transaction. The safe
 crash window is after the Drift transaction commits but before the cursor is
 written. Recovery re-pulls the page; the adapter ignores any
@@ -219,7 +238,10 @@ whether deletion is supported. Profile currently does not auto-apply delete.
 Profile conflict detection remains conservative:
 
 - stale push conflicts are returned by Server;
-- a newer remote version does not overwrite pending/conflicted local edits;
+- a newer remote version never overwrites `pending` or `conflict` local edits,
+  even when local timestamps are equal, older, or affected by clock rollback;
+- blank `local_only` remains compatible with first-device restore, while
+  explicit local Profile content remains protected;
 - no field-level merge or overwrite-choice UI exists;
 - failure never resets Profile fields to defaults.
 
@@ -276,3 +298,24 @@ The two Flutter skips are the existing opt-in Uvicorn Fake full-stack tests.
 The Server PostgreSQL marker is not recorded as PASS. No test connected to the
 cloud Alpha business database. Windows, Android physical-device, and
 cross-device manual acceptance remain `NOT EXECUTED`.
+
+## 16. Sprint 10A.1 Automated Evidence
+
+Executed locally on 2026-07-25:
+
+| Check | Result |
+|---|---|
+| Dart format on changed Dart files | PASS |
+| `flutter analyze` | PASS, no issues |
+| Coordinator + Profile + cursor targeted tests | PASS, `46 passed` |
+| `flutter test` | PASS, `741 passed / 2 skipped` |
+| Windows release build | PASS, `build/windows/x64/runner/Release/rebirth.exe` |
+| Android split release build | PASS, armv7 + arm64 + x86_64 |
+| Flutter `schemaVersion` | unchanged at `3` |
+
+The two Flutter skips remain the existing opt-in Uvicorn Fake full-stack tests.
+The Android build emitted the existing CupertinoIcons asset warning but
+produced all three APKs. Server runtime was not changed, so no Server,
+PostgreSQL marker, cloud deployment, or Alpha business database test was run.
+GitHub CI is `NOT VERIFIED`. All Windows, Android physical-device, and
+cross-device manual rows remain `NOT EXECUTED`.

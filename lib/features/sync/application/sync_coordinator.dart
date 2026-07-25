@@ -34,7 +34,7 @@ final class SyncCoordinator {
   final DateTimeService dateTimeService;
   final ServerEndpointValidator endpointValidator;
 
-  Future<SyncRunResult>? _activeRun;
+  _ActiveSyncRun? _activeRun;
 
   bool get isRunning => _activeRun != null;
 
@@ -42,20 +42,67 @@ final class SyncCoordinator {
     required SyncRunDirection direction,
     Iterable<SyncEntityType>? entityTypes,
   }) {
-    final running = _activeRun;
-    if (running != null) return running;
-
-    final future = _run(
+    final request = _SyncRunRequest(
       direction: direction,
-      entityTypes: List.unmodifiable(
+      entityTypes: _normalizeEntityTypes(
         entityTypes ?? adapterRegistry.registeredTypes,
       ),
     );
-    _activeRun = future;
-    future.whenComplete(() {
-      if (identical(_activeRun, future)) _activeRun = null;
-    });
+    final activeRun = _activeRun;
+    if (activeRun != null) {
+      if (activeRun.request.matches(request)) return activeRun.future;
+      return Future.value(_syncInProgressResult(request));
+    }
+
+    final future = _run(
+      direction: request.direction,
+      entityTypes: request.entityTypes,
+    );
+    _activeRun = _ActiveSyncRun(request: request, future: future);
+    future.then<void>(
+      (_) => _clearActiveRun(future),
+      onError: (Object _, StackTrace _) => _clearActiveRun(future),
+    );
     return future;
+  }
+
+  List<SyncEntityType> _normalizeEntityTypes(
+    Iterable<SyncEntityType> entityTypes,
+  ) {
+    final normalized = entityTypes.toSet().toList(growable: false)
+      ..sort((left, right) => left.index.compareTo(right.index));
+    return List.unmodifiable(normalized);
+  }
+
+  void _clearActiveRun(Future<SyncRunResult> completedFuture) {
+    if (identical(_activeRun?.future, completedFuture)) {
+      _activeRun = null;
+    }
+  }
+
+  SyncRunResult _syncInProgressResult(_SyncRunRequest request) {
+    final timestamp = dateTimeService.currentSnapshot().utcMilliseconds;
+    const message = '已有同步任务正在进行，请稍后重试。';
+    return SyncRunResult(
+      direction: request.direction,
+      phases: const [SyncRunPhase.failed],
+      entityResults: request.entityTypes
+          .map(
+            (entityType) => SyncEntityResult(
+              entityType: entityType,
+              status: SyncEntityStatus.failed,
+              message: message,
+            ),
+          )
+          .toList(growable: false),
+      startedAt: timestamp,
+      completedAt: timestamp,
+      failure: const SyncFailure(
+        reason: SyncFailureReason.syncInProgress,
+        phase: SyncRunPhase.failed,
+        message: message,
+      ),
+    );
   }
 
   Future<SyncRunResult> _run({
@@ -299,6 +346,9 @@ final class SyncCoordinator {
         cloudUserId: session.user.id,
         scope: adapter.entityType.wireName,
       );
+      if (cursorValue < 0) {
+        throw const InvalidSyncCursorException();
+      }
       final cursor = SyncCursor(
         endpoint: endpoint,
         cloudUserId: session.user.id,
@@ -409,11 +459,11 @@ final class SyncCoordinator {
           ? SyncFailureReason.pushFailed
           : SyncFailureReason.pullFailed;
     }
-    if (error is SyncException) return SyncFailureReason.payloadInvalid;
     if (phase == SyncRunPhase.cursorRead ||
         phase == SyncRunPhase.cursorAdvance) {
       return SyncFailureReason.cursorFailed;
     }
+    if (error is SyncException) return SyncFailureReason.payloadInvalid;
     if (phase == SyncRunPhase.apply || phase == SyncRunPhase.acknowledgePush) {
       return SyncFailureReason.applyFailed;
     }
@@ -427,14 +477,42 @@ final class SyncCoordinator {
     }
     if (error is ApiException) {
       return phase == SyncRunPhase.push
-          ? 'Profile 上传失败，本地资料未受影响。'
-          : 'Profile 拉取失败，本地资料未受影响。';
+          ? '数据上传失败，本地记录未受影响。'
+          : '数据拉取失败，本地记录未受影响。';
+    }
+    if (phase == SyncRunPhase.cursorRead) {
+      return '本地同步游标读取失败，已停止拉取。';
     }
     if (phase == SyncRunPhase.cursorAdvance) {
       return '同步已应用，但游标保存失败；下次将安全重放。';
     }
-    return '同步失败，本地资料未受影响。';
+    return '同步失败，本地记录未受影响。';
   }
+}
+
+final class _SyncRunRequest {
+  const _SyncRunRequest({required this.direction, required this.entityTypes});
+
+  final SyncRunDirection direction;
+  final List<SyncEntityType> entityTypes;
+
+  bool matches(_SyncRunRequest other) {
+    if (direction != other.direction ||
+        entityTypes.length != other.entityTypes.length) {
+      return false;
+    }
+    for (var index = 0; index < entityTypes.length; index += 1) {
+      if (entityTypes[index] != other.entityTypes[index]) return false;
+    }
+    return true;
+  }
+}
+
+final class _ActiveSyncRun {
+  const _ActiveSyncRun({required this.request, required this.future});
+
+  final _SyncRunRequest request;
+  final Future<SyncRunResult> future;
 }
 
 final class _SyncPhaseException implements Exception {

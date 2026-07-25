@@ -2,9 +2,9 @@
 
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
-> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9C 代码已完成但人工验收暂缓，Sprint 10A 正在进行。
+> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9C 代码已完成但人工验收暂缓，Sprint 10A 主体代码已推送，Sprint 10A.1 代码已完成但尚未提交。
 >
-> 当前开发：Sprint 10A Generalized Sync Foundation & Profile Adapter；云端架构和 Sync Protocol v2 保持不变。
+> 当前开发：Sprint 10A.1 Sync Foundation Hardening 代码验证完成、人工验收未执行；Sprint 10B 尚未开始，云端架构和 Sync Protocol v2 保持不变。
 
 ## 1. 当前主架构
 
@@ -370,12 +370,12 @@ https://rebirth-alpha-bj.taila61d27.ts.net
 当前开发目标：
 
 ```text
-Sprint 10A：Generalized Sync Foundation & Profile Adapter
+Sprint 10A.1：Sync Foundation Hardening
 ```
 
 Sprint 9C 的 Windows 与 Android 人工验收仍为 `NOT EXECUTED`，不得用自动化测试
 替代或伪造。Phone model 与 Android version 仍为 `NOT RECORDED`，但不阻塞
-Sprint 10A。
+Sprint 10A.1。
 
 ## 14. Sprint 9C 状态（CODE COMPLETE / MANUAL DEFERRED）
 
@@ -402,9 +402,12 @@ Sprint 9C 不应自动：
 人工矩阵见 `docs/manual_tests/23_daily_insight_freshness.md`，当前全部保持
 `NOT EXECUTED`。
 
-## 15. Sprint 10A 状态（IN PROGRESS）
+## 15. Sprint 10A / 10A.1 状态（10A PUSHED / 10A.1 CODE COMPLETE）
 
-Profile Sync 正在迁移到通用 Flutter Sync Foundation：
+Sprint 10A 主体代码已通过提交
+`126403aaaa255798cd7177f71e1082b4be001d0b` 推送。Sprint 10A.1 已完成代码
+加固和本地自动化验证，但尚未 commit 或 push；它只加固通用 Flutter Sync
+Foundation，不开始 Sprint 10B：
 
 ```text
 manual Profile action
@@ -428,7 +431,8 @@ manual Profile action
 
 Sprint 10A 人工矩阵见
 `docs/manual_tests/24_sync_foundation_profile_adapter.md`，初始全部为
-`NOT EXECUTED`。
+`NOT EXECUTED`。Sprint 10A.1 的补充人工检查同样保持 `NOT EXECUTED`，
+不得把自动化测试结果写成人工 PASS。
 
 ## 16. 对 Codex 的强制要求
 
@@ -472,6 +476,7 @@ Sprint 10A 人工矩阵见
 “Phone model 与 Android version 会阻止 Sprint 9C 开始”
 “Sprint 9C 已完成人工验收”
 “Sprint 10A 已实现 Plan、Today、Journal 或 Health 同步”
+“Sprint 10B 已经开始”
 “通用 Coordinator 等同于后台自动同步”
 ```
 
@@ -483,6 +488,7 @@ Sprint 10A 人工矩阵见
 Sprint 9B.1 / 9B.2 功能验收已通过，
 Phone model 与 Android version 是非阻塞性元数据缺口，
 Sprint 9C 代码已完成但人工验收暂缓，
-Sprint 10A 正在建立只注册 Profile Adapter 的通用同步基础，
+Sprint 10A 主体代码已推送，Sprint 10A.1 已完成只注册 Profile Adapter 的
+通用同步基础加固，但尚未提交且人工验收未执行；Sprint 10B 尚未开始，
 且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```

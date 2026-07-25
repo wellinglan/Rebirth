@@ -72,11 +72,29 @@ Android total: `0 PASS / 0 FAIL / 10 NOT EXECUTED`.
 
 Cross-device total: `0 PASS / 0 FAIL / 12 NOT EXECUTED`.
 
+## Sprint 10A.1 Hardening Matrix
+
+These rows remain manual checks. Automated regression coverage does not change
+their result.
+
+| # | Check | Result | Evidence | Defect ID |
+|---|---|---|---|---|
+| 1 | Repeated identical manual sync actions do not create duplicate network work | NOT EXECUTED | - | - |
+| 2 | A different sync action during an active run shows a controlled retry-later error | NOT EXECUTED | - | - |
+| 3 | The active sync still completes after the different request is rejected | NOT EXECUTED | - | - |
+| 4 | A pending/conflicted local Profile is not silently overwritten by pull | NOT EXECUTED | - | - |
+| 5 | A blank new-device Profile can still receive the first cloud Profile | NOT EXECUTED | - | - |
+| 6 | A damaged local cursor stops pull without changing local Profile data | NOT EXECUTED | - | - |
+
+Sprint 10A.1 hardening total:
+`0 PASS / 0 FAIL / 6 NOT EXECUTED`.
+
 ## Acceptance Status
 
 - Sprint 10A Windows manual acceptance: `NOT EXECUTED`.
 - Sprint 10A Android physical acceptance: `NOT EXECUTED`.
 - Sprint 10A cross-device closure: `NOT EXECUTED`.
+- Sprint 10A.1 hardening acceptance: `NOT EXECUTED`.
 - Sprint 9C manual acceptance remains deferred and is not changed by this
   matrix.
 - Development + Fake Provider + Tailscale private Alpha remains the current

@@ -275,13 +275,11 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
   }
 
   bool _hasUnsyncedLocalChanges(db.UserProfile profile) {
-    final metadataMarksLocalChange =
-        profile.syncStatus == 'pending' || profile.syncStatus == 'conflict';
-    final legacyLocalContent =
-        profile.syncStatus == 'local_only' &&
+    if (profile.syncStatus == 'pending' || profile.syncStatus == 'conflict') {
+      return true;
+    }
+    return profile.syncStatus == 'local_only' &&
         (profile.displayName != null || profile.growthFocus != null);
-    final changedAfterSync = profile.updatedAt > (profile.lastSyncedAt ?? 0);
-    return changedAfterSync && (metadataMarksLocalChange || legacyLocalContent);
   }
 
   String? _nullableString(Map<String, Object?> payload, String key) {

@@ -1,4 +1,6 @@
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'dart:async';
+
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
@@ -271,6 +273,100 @@ void main() {
     },
   );
 
+  for (final scenario in const [
+    (
+      name: 'pending with equal updatedAt and lastSyncedAt',
+      status: 'pending',
+      updatedAt: 100,
+      lastSyncedAt: 100,
+    ),
+    (
+      name: 'pending with an updatedAt clock rollback',
+      status: 'pending',
+      updatedAt: 50,
+      lastSyncedAt: 100,
+    ),
+    (
+      name: 'conflict with an older updatedAt',
+      status: 'conflict',
+      updatedAt: 50,
+      lastSyncedAt: 100,
+    ),
+  ]) {
+    test('${scenario.name} always protects local Profile', () async {
+      await _setLocalProfileSyncState(
+        database,
+        displayName: 'Protected local name',
+        growthFocus: 'Protected local focus',
+        syncStatus: scenario.status,
+        updatedAt: scenario.updatedAt,
+        lastSyncedAt: scenario.lastSyncedAt,
+      );
+      remote.pullResponse = SyncPullResponseDto(
+        serverVersion: 2,
+        items: [_pulledProfile(serverVersion: 2, displayName: 'Cloud name')],
+      );
+
+      final result = await repository.pullProfile();
+      final stored = await database.select(database.userProfiles).getSingle();
+
+      expect(result.conflict, isTrue);
+      expect(stored.displayName, 'Protected local name');
+      expect(stored.growthFocus, 'Protected local focus');
+      expect(stored.syncStatus, 'conflict');
+      expect(cursorStore.value, 0);
+      expect(cursorStore.writeCalls, 0);
+    });
+  }
+
+  test('blank local_only Profile accepts the first remote Profile', () async {
+    await _setLocalProfileSyncState(
+      database,
+      displayName: null,
+      growthFocus: null,
+      syncStatus: 'local_only',
+      updatedAt: 50,
+      lastSyncedAt: 100,
+    );
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 2,
+      items: [_pulledProfile(serverVersion: 2, displayName: 'Cloud name')],
+    );
+
+    final result = await repository.pullProfile();
+    final stored = await database.select(database.userProfiles).getSingle();
+
+    expect(result.pulled, isTrue);
+    expect(stored.displayName, 'Cloud name');
+    expect(stored.syncStatus, 'synced');
+    expect(cursorStore.value, 2);
+  });
+
+  test('local_only Profile with content is not silently overwritten', () async {
+    await _setLocalProfileSyncState(
+      database,
+      displayName: 'Imported local name',
+      growthFocus: 'Imported local focus',
+      syncStatus: 'local_only',
+      updatedAt: 50,
+      lastSyncedAt: 100,
+    );
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 2,
+      items: [_pulledProfile(serverVersion: 2, displayName: 'Cloud name')],
+    );
+
+    final result = await repository.pullProfile();
+    final stored = await database.select(database.userProfiles).getSingle();
+
+    expect(result.conflict, isTrue);
+    expect(stored.displayName, 'Imported local name');
+    expect(stored.growthFocus, 'Imported local focus');
+    expect(stored.syncStatus, 'conflict');
+    expect(cursorStore.value, 0);
+    expect(cursorStore.writeCalls, 0);
+  });
+
   test('network failure leaves the complete local Profile untouched', () async {
     final localRepository = ProfileRepositoryImpl(
       database: database,
@@ -404,6 +500,39 @@ void main() {
     },
   );
 
+  test('repository maps a different active request to SyncException', () async {
+    remote.pushCompleter = Completer<SyncPushResponseDto>();
+
+    final activePush = repository.pushProfile();
+    await _waitFor(() => remote.pushCalls == 1);
+
+    await expectLater(
+      repository.pullProfile(),
+      throwsA(
+        isA<SyncException>().having(
+          (error) => error.message,
+          'message',
+          '已有同步任务正在进行，请稍后重试。',
+        ),
+      ),
+    );
+    expect(remote.pullCalls, 0);
+
+    remote.pushCompleter!.complete(
+      SyncPushResponseDto(
+        accepted: [
+          SyncedRecord(
+            tableName: 'user_profiles',
+            recordId: 'profile',
+            serverVersion: 1,
+          ),
+        ],
+        conflicts: const [],
+      ),
+    );
+    expect((await activePush).pushed, isTrue);
+  });
+
   test('schemaVersion remains 3', () {
     expect(database.schemaVersion, 3);
   });
@@ -494,6 +623,37 @@ void main() {
   );
 }
 
+Future<void> _setLocalProfileSyncState(
+  AppDatabase database, {
+  required String? displayName,
+  required String? growthFocus,
+  required String syncStatus,
+  required int updatedAt,
+  required int lastSyncedAt,
+}) async {
+  final bootstrap = await database.bootstrapDao.bootstrap();
+  await (database.update(
+    database.userProfiles,
+  )..where((row) => row.id.equals(bootstrap.activeUserId))).write(
+    UserProfilesCompanion(
+      displayName: Value(displayName),
+      growthFocus: Value(growthFocus),
+      updatedAt: Value(updatedAt),
+      syncStatus: Value(syncStatus),
+      serverVersion: const Value(1),
+      lastSyncedAt: Value(lastSyncedAt),
+      originDeviceId: Value(bootstrap.localInstallationId),
+    ),
+  );
+}
+
+Future<void> _waitFor(bool Function() condition) async {
+  for (var attempt = 0; attempt < 20 && !condition(); attempt += 1) {
+    await Future<void>.delayed(Duration.zero);
+  }
+  expect(condition(), isTrue);
+}
+
 PulledSyncItemDto _pulledProfile({
   String recordId = 'profile',
   required int serverVersion,
@@ -571,6 +731,7 @@ final class _FakeSyncRemoteDataSource implements SyncRemoteDataSource {
     items: const [],
   );
   Object? error;
+  Completer<SyncPushResponseDto>? pushCompleter;
   SyncPushRequestDto? lastPushRequest;
   SyncPullRequestDto? lastPullRequest;
   int pushCalls = 0;
@@ -584,7 +745,8 @@ final class _FakeSyncRemoteDataSource implements SyncRemoteDataSource {
     pushCalls += 1;
     if (error case final value?) throw value;
     lastPushRequest = request;
-    return pushResponse;
+    final completer = pushCompleter;
+    return completer == null ? pushResponse : completer.future;
   }
 
   @override
@@ -653,6 +815,7 @@ final class _CanonicalProfileCloudDataSource implements SyncRemoteDataSource {
 
 final class _MemorySyncCursorStore implements SyncCursorStore {
   int value = 0;
+  int writeCalls = 0;
 
   @override
   Future<int> read({
@@ -668,6 +831,7 @@ final class _MemorySyncCursorStore implements SyncCursorStore {
     required String scope,
     required int serverVersion,
   }) async {
+    writeCalls += 1;
     value = serverVersion;
   }
 

@@ -161,6 +161,7 @@ enum SyncFailureReason {
   authenticationRequired,
   cloudUserUnavailable,
   deviceRegistrationRequired,
+  syncInProgress,
   unsupportedEntity,
   pushFailed,
   pullFailed,

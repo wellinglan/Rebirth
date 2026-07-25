@@ -192,6 +192,7 @@ void main() {
         result.resultFor(SyncEntityType.profile)?.status,
         SyncEntityStatus.failed,
       );
+      expect(result.failure?.message, '数据上传失败，本地记录未受影响。');
       expect(remote.pullCalls, 0);
       expect(cursorStore.writeCalls, 0);
     },
@@ -294,7 +295,21 @@ void main() {
     expect(cursorStore.writeCalls, 0);
   });
 
-  test('overlapping runs reuse one future and issue one pull', () async {
+  test('negative cursor fails before pull and is never overwritten', () async {
+    cursorStore.value = -1;
+
+    final result = await coordinator.run(direction: SyncRunDirection.pull);
+
+    expect(result.failure?.reason, SyncFailureReason.cursorFailed);
+    expect(result.failure?.phase, SyncRunPhase.cursorRead);
+    expect(result.failure?.message, '本地同步游标读取失败，已停止拉取。');
+    expect(cursorStore.readCalls, 1);
+    expect(remote.pullCalls, 0);
+    expect(cursorStore.writeCalls, 0);
+    expect(cursorStore.value, -1);
+  });
+
+  test('identical overlapping runs reuse one future and one pull', () async {
     remote.pullCompleter = Completer<SyncPullResponseDto>();
 
     final first = coordinator.run(direction: SyncRunDirection.pull);
@@ -311,6 +326,151 @@ void main() {
     expect(identical(results.first, results.last), isTrue);
     expect(coordinator.isRunning, isFalse);
   });
+
+  test('entity order does not change an active request identity', () async {
+    final planAdapter = _FakeAdapter(entityType: SyncEntityType.plan);
+    coordinator = SyncCoordinator(
+      endpoint: _endpoint,
+      sessionStore: sessionStore,
+      remoteDataSource: remote,
+      cursorStore: cursorStore,
+      adapterRegistry: SyncEntityAdapterRegistry([adapter, planAdapter]),
+      endpointProbe: (_) async {},
+      dateTimeService: DateTimeService(
+        now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
+      ),
+    );
+    remote.pullCompleter = Completer<SyncPullResponseDto>();
+
+    final first = coordinator.run(
+      direction: SyncRunDirection.pull,
+      entityTypes: const [SyncEntityType.profile, SyncEntityType.plan],
+    );
+    final second = coordinator.run(
+      direction: SyncRunDirection.pull,
+      entityTypes: const [SyncEntityType.plan, SyncEntityType.profile],
+    );
+
+    expect(identical(first, second), isTrue);
+    await _waitUntil(() => remote.pullCalls == 1);
+    remote.pullCompleter!.complete(
+      SyncPullResponseDto(serverVersion: 0, items: const []),
+    );
+    await Future.wait([first, second]);
+
+    expect(remote.pullCalls, 2);
+    expect(adapter.applyCalls, 1);
+    expect(planAdapter.applyCalls, 1);
+  });
+
+  test('duplicate entity types execute one adapter and one pull', () async {
+    final result = await coordinator.run(
+      direction: SyncRunDirection.pull,
+      entityTypes: const [SyncEntityType.profile, SyncEntityType.profile],
+    );
+
+    expect(result.isSuccessful, isTrue);
+    expect(result.entityResults, hasLength(1));
+    expect(remote.pullCalls, 1);
+    expect(adapter.applyCalls, 1);
+    expect(cursorStore.readCalls, 1);
+  });
+
+  test('pull requested during push returns syncInProgress only', () async {
+    adapter.pending = [_pushItem()];
+    remote.pushCompleter = Completer<SyncPushResponseDto>();
+
+    final push = coordinator.run(direction: SyncRunDirection.push);
+    await _waitUntil(() => remote.pushCalls == 1);
+    final pull = coordinator.run(direction: SyncRunDirection.pull);
+    final rejected = await pull;
+
+    expect(identical(push, pull), isFalse);
+    expect(rejected.failure?.reason, SyncFailureReason.syncInProgress);
+    expect(rejected.failure?.message, '已有同步任务正在进行，请稍后重试。');
+    expect(remote.pushCalls, 1);
+    expect(remote.pullCalls, 0);
+    expect(cursorStore.readCalls, 0);
+    expect(adapter.applyCalls, 0);
+
+    remote.pushCompleter!.complete(
+      SyncPushResponseDto(
+        accepted: [
+          SyncedRecord(
+            tableName: 'user_profiles',
+            recordId: 'profile',
+            serverVersion: 1,
+          ),
+        ],
+        conflicts: const [],
+      ),
+    );
+    expect((await push).isSuccessful, isTrue);
+  });
+
+  test('push requested during pull returns syncInProgress only', () async {
+    remote.pullCompleter = Completer<SyncPullResponseDto>();
+
+    final pull = coordinator.run(direction: SyncRunDirection.pull);
+    await _waitUntil(() => remote.pullCalls == 1);
+    final push = coordinator.run(direction: SyncRunDirection.push);
+    final rejected = await push;
+
+    expect(identical(pull, push), isFalse);
+    expect(rejected.failure?.reason, SyncFailureReason.syncInProgress);
+    expect(remote.pullCalls, 1);
+    expect(remote.pushCalls, 0);
+    expect(cursorStore.readCalls, 1);
+    expect(adapter.collectCalls, 0);
+
+    remote.pullCompleter!.complete(
+      SyncPullResponseDto(serverVersion: 0, items: const []),
+    );
+    expect((await pull).isSuccessful, isTrue);
+  });
+
+  test('different entity scope is rejected without extra work', () async {
+    final planAdapter = _FakeAdapter(entityType: SyncEntityType.plan);
+    coordinator = SyncCoordinator(
+      endpoint: _endpoint,
+      sessionStore: sessionStore,
+      remoteDataSource: remote,
+      cursorStore: cursorStore,
+      adapterRegistry: SyncEntityAdapterRegistry([adapter, planAdapter]),
+      endpointProbe: (_) async {},
+      dateTimeService: DateTimeService(
+        now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
+      ),
+    );
+    remote.pullCompleter = Completer<SyncPullResponseDto>();
+
+    final active = coordinator.run(
+      direction: SyncRunDirection.pull,
+      entityTypes: const [SyncEntityType.profile],
+    );
+    await _waitUntil(() => remote.pullCalls == 1);
+    final rejected = await coordinator.run(
+      direction: SyncRunDirection.pull,
+      entityTypes: const [SyncEntityType.profile, SyncEntityType.plan],
+    );
+
+    expect(rejected.failure?.reason, SyncFailureReason.syncInProgress);
+    expect(remote.pullCalls, 1);
+    expect(cursorStore.readCalls, 1);
+    expect(planAdapter.applyCalls, 0);
+
+    remote.pullCompleter!.complete(
+      SyncPullResponseDto(serverVersion: 0, items: const []),
+    );
+    expect((await active).isSuccessful, isTrue);
+  });
+}
+
+Future<void> _waitUntil(bool Function() condition) async {
+  for (var attempt = 0; attempt < 20 && !condition(); attempt += 1) {
+    await Future<void>.delayed(Duration.zero);
+  }
+  expect(condition(), isTrue);
 }
 
 SyncPushItem _pushItem() {
@@ -361,6 +521,8 @@ final class _TestPayload implements SyncEntityPayload {
 }
 
 final class _FakeAdapter implements SyncEntityAdapter {
+  _FakeAdapter({this.entityType = SyncEntityType.profile});
+
   List<SyncPushItem> pending = const [];
   Object? applyError;
   SyncEntityResult applyResult = const SyncEntityResult(
@@ -373,7 +535,7 @@ final class _FakeAdapter implements SyncEntityAdapter {
   int applyCalls = 0;
 
   @override
-  SyncEntityType get entityType => SyncEntityType.profile;
+  final SyncEntityType entityType;
 
   @override
   Future<List<SyncPushItem>> collectPending() async {
@@ -447,6 +609,7 @@ final class _FakeRemoteDataSource implements SyncRemoteDataSource {
   );
   Object? pushError;
   Object? pullError;
+  Completer<SyncPushResponseDto>? pushCompleter;
   Completer<SyncPullResponseDto>? pullCompleter;
   int pushCalls = 0;
   int pullCalls = 0;
@@ -458,7 +621,8 @@ final class _FakeRemoteDataSource implements SyncRemoteDataSource {
   }) async {
     pushCalls += 1;
     if (pushError case final error?) throw error;
-    return pushResponse;
+    final completer = pushCompleter;
+    return completer == null ? pushResponse : completer.future;
   }
 
   @override
@@ -475,6 +639,7 @@ final class _FakeRemoteDataSource implements SyncRemoteDataSource {
 
 final class _MemoryCursorStore implements SyncCursorStore {
   int value = 0;
+  int readCalls = 0;
   int writeCalls = 0;
 
   @override
@@ -482,7 +647,10 @@ final class _MemoryCursorStore implements SyncCursorStore {
     required String endpoint,
     required String cloudUserId,
     required String scope,
-  }) async => value;
+  }) async {
+    readCalls += 1;
+    return value;
+  }
 
   @override
   Future<void> write({

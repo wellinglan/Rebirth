@@ -19,3 +19,9 @@ abstract interface class SyncCursorStore {
   });
 }
 
+final class InvalidSyncCursorException implements Exception {
+  const InvalidSyncCursorException();
+
+  @override
+  String toString() => 'The local sync cursor is invalid.';
+}

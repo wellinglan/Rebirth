@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/sync/data/sync_cursor_store_impl.dart';
+import 'package:rebirth/features/sync/domain/sync_cursor_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -12,6 +13,17 @@ void main() {
     await _write(store, 12);
 
     expect(await _read(LocalSyncCursorStore()), 12);
+  });
+
+  test('negative persisted cursor is rejected without being reset', () async {
+    final store = LocalSyncCursorStore();
+    await _write(store, 12);
+    final preferences = await SharedPreferences.getInstance();
+    final cursorKey = preferences.getKeys().single;
+    await preferences.setInt(cursorKey, -1);
+
+    await expectLater(_read(store), throwsA(isA<InvalidSyncCursorException>()));
+    expect(preferences.getInt(cursorKey), -1);
   });
 
   test('cursor is isolated by endpoint, cloud user, and scope', () async {
@@ -88,4 +100,3 @@ Future<void> _write(LocalSyncCursorStore store, int version) {
     serverVersion: version,
   );
 }
-

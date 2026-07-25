@@ -52,6 +52,8 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
           throw const SyncDeviceRegistrationRequiredException();
         case SyncFailureReason.endpointUnavailable:
           throw SyncException('${failure.message} 本地资料未受影响。');
+        case SyncFailureReason.syncInProgress:
+          throw SyncException(failure.message);
         case SyncFailureReason.unsupportedEntity:
           throw SyncException(failure.message);
         case SyncFailureReason.pushFailed:

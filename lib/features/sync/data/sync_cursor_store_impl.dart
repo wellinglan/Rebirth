@@ -22,7 +22,11 @@ final class LocalSyncCursorStore implements SyncCursorStore {
     required String scope,
   }) async {
     final preferences = await _loadPreferences();
-    return preferences.getInt(_key(endpoint, cloudUserId, scope)) ?? 0;
+    final value = preferences.getInt(_key(endpoint, cloudUserId, scope)) ?? 0;
+    if (value < 0) {
+      throw const InvalidSyncCursorException();
+    }
+    return value;
   }
 
   @override
@@ -55,7 +59,9 @@ final class LocalSyncCursorStore implements SyncCursorStore {
       return;
     }
     final prefix = _keyPrefix(endpoint, cloudUserId);
-    for (final key in preferences.getKeys().where((key) => key.startsWith(prefix))) {
+    for (final key in preferences.getKeys().where(
+      (key) => key.startsWith(prefix),
+    )) {
       await preferences.remove(key);
     }
   }
@@ -71,4 +77,3 @@ final class LocalSyncCursorStore implements SyncCursorStore {
 
   String _encode(String value) => base64Url.encode(utf8.encode(value));
 }
-
