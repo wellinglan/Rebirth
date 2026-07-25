@@ -2,9 +2,9 @@
 
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
-> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9C 代码已完成但人工验收暂缓，Sprint 10A 主体代码已推送，Sprint 10A.1 代码已完成但尚未提交。
+> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9C 代码已完成但人工验收暂缓，Sprint 10A 与 Sprint 10A.1 代码均已推送。
 >
-> 当前开发：Sprint 10A.1 Sync Foundation Hardening 代码验证完成、人工验收未执行；Sprint 10B 尚未开始，云端架构和 Sync Protocol v2 保持不变。
+> 当前开发：Sprint 10A.1 Sync Foundation Hardening 的本地验证与 GitHub Quality CI 已通过、人工验收未执行；Sprint 10B 尚未开始，云端架构和 Sync Protocol v2 保持不变。
 
 ## 1. 当前主架构
 
@@ -402,12 +402,13 @@ Sprint 9C 不应自动：
 人工矩阵见 `docs/manual_tests/23_daily_insight_freshness.md`，当前全部保持
 `NOT EXECUTED`。
 
-## 15. Sprint 10A / 10A.1 状态（10A PUSHED / 10A.1 CODE COMPLETE）
+## 15. Sprint 10A / 10A.1 状态（PUSHED / QUALITY CI PASS）
 
 Sprint 10A 主体代码已通过提交
-`126403aaaa255798cd7177f71e1082b4be001d0b` 推送。Sprint 10A.1 已完成代码
-加固和本地自动化验证，但尚未 commit 或 push；它只加固通用 Flutter Sync
-Foundation，不开始 Sprint 10B：
+`126403aaaa255798cd7177f71e1082b4be001d0b` 推送。Sprint 10A.1 实现提交
+`bf254308cfd64755d1bd32aea8189bd920004a71` 也已推送，且 GitHub Quality
+workflow `30145133981` 全部通过；它只加固通用 Flutter Sync Foundation，
+不开始 Sprint 10B：
 
 ```text
 manual Profile action
@@ -488,7 +489,7 @@ Sprint 10A 人工矩阵见
 Sprint 9B.1 / 9B.2 功能验收已通过，
 Phone model 与 Android version 是非阻塞性元数据缺口，
 Sprint 9C 代码已完成但人工验收暂缓，
-Sprint 10A 主体代码已推送，Sprint 10A.1 已完成只注册 Profile Adapter 的
-通用同步基础加固，但尚未提交且人工验收未执行；Sprint 10B 尚未开始，
+Sprint 10A 与 Sprint 10A.1 代码均已推送，Quality CI 已通过；当前仍只注册
+Profile Adapter，人工验收未执行，Sprint 10B 尚未开始，
 且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```

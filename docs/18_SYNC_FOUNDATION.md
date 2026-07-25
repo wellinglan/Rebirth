@@ -315,7 +315,13 @@ Executed locally on 2026-07-25:
 
 The two Flutter skips remain the existing opt-in Uvicorn Fake full-stack tests.
 The Android build emitted the existing CupertinoIcons asset warning but
-produced all three APKs. Server runtime was not changed, so no Server,
-PostgreSQL marker, cloud deployment, or Alpha business database test was run.
-GitHub CI is `NOT VERIFIED`. All Windows, Android physical-device, and
-cross-device manual rows remain `NOT EXECUTED`.
+produced all three APKs. Server runtime was not changed, and no cloud deployment
+or Alpha business database test was run.
+
+Implementation commit `bf254308cfd64755d1bd32aea8189bd920004a71`
+triggered GitHub Quality workflow run `30145133981`. The run completed
+successfully, including Server SQLite, Server PostgreSQL Multiprocess And
+Multiworker, Flutter Analyze And Test, and Android Debug Build. The PostgreSQL
+marker was therefore executed and passed in GitHub CI rather than inferred from
+local results. All Windows, Android physical-device, and cross-device manual
+rows remain `NOT EXECUTED`.
