@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 3 with all core tables', () async {
+  test('creates schema version 4 with all core tables', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -33,14 +33,82 @@ void main() {
         'goals',
         'health_records',
         'ai_reports',
+        'sync_conflicts',
       }),
     );
 
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 3);
+    expect(versionRow.read<int>('user_version'), 4);
   });
+
+  test(
+    'active sync conflict is unique while resolved history remains',
+    () async {
+      final bootstrap = await database.bootstrapDao.bootstrap();
+      final first = _conflict(
+        localUserId: bootstrap.activeUserId,
+        id: uuid.v4(),
+      );
+      await database.into(database.syncConflicts).insert(first);
+
+      await expectLater(
+        database
+            .into(database.syncConflicts)
+            .insert(
+              _conflict(localUserId: bootstrap.activeUserId, id: uuid.v4()),
+            ),
+        throwsA(isA<Exception>()),
+      );
+
+      await (database.update(
+        database.syncConflicts,
+      )..where((row) => row.id.equals(first.id.value))).write(
+        const SyncConflictsCompanion(
+          resolutionStatus: Value('resolved_keep_local'),
+          resolvedAt: Value(200),
+        ),
+      );
+      await database
+          .into(database.syncConflicts)
+          .insert(
+            _conflict(localUserId: bootstrap.activeUserId, id: uuid.v4()),
+          );
+      expect(await database.select(database.syncConflicts).get(), hasLength(2));
+    },
+  );
+
+  test(
+    'sync conflict constraints reject invalid operation and version',
+    () async {
+      final bootstrap = await database.bootstrapDao.bootstrap();
+      await expectLater(
+        database
+            .into(database.syncConflicts)
+            .insert(
+              _conflict(
+                localUserId: bootstrap.activeUserId,
+                id: uuid.v4(),
+                remoteOperation: 'invalid',
+              ),
+            ),
+        throwsA(isA<Exception>()),
+      );
+      await expectLater(
+        database
+            .into(database.syncConflicts)
+            .insert(
+              _conflict(
+                localUserId: bootstrap.activeUserId,
+                id: uuid.v4(),
+                remoteServerVersion: -1,
+              ),
+            ),
+        throwsA(isA<Exception>()),
+      );
+    },
+  );
 
   test('bootstrap creates one default user and matching settings', () async {
     final result = await database.bootstrapDao.bootstrap(
@@ -162,4 +230,26 @@ void main() {
       throwsA(isA<Exception>()),
     );
   });
+}
+
+SyncConflictsCompanion _conflict({
+  required String localUserId,
+  required String id,
+  String remoteOperation = 'unknown_pending_pull',
+  int remoteServerVersion = 1,
+}) {
+  return SyncConflictsCompanion.insert(
+    id: Value(id),
+    localUserId: localUserId,
+    endpointKey: 'http://localhost:8000',
+    cloudUserId: 'cloud-user',
+    entityType: 'goals',
+    recordId: '00000000-0000-4000-8000-000000000001',
+    localUpdatedAt: 100,
+    remoteOperation: remoteOperation,
+    remoteServerVersion: remoteServerVersion,
+    detectedAt: 100,
+    lastSeenAt: 100,
+    resolutionStatus: 'awaiting_remote_snapshot',
+  );
 }

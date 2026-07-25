@@ -9,13 +9,19 @@ import 'package:rebirth/features/sync/application/sync_coordinator.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_adapter.dart';
 
 import 'sync_repository_provider.dart';
+import 'sync_conflict_providers.dart';
 
 final profileSyncAdapterProvider = Provider<ProfileSyncAdapter>((ref) {
   return ProfileSyncAdapter(ref.watch(appDatabaseProvider));
 });
 
 final planSyncAdapterProvider = Provider<PlanSyncAdapter>((ref) {
-  return PlanSyncAdapter(ref.watch(appDatabaseProvider));
+  return PlanSyncAdapter(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncConflictRepositoryProvider),
+    () => ref.read(syncConflictScopeProvider.future),
+    ref.watch(dateTimeServiceProvider),
+  );
 });
 
 final syncEntityAdapterRegistryProvider = Provider<SyncEntityAdapterRegistry>((

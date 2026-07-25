@@ -8,6 +8,8 @@ abstract final class RouteNames {
   static const health = 'health';
   static const settings = 'settings';
   static const settingsProfile = 'settingsProfile';
+  static const syncConflicts = 'syncConflicts';
+  static const syncConflictDetails = 'syncConflictDetails';
   static const aiCoach = 'aiCoach';
   static const aiCoachDaily = 'aiCoachDaily';
   static const aiCoachReport = 'aiCoachReport';
@@ -23,6 +25,7 @@ abstract final class RoutePaths {
   static const health = '/health';
   static const settings = '/settings';
   static const settingsProfile = '/settings/profile';
+  static const syncConflicts = '/settings/sync-conflicts';
   static const aiCoach = '/ai-coach';
 
   static String todayHistoryForDate(String date) {
@@ -48,5 +51,9 @@ abstract final class RoutePaths {
 
   static String aiCoachReport(String reportId) {
     return '$aiCoach/reports/${Uri.encodeComponent(reportId)}';
+  }
+
+  static String syncConflictDetails(String conflictId) {
+    return '$syncConflicts/${Uri.encodeComponent(conflictId)}';
   }
 }

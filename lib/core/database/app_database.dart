@@ -8,6 +8,7 @@ import 'tables/common_columns.dart';
 import 'tables/goals_table.dart';
 import 'tables/health_records_table.dart';
 import 'tables/journal_entries_table.dart';
+import 'tables/sync_conflicts_table.dart';
 import 'tables/today_records_table.dart';
 import 'tables/user_profiles_table.dart';
 
@@ -22,6 +23,7 @@ part 'app_database.g.dart';
     JournalEntries,
     HealthRecords,
     AiReports,
+    SyncConflicts,
   ],
   daos: [BootstrapDao],
 )
@@ -31,13 +33,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) async {
       await migrator.createAll();
       await _createVersionOneIndexes();
+      await _createSyncConflictIndexes();
     },
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
@@ -47,6 +50,10 @@ class AppDatabase extends _$AppDatabase {
         await _createGoalIndexes();
       } else if (from < 3) {
         await migrator.addColumn(goals, goals.archivedAt);
+      }
+      if (from < 4) {
+        await migrator.createTable(syncConflicts);
+        await _createSyncConflictIndexes();
       }
     },
     beforeOpen: (details) async {
@@ -66,6 +73,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _createGoalIndexes() async {
     for (final statement in _goalIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createSyncConflictIndexes() async {
+    for (final statement in _syncConflictIndexes) {
       await customStatement(statement);
     }
   }
@@ -119,4 +132,18 @@ const _goalIndexes = <String>[
       'ON goals (user_id, goal_level, status)',
   'CREATE INDEX IF NOT EXISTS goals_user_target_date '
       'ON goals (user_id, target_date)',
+];
+
+const _syncConflictIndexes = <String>[
+  'CREATE INDEX IF NOT EXISTS sync_conflicts_user_status_detected '
+      'ON sync_conflicts '
+      '(local_user_id, resolution_status, detected_at DESC)',
+  'CREATE INDEX IF NOT EXISTS sync_conflicts_endpoint_user_entity '
+      'ON sync_conflicts (endpoint_key, cloud_user_id, entity_type)',
+  'CREATE INDEX IF NOT EXISTS sync_conflicts_entity_record '
+      'ON sync_conflicts (entity_type, record_id)',
+  'CREATE UNIQUE INDEX IF NOT EXISTS sync_conflicts_one_active '
+      'ON sync_conflicts '
+      '(endpoint_key, cloud_user_id, entity_type, record_id) '
+      'WHERE resolved_at IS NULL',
 ];

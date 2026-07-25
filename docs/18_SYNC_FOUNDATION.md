@@ -1,6 +1,6 @@
 # Rebirth Sync Foundation
 
-> Status: Sprint 10B Plan adapter implemented locally; deployment and manual acceptance pending
+> Status: Sprint 10B pushed and Quality-verified; Sprint 10B.1 persistent conflict recovery implemented locally
 > Protocol: Sync Protocol v2
 > Product scope: manual canonical Profile sync and manual Plan two-way sync
 
@@ -253,10 +253,18 @@ Profile conflict detection remains conservative:
 - no field-level merge or overwrite-choice UI exists;
 - failure never resets Profile fields to defaults.
 
-Plan conflicts preserve local business fields and mark the affected rows
-`conflict`. The Plan page cursor does not advance. Safe “adopt cloud” recovery
-is deferred to Sprint 10B.1 because the current schema cannot guarantee
-restoration of conflict state after a failed network pull.
+Plan conflicts preserve local business fields, persist typed local and remote
+snapshots in endpoint/user-scoped `sync_conflicts` rows, and leave the Plan
+cursor unchanged. A stale push first creates
+`awaiting_remote_snapshot`; one controlled pull-only run then hydrates the
+server payload or tombstone. Users explicitly choose either “adopt server
+current version” or “keep current local version”.
+
+Adopt marks `adopt_remote_requested` before networking and does not change the
+Goal until a valid pull page applies transactionally. Keep-local rereads the
+current Goal, rebases its `server_version` to the conflict remote baseline,
+marks it pending, and resolves only after a successful acknowledgement.
+Requested states and conflict rows survive restart and network failure.
 
 ## 12. Privacy And Diagnostics
 
@@ -267,7 +275,10 @@ database URL/path, JWT secret, or Endpoint credentials.
 ## 13. Current Scope
 
 - Profile sync: implemented, manual.
-- Plan sync: implemented locally, manual two-way; cloud deployment pending.
+- Plan sync: pushed and Quality-verified, manual two-way; Alpha API deployment
+  remains pending confirmation.
+- Plan conflict inbox and explicit recovery: implemented locally in Sprint
+  10B.1; CI and manual acceptance pending.
 - Today sync: not implemented.
 - Journal sync: not implemented.
 - Health sync: not implemented.
@@ -361,3 +372,57 @@ run for this unpushed change set in GitHub CI. GitHub Quality, GHCR publication,
 cloud API deployment, Windows manual acceptance, Android physical acceptance,
 and cross-device manual acceptance remain `NOT VERIFIED` or `NOT EXECUTED` as
 applicable.
+
+## 18. Sprint 10B Published Evidence
+
+Sprint 10B implementation commit
+`713f46a71ab5aa46be45ae62051a366859ab9a39` was pushed. GitHub Quality run
+`30148891653` passed, including the PostgreSQL marker, Alembic upgrade,
+multi-worker, Server SQLite, Flutter analyze/test, and Android Debug Build.
+Publish Alpha Images run `30148891659` also passed and published the matching
+API image.
+
+Image publication does not prove deployment. The Beijing Alpha API deployment
+and every Sprint 10B Windows, Android, and cross-device manual row remain
+pending or `NOT EXECUTED`.
+
+## 19. Sprint 10B.1 Conflict Store Boundary
+
+Flutter `schemaVersion` is `4`. The local `sync_conflicts` store is keyed by
+local user, normalized Endpoint, cloud user, entity type, and record ID. It
+keeps unresolved uniqueness and resolved history. Payload JSON is encoded by
+the same typed Plan codec used at the transport boundary; it contains no local
+owner, sync status, cursor, Endpoint, token, or UI state.
+
+Only Plan currently enters this store. Profile remains on its existing
+conservative path. Server runtime, API version 1, Sync Protocol v2, PostgreSQL,
+and Alembic are unchanged. Full state-machine and recovery details are in
+`docs/20_SYNC_CONFLICT_RECOVERY.md`; manual acceptance is defined in
+`docs/manual_tests/26_sync_conflict_recovery.md` and remains entirely
+`NOT EXECUTED`.
+
+## 20. Sprint 10B.1 Local Automated Evidence
+
+Executed locally on 2026-07-25:
+
+| Check | Result |
+|---|---|
+| `flutter pub get` | PASS |
+| `flutter analyze` | PASS, no issues |
+| Migration, Repository, Adapter, Controller, UI, route, cross-device, Profile, and Coordinator targeted tests | PASS, `167 passed` |
+| `flutter test` | PASS, `827 passed / 2 skipped` |
+| Server non-PostgreSQL pytest | PASS, `139 passed / 1 skipped / 8 deselected` |
+| Local PostgreSQL marker | NOT EXECUTED; no isolated PostgreSQL test URL was used |
+| Windows release build | PASS, `build/windows/x64/runner/Release/rebirth.exe` |
+| Android split release build | PASS, armv7 + arm64 + x86_64 |
+| Flutter `schemaVersion` | `4` |
+| API / Sync Protocol | unchanged at `1` / `2` |
+
+The two Flutter skips remain the existing opt-in Uvicorn Fake full-stack tests.
+The Server skip and deselections are environment/marker selections, not newly
+disabled Sprint tests. The Android build emitted the existing CupertinoIcons
+asset warning and produced all three APKs.
+
+No Alpha business database or server was contacted. GitHub Quality and its
+PostgreSQL marker have not yet run for this local change set. Windows, Android,
+and cross-device manual acceptance remain `NOT EXECUTED`.

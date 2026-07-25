@@ -112,7 +112,7 @@ void main() {
     expect(other.isActive, isFalse);
   });
 
-  test('schemaVersion remains 3', () {
-    expect(database.schemaVersion, 3);
+  test('schemaVersion remains 4', () {
+    expect(database.schemaVersion, 4);
   });
 }

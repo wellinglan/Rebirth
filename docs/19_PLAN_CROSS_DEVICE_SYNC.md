@@ -1,7 +1,7 @@
 # Plan Cross-device Sync
 
 > Sprint: 10B
-> Status: code implemented locally; cloud deployment and manual acceptance pending
+> Status: Sprint 10B pushed and Quality-verified; Alpha deployment and manual acceptance pending
 > API: version 1
 > Sync protocol: version 2
 
@@ -139,32 +139,56 @@ applied transactionally. Accepted rows become `synced`; stale conflicts become
 - Plan cursor advancement happens only after the entire local apply succeeds.
 - Profile and Plan cursors remain separate scopes.
 
-## Conflict Boundary
+## Persistent Conflict Recovery
 
-Sprint 10B preserves conflicting local content, marks explicit conflict state,
-shows a count, and leaves the Plan cursor unchanged. It does not choose a
-winner by device time or perform field-level merge.
+Sprint 10B.1 preserves conflicting local content, marks explicit conflict
+state, persists typed snapshots, shows an endpoint/user-scoped inbox, and
+leaves the Plan cursor unchanged. It does not choose a winner by device time
+or perform field-level merge.
 
-The requested “discard local conflicts and adopt cloud Plan” action is
-intentionally deferred to Sprint 10B.1. With the current schema, temporarily
-changing `conflict` to an applyable state cannot guarantee that a failed pull
-restores the exact prior conflict state across the network/SQLite boundary.
-No unsafe or cosmetic recovery button is exposed.
+Pull conflicts save local and remote snapshots in the same Drift transaction
+that marks the Goal `conflict`. If one item conflicts, no other business change
+from that page is applied and the cursor does not advance.
+
+Push conflict responses contain only the current server version. The client
+therefore saves `awaiting_remote_snapshot` without inventing a payload, then
+runs one controlled Plan pull-only hydration. Failed hydration keeps the local
+Goal and requested state for a user-triggered retry.
+
+Resolution is explicit:
+
+- Adopt server current version persists `adopt_remote_requested`, keeps the
+  local Goal unchanged before network access, validates the complete projected
+  hierarchy, then applies the latest pull version and resolves transactionally.
+- Keep current local version rereads the current Goal, uses the conflict's
+  remote version as the strict client baseline, marks the Goal pending, and
+  resolves only after server acknowledgement.
+
+Both paths support upserts and tombstones. Network failure, process restart,
+and cursor replay retain a recoverable requested state. Resolved rows remain as
+history; a later higher-version conflict creates a new active row.
 
 ## Database And Deployment
 
-- Flutter `schemaVersion` remains `3`.
-- No Drift migration was added.
+- Flutter `schemaVersion` is `4`.
+- Drift migration `v3 -> v4` adds only the local generic `sync_conflicts`
+  table and its indexes.
 - No Alembic revision was added.
 - No PostgreSQL schema or dedicated Goal table was added.
 - SyncItem remains the cloud storage model.
 - API version remains `1`.
 - Sync Protocol remains `2`.
 
-Server behavior changed, so cloud manual acceptance requires a new API GHCR
-image and API container recreation. PostgreSQL does not need rebuilding.
-Because there is no migration, this Sprint does not require a database backup
-for schema safety. Existing operational backup policy still applies.
+Sprint 10B server behavior was published in implementation commit
+`713f46a71ab5aa46be45ae62051a366859ab9a39`; Quality run `30148891653` and
+Publish Alpha Images run `30148891659` passed. The matching API image exists,
+but deployment to the Beijing Alpha server is still pending confirmation.
+
+Sprint 10B.1 changes only Flutter local storage and client behavior. It does
+not require a new API image, API container recreation, PostgreSQL rebuild,
+Compose change, Endpoint change, or Alembic migration.
 
 Manual acceptance is defined in
-`docs/manual_tests/25_plan_cross_device_sync.md`.
+`docs/manual_tests/25_plan_cross_device_sync.md` and persistent recovery
+acceptance in `docs/manual_tests/26_sync_conflict_recovery.md`. Both remain
+separate from automated results.

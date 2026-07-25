@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 
 void main() {
-  test('v2 to v3 preserves goals and adds nullable archived_at', () async {
+  test('v2 to v4 preserves goals and adds nullable archived_at', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -31,7 +31,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 3);
+    expect(version.read<int>('user_version'), 4);
 
     final goal =
         await (migrated.select(migrated.goals)..where(
@@ -65,7 +65,7 @@ void main() {
 
     final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(migrated.close);
-    expect(migrated.schemaVersion, 3);
+    expect(migrated.schemaVersion, 4);
     final existing = await migrated.select(migrated.goals).getSingle();
     expect(existing.title, 'v1 普通目标');
     expect(existing.archivedAt, isNull);
@@ -92,6 +92,57 @@ void main() {
         'goals_user_parent_sort_order',
         'goals_user_level_status',
         'goals_user_target_date',
+      }),
+    );
+  });
+
+  test('v3 to v4 preserves goals and creates conflict indexes', () async {
+    final fixture = await _createDatabaseFixture();
+    addTearDown(fixture.dispose);
+    final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
+    final bootstrap = await original.bootstrapDao.bootstrap();
+    await original
+        .into(original.goals)
+        .insert(
+          GoalsCompanion.insert(
+            id: const Value('00000000-0000-4000-8000-000000000021'),
+            userId: bootstrap.activeUserId,
+            title: '已有冲突目标',
+            goalLevel: 'month',
+            syncStatus: const Value('conflict'),
+            serverVersion: const Value(4),
+            originDeviceId: Value(bootstrap.localInstallationId),
+          ),
+        );
+    await original.customStatement('DROP TABLE sync_conflicts');
+    await original.customStatement('PRAGMA user_version = 3');
+    await original.close();
+
+    final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
+    addTearDown(migrated.close);
+    final version = await migrated
+        .customSelect('PRAGMA user_version')
+        .getSingle();
+    expect(version.read<int>('user_version'), 4);
+    final goal = await migrated.select(migrated.goals).getSingle();
+    expect(goal.id, '00000000-0000-4000-8000-000000000021');
+    expect(goal.syncStatus, 'conflict');
+    expect(goal.serverVersion, 4);
+    expect(await migrated.select(migrated.syncConflicts).get(), isEmpty);
+
+    final indexes = await migrated
+        .customSelect(
+          "SELECT name FROM sqlite_master "
+          "WHERE type = 'index' AND tbl_name = 'sync_conflicts'",
+        )
+        .get();
+    expect(
+      indexes.map((row) => row.read<String>('name')).toSet(),
+      containsAll(<String>{
+        'sync_conflicts_user_status_detected',
+        'sync_conflicts_endpoint_user_entity',
+        'sync_conflicts_entity_record',
+        'sync_conflicts_one_active',
       }),
     );
   });
@@ -175,6 +226,7 @@ Future<void> _expectCoreTableSet(AppDatabase database) async {
     'goals',
     'health_records',
     'ai_reports',
+    'sync_conflicts',
   });
 }
 

@@ -10,6 +10,8 @@ import '../../features/journal/presentation/journal_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
+import '../../features/sync/presentation/sync_conflict_detail_page.dart';
+import '../../features/sync/presentation/sync_conflict_list_page.dart';
 import '../../features/today/presentation/today_page.dart';
 import '../../features/today/presentation/today_history_page.dart';
 import '../app/home_shell.dart';
@@ -119,6 +121,20 @@ final GoRouter appRouter = GoRouter(
           path: 'profile',
           name: RouteNames.settingsProfile,
           builder: (context, state) => const ProfilePage(),
+        ),
+        GoRoute(
+          path: 'sync-conflicts',
+          name: RouteNames.syncConflicts,
+          builder: (context, state) => const SyncConflictListPage(),
+          routes: [
+            GoRoute(
+              path: ':conflictId',
+              name: RouteNames.syncConflictDetails,
+              builder: (context, state) => SyncConflictDetailPage(
+                conflictId: state.pathParameters['conflictId'] ?? '',
+              ),
+            ),
+          ],
         ),
       ],
     ),

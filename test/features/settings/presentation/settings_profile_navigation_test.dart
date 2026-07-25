@@ -64,7 +64,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     final profileTile = find.byKey(const ValueKey('profileSettingsTile'));
-    await tester.fling(settingsScroll, const Offset(0, 1200), 1200);
+    await tester.ensureVisible(profileTile);
     await tester.pumpAndSettle();
     await tester.tap(profileTile);
     await tester.pumpAndSettle();
@@ -109,7 +109,7 @@ void main() {
       expect(revisionSource, isNot(contains('features/')));
       expect(routeNamesSource, contains("'/settings/profile'"));
       expect(routerSource, isNot(contains('RoutePaths.profile')));
-      expect(databaseSource, contains('int get schemaVersion => 3'));
+      expect(databaseSource, contains('int get schemaVersion => 4'));
       expect(pubspec, isNot(contains('firebase_auth')));
       expect(pubspec, isNot(contains('supabase')));
       expect(pubspec, isNot(contains('oauth')));

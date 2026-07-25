@@ -4,25 +4,35 @@ import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_repository.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_adapter.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
 import 'package:rebirth/features/sync/domain/sync_models.dart';
 
 import 'plan_local_data_source.dart';
+import 'plan_sync_payload_codec.dart';
 
 final class PlanSyncAdapter implements SyncEntityAdapter {
-  PlanSyncAdapter(db.AppDatabase database)
-    : _database = database,
-      _localDataSource = PlanLocalDataSource(database);
+  PlanSyncAdapter(
+    db.AppDatabase database, [
+    this._conflictRepository,
+    this._conflictScopeLoader,
+    DateTimeService dateTimeService = const DateTimeService(),
+  ]) : _database = database,
+       _localDataSource = PlanLocalDataSource(database),
+       _payloadCodec = PlanSyncPayloadCodec(dateTimeService);
 
-  static const _dateTimeService = DateTimeService();
   static final _uuidPattern = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   );
 
   final db.AppDatabase _database;
   final PlanLocalDataSource _localDataSource;
+  final SyncConflictRepository? _conflictRepository;
+  final Future<SyncConflictScope?> Function()? _conflictScopeLoader;
+  final PlanSyncPayloadCodec _payloadCodec;
 
   @override
   SyncEntityType get entityType => SyncEntityType.plan;
@@ -55,22 +65,7 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
 
   @override
   Map<String, Object?> encodePayload(SyncEntityPayload payload) {
-    if (payload is! PlanSyncPayload) {
-      throw const SyncException('Plan 同步 payload 类型无效。');
-    }
-    return {
-      'parent_goal_id': payload.parentGoalId,
-      'title': payload.title,
-      'description': payload.description,
-      'goal_level': payload.goalLevel.databaseValue,
-      'status': payload.status.databaseValue,
-      'start_date': payload.startDate,
-      'target_date': payload.targetDate,
-      'completed_at': payload.completedAt,
-      'archived_at': payload.archivedAt,
-      'sort_order': payload.sortOrder,
-      'created_at': payload.createdAt,
-    };
+    return _payloadCodec.encode(payload);
   }
 
   @override
@@ -100,7 +95,7 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
       throw const SyncException('云端 Plan tombstone payload 必须为空。');
     }
     final typedPayload = operation == SyncOperation.upsert
-        ? _decodePayload(recordId, payload)
+        ? _payloadCodec.decode(recordId: recordId, json: payload)
         : null;
     return SyncChange(
       entityType: entityType,
@@ -123,6 +118,12 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
   }) {
     return _database.transaction(() async {
       final context = await _loadContext();
+      final trueConflicts = conflicts
+          .where((conflict) => conflict.reason != 'request_conflict')
+          .toList(growable: false);
+      final conflictScope = trueConflicts.isNotEmpty || accepted.isNotEmpty
+          ? await _tryLoadConflictScope()
+          : null;
       final submittedIds = <String>{};
       for (final item in submitted) {
         if (item.entityType != entityType || !submittedIds.add(item.recordId)) {
@@ -165,10 +166,51 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
         if (affected != 1) {
           throw SyncException('找不到 Plan 上传记录 ${item.recordId}。');
         }
+        if (conflictScope != null && _conflictRepository != null) {
+          final conflict = await _conflictRepository.findActiveConflict(
+            scope: conflictScope,
+            entityType: entityType,
+            recordId: item.recordId,
+          );
+          if (conflict?.resolutionStatus ==
+              SyncConflictResolutionStatus.keepLocalRequested) {
+            await _conflictRepository.markResolvedKeepLocal(
+              conflictScope,
+              conflict!.id,
+              resolvedAt: syncedAt,
+            );
+          }
+        }
       }
-      for (final item in conflicts.where(
-        (conflict) => conflict.reason != 'request_conflict',
-      )) {
+      for (final item in trueConflicts) {
+        final goal = await _localDataSource.selectByIdIncludingDeleted(
+          userId: context.userId,
+          id: item.recordId,
+        );
+        if (goal == null) {
+          throw SyncException('找不到 Plan 冲突记录 ${item.recordId}。');
+        }
+        if (conflictScope != null && _conflictRepository != null) {
+          await _conflictRepository.upsertDetectedConflict(
+            SyncConflictDetection(
+              scope: conflictScope,
+              entityType: entityType,
+              recordId: item.recordId,
+              localSnapshot: _localSnapshot(goal),
+              remoteSnapshot: SyncConflictSnapshot(
+                payload: null,
+                updatedAt: null,
+                deletedAt: null,
+                serverVersion: item.serverVersion,
+                originDeviceId: null,
+              ),
+              remoteOperation: SyncConflictOperation.unknownPendingPull,
+              resolutionStatus:
+                  SyncConflictResolutionStatus.awaitingRemoteSnapshot,
+              detectedAt: syncedAt,
+            ),
+          );
+        }
         final affected =
             await (_database.update(_database.goals)..where(
                   (row) =>
@@ -182,12 +224,12 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
       }
       return SyncEntityResult(
         entityType: entityType,
-        status: conflicts.isEmpty
+        status: trueConflicts.isEmpty
             ? SyncEntityStatus.succeeded
             : SyncEntityStatus.conflict,
-        message: conflicts.isEmpty ? 'Plan 已上传' : 'Plan 上传存在版本冲突',
+        message: trueConflicts.isEmpty ? 'Plan 已上传' : 'Plan 上传存在版本冲突',
         pushedCount: accepted.length,
-        conflictCount: conflicts.length,
+        conflictCount: trueConflicts.length,
         serverVersion: accepted.isEmpty
             ? null
             : accepted
@@ -211,6 +253,10 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
       final seen = <String>{};
       final applicable = <SyncChange>[];
       final localConflicts = <SyncChange>[];
+      final adoptRemoteConflicts = <String, SyncConflictRecord>{};
+      final conflictScope = changes.isEmpty
+          ? null
+          : await _tryLoadConflictScope();
       var ignored = 0;
 
       for (final change in changes) {
@@ -235,15 +281,50 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
           throw const SyncException('云端 Plan 批次字段无效。');
         }
         if (validUpsert) {
-          _validateTypedPayload(
-            change.recordId,
-            change.payload! as PlanSyncPayload,
+          _payloadCodec.validate(
+            recordId: change.recordId,
+            payload: change.payload! as PlanSyncPayload,
           );
         }
         final local = byId[change.recordId];
         if (local != null &&
-            change.serverVersion <= (local.serverVersion ?? 0)) {
+            change.serverVersion <= (local.serverVersion ?? 0) &&
+            local.syncStatus != 'conflict') {
           ignored += 1;
+          continue;
+        }
+        final activeConflict =
+            conflictScope == null || _conflictRepository == null
+            ? null
+            : await _conflictRepository.findActiveConflict(
+                scope: conflictScope,
+                entityType: entityType,
+                recordId: change.recordId,
+              );
+        if (activeConflict != null) {
+          if (activeConflict.resolutionStatus ==
+              SyncConflictResolutionStatus.adoptRemoteRequested) {
+            final storedVersion =
+                activeConflict.remoteSnapshot.serverVersion ?? 0;
+            if (change.serverVersion < storedVersion) {
+              localConflicts.add(change);
+              continue;
+            }
+            final refreshed = await _conflictRepository!.hydrateRemoteSnapshot(
+              scope: conflictScope!,
+              entityType: entityType,
+              recordId: change.recordId,
+              operation: change.operation == SyncOperation.delete
+                  ? SyncConflictOperation.delete
+                  : SyncConflictOperation.upsert,
+              remoteSnapshot: _remoteSnapshot(change),
+              seenAt: syncedAt,
+            );
+            applicable.add(change);
+            adoptRemoteConflicts[change.recordId] = refreshed;
+            continue;
+          }
+          localConflicts.add(change);
           continue;
         }
         if (local != null && local.syncStatus != 'synced') {
@@ -256,6 +337,60 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
       _validateProjectedHierarchy(current: byId, changes: applicable);
       if (localConflicts.isNotEmpty) {
         for (final change in localConflicts) {
+          final goal = byId[change.recordId];
+          if (goal == null) {
+            throw const SyncException('云端 Plan 冲突缺少本地记录。');
+          }
+          if (conflictScope != null && _conflictRepository != null) {
+            final existing = await _conflictRepository.findActiveConflict(
+              scope: conflictScope,
+              entityType: entityType,
+              recordId: change.recordId,
+            );
+            final operation = change.operation == SyncOperation.delete
+                ? SyncConflictOperation.delete
+                : SyncConflictOperation.upsert;
+            final remoteSnapshot = _remoteSnapshot(change);
+            if (existing == null) {
+              await _conflictRepository.upsertDetectedConflict(
+                SyncConflictDetection(
+                  scope: conflictScope,
+                  entityType: entityType,
+                  recordId: change.recordId,
+                  localSnapshot: _localSnapshot(goal),
+                  remoteSnapshot: remoteSnapshot,
+                  remoteOperation: operation,
+                  resolutionStatus: SyncConflictResolutionStatus.unresolved,
+                  detectedAt: syncedAt,
+                ),
+              );
+            } else if (existing.resolutionStatus ==
+                    SyncConflictResolutionStatus.awaitingRemoteSnapshot ||
+                change.serverVersion >
+                    (existing.remoteSnapshot.serverVersion ?? 0)) {
+              await _conflictRepository.hydrateRemoteSnapshot(
+                scope: conflictScope,
+                entityType: entityType,
+                recordId: change.recordId,
+                operation: operation,
+                remoteSnapshot: remoteSnapshot,
+                seenAt: syncedAt,
+              );
+            } else {
+              await _conflictRepository.upsertDetectedConflict(
+                SyncConflictDetection(
+                  scope: conflictScope,
+                  entityType: entityType,
+                  recordId: change.recordId,
+                  localSnapshot: _localSnapshot(goal),
+                  remoteSnapshot: remoteSnapshot,
+                  remoteOperation: operation,
+                  resolutionStatus: existing.resolutionStatus,
+                  detectedAt: syncedAt,
+                ),
+              );
+            }
+          }
           await (_database.update(_database.goals)..where(
                 (row) =>
                     row.userId.equals(context.userId) &
@@ -359,6 +494,14 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
                 ),
               );
         }
+        final resolvedConflict = adoptRemoteConflicts[change.recordId];
+        if (resolvedConflict != null && conflictScope != null) {
+          await _conflictRepository!.markResolvedAdoptRemote(
+            conflictScope,
+            resolvedConflict.id,
+            resolvedAt: syncedAt,
+          );
+        }
         applied += 1;
       }
 
@@ -382,6 +525,14 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
                 originDeviceId: Value(change.originDeviceId),
               ),
             );
+        final resolvedConflict = adoptRemoteConflicts[change.recordId];
+        if (resolvedConflict != null && conflictScope != null) {
+          await _conflictRepository!.markResolvedAdoptRemote(
+            conflictScope,
+            resolvedConflict.id,
+            resolvedAt: syncedAt,
+          );
+        }
         applied += 1;
         deleted += 1;
       }
@@ -412,6 +563,32 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
     );
   }
 
+  Future<SyncConflictScope?> _tryLoadConflictScope() async {
+    final loader = _conflictScopeLoader;
+    if (loader == null) return null;
+    return loader();
+  }
+
+  SyncConflictSnapshot _localSnapshot(db.Goal goal) {
+    return SyncConflictSnapshot(
+      payload: goal.deletedAt == null ? _payloadFromGoal(goal) : null,
+      updatedAt: goal.updatedAt,
+      deletedAt: goal.deletedAt,
+      serverVersion: goal.serverVersion,
+      originDeviceId: goal.originDeviceId,
+    );
+  }
+
+  SyncConflictSnapshot _remoteSnapshot(SyncChange change) {
+    return SyncConflictSnapshot(
+      payload: change.payload,
+      updatedAt: change.updatedAt,
+      deletedAt: change.deletedAt,
+      serverVersion: change.serverVersion,
+      originDeviceId: change.originDeviceId,
+    );
+  }
+
   PlanSyncPayload _payloadFromGoal(db.Goal goal) {
     return PlanSyncPayload(
       parentGoalId: goal.parentGoalId,
@@ -430,7 +607,7 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
 
   SyncPushItem _upsertItem(db.Goal goal, _PlanLocalContext context) {
     final payload = _payloadFromGoal(goal);
-    _validateTypedPayload(goal.id, payload);
+    _payloadCodec.validate(recordId: goal.id, payload: payload);
     return _syncItem(
       goal: goal,
       context: context,
@@ -471,107 +648,6 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
       originDeviceId: originDeviceId,
       clientVersion: goal.serverVersion ?? 0,
     );
-  }
-
-  PlanSyncPayload _decodePayload(
-    String recordId,
-    Map<String, Object?> payload,
-  ) {
-    const requiredKeys = [
-      'parent_goal_id',
-      'title',
-      'description',
-      'goal_level',
-      'status',
-      'start_date',
-      'target_date',
-      'completed_at',
-      'archived_at',
-      'sort_order',
-      'created_at',
-    ];
-    for (final key in requiredKeys) {
-      if (!payload.containsKey(key)) {
-        throw SyncException('云端 Plan 缺少字段 $key。');
-      }
-    }
-    final parentGoalId = _nullableString(payload, 'parent_goal_id');
-    if (parentGoalId != null &&
-        (!_isUuid(parentGoalId) || parentGoalId == recordId)) {
-      throw const SyncException('云端 Plan 父目标 ID 无效。');
-    }
-    final titleValue = payload['title'];
-    if (titleValue is! String || titleValue.trim().isEmpty) {
-      throw const SyncException('云端 Plan 标题无效。');
-    }
-    final description = _nullableString(payload, 'description');
-    final levelValue = payload['goal_level'];
-    final statusValue = payload['status'];
-    if (levelValue is! String || statusValue is! String) {
-      throw const SyncException('云端 Plan 层级或状态无效。');
-    }
-    late final PlanGoalLevel goalLevel;
-    late final PlanGoalStatus status;
-    try {
-      goalLevel = planGoalLevelFromDatabase(levelValue);
-      status = planGoalStatusFromDatabase(statusValue);
-    } on StateError {
-      throw const SyncException('云端 Plan 层级或状态无效。');
-    }
-    final startDate = _nullableDate(payload, 'start_date');
-    final targetDate = _nullableDate(payload, 'target_date');
-    if (startDate != null &&
-        targetDate != null &&
-        targetDate.compareTo(startDate) < 0) {
-      throw const SyncException('云端 Plan 目标日期早于开始日期。');
-    }
-    final completedAt = _nullableNonNegativeInt(payload, 'completed_at');
-    if ((status == PlanGoalStatus.completed) != (completedAt != null)) {
-      throw const SyncException('云端 Plan 完成状态与时间不一致。');
-    }
-    final result = PlanSyncPayload(
-      parentGoalId: parentGoalId,
-      title: titleValue.trim(),
-      description: description,
-      goalLevel: goalLevel,
-      status: status,
-      startDate: startDate,
-      targetDate: targetDate,
-      completedAt: completedAt,
-      archivedAt: _nullableNonNegativeInt(payload, 'archived_at'),
-      sortOrder: _nonNegativeInt(payload, 'sort_order'),
-      createdAt: _nonNegativeInt(payload, 'created_at'),
-    );
-    _validateTypedPayload(recordId, result);
-    return result;
-  }
-
-  void _validateTypedPayload(String recordId, PlanSyncPayload payload) {
-    final parentId = payload.parentGoalId;
-    if (parentId != null && (!_isUuid(parentId) || parentId == recordId)) {
-      throw const SyncException('云端 Plan 父目标 ID 无效。');
-    }
-    if (payload.title.trim().isEmpty ||
-        payload.sortOrder < 0 ||
-        payload.createdAt < 0 ||
-        (payload.completedAt != null && payload.completedAt! < 0) ||
-        (payload.archivedAt != null && payload.archivedAt! < 0)) {
-      throw const SyncException('云端 Plan 业务字段无效。');
-    }
-    for (final date in [payload.startDate, payload.targetDate]) {
-      if (date != null && !_dateTimeService.isValidLocalDateString(date)) {
-        throw const SyncException('云端 Plan 日期无效。');
-      }
-    }
-    if (payload.startDate != null &&
-        payload.targetDate != null &&
-        payload.targetDate!.compareTo(payload.startDate!) < 0) {
-      throw const SyncException('云端 Plan 目标日期早于开始日期。');
-    }
-    if ((payload.status == PlanGoalStatus.completed) !=
-        (payload.completedAt != null)) {
-      throw const SyncException('云端 Plan 完成状态与时间不一致。');
-    }
   }
 
   void _validateLocalHierarchy(Map<String, db.Goal> byId) {
@@ -707,39 +783,6 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
       return descendingDepth ? -comparison : comparison;
     }
     return left.serverVersion.compareTo(right.serverVersion);
-  }
-
-  String? _nullableString(Map<String, Object?> payload, String key) {
-    final value = payload[key];
-    if (value != null && value is! String) {
-      throw SyncException('云端 Plan 字段 $key 无效。');
-    }
-    return value as String?;
-  }
-
-  String? _nullableDate(Map<String, Object?> payload, String key) {
-    final value = _nullableString(payload, key);
-    if (value != null && !_dateTimeService.isValidLocalDateString(value)) {
-      throw SyncException('云端 Plan 日期字段 $key 无效。');
-    }
-    return value;
-  }
-
-  int _nonNegativeInt(Map<String, Object?> payload, String key) {
-    final value = payload[key];
-    if (value is! int || value < 0) {
-      throw SyncException('云端 Plan 字段 $key 必须是非负整数。');
-    }
-    return value;
-  }
-
-  int? _nullableNonNegativeInt(Map<String, Object?> payload, String key) {
-    final value = payload[key];
-    if (value == null) return null;
-    if (value is! int || value < 0) {
-      throw SyncException('云端 Plan 字段 $key 必须是非负整数或 null。');
-    }
-    return value;
   }
 
   static bool _isUuid(String value) => _uuidPattern.hasMatch(value);

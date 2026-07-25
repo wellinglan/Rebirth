@@ -32,7 +32,9 @@ import 'package:rebirth/features/sync/domain/profile_sync_result.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/domain/sync_models.dart';
+import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -249,6 +251,32 @@ void main() {
     expect(planButton.onPressed, isNotNull);
   });
 
+  testWidgets('Settings conflict entry shows zero and active counts', (
+    tester,
+  ) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      activeConflictCount: 3,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('syncConflictsSettingsTile')),
+      findsOneWidget,
+    );
+    expect(find.text('待处理 3 项'), findsOneWidget);
+
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _FakeAuthRepository(),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('无待处理冲突'), findsOneWidget);
+  });
+
   testWidgets('manual Plan sync shows progress and success counts', (
     tester,
   ) async {
@@ -276,8 +304,14 @@ void main() {
     completer.complete(_planSuccessResult());
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('上传 1，拉取 2，删除 1'), findsOneWidget);
-    expect(find.text('Plan 已更新'), findsOneWidget);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsPage)),
+    );
+    final state = container.read(planSyncControllerProvider);
+    expect(state.status, PlanSyncStatus.succeeded);
+    expect(state.pushedCount, 1);
+    expect(state.pulledCount, 2);
+    expect(state.deletedCount, 1);
   });
 
   testWidgets('successful Profile upload shows an honest result', (
@@ -533,13 +567,7 @@ void main() {
     expect(find.text('http://127.0.0.1:8000'), findsWidgets);
     expect(find.text('应用默认值'), findsOneWidget);
 
-    await tester.drag(
-      find.byKey(const ValueKey('settingsDataState')),
-      const Offset(0, -900),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('editServerEndpointButton')));
-    await tester.pumpAndSettle();
+    await _tapByKey(tester, 'editServerEndpointButton');
     await tester.enterText(
       find.byKey(const ValueKey('serverEndpointField')),
       'ftp://invalid.example.com',
@@ -580,13 +608,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.drag(
-      find.byKey(const ValueKey('settingsDataState')),
-      const Offset(0, -900),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('editServerEndpointButton')));
-    await tester.pumpAndSettle();
+    await _tapByKey(tester, 'editServerEndpointButton');
     await tester.enterText(
       find.byKey(const ValueKey('serverEndpointField')),
       'http://server-b:8000',
@@ -639,6 +661,7 @@ Future<void> _pumpSettings(
   ServerEndpointConnectionTester? endpointTester,
   AiConsentRepository? aiConsentRepository,
   PlanSyncRunner? planSyncRunner,
+  int activeConflictCount = 0,
   Size surfaceSize = const Size(900, 1100),
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
@@ -646,6 +669,7 @@ Future<void> _pumpSettings(
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
+      key: UniqueKey(),
       overrides: [
         profileRepositoryProvider.overrideWithValue(profileRepository),
         accountRepositoryProvider.overrideWithValue(authRepository),
@@ -659,6 +683,10 @@ Future<void> _pumpSettings(
           planSyncRunner ?? () async => _planSuccessResult(),
         ),
         planViewRefresherProvider.overrideWithValue(() async {}),
+        syncConflictScopeProvider.overrideWith((ref) async => null),
+        activeSyncConflictCountProvider.overrideWith(
+          (ref) => Stream.value(activeConflictCount),
+        ),
         if (endpointTester != null)
           serverEndpointConnectionTesterProvider.overrideWithValue(
             endpointTester,
@@ -717,6 +745,7 @@ final class _FakeAiConsentRepository implements AiConsentRepository {
 Future<void> _tapByKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
   await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();
 }

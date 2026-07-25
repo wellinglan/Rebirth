@@ -8051,6 +8051,1273 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
   }
 }
 
+class $SyncConflictsTable extends SyncConflicts
+    with TableInfo<$SyncConflictsTable, SyncConflictRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncConflictsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: databaseUuid.v4,
+  );
+  static const VerificationMeta _localUserIdMeta = const VerificationMeta(
+    'localUserId',
+  );
+  @override
+  late final GeneratedColumn<String> localUserId = GeneratedColumn<String>(
+    'local_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES user_profiles (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _endpointKeyMeta = const VerificationMeta(
+    'endpointKey',
+  );
+  @override
+  late final GeneratedColumn<String> endpointKey = GeneratedColumn<String>(
+    'endpoint_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cloudUserIdMeta = const VerificationMeta(
+    'cloudUserId',
+  );
+  @override
+  late final GeneratedColumn<String> cloudUserId = GeneratedColumn<String>(
+    'cloud_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordIdMeta = const VerificationMeta(
+    'recordId',
+  );
+  @override
+  late final GeneratedColumn<String> recordId = GeneratedColumn<String>(
+    'record_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPayloadJsonMeta = const VerificationMeta(
+    'localPayloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> localPayloadJson = GeneratedColumn<String>(
+    'local_payload_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localUpdatedAtMeta = const VerificationMeta(
+    'localUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> localUpdatedAt = GeneratedColumn<int>(
+    'local_updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localDeletedAtMeta = const VerificationMeta(
+    'localDeletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> localDeletedAt = GeneratedColumn<int>(
+    'local_deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localServerVersionMeta =
+      const VerificationMeta('localServerVersion');
+  @override
+  late final GeneratedColumn<int> localServerVersion = GeneratedColumn<int>(
+    'local_server_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localOriginDeviceIdMeta =
+      const VerificationMeta('localOriginDeviceId');
+  @override
+  late final GeneratedColumn<String> localOriginDeviceId =
+      GeneratedColumn<String>(
+        'local_origin_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _remotePayloadJsonMeta = const VerificationMeta(
+    'remotePayloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> remotePayloadJson =
+      GeneratedColumn<String>(
+        'remote_payload_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _remoteOperationMeta = const VerificationMeta(
+    'remoteOperation',
+  );
+  @override
+  late final GeneratedColumn<String> remoteOperation = GeneratedColumn<String>(
+    'remote_operation',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _remoteUpdatedAtMeta = const VerificationMeta(
+    'remoteUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> remoteUpdatedAt = GeneratedColumn<int>(
+    'remote_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _remoteDeletedAtMeta = const VerificationMeta(
+    'remoteDeletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> remoteDeletedAt = GeneratedColumn<int>(
+    'remote_deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _remoteServerVersionMeta =
+      const VerificationMeta('remoteServerVersion');
+  @override
+  late final GeneratedColumn<int> remoteServerVersion = GeneratedColumn<int>(
+    'remote_server_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _remoteOriginDeviceIdMeta =
+      const VerificationMeta('remoteOriginDeviceId');
+  @override
+  late final GeneratedColumn<String> remoteOriginDeviceId =
+      GeneratedColumn<String>(
+        'remote_origin_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _detectedAtMeta = const VerificationMeta(
+    'detectedAt',
+  );
+  @override
+  late final GeneratedColumn<int> detectedAt = GeneratedColumn<int>(
+    'detected_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastSeenAtMeta = const VerificationMeta(
+    'lastSeenAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastSeenAt = GeneratedColumn<int>(
+    'last_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resolutionStatusMeta = const VerificationMeta(
+    'resolutionStatus',
+  );
+  @override
+  late final GeneratedColumn<String> resolutionStatus = GeneratedColumn<String>(
+    'resolution_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resolvedAtMeta = const VerificationMeta(
+    'resolvedAt',
+  );
+  @override
+  late final GeneratedColumn<int> resolvedAt = GeneratedColumn<int>(
+    'resolved_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    localUserId,
+    endpointKey,
+    cloudUserId,
+    entityType,
+    recordId,
+    localPayloadJson,
+    localUpdatedAt,
+    localDeletedAt,
+    localServerVersion,
+    localOriginDeviceId,
+    remotePayloadJson,
+    remoteOperation,
+    remoteUpdatedAt,
+    remoteDeletedAt,
+    remoteServerVersion,
+    remoteOriginDeviceId,
+    detectedAt,
+    lastSeenAt,
+    resolutionStatus,
+    resolvedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_conflicts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncConflictRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('local_user_id')) {
+      context.handle(
+        _localUserIdMeta,
+        localUserId.isAcceptableOrUnknown(
+          data['local_user_id']!,
+          _localUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localUserIdMeta);
+    }
+    if (data.containsKey('endpoint_key')) {
+      context.handle(
+        _endpointKeyMeta,
+        endpointKey.isAcceptableOrUnknown(
+          data['endpoint_key']!,
+          _endpointKeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_endpointKeyMeta);
+    }
+    if (data.containsKey('cloud_user_id')) {
+      context.handle(
+        _cloudUserIdMeta,
+        cloudUserId.isAcceptableOrUnknown(
+          data['cloud_user_id']!,
+          _cloudUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cloudUserIdMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('record_id')) {
+      context.handle(
+        _recordIdMeta,
+        recordId.isAcceptableOrUnknown(data['record_id']!, _recordIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordIdMeta);
+    }
+    if (data.containsKey('local_payload_json')) {
+      context.handle(
+        _localPayloadJsonMeta,
+        localPayloadJson.isAcceptableOrUnknown(
+          data['local_payload_json']!,
+          _localPayloadJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('local_updated_at')) {
+      context.handle(
+        _localUpdatedAtMeta,
+        localUpdatedAt.isAcceptableOrUnknown(
+          data['local_updated_at']!,
+          _localUpdatedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localUpdatedAtMeta);
+    }
+    if (data.containsKey('local_deleted_at')) {
+      context.handle(
+        _localDeletedAtMeta,
+        localDeletedAt.isAcceptableOrUnknown(
+          data['local_deleted_at']!,
+          _localDeletedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('local_server_version')) {
+      context.handle(
+        _localServerVersionMeta,
+        localServerVersion.isAcceptableOrUnknown(
+          data['local_server_version']!,
+          _localServerVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('local_origin_device_id')) {
+      context.handle(
+        _localOriginDeviceIdMeta,
+        localOriginDeviceId.isAcceptableOrUnknown(
+          data['local_origin_device_id']!,
+          _localOriginDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('remote_payload_json')) {
+      context.handle(
+        _remotePayloadJsonMeta,
+        remotePayloadJson.isAcceptableOrUnknown(
+          data['remote_payload_json']!,
+          _remotePayloadJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('remote_operation')) {
+      context.handle(
+        _remoteOperationMeta,
+        remoteOperation.isAcceptableOrUnknown(
+          data['remote_operation']!,
+          _remoteOperationMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_remoteOperationMeta);
+    }
+    if (data.containsKey('remote_updated_at')) {
+      context.handle(
+        _remoteUpdatedAtMeta,
+        remoteUpdatedAt.isAcceptableOrUnknown(
+          data['remote_updated_at']!,
+          _remoteUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('remote_deleted_at')) {
+      context.handle(
+        _remoteDeletedAtMeta,
+        remoteDeletedAt.isAcceptableOrUnknown(
+          data['remote_deleted_at']!,
+          _remoteDeletedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('remote_server_version')) {
+      context.handle(
+        _remoteServerVersionMeta,
+        remoteServerVersion.isAcceptableOrUnknown(
+          data['remote_server_version']!,
+          _remoteServerVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_remoteServerVersionMeta);
+    }
+    if (data.containsKey('remote_origin_device_id')) {
+      context.handle(
+        _remoteOriginDeviceIdMeta,
+        remoteOriginDeviceId.isAcceptableOrUnknown(
+          data['remote_origin_device_id']!,
+          _remoteOriginDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('detected_at')) {
+      context.handle(
+        _detectedAtMeta,
+        detectedAt.isAcceptableOrUnknown(data['detected_at']!, _detectedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_detectedAtMeta);
+    }
+    if (data.containsKey('last_seen_at')) {
+      context.handle(
+        _lastSeenAtMeta,
+        lastSeenAt.isAcceptableOrUnknown(
+          data['last_seen_at']!,
+          _lastSeenAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastSeenAtMeta);
+    }
+    if (data.containsKey('resolution_status')) {
+      context.handle(
+        _resolutionStatusMeta,
+        resolutionStatus.isAcceptableOrUnknown(
+          data['resolution_status']!,
+          _resolutionStatusMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_resolutionStatusMeta);
+    }
+    if (data.containsKey('resolved_at')) {
+      context.handle(
+        _resolvedAtMeta,
+        resolvedAt.isAcceptableOrUnknown(data['resolved_at']!, _resolvedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncConflictRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncConflictRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      localUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_user_id'],
+      )!,
+      endpointKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}endpoint_key'],
+      )!,
+      cloudUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cloud_user_id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      recordId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}record_id'],
+      )!,
+      localPayloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_payload_json'],
+      ),
+      localUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_updated_at'],
+      )!,
+      localDeletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_deleted_at'],
+      ),
+      localServerVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_server_version'],
+      ),
+      localOriginDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_origin_device_id'],
+      ),
+      remotePayloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_payload_json'],
+      ),
+      remoteOperation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_operation'],
+      )!,
+      remoteUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}remote_updated_at'],
+      ),
+      remoteDeletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}remote_deleted_at'],
+      ),
+      remoteServerVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}remote_server_version'],
+      )!,
+      remoteOriginDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_origin_device_id'],
+      ),
+      detectedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}detected_at'],
+      )!,
+      lastSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_seen_at'],
+      )!,
+      resolutionStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resolution_status'],
+      )!,
+      resolvedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}resolved_at'],
+      ),
+    );
+  }
+
+  @override
+  $SyncConflictsTable createAlias(String alias) {
+    return $SyncConflictsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
+  final String id;
+  final String localUserId;
+  final String endpointKey;
+  final String cloudUserId;
+  final String entityType;
+  final String recordId;
+  final String? localPayloadJson;
+  final int localUpdatedAt;
+  final int? localDeletedAt;
+  final int? localServerVersion;
+  final String? localOriginDeviceId;
+  final String? remotePayloadJson;
+  final String remoteOperation;
+  final int? remoteUpdatedAt;
+  final int? remoteDeletedAt;
+  final int remoteServerVersion;
+  final String? remoteOriginDeviceId;
+  final int detectedAt;
+  final int lastSeenAt;
+  final String resolutionStatus;
+  final int? resolvedAt;
+  const SyncConflictRow({
+    required this.id,
+    required this.localUserId,
+    required this.endpointKey,
+    required this.cloudUserId,
+    required this.entityType,
+    required this.recordId,
+    this.localPayloadJson,
+    required this.localUpdatedAt,
+    this.localDeletedAt,
+    this.localServerVersion,
+    this.localOriginDeviceId,
+    this.remotePayloadJson,
+    required this.remoteOperation,
+    this.remoteUpdatedAt,
+    this.remoteDeletedAt,
+    required this.remoteServerVersion,
+    this.remoteOriginDeviceId,
+    required this.detectedAt,
+    required this.lastSeenAt,
+    required this.resolutionStatus,
+    this.resolvedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['local_user_id'] = Variable<String>(localUserId);
+    map['endpoint_key'] = Variable<String>(endpointKey);
+    map['cloud_user_id'] = Variable<String>(cloudUserId);
+    map['entity_type'] = Variable<String>(entityType);
+    map['record_id'] = Variable<String>(recordId);
+    if (!nullToAbsent || localPayloadJson != null) {
+      map['local_payload_json'] = Variable<String>(localPayloadJson);
+    }
+    map['local_updated_at'] = Variable<int>(localUpdatedAt);
+    if (!nullToAbsent || localDeletedAt != null) {
+      map['local_deleted_at'] = Variable<int>(localDeletedAt);
+    }
+    if (!nullToAbsent || localServerVersion != null) {
+      map['local_server_version'] = Variable<int>(localServerVersion);
+    }
+    if (!nullToAbsent || localOriginDeviceId != null) {
+      map['local_origin_device_id'] = Variable<String>(localOriginDeviceId);
+    }
+    if (!nullToAbsent || remotePayloadJson != null) {
+      map['remote_payload_json'] = Variable<String>(remotePayloadJson);
+    }
+    map['remote_operation'] = Variable<String>(remoteOperation);
+    if (!nullToAbsent || remoteUpdatedAt != null) {
+      map['remote_updated_at'] = Variable<int>(remoteUpdatedAt);
+    }
+    if (!nullToAbsent || remoteDeletedAt != null) {
+      map['remote_deleted_at'] = Variable<int>(remoteDeletedAt);
+    }
+    map['remote_server_version'] = Variable<int>(remoteServerVersion);
+    if (!nullToAbsent || remoteOriginDeviceId != null) {
+      map['remote_origin_device_id'] = Variable<String>(remoteOriginDeviceId);
+    }
+    map['detected_at'] = Variable<int>(detectedAt);
+    map['last_seen_at'] = Variable<int>(lastSeenAt);
+    map['resolution_status'] = Variable<String>(resolutionStatus);
+    if (!nullToAbsent || resolvedAt != null) {
+      map['resolved_at'] = Variable<int>(resolvedAt);
+    }
+    return map;
+  }
+
+  SyncConflictsCompanion toCompanion(bool nullToAbsent) {
+    return SyncConflictsCompanion(
+      id: Value(id),
+      localUserId: Value(localUserId),
+      endpointKey: Value(endpointKey),
+      cloudUserId: Value(cloudUserId),
+      entityType: Value(entityType),
+      recordId: Value(recordId),
+      localPayloadJson: localPayloadJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localPayloadJson),
+      localUpdatedAt: Value(localUpdatedAt),
+      localDeletedAt: localDeletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localDeletedAt),
+      localServerVersion: localServerVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localServerVersion),
+      localOriginDeviceId: localOriginDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localOriginDeviceId),
+      remotePayloadJson: remotePayloadJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remotePayloadJson),
+      remoteOperation: Value(remoteOperation),
+      remoteUpdatedAt: remoteUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteUpdatedAt),
+      remoteDeletedAt: remoteDeletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteDeletedAt),
+      remoteServerVersion: Value(remoteServerVersion),
+      remoteOriginDeviceId: remoteOriginDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteOriginDeviceId),
+      detectedAt: Value(detectedAt),
+      lastSeenAt: Value(lastSeenAt),
+      resolutionStatus: Value(resolutionStatus),
+      resolvedAt: resolvedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resolvedAt),
+    );
+  }
+
+  factory SyncConflictRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncConflictRow(
+      id: serializer.fromJson<String>(json['id']),
+      localUserId: serializer.fromJson<String>(json['localUserId']),
+      endpointKey: serializer.fromJson<String>(json['endpointKey']),
+      cloudUserId: serializer.fromJson<String>(json['cloudUserId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      recordId: serializer.fromJson<String>(json['recordId']),
+      localPayloadJson: serializer.fromJson<String?>(json['localPayloadJson']),
+      localUpdatedAt: serializer.fromJson<int>(json['localUpdatedAt']),
+      localDeletedAt: serializer.fromJson<int?>(json['localDeletedAt']),
+      localServerVersion: serializer.fromJson<int?>(json['localServerVersion']),
+      localOriginDeviceId: serializer.fromJson<String?>(
+        json['localOriginDeviceId'],
+      ),
+      remotePayloadJson: serializer.fromJson<String?>(
+        json['remotePayloadJson'],
+      ),
+      remoteOperation: serializer.fromJson<String>(json['remoteOperation']),
+      remoteUpdatedAt: serializer.fromJson<int?>(json['remoteUpdatedAt']),
+      remoteDeletedAt: serializer.fromJson<int?>(json['remoteDeletedAt']),
+      remoteServerVersion: serializer.fromJson<int>(
+        json['remoteServerVersion'],
+      ),
+      remoteOriginDeviceId: serializer.fromJson<String?>(
+        json['remoteOriginDeviceId'],
+      ),
+      detectedAt: serializer.fromJson<int>(json['detectedAt']),
+      lastSeenAt: serializer.fromJson<int>(json['lastSeenAt']),
+      resolutionStatus: serializer.fromJson<String>(json['resolutionStatus']),
+      resolvedAt: serializer.fromJson<int?>(json['resolvedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'localUserId': serializer.toJson<String>(localUserId),
+      'endpointKey': serializer.toJson<String>(endpointKey),
+      'cloudUserId': serializer.toJson<String>(cloudUserId),
+      'entityType': serializer.toJson<String>(entityType),
+      'recordId': serializer.toJson<String>(recordId),
+      'localPayloadJson': serializer.toJson<String?>(localPayloadJson),
+      'localUpdatedAt': serializer.toJson<int>(localUpdatedAt),
+      'localDeletedAt': serializer.toJson<int?>(localDeletedAt),
+      'localServerVersion': serializer.toJson<int?>(localServerVersion),
+      'localOriginDeviceId': serializer.toJson<String?>(localOriginDeviceId),
+      'remotePayloadJson': serializer.toJson<String?>(remotePayloadJson),
+      'remoteOperation': serializer.toJson<String>(remoteOperation),
+      'remoteUpdatedAt': serializer.toJson<int?>(remoteUpdatedAt),
+      'remoteDeletedAt': serializer.toJson<int?>(remoteDeletedAt),
+      'remoteServerVersion': serializer.toJson<int>(remoteServerVersion),
+      'remoteOriginDeviceId': serializer.toJson<String?>(remoteOriginDeviceId),
+      'detectedAt': serializer.toJson<int>(detectedAt),
+      'lastSeenAt': serializer.toJson<int>(lastSeenAt),
+      'resolutionStatus': serializer.toJson<String>(resolutionStatus),
+      'resolvedAt': serializer.toJson<int?>(resolvedAt),
+    };
+  }
+
+  SyncConflictRow copyWith({
+    String? id,
+    String? localUserId,
+    String? endpointKey,
+    String? cloudUserId,
+    String? entityType,
+    String? recordId,
+    Value<String?> localPayloadJson = const Value.absent(),
+    int? localUpdatedAt,
+    Value<int?> localDeletedAt = const Value.absent(),
+    Value<int?> localServerVersion = const Value.absent(),
+    Value<String?> localOriginDeviceId = const Value.absent(),
+    Value<String?> remotePayloadJson = const Value.absent(),
+    String? remoteOperation,
+    Value<int?> remoteUpdatedAt = const Value.absent(),
+    Value<int?> remoteDeletedAt = const Value.absent(),
+    int? remoteServerVersion,
+    Value<String?> remoteOriginDeviceId = const Value.absent(),
+    int? detectedAt,
+    int? lastSeenAt,
+    String? resolutionStatus,
+    Value<int?> resolvedAt = const Value.absent(),
+  }) => SyncConflictRow(
+    id: id ?? this.id,
+    localUserId: localUserId ?? this.localUserId,
+    endpointKey: endpointKey ?? this.endpointKey,
+    cloudUserId: cloudUserId ?? this.cloudUserId,
+    entityType: entityType ?? this.entityType,
+    recordId: recordId ?? this.recordId,
+    localPayloadJson: localPayloadJson.present
+        ? localPayloadJson.value
+        : this.localPayloadJson,
+    localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
+    localDeletedAt: localDeletedAt.present
+        ? localDeletedAt.value
+        : this.localDeletedAt,
+    localServerVersion: localServerVersion.present
+        ? localServerVersion.value
+        : this.localServerVersion,
+    localOriginDeviceId: localOriginDeviceId.present
+        ? localOriginDeviceId.value
+        : this.localOriginDeviceId,
+    remotePayloadJson: remotePayloadJson.present
+        ? remotePayloadJson.value
+        : this.remotePayloadJson,
+    remoteOperation: remoteOperation ?? this.remoteOperation,
+    remoteUpdatedAt: remoteUpdatedAt.present
+        ? remoteUpdatedAt.value
+        : this.remoteUpdatedAt,
+    remoteDeletedAt: remoteDeletedAt.present
+        ? remoteDeletedAt.value
+        : this.remoteDeletedAt,
+    remoteServerVersion: remoteServerVersion ?? this.remoteServerVersion,
+    remoteOriginDeviceId: remoteOriginDeviceId.present
+        ? remoteOriginDeviceId.value
+        : this.remoteOriginDeviceId,
+    detectedAt: detectedAt ?? this.detectedAt,
+    lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+    resolutionStatus: resolutionStatus ?? this.resolutionStatus,
+    resolvedAt: resolvedAt.present ? resolvedAt.value : this.resolvedAt,
+  );
+  SyncConflictRow copyWithCompanion(SyncConflictsCompanion data) {
+    return SyncConflictRow(
+      id: data.id.present ? data.id.value : this.id,
+      localUserId: data.localUserId.present
+          ? data.localUserId.value
+          : this.localUserId,
+      endpointKey: data.endpointKey.present
+          ? data.endpointKey.value
+          : this.endpointKey,
+      cloudUserId: data.cloudUserId.present
+          ? data.cloudUserId.value
+          : this.cloudUserId,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      recordId: data.recordId.present ? data.recordId.value : this.recordId,
+      localPayloadJson: data.localPayloadJson.present
+          ? data.localPayloadJson.value
+          : this.localPayloadJson,
+      localUpdatedAt: data.localUpdatedAt.present
+          ? data.localUpdatedAt.value
+          : this.localUpdatedAt,
+      localDeletedAt: data.localDeletedAt.present
+          ? data.localDeletedAt.value
+          : this.localDeletedAt,
+      localServerVersion: data.localServerVersion.present
+          ? data.localServerVersion.value
+          : this.localServerVersion,
+      localOriginDeviceId: data.localOriginDeviceId.present
+          ? data.localOriginDeviceId.value
+          : this.localOriginDeviceId,
+      remotePayloadJson: data.remotePayloadJson.present
+          ? data.remotePayloadJson.value
+          : this.remotePayloadJson,
+      remoteOperation: data.remoteOperation.present
+          ? data.remoteOperation.value
+          : this.remoteOperation,
+      remoteUpdatedAt: data.remoteUpdatedAt.present
+          ? data.remoteUpdatedAt.value
+          : this.remoteUpdatedAt,
+      remoteDeletedAt: data.remoteDeletedAt.present
+          ? data.remoteDeletedAt.value
+          : this.remoteDeletedAt,
+      remoteServerVersion: data.remoteServerVersion.present
+          ? data.remoteServerVersion.value
+          : this.remoteServerVersion,
+      remoteOriginDeviceId: data.remoteOriginDeviceId.present
+          ? data.remoteOriginDeviceId.value
+          : this.remoteOriginDeviceId,
+      detectedAt: data.detectedAt.present
+          ? data.detectedAt.value
+          : this.detectedAt,
+      lastSeenAt: data.lastSeenAt.present
+          ? data.lastSeenAt.value
+          : this.lastSeenAt,
+      resolutionStatus: data.resolutionStatus.present
+          ? data.resolutionStatus.value
+          : this.resolutionStatus,
+      resolvedAt: data.resolvedAt.present
+          ? data.resolvedAt.value
+          : this.resolvedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncConflictRow(')
+          ..write('id: $id, ')
+          ..write('localUserId: $localUserId, ')
+          ..write('endpointKey: $endpointKey, ')
+          ..write('cloudUserId: $cloudUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('recordId: $recordId, ')
+          ..write('localPayloadJson: $localPayloadJson, ')
+          ..write('localUpdatedAt: $localUpdatedAt, ')
+          ..write('localDeletedAt: $localDeletedAt, ')
+          ..write('localServerVersion: $localServerVersion, ')
+          ..write('localOriginDeviceId: $localOriginDeviceId, ')
+          ..write('remotePayloadJson: $remotePayloadJson, ')
+          ..write('remoteOperation: $remoteOperation, ')
+          ..write('remoteUpdatedAt: $remoteUpdatedAt, ')
+          ..write('remoteDeletedAt: $remoteDeletedAt, ')
+          ..write('remoteServerVersion: $remoteServerVersion, ')
+          ..write('remoteOriginDeviceId: $remoteOriginDeviceId, ')
+          ..write('detectedAt: $detectedAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('resolutionStatus: $resolutionStatus, ')
+          ..write('resolvedAt: $resolvedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    localUserId,
+    endpointKey,
+    cloudUserId,
+    entityType,
+    recordId,
+    localPayloadJson,
+    localUpdatedAt,
+    localDeletedAt,
+    localServerVersion,
+    localOriginDeviceId,
+    remotePayloadJson,
+    remoteOperation,
+    remoteUpdatedAt,
+    remoteDeletedAt,
+    remoteServerVersion,
+    remoteOriginDeviceId,
+    detectedAt,
+    lastSeenAt,
+    resolutionStatus,
+    resolvedAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncConflictRow &&
+          other.id == this.id &&
+          other.localUserId == this.localUserId &&
+          other.endpointKey == this.endpointKey &&
+          other.cloudUserId == this.cloudUserId &&
+          other.entityType == this.entityType &&
+          other.recordId == this.recordId &&
+          other.localPayloadJson == this.localPayloadJson &&
+          other.localUpdatedAt == this.localUpdatedAt &&
+          other.localDeletedAt == this.localDeletedAt &&
+          other.localServerVersion == this.localServerVersion &&
+          other.localOriginDeviceId == this.localOriginDeviceId &&
+          other.remotePayloadJson == this.remotePayloadJson &&
+          other.remoteOperation == this.remoteOperation &&
+          other.remoteUpdatedAt == this.remoteUpdatedAt &&
+          other.remoteDeletedAt == this.remoteDeletedAt &&
+          other.remoteServerVersion == this.remoteServerVersion &&
+          other.remoteOriginDeviceId == this.remoteOriginDeviceId &&
+          other.detectedAt == this.detectedAt &&
+          other.lastSeenAt == this.lastSeenAt &&
+          other.resolutionStatus == this.resolutionStatus &&
+          other.resolvedAt == this.resolvedAt);
+}
+
+class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
+  final Value<String> id;
+  final Value<String> localUserId;
+  final Value<String> endpointKey;
+  final Value<String> cloudUserId;
+  final Value<String> entityType;
+  final Value<String> recordId;
+  final Value<String?> localPayloadJson;
+  final Value<int> localUpdatedAt;
+  final Value<int?> localDeletedAt;
+  final Value<int?> localServerVersion;
+  final Value<String?> localOriginDeviceId;
+  final Value<String?> remotePayloadJson;
+  final Value<String> remoteOperation;
+  final Value<int?> remoteUpdatedAt;
+  final Value<int?> remoteDeletedAt;
+  final Value<int> remoteServerVersion;
+  final Value<String?> remoteOriginDeviceId;
+  final Value<int> detectedAt;
+  final Value<int> lastSeenAt;
+  final Value<String> resolutionStatus;
+  final Value<int?> resolvedAt;
+  final Value<int> rowid;
+  const SyncConflictsCompanion({
+    this.id = const Value.absent(),
+    this.localUserId = const Value.absent(),
+    this.endpointKey = const Value.absent(),
+    this.cloudUserId = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.recordId = const Value.absent(),
+    this.localPayloadJson = const Value.absent(),
+    this.localUpdatedAt = const Value.absent(),
+    this.localDeletedAt = const Value.absent(),
+    this.localServerVersion = const Value.absent(),
+    this.localOriginDeviceId = const Value.absent(),
+    this.remotePayloadJson = const Value.absent(),
+    this.remoteOperation = const Value.absent(),
+    this.remoteUpdatedAt = const Value.absent(),
+    this.remoteDeletedAt = const Value.absent(),
+    this.remoteServerVersion = const Value.absent(),
+    this.remoteOriginDeviceId = const Value.absent(),
+    this.detectedAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.resolutionStatus = const Value.absent(),
+    this.resolvedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncConflictsCompanion.insert({
+    this.id = const Value.absent(),
+    required String localUserId,
+    required String endpointKey,
+    required String cloudUserId,
+    required String entityType,
+    required String recordId,
+    this.localPayloadJson = const Value.absent(),
+    required int localUpdatedAt,
+    this.localDeletedAt = const Value.absent(),
+    this.localServerVersion = const Value.absent(),
+    this.localOriginDeviceId = const Value.absent(),
+    this.remotePayloadJson = const Value.absent(),
+    required String remoteOperation,
+    this.remoteUpdatedAt = const Value.absent(),
+    this.remoteDeletedAt = const Value.absent(),
+    required int remoteServerVersion,
+    this.remoteOriginDeviceId = const Value.absent(),
+    required int detectedAt,
+    required int lastSeenAt,
+    required String resolutionStatus,
+    this.resolvedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : localUserId = Value(localUserId),
+       endpointKey = Value(endpointKey),
+       cloudUserId = Value(cloudUserId),
+       entityType = Value(entityType),
+       recordId = Value(recordId),
+       localUpdatedAt = Value(localUpdatedAt),
+       remoteOperation = Value(remoteOperation),
+       remoteServerVersion = Value(remoteServerVersion),
+       detectedAt = Value(detectedAt),
+       lastSeenAt = Value(lastSeenAt),
+       resolutionStatus = Value(resolutionStatus);
+  static Insertable<SyncConflictRow> custom({
+    Expression<String>? id,
+    Expression<String>? localUserId,
+    Expression<String>? endpointKey,
+    Expression<String>? cloudUserId,
+    Expression<String>? entityType,
+    Expression<String>? recordId,
+    Expression<String>? localPayloadJson,
+    Expression<int>? localUpdatedAt,
+    Expression<int>? localDeletedAt,
+    Expression<int>? localServerVersion,
+    Expression<String>? localOriginDeviceId,
+    Expression<String>? remotePayloadJson,
+    Expression<String>? remoteOperation,
+    Expression<int>? remoteUpdatedAt,
+    Expression<int>? remoteDeletedAt,
+    Expression<int>? remoteServerVersion,
+    Expression<String>? remoteOriginDeviceId,
+    Expression<int>? detectedAt,
+    Expression<int>? lastSeenAt,
+    Expression<String>? resolutionStatus,
+    Expression<int>? resolvedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (localUserId != null) 'local_user_id': localUserId,
+      if (endpointKey != null) 'endpoint_key': endpointKey,
+      if (cloudUserId != null) 'cloud_user_id': cloudUserId,
+      if (entityType != null) 'entity_type': entityType,
+      if (recordId != null) 'record_id': recordId,
+      if (localPayloadJson != null) 'local_payload_json': localPayloadJson,
+      if (localUpdatedAt != null) 'local_updated_at': localUpdatedAt,
+      if (localDeletedAt != null) 'local_deleted_at': localDeletedAt,
+      if (localServerVersion != null)
+        'local_server_version': localServerVersion,
+      if (localOriginDeviceId != null)
+        'local_origin_device_id': localOriginDeviceId,
+      if (remotePayloadJson != null) 'remote_payload_json': remotePayloadJson,
+      if (remoteOperation != null) 'remote_operation': remoteOperation,
+      if (remoteUpdatedAt != null) 'remote_updated_at': remoteUpdatedAt,
+      if (remoteDeletedAt != null) 'remote_deleted_at': remoteDeletedAt,
+      if (remoteServerVersion != null)
+        'remote_server_version': remoteServerVersion,
+      if (remoteOriginDeviceId != null)
+        'remote_origin_device_id': remoteOriginDeviceId,
+      if (detectedAt != null) 'detected_at': detectedAt,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (resolutionStatus != null) 'resolution_status': resolutionStatus,
+      if (resolvedAt != null) 'resolved_at': resolvedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncConflictsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? localUserId,
+    Value<String>? endpointKey,
+    Value<String>? cloudUserId,
+    Value<String>? entityType,
+    Value<String>? recordId,
+    Value<String?>? localPayloadJson,
+    Value<int>? localUpdatedAt,
+    Value<int?>? localDeletedAt,
+    Value<int?>? localServerVersion,
+    Value<String?>? localOriginDeviceId,
+    Value<String?>? remotePayloadJson,
+    Value<String>? remoteOperation,
+    Value<int?>? remoteUpdatedAt,
+    Value<int?>? remoteDeletedAt,
+    Value<int>? remoteServerVersion,
+    Value<String?>? remoteOriginDeviceId,
+    Value<int>? detectedAt,
+    Value<int>? lastSeenAt,
+    Value<String>? resolutionStatus,
+    Value<int?>? resolvedAt,
+    Value<int>? rowid,
+  }) {
+    return SyncConflictsCompanion(
+      id: id ?? this.id,
+      localUserId: localUserId ?? this.localUserId,
+      endpointKey: endpointKey ?? this.endpointKey,
+      cloudUserId: cloudUserId ?? this.cloudUserId,
+      entityType: entityType ?? this.entityType,
+      recordId: recordId ?? this.recordId,
+      localPayloadJson: localPayloadJson ?? this.localPayloadJson,
+      localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
+      localDeletedAt: localDeletedAt ?? this.localDeletedAt,
+      localServerVersion: localServerVersion ?? this.localServerVersion,
+      localOriginDeviceId: localOriginDeviceId ?? this.localOriginDeviceId,
+      remotePayloadJson: remotePayloadJson ?? this.remotePayloadJson,
+      remoteOperation: remoteOperation ?? this.remoteOperation,
+      remoteUpdatedAt: remoteUpdatedAt ?? this.remoteUpdatedAt,
+      remoteDeletedAt: remoteDeletedAt ?? this.remoteDeletedAt,
+      remoteServerVersion: remoteServerVersion ?? this.remoteServerVersion,
+      remoteOriginDeviceId: remoteOriginDeviceId ?? this.remoteOriginDeviceId,
+      detectedAt: detectedAt ?? this.detectedAt,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      resolutionStatus: resolutionStatus ?? this.resolutionStatus,
+      resolvedAt: resolvedAt ?? this.resolvedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (localUserId.present) {
+      map['local_user_id'] = Variable<String>(localUserId.value);
+    }
+    if (endpointKey.present) {
+      map['endpoint_key'] = Variable<String>(endpointKey.value);
+    }
+    if (cloudUserId.present) {
+      map['cloud_user_id'] = Variable<String>(cloudUserId.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (recordId.present) {
+      map['record_id'] = Variable<String>(recordId.value);
+    }
+    if (localPayloadJson.present) {
+      map['local_payload_json'] = Variable<String>(localPayloadJson.value);
+    }
+    if (localUpdatedAt.present) {
+      map['local_updated_at'] = Variable<int>(localUpdatedAt.value);
+    }
+    if (localDeletedAt.present) {
+      map['local_deleted_at'] = Variable<int>(localDeletedAt.value);
+    }
+    if (localServerVersion.present) {
+      map['local_server_version'] = Variable<int>(localServerVersion.value);
+    }
+    if (localOriginDeviceId.present) {
+      map['local_origin_device_id'] = Variable<String>(
+        localOriginDeviceId.value,
+      );
+    }
+    if (remotePayloadJson.present) {
+      map['remote_payload_json'] = Variable<String>(remotePayloadJson.value);
+    }
+    if (remoteOperation.present) {
+      map['remote_operation'] = Variable<String>(remoteOperation.value);
+    }
+    if (remoteUpdatedAt.present) {
+      map['remote_updated_at'] = Variable<int>(remoteUpdatedAt.value);
+    }
+    if (remoteDeletedAt.present) {
+      map['remote_deleted_at'] = Variable<int>(remoteDeletedAt.value);
+    }
+    if (remoteServerVersion.present) {
+      map['remote_server_version'] = Variable<int>(remoteServerVersion.value);
+    }
+    if (remoteOriginDeviceId.present) {
+      map['remote_origin_device_id'] = Variable<String>(
+        remoteOriginDeviceId.value,
+      );
+    }
+    if (detectedAt.present) {
+      map['detected_at'] = Variable<int>(detectedAt.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<int>(lastSeenAt.value);
+    }
+    if (resolutionStatus.present) {
+      map['resolution_status'] = Variable<String>(resolutionStatus.value);
+    }
+    if (resolvedAt.present) {
+      map['resolved_at'] = Variable<int>(resolvedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncConflictsCompanion(')
+          ..write('id: $id, ')
+          ..write('localUserId: $localUserId, ')
+          ..write('endpointKey: $endpointKey, ')
+          ..write('cloudUserId: $cloudUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('recordId: $recordId, ')
+          ..write('localPayloadJson: $localPayloadJson, ')
+          ..write('localUpdatedAt: $localUpdatedAt, ')
+          ..write('localDeletedAt: $localDeletedAt, ')
+          ..write('localServerVersion: $localServerVersion, ')
+          ..write('localOriginDeviceId: $localOriginDeviceId, ')
+          ..write('remotePayloadJson: $remotePayloadJson, ')
+          ..write('remoteOperation: $remoteOperation, ')
+          ..write('remoteUpdatedAt: $remoteUpdatedAt, ')
+          ..write('remoteDeletedAt: $remoteDeletedAt, ')
+          ..write('remoteServerVersion: $remoteServerVersion, ')
+          ..write('remoteOriginDeviceId: $remoteOriginDeviceId, ')
+          ..write('detectedAt: $detectedAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('resolutionStatus: $resolutionStatus, ')
+          ..write('resolvedAt: $resolvedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8061,6 +9328,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $JournalEntriesTable journalEntries = $JournalEntriesTable(this);
   late final $HealthRecordsTable healthRecords = $HealthRecordsTable(this);
   late final $AiReportsTable aiReports = $AiReportsTable(this);
+  late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
   late final BootstrapDao bootstrapDao = BootstrapDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -8074,6 +9342,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     journalEntries,
     healthRecords,
     aiReports,
+    syncConflicts,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -8263,6 +9532,24 @@ final class $$UserProfilesTableReferences
     ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_aiReportsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SyncConflictsTable, List<SyncConflictRow>>
+  _syncConflictsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.syncConflicts,
+    aliasName: 'user_profiles__id__sync_conflicts__local_user_id',
+  );
+
+  $$SyncConflictsTableProcessedTableManager get syncConflictsRefs {
+    final manager = $$SyncConflictsTableTableManager(
+      $_db,
+      $_db.syncConflicts,
+    ).filter((f) => f.localUserId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_syncConflictsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -8479,6 +9766,31 @@ class $$UserProfilesTableFilterComposer
           }) => $$AiReportsTableFilterComposer(
             $db: $db,
             $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> syncConflictsRefs(
+    Expression<bool> Function($$SyncConflictsTableFilterComposer f) f,
+  ) {
+    final $$SyncConflictsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.syncConflicts,
+      getReferencedColumn: (t) => t.localUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SyncConflictsTableFilterComposer(
+            $db: $db,
+            $table: $db.syncConflicts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8767,6 +10079,31 @@ class $$UserProfilesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> syncConflictsRefs<T extends Object>(
+    Expression<T> Function($$SyncConflictsTableAnnotationComposer a) f,
+  ) {
+    final $$SyncConflictsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.syncConflicts,
+      getReferencedColumn: (t) => t.localUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SyncConflictsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.syncConflicts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$UserProfilesTableTableManager
@@ -8789,6 +10126,7 @@ class $$UserProfilesTableTableManager
             bool journalEntriesRefs,
             bool healthRecordsRefs,
             bool aiReportsRefs,
+            bool syncConflictsRefs,
           })
         > {
   $$UserProfilesTableTableManager(_$AppDatabase db, $UserProfilesTable table)
@@ -8878,6 +10216,7 @@ class $$UserProfilesTableTableManager
                 journalEntriesRefs = false,
                 healthRecordsRefs = false,
                 aiReportsRefs = false,
+                syncConflictsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -8888,6 +10227,7 @@ class $$UserProfilesTableTableManager
                     if (journalEntriesRefs) db.journalEntries,
                     if (healthRecordsRefs) db.healthRecords,
                     if (aiReportsRefs) db.aiReports,
+                    if (syncConflictsRefs) db.syncConflicts,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -9018,6 +10358,27 @@ class $$UserProfilesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (syncConflictsRefs)
+                        await $_getPrefetchedData<
+                          UserProfile,
+                          $UserProfilesTable,
+                          SyncConflictRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UserProfilesTableReferences
+                              ._syncConflictsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UserProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).syncConflictsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.localUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -9045,6 +10406,7 @@ typedef $$UserProfilesTableProcessedTableManager =
         bool journalEntriesRefs,
         bool healthRecordsRefs,
         bool aiReportsRefs,
+        bool syncConflictsRefs,
       })
     >;
 typedef $$AppSettingsTableCreateCompanionBuilder =
@@ -13935,6 +15297,669 @@ typedef $$AiReportsTableProcessedTableManager =
       AiReport,
       PrefetchHooks Function({bool userId})
     >;
+typedef $$SyncConflictsTableCreateCompanionBuilder =
+    SyncConflictsCompanion Function({
+      Value<String> id,
+      required String localUserId,
+      required String endpointKey,
+      required String cloudUserId,
+      required String entityType,
+      required String recordId,
+      Value<String?> localPayloadJson,
+      required int localUpdatedAt,
+      Value<int?> localDeletedAt,
+      Value<int?> localServerVersion,
+      Value<String?> localOriginDeviceId,
+      Value<String?> remotePayloadJson,
+      required String remoteOperation,
+      Value<int?> remoteUpdatedAt,
+      Value<int?> remoteDeletedAt,
+      required int remoteServerVersion,
+      Value<String?> remoteOriginDeviceId,
+      required int detectedAt,
+      required int lastSeenAt,
+      required String resolutionStatus,
+      Value<int?> resolvedAt,
+      Value<int> rowid,
+    });
+typedef $$SyncConflictsTableUpdateCompanionBuilder =
+    SyncConflictsCompanion Function({
+      Value<String> id,
+      Value<String> localUserId,
+      Value<String> endpointKey,
+      Value<String> cloudUserId,
+      Value<String> entityType,
+      Value<String> recordId,
+      Value<String?> localPayloadJson,
+      Value<int> localUpdatedAt,
+      Value<int?> localDeletedAt,
+      Value<int?> localServerVersion,
+      Value<String?> localOriginDeviceId,
+      Value<String?> remotePayloadJson,
+      Value<String> remoteOperation,
+      Value<int?> remoteUpdatedAt,
+      Value<int?> remoteDeletedAt,
+      Value<int> remoteServerVersion,
+      Value<String?> remoteOriginDeviceId,
+      Value<int> detectedAt,
+      Value<int> lastSeenAt,
+      Value<String> resolutionStatus,
+      Value<int?> resolvedAt,
+      Value<int> rowid,
+    });
+
+final class $$SyncConflictsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $SyncConflictsTable, SyncConflictRow> {
+  $$SyncConflictsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UserProfilesTable _localUserIdTable(_$AppDatabase db) => db
+      .userProfiles
+      .createAlias('sync_conflicts__local_user_id__user_profiles__id');
+
+  $$UserProfilesTableProcessedTableManager get localUserId {
+    final $_column = $_itemColumn<String>('local_user_id')!;
+
+    final manager = $$UserProfilesTableTableManager(
+      $_db,
+      $_db.userProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_localUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SyncConflictsTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncConflictsTable> {
+  $$SyncConflictsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endpointKey => $composableBuilder(
+    column: $table.endpointKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cloudUserId => $composableBuilder(
+    column: $table.cloudUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPayloadJson => $composableBuilder(
+    column: $table.localPayloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localUpdatedAt => $composableBuilder(
+    column: $table.localUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localDeletedAt => $composableBuilder(
+    column: $table.localDeletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localServerVersion => $composableBuilder(
+    column: $table.localServerVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localOriginDeviceId => $composableBuilder(
+    column: $table.localOriginDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remotePayloadJson => $composableBuilder(
+    column: $table.remotePayloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteOperation => $composableBuilder(
+    column: $table.remoteOperation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get remoteUpdatedAt => $composableBuilder(
+    column: $table.remoteUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get remoteDeletedAt => $composableBuilder(
+    column: $table.remoteDeletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get remoteServerVersion => $composableBuilder(
+    column: $table.remoteServerVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteOriginDeviceId => $composableBuilder(
+    column: $table.remoteOriginDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get detectedAt => $composableBuilder(
+    column: $table.detectedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resolutionStatus => $composableBuilder(
+    column: $table.resolutionStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get resolvedAt => $composableBuilder(
+    column: $table.resolvedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UserProfilesTableFilterComposer get localUserId {
+    final $$UserProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncConflictsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncConflictsTable> {
+  $$SyncConflictsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endpointKey => $composableBuilder(
+    column: $table.endpointKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cloudUserId => $composableBuilder(
+    column: $table.cloudUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPayloadJson => $composableBuilder(
+    column: $table.localPayloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localUpdatedAt => $composableBuilder(
+    column: $table.localUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localDeletedAt => $composableBuilder(
+    column: $table.localDeletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localServerVersion => $composableBuilder(
+    column: $table.localServerVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localOriginDeviceId => $composableBuilder(
+    column: $table.localOriginDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get remotePayloadJson => $composableBuilder(
+    column: $table.remotePayloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get remoteOperation => $composableBuilder(
+    column: $table.remoteOperation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get remoteUpdatedAt => $composableBuilder(
+    column: $table.remoteUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get remoteDeletedAt => $composableBuilder(
+    column: $table.remoteDeletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get remoteServerVersion => $composableBuilder(
+    column: $table.remoteServerVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get remoteOriginDeviceId => $composableBuilder(
+    column: $table.remoteOriginDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get detectedAt => $composableBuilder(
+    column: $table.detectedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resolutionStatus => $composableBuilder(
+    column: $table.resolutionStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get resolvedAt => $composableBuilder(
+    column: $table.resolvedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UserProfilesTableOrderingComposer get localUserId {
+    final $$UserProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncConflictsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncConflictsTable> {
+  $$SyncConflictsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get endpointKey => $composableBuilder(
+    column: $table.endpointKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cloudUserId => $composableBuilder(
+    column: $table.cloudUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recordId =>
+      $composableBuilder(column: $table.recordId, builder: (column) => column);
+
+  GeneratedColumn<String> get localPayloadJson => $composableBuilder(
+    column: $table.localPayloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get localUpdatedAt => $composableBuilder(
+    column: $table.localUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get localDeletedAt => $composableBuilder(
+    column: $table.localDeletedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get localServerVersion => $composableBuilder(
+    column: $table.localServerVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get localOriginDeviceId => $composableBuilder(
+    column: $table.localOriginDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get remotePayloadJson => $composableBuilder(
+    column: $table.remotePayloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get remoteOperation => $composableBuilder(
+    column: $table.remoteOperation,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get remoteUpdatedAt => $composableBuilder(
+    column: $table.remoteUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get remoteDeletedAt => $composableBuilder(
+    column: $table.remoteDeletedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get remoteServerVersion => $composableBuilder(
+    column: $table.remoteServerVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get remoteOriginDeviceId => $composableBuilder(
+    column: $table.remoteOriginDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get detectedAt => $composableBuilder(
+    column: $table.detectedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resolutionStatus => $composableBuilder(
+    column: $table.resolutionStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get resolvedAt => $composableBuilder(
+    column: $table.resolvedAt,
+    builder: (column) => column,
+  );
+
+  $$UserProfilesTableAnnotationComposer get localUserId {
+    final $$UserProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncConflictsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncConflictsTable,
+          SyncConflictRow,
+          $$SyncConflictsTableFilterComposer,
+          $$SyncConflictsTableOrderingComposer,
+          $$SyncConflictsTableAnnotationComposer,
+          $$SyncConflictsTableCreateCompanionBuilder,
+          $$SyncConflictsTableUpdateCompanionBuilder,
+          (SyncConflictRow, $$SyncConflictsTableReferences),
+          SyncConflictRow,
+          PrefetchHooks Function({bool localUserId})
+        > {
+  $$SyncConflictsTableTableManager(_$AppDatabase db, $SyncConflictsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncConflictsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncConflictsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncConflictsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> localUserId = const Value.absent(),
+                Value<String> endpointKey = const Value.absent(),
+                Value<String> cloudUserId = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<String> recordId = const Value.absent(),
+                Value<String?> localPayloadJson = const Value.absent(),
+                Value<int> localUpdatedAt = const Value.absent(),
+                Value<int?> localDeletedAt = const Value.absent(),
+                Value<int?> localServerVersion = const Value.absent(),
+                Value<String?> localOriginDeviceId = const Value.absent(),
+                Value<String?> remotePayloadJson = const Value.absent(),
+                Value<String> remoteOperation = const Value.absent(),
+                Value<int?> remoteUpdatedAt = const Value.absent(),
+                Value<int?> remoteDeletedAt = const Value.absent(),
+                Value<int> remoteServerVersion = const Value.absent(),
+                Value<String?> remoteOriginDeviceId = const Value.absent(),
+                Value<int> detectedAt = const Value.absent(),
+                Value<int> lastSeenAt = const Value.absent(),
+                Value<String> resolutionStatus = const Value.absent(),
+                Value<int?> resolvedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncConflictsCompanion(
+                id: id,
+                localUserId: localUserId,
+                endpointKey: endpointKey,
+                cloudUserId: cloudUserId,
+                entityType: entityType,
+                recordId: recordId,
+                localPayloadJson: localPayloadJson,
+                localUpdatedAt: localUpdatedAt,
+                localDeletedAt: localDeletedAt,
+                localServerVersion: localServerVersion,
+                localOriginDeviceId: localOriginDeviceId,
+                remotePayloadJson: remotePayloadJson,
+                remoteOperation: remoteOperation,
+                remoteUpdatedAt: remoteUpdatedAt,
+                remoteDeletedAt: remoteDeletedAt,
+                remoteServerVersion: remoteServerVersion,
+                remoteOriginDeviceId: remoteOriginDeviceId,
+                detectedAt: detectedAt,
+                lastSeenAt: lastSeenAt,
+                resolutionStatus: resolutionStatus,
+                resolvedAt: resolvedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required String localUserId,
+                required String endpointKey,
+                required String cloudUserId,
+                required String entityType,
+                required String recordId,
+                Value<String?> localPayloadJson = const Value.absent(),
+                required int localUpdatedAt,
+                Value<int?> localDeletedAt = const Value.absent(),
+                Value<int?> localServerVersion = const Value.absent(),
+                Value<String?> localOriginDeviceId = const Value.absent(),
+                Value<String?> remotePayloadJson = const Value.absent(),
+                required String remoteOperation,
+                Value<int?> remoteUpdatedAt = const Value.absent(),
+                Value<int?> remoteDeletedAt = const Value.absent(),
+                required int remoteServerVersion,
+                Value<String?> remoteOriginDeviceId = const Value.absent(),
+                required int detectedAt,
+                required int lastSeenAt,
+                required String resolutionStatus,
+                Value<int?> resolvedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncConflictsCompanion.insert(
+                id: id,
+                localUserId: localUserId,
+                endpointKey: endpointKey,
+                cloudUserId: cloudUserId,
+                entityType: entityType,
+                recordId: recordId,
+                localPayloadJson: localPayloadJson,
+                localUpdatedAt: localUpdatedAt,
+                localDeletedAt: localDeletedAt,
+                localServerVersion: localServerVersion,
+                localOriginDeviceId: localOriginDeviceId,
+                remotePayloadJson: remotePayloadJson,
+                remoteOperation: remoteOperation,
+                remoteUpdatedAt: remoteUpdatedAt,
+                remoteDeletedAt: remoteDeletedAt,
+                remoteServerVersion: remoteServerVersion,
+                remoteOriginDeviceId: remoteOriginDeviceId,
+                detectedAt: detectedAt,
+                lastSeenAt: lastSeenAt,
+                resolutionStatus: resolutionStatus,
+                resolvedAt: resolvedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SyncConflictsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({localUserId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (localUserId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.localUserId,
+                                referencedTable: $$SyncConflictsTableReferences
+                                    ._localUserIdTable(db),
+                                referencedColumn: $$SyncConflictsTableReferences
+                                    ._localUserIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SyncConflictsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncConflictsTable,
+      SyncConflictRow,
+      $$SyncConflictsTableFilterComposer,
+      $$SyncConflictsTableOrderingComposer,
+      $$SyncConflictsTableAnnotationComposer,
+      $$SyncConflictsTableCreateCompanionBuilder,
+      $$SyncConflictsTableUpdateCompanionBuilder,
+      (SyncConflictRow, $$SyncConflictsTableReferences),
+      SyncConflictRow,
+      PrefetchHooks Function({bool localUserId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -13953,4 +15978,6 @@ class $AppDatabaseManager {
       $$HealthRecordsTableTableManager(_db, _db.healthRecords);
   $$AiReportsTableTableManager get aiReports =>
       $$AiReportsTableTableManager(_db, _db.aiReports);
+  $$SyncConflictsTableTableManager get syncConflicts =>
+      $$SyncConflictsTableTableManager(_db, _db.syncConflicts);
 }

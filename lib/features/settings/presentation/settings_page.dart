@@ -14,6 +14,7 @@ import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart'
 import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 
 import 'settings_controller.dart';
 import 'settings_view_state.dart';
@@ -35,6 +36,8 @@ class SettingsPage extends ConsumerWidget {
     final accountState = ref.watch(accountControllerProvider);
     final profileSyncState = ref.watch(profileSyncControllerProvider);
     final planSyncState = ref.watch(planSyncControllerProvider);
+    final activeConflictCount =
+        ref.watch(activeSyncConflictCountProvider).value ?? 0;
     final config = ref.watch(appConfigProvider);
     final endpoint = ref.watch(effectiveServerEndpointProvider);
     final endpointSettings = ref.watch(
@@ -77,6 +80,7 @@ class SettingsPage extends ConsumerWidget {
               onPushProfile: () => _pushProfile(context, ref),
               onPullProfile: () => _pullProfile(context, ref),
               planSyncState: planSyncState,
+              activeConflictCount: activeConflictCount,
               onSyncPlan: () => _syncPlan(context, ref),
               onWeChatLogin: () => _showUnavailableDialog(
                 context,
@@ -93,6 +97,9 @@ class SettingsPage extends ConsumerWidget {
                     '尚未同步；当前没有后台自动同步。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
+              onOpenSyncConflicts: account.status.isAuthenticated
+                  ? () => context.push(RoutePaths.syncConflicts)
+                  : null,
               onOpenAiCoach: () => context.push(RoutePaths.aiCoach),
             ),
           ),
@@ -128,6 +135,7 @@ class SettingsPage extends ConsumerWidget {
       } else {
         await ref.read(accountControllerProvider.notifier).reload();
       }
+      _refreshConflictScope(ref);
       if (!context.mounted) return;
       _showMessage(
         context,
@@ -157,6 +165,7 @@ class SettingsPage extends ConsumerWidget {
     } else {
       await ref.read(accountControllerProvider.notifier).reload();
     }
+    _refreshConflictScope(ref);
     if (!context.mounted) return;
     _showMessage(context, '已恢复 ${fallback.sourceLabel}：${fallback.baseUrl}');
   }
@@ -206,6 +215,7 @@ class SettingsPage extends ConsumerWidget {
     final success = await ref
         .read(accountControllerProvider.notifier)
         .devLogin(key);
+    _refreshConflictScope(ref);
     if (!context.mounted) return;
     final error = ref
         .read(accountControllerProvider)
@@ -219,6 +229,7 @@ class SettingsPage extends ConsumerWidget {
     final success = await ref
         .read(accountControllerProvider.notifier)
         .registerCurrentDevice();
+    _refreshConflictScope(ref);
     if (!context.mounted) return;
     final error = ref
         .read(accountControllerProvider)
@@ -230,6 +241,7 @@ class SettingsPage extends ConsumerWidget {
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final success = await ref.read(accountControllerProvider.notifier).logout();
+    _refreshConflictScope(ref);
     if (!context.mounted) return;
     _showMessage(context, success ? '已退出开发账号，本地数据保持不变' : '退出登录失败');
   }
@@ -276,6 +288,12 @@ class SettingsPage extends ConsumerWidget {
         _showMessage(context, 'Plan 同步失败，本地数据未受影响');
       }
     }
+  }
+
+  void _refreshConflictScope(WidgetRef ref) {
+    ref.invalidate(syncConflictScopeProvider);
+    ref.invalidate(activeSyncConflictCountProvider);
+    ref.invalidate(activeSyncConflictListProvider);
   }
 
   Future<String?> _showDevLoginDialog(BuildContext context) async {
@@ -362,10 +380,12 @@ class _SettingsContent extends StatelessWidget {
     required this.onPushProfile,
     required this.onPullProfile,
     required this.planSyncState,
+    required this.activeConflictCount,
     required this.onSyncPlan,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     required this.onOpenProfile,
+    required this.onOpenSyncConflicts,
     required this.onOpenAiCoach,
   });
 
@@ -385,10 +405,12 @@ class _SettingsContent extends StatelessWidget {
   final VoidCallback onPushProfile;
   final VoidCallback onPullProfile;
   final PlanSyncViewState planSyncState;
+  final int activeConflictCount;
   final VoidCallback onSyncPlan;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
+  final VoidCallback? onOpenSyncConflicts;
   final VoidCallback onOpenAiCoach;
 
   @override
@@ -410,6 +432,19 @@ class _SettingsContent extends StatelessWidget {
                   '管理账号、资料与本地数据',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppLayout.sectionGap),
+                SettingsSection(
+                  title: '同步冲突',
+                  child: SettingsTile(
+                    key: const ValueKey('syncConflictsSettingsTile'),
+                    title: '同步冲突',
+                    subtitle: activeConflictCount == 0
+                        ? '无待处理冲突'
+                        : '待处理 $activeConflictCount 项',
+                    icon: Icons.alt_route_outlined,
+                    onTap: onOpenSyncConflicts,
                   ),
                 ),
                 const SizedBox(height: AppLayout.sectionGap),

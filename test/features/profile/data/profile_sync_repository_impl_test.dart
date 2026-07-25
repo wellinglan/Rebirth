@@ -533,8 +533,8 @@ void main() {
     expect((await activePush).pushed, isTrue);
   });
 
-  test('schemaVersion remains 3', () {
-    expect(database.schemaVersion, 3);
+  test('schemaVersion remains 4', () {
+    expect(database.schemaVersion, 4);
   });
 
   test(

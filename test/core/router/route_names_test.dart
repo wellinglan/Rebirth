@@ -13,10 +13,7 @@ void main() {
   });
 
   test('builds Journal URL for an exact date', () {
-    expect(
-      RoutePaths.journalForDate('2026-07-16'),
-      '/journal?date=2026-07-16',
-    );
+    expect(RoutePaths.journalForDate('2026-07-16'), '/journal?date=2026-07-16');
   });
 
   test('date query values are URL encoded', () {
@@ -44,9 +41,18 @@ void main() {
     final uri = Uri.parse(location);
 
     expect(uri.path, '/ai-coach/daily/2026-07-16');
-    expect(
-      uri.queryParameters['scopes'],
-      'journal_reflections,today_metrics',
-    );
+    expect(uri.queryParameters['scopes'], 'journal_reflections,today_metrics');
+  });
+
+  test('sync conflict routes preserve an encoded opaque conflict id', () {
+    expect(RoutePaths.syncConflicts, '/settings/sync-conflicts');
+    final location = RoutePaths.syncConflictDetails('conflict id/alpha');
+
+    expect(location, isNot(contains(' ')));
+    expect(Uri.parse(location).pathSegments, [
+      'settings',
+      'sync-conflicts',
+      'conflict id/alpha',
+    ]);
   });
 }

@@ -2,9 +2,9 @@
 
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
-> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 10A 与 Sprint 10A.1 已推送并通过 Quality CI。
+> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 10B 已推送并通过 Quality CI，匹配的 GHCR API 镜像已发布。
 >
-> 当前开发：Sprint 10B Plan 跨端同步已在本地实现并进入验证；尚未 commit/push、发布 API 镜像、部署云端或执行人工验收。云端架构、API 1 和 Sync Protocol v2 保持不变。
+> 当前开发：Sprint 10B.1 持久化同步冲突中心已在本地实现并进入验证；尚未 commit/push 或执行人工验收。Sprint 10B Alpha API 部署仍待确认。云端架构、API 1 和 Sync Protocol v2 保持不变。
 
 ## 1. 当前主架构
 
@@ -436,7 +436,7 @@ Sprint 10A 人工矩阵见
 `NOT EXECUTED`。Sprint 10A.1 的补充人工检查同样保持 `NOT EXECUTED`，
 不得把自动化测试结果写成人工 PASS。
 
-## 16. Sprint 10B 本地状态（DEPLOYMENT / MANUAL PENDING）
+## 16. Sprint 10B 状态（PUSHED / QUALITY PASS / DEPLOYMENT PENDING）
 
 Sprint 10B 复用现有 Coordinator、Endpoint、Session、Device Registration、
 Cursor Store 和 Protocol v2，增加：
@@ -449,16 +449,55 @@ Cursor Store 和 Protocol v2，增加：
 - 非破坏性 Plan conflict；
 - Profile 与 Plan 独立 cursor scope。
 
-当前本地代码没有 Drift、Alembic 或 PostgreSQL schema migration。Flutter
-`schemaVersion` 仍为 `3`。Server 行为发生改变，因此人工跨端验收前需要发布
-新的 API GHCR 镜像并只重建 API 容器；不需要重建 PostgreSQL、修改 Compose
-或修改客户端 Endpoint。
+Sprint 10B 实现提交为
+`713f46a71ab5aa46be45ae62051a366859ab9a39`。GitHub Quality run
+`30148891653` 已通过，Publish Alpha Images run `30148891659` 已通过，
+匹配的 API GHCR 镜像已经发布。Quality 中 Server SQLite、PostgreSQL
+marker、Alembic upgrade、multi-worker、Flutter analyze/test 与 Android
+Debug Build 均已实际执行并通过。
 
-代码尚未 push，因此 GitHub Quality、PostgreSQL marker、GHCR 镜像、云端
-部署以及 Windows/Android/跨端人工矩阵均不得标记为 PASS。人工矩阵见
+Sprint 10B 没有 Drift、Alembic 或 PostgreSQL schema migration；该提交的
+Flutter `schemaVersion` 为 `3`。Sprint 10B API 是否已部署到北京 Alpha
+仍待独立确认，不能由镜像发布推断。Windows、Android 与跨端人工矩阵仍全部
+`NOT EXECUTED`，Release Gate 保持 `OPEN`。人工矩阵见
 `docs/manual_tests/25_plan_cross_device_sync.md`。
 
-## 17. 对 Codex 的强制要求
+## 17. Sprint 10B.1 本地状态（CODE COMPLETE / CI PENDING）
+
+Sprint 10B.1 在 Flutter 本地数据库中增加通用 `sync_conflicts` 表，将
+`schemaVersion` 从 `3` 升级到 `4`，并为 Plan 增加持久化冲突快照、
+push conflict 补全、显式采用云端、显式保留本地和 Settings 冲突中心。
+
+边界保持：
+
+- Server runtime、API contract、API version 1 与 Sync Protocol v2 不变；
+- 无 Alembic revision 或 PostgreSQL schema 变化；
+- Profile 保持现有冲突行为，不进入新冲突中心；
+- Today、Journal、Health、Growth、AI Report 仍不参与同步；
+- 无后台、定时、启动或实时同步；
+- 不需要发布新的 API 镜像或重建云端容器。
+
+本地自动化不能替代人工验收。Sprint 10B.1 的 Windows、Android、
+跨端、网络失败、重启、tombstone 和隔离矩阵见
+`docs/manual_tests/26_sync_conflict_recovery.md`，初始全部为
+`NOT EXECUTED`。
+
+2026-07-25 本地验证结果：
+
+| Check | Result |
+|---|---|
+| `flutter pub get` | PASS |
+| `flutter analyze` | PASS, no issues |
+| Sprint 10B.1 targeted Flutter tests | PASS, `167 passed` |
+| `flutter test` | PASS, `827 passed / 2 skipped` |
+| Server non-PostgreSQL pytest | PASS, `139 passed / 1 skipped / 8 deselected` |
+| Local PostgreSQL marker | NOT EXECUTED; delegated to GitHub Quality |
+| Windows release build | PASS |
+| Android split release build | PASS, armv7 + arm64 + x86_64 |
+
+GitHub Quality 和实现 commit 在本地阶段尚无结果，不得提前标记为 PASS。
+
+## 18. 对 Codex 的强制要求
 
 涉及 Server、部署、migration、API 或测试时：
 
@@ -484,7 +523,7 @@ Cursor Store 和 Protocol v2，增加：
 14. 镜像供应链继续使用 GitHub Actions + GHCR。
 15. 避免任何可能完整输出 Secret 的命令。
 
-## 18. 禁止误判
+## 19. 禁止误判
 
 以下说法均错误：
 
@@ -500,7 +539,8 @@ Cursor Store 和 Protocol v2，增加：
 “Phone model 与 Android version 会阻止 Sprint 9C 开始”
 “Sprint 9C 已完成人工验收”
 “Sprint 10A 已实现 Plan、Today、Journal 或 Health 同步”
-“Sprint 10B 已部署到云端并完成人工验收”
+“Sprint 10B 已确认部署到云端并完成人工验收”
+“Sprint 10B.1 自动化通过等同于人工验收通过”
 “通用 Coordinator 等同于后台自动同步”
 ```
 
@@ -512,7 +552,8 @@ Cursor Store 和 Protocol v2，增加：
 Sprint 9B.1 / 9B.2 功能验收已通过，
 Phone model 与 Android version 是非阻塞性元数据缺口，
 Sprint 9C 代码已完成但人工验收暂缓，
-Sprint 10A 与 Sprint 10A.1 代码均已推送，Quality CI 已通过；Sprint 10B
-已在本地实现 Profile + Plan Adapter，但尚未提交、部署或人工验收，
+Sprint 10A、Sprint 10A.1 与 Sprint 10B 代码均已推送，Quality CI 已通过；
+Sprint 10B 的 GHCR API 镜像已发布但 Alpha 部署仍待确认，Sprint 10B.1
+冲突恢复代码已在本地实现但尚未提交或人工验收，
 且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```
