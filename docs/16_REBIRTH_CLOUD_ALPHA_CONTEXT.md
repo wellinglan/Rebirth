@@ -4,7 +4,7 @@
 >
 > 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 10B 已推送并通过 Quality CI，匹配的 GHCR API 镜像已发布。
 >
-> 当前开发：Sprint 10B.1 持久化同步冲突中心已在本地实现并进入验证；尚未 commit/push 或执行人工验收。Sprint 10B Alpha API 部署仍待确认。云端架构、API 1 和 Sync Protocol v2 保持不变。
+> 当前开发：Sprint 10B.1 持久化同步冲突中心已 commit/push 并通过 GitHub Quality CI；人工验收仍未执行。Sprint 10B Alpha API 部署仍待确认。云端架构、API 1 和 Sync Protocol v2 保持不变。
 
 ## 1. 当前主架构
 
@@ -462,7 +462,7 @@ Flutter `schemaVersion` 为 `3`。Sprint 10B API 是否已部署到北京 Alpha
 `NOT EXECUTED`，Release Gate 保持 `OPEN`。人工矩阵见
 `docs/manual_tests/25_plan_cross_device_sync.md`。
 
-## 17. Sprint 10B.1 本地状态（CODE COMPLETE / CI PENDING）
+## 17. Sprint 10B.1 状态（PUSHED / QUALITY PASS / MANUAL PENDING）
 
 Sprint 10B.1 在 Flutter 本地数据库中增加通用 `sync_conflicts` 表，将
 `schemaVersion` 从 `3` 升级到 `4`，并为 Plan 增加持久化冲突快照、
@@ -476,6 +476,20 @@ push conflict 补全、显式采用云端、显式保留本地和 Settings 冲�
 - Today、Journal、Health、Growth、AI Report 仍不参与同步；
 - 无后台、定时、启动或实时同步；
 - 不需要发布新的 API 镜像或重建云端容器。
+
+Sprint 10B.1 实现提交为
+`ba6cfc472ca2312aebcf5c5880ebebaa8040c333`。GitHub Quality run
+`30155446531` 已通过，以下 Job 均已实际运行并成功：
+
+- Server SQLite；
+- Server PostgreSQL Multiprocess And Multiworker，其中 Alembic upgrade、
+  PostgreSQL marker 与 multi-worker 验证均通过；
+- Flutter Analyze And Test；
+- Android Debug Build。
+
+本次改动未触发 Publish Alpha Images；Sprint 10B.1 不包含 Server runtime
+变化，也不需要发布或部署新 API 镜像。Sprint 10B Alpha API 部署仍为
+`NOT VERIFIED`。
 
 本地自动化不能替代人工验收。Sprint 10B.1 的 Windows、Android、
 跨端、网络失败、重启、tombstone 和隔离矩阵见
@@ -491,11 +505,13 @@ push conflict 补全、显式采用云端、显式保留本地和 Settings 冲�
 | Sprint 10B.1 targeted Flutter tests | PASS, `167 passed` |
 | `flutter test` | PASS, `827 passed / 2 skipped` |
 | Server non-PostgreSQL pytest | PASS, `139 passed / 1 skipped / 8 deselected` |
-| Local PostgreSQL marker | NOT EXECUTED; delegated to GitHub Quality |
+| Local PostgreSQL marker | NOT EXECUTED |
+| GitHub PostgreSQL marker | PASS in Quality run `30155446531` |
 | Windows release build | PASS |
 | Android split release build | PASS, armv7 + arm64 + x86_64 |
 
-GitHub Quality 和实现 commit 在本地阶段尚无结果，不得提前标记为 PASS。
+Windows、Android 和跨端人工验收仍全部为 `NOT EXECUTED`，不得用上述
+自动化结果替代人工 PASS。
 
 ## 18. 对 Codex 的强制要求
 
@@ -552,8 +568,8 @@ GitHub Quality 和实现 commit 在本地阶段尚无结果，不得提前标记
 Sprint 9B.1 / 9B.2 功能验收已通过，
 Phone model 与 Android version 是非阻塞性元数据缺口，
 Sprint 9C 代码已完成但人工验收暂缓，
-Sprint 10A、Sprint 10A.1 与 Sprint 10B 代码均已推送，Quality CI 已通过；
-Sprint 10B 的 GHCR API 镜像已发布但 Alpha 部署仍待确认，Sprint 10B.1
-冲突恢复代码已在本地实现但尚未提交或人工验收，
+Sprint 10A、Sprint 10A.1、Sprint 10B 与 Sprint 10B.1 代码均已推送，
+Quality CI 已通过；Sprint 10B 的 GHCR API 镜像已发布但 Alpha 部署仍待
+确认，Sprint 10B.1 冲突恢复人工验收尚未执行，
 且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```

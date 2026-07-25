@@ -2,7 +2,7 @@
 
 > Sprint: 10B.1
 > Scope: Flutter-local generic conflict store; Plan resolution only
-> Status: code complete and locally verified; CI and manual acceptance pending
+> Status: implementation pushed and GitHub Quality passed; manual acceptance pending
 > Flutter schemaVersion: 4
 
 ## Why Goal.syncStatus Is Not Enough
@@ -229,8 +229,24 @@ Executed on 2026-07-25:
 | Server non-PostgreSQL pytest | PASS, `139 passed / 1 skipped / 8 deselected` |
 | Windows release build | PASS |
 | Android split release build | PASS, armv7 + arm64 + x86_64 |
-| PostgreSQL marker | NOT EXECUTED locally; pending GitHub Quality |
+| PostgreSQL marker | NOT EXECUTED locally; PASS in GitHub Quality |
 | Manual acceptance | NOT EXECUTED |
 
 No test connected to the Alpha business database. Local success does not prove
-GitHub CI, deployment, or device acceptance.
+deployment or device acceptance.
+
+## GitHub Verification
+
+- Implementation commit:
+  `ba6cfc472ca2312aebcf5c5880ebebaa8040c333`
+- Quality run: `30155446531`, PASS
+- Server SQLite: PASS
+- Server PostgreSQL Multiprocess And Multiworker: PASS
+- Alembic upgrade: PASS
+- PostgreSQL marker: PASS
+- Multi-worker verification: PASS
+- Flutter Analyze And Test: PASS
+- Android Debug Build: PASS
+- Publish Alpha Images: NOT RUN for this Flutter/docs-only implementation
+- Sprint 10B Alpha deployment: NOT VERIFIED
+- Windows, Android, and cross-device manual acceptance: NOT EXECUTED
