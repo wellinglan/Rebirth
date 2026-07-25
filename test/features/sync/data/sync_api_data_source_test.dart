@@ -128,7 +128,7 @@ void main() {
     );
   });
 
-  test('Sprint 6D rejects every table except user_profiles', () {
+  test('only registered Profile and Plan tables are accepted', () async {
     final dataSource = SyncApiDataSource(_FakeApiClient());
     final todayItem = SyncPushItemDto(
       tableName: 'today_records',
@@ -146,6 +146,32 @@ void main() {
         accessToken: 'test-access-token',
       ),
       throwsA(isA<SyncUnsupportedTableException>()),
+    );
+
+    final planDataSource = SyncApiDataSource(
+      _FakeApiClient(
+        response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+      ),
+    );
+    await expectLater(
+      planDataSource.push(
+        SyncPushRequestDto(
+          deviceId: 'device-1',
+          items: [
+            SyncPushItemDto(
+              tableName: 'goals',
+              recordId: 'goal-1',
+              payload: const {},
+              updatedAt: 1,
+              deletedAt: 1,
+              originDeviceId: 'installation-1',
+              clientVersion: 0,
+            ),
+          ],
+        ),
+        accessToken: 'test-access-token',
+      ),
+      completes,
     );
   });
 

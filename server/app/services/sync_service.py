@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from dataclasses import dataclass
+from typing import Literal
 
+from pydantic import ValidationError
 from sqlalchemy import case, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -13,6 +16,7 @@ from app.models import Device, SyncClock, SyncItem
 from app.schemas import (
     SyncAcceptedItem,
     SyncConflictResponse,
+    PlanSyncPayload,
     SyncPullItem,
     SyncPullRequest,
     SyncPullResponse,
@@ -22,6 +26,7 @@ from app.schemas import (
 
 
 PROFILE_TABLE = "user_profiles"
+GOALS_TABLE = "goals"
 CANONICAL_PROFILE_RECORD_ID = "profile"
 SYNC_CLOCK_ID = 1
 
@@ -30,61 +35,68 @@ class DeviceUnavailableError(RuntimeError):
     pass
 
 
+class SyncRequestValidationError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class _PreflightItem:
+    incoming: object
+    record_id: str
+    payload_json: str
+    existing: SyncItem | None
+    outcome: Literal["write", "idempotent", "conflict"]
+    conflict_reason: str | None = None
+
+
 def push(
     session: Session,
     user_id: str,
     body: SyncPushRequest,
 ) -> SyncPushResponse:
     _require_device(session, user_id, body.device_id)
-    accepted: list[SyncAcceptedItem] = []
-    conflicts: list[SyncConflictResponse] = []
-
     try:
-        for incoming in body.items:
-            record_id = (
-                CANONICAL_PROFILE_RECORD_ID
-                if incoming.table_name == PROFILE_TABLE
-                else incoming.record_id
-            )
-            if incoming.table_name == PROFILE_TABLE:
-                _ensure_canonical_profile(session, user_id)
-            existing = session.scalar(
-                select(SyncItem).where(
-                    SyncItem.user_id == user_id,
-                    SyncItem.table_name == incoming.table_name,
-                    SyncItem.record_id == record_id,
+        preflight = _preflight_push(session, user_id, body)
+        stale_conflicts = [item for item in preflight if item.outcome == "conflict"]
+        if stale_conflicts:
+            accepted = [
+                _accepted(item) for item in preflight if item.outcome == "idempotent"
+            ]
+            conflicts = [
+                _conflict(item)
+                if item.outcome == "conflict"
+                else SyncConflictResponse(
+                    table=item.incoming.table_name,
+                    id=item.record_id,
+                    server_version=(
+                        item.existing.server_version
+                        if item.existing is not None
+                        else 0
+                    ),
+                    reason="request_conflict",
                 )
-            )
-            if (
-                existing is not None
-                and incoming.client_version != existing.server_version
-                and incoming.updated_at < existing.client_updated_at
-            ):
-                conflicts.append(
-                    SyncConflictResponse(
-                        table=incoming.table_name,
-                        id=record_id,
-                        server_version=existing.server_version,
-                        reason="stale_client",
-                    )
-                )
-                continue
+                for item in preflight
+                if item.outcome != "idempotent"
+            ]
+            session.rollback()
+            return SyncPushResponse(accepted=accepted, conflicts=conflicts)
 
+        accepted: list[SyncAcceptedItem] = []
+        timestamp = time.time_ns() // 1_000_000
+        for item in preflight:
+            if item.outcome == "idempotent":
+                accepted.append(_accepted(item))
+                continue
+            incoming = item.incoming
             server_version = _next_server_version(session)
-            timestamp = time.time_ns() // 1_000_000
-            payload_json = json.dumps(
-                incoming.payload,
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
+            existing = item.existing
             if existing is None:
                 existing = SyncItem(
                     id=str(uuid.uuid4()),
                     user_id=user_id,
                     table_name=incoming.table_name,
-                    record_id=record_id,
-                    payload_json=payload_json,
+                    record_id=item.record_id,
+                    payload_json=item.payload_json,
                     server_version=server_version,
                     client_updated_at=incoming.updated_at,
                     server_updated_at=timestamp,
@@ -93,7 +105,7 @@ def push(
                 )
                 session.add(existing)
             else:
-                existing.payload_json = payload_json
+                existing.payload_json = item.payload_json
                 existing.server_version = server_version
                 existing.client_updated_at = incoming.updated_at
                 existing.server_updated_at = timestamp
@@ -103,7 +115,7 @@ def push(
             accepted.append(
                 SyncAcceptedItem(
                     table=incoming.table_name,
-                    id=record_id,
+                    id=item.record_id,
                     server_version=server_version,
                 )
             )
@@ -112,7 +124,214 @@ def push(
     except Exception:
         session.rollback()
         raise
-    return SyncPushResponse(accepted=accepted, conflicts=conflicts)
+    return SyncPushResponse(accepted=accepted, conflicts=[])
+
+
+def _preflight_push(
+    session: Session,
+    user_id: str,
+    body: SyncPushRequest,
+) -> list[_PreflightItem]:
+    normalized_keys: set[tuple[str, str]] = set()
+    preflight: list[_PreflightItem] = []
+
+    for incoming in body.items:
+        record_id = (
+            CANONICAL_PROFILE_RECORD_ID
+            if incoming.table_name == PROFILE_TABLE
+            else incoming.record_id
+        )
+        key = (incoming.table_name, record_id)
+        if key in normalized_keys:
+            raise SyncRequestValidationError(
+                f"Duplicate sync item: {incoming.table_name}/{record_id}."
+            )
+        normalized_keys.add(key)
+        if incoming.table_name == GOALS_TABLE:
+            _validate_goal_item(incoming, record_id)
+
+    _ensure_sync_clock(session)
+    session.scalar(
+        select(SyncClock).where(SyncClock.id == SYNC_CLOCK_ID).with_for_update()
+    )
+    table_names = {table_name for table_name, _ in normalized_keys}
+    record_ids = {record_id for _, record_id in normalized_keys}
+    existing_by_key = {
+        (item.table_name, item.record_id): item
+        for item in session.scalars(
+            select(SyncItem)
+            .where(
+                SyncItem.user_id == user_id,
+                SyncItem.table_name.in_(table_names),
+                SyncItem.record_id.in_(record_ids),
+            )
+            .with_for_update()
+        ).all()
+    } if normalized_keys else {}
+
+    for incoming in body.items:
+        record_id = (
+            CANONICAL_PROFILE_RECORD_ID
+            if incoming.table_name == PROFILE_TABLE
+            else incoming.record_id
+        )
+        existing = existing_by_key.get((incoming.table_name, record_id))
+        payload_json = _canonical_payload(incoming.payload)
+        if existing is None:
+            outcome = "write" if incoming.client_version == 0 else "conflict"
+            reason = None if outcome == "write" else "stale_client"
+        elif _is_exact_replay(existing, incoming, payload_json):
+            outcome = "idempotent"
+            reason = None
+        elif incoming.client_version == existing.server_version:
+            outcome = "write"
+            reason = None
+        else:
+            outcome = "conflict"
+            reason = "stale_client"
+        preflight.append(
+            _PreflightItem(
+                incoming=incoming,
+                record_id=record_id,
+                payload_json=payload_json,
+                existing=existing,
+                outcome=outcome,
+                conflict_reason=reason,
+            )
+        )
+
+    _validate_projected_goal_hierarchy(session, user_id, preflight)
+    return preflight
+
+
+def _validate_goal_item(incoming: object, record_id: str) -> None:
+    try:
+        uuid.UUID(record_id)
+        uuid.UUID(incoming.origin_device_id)
+    except ValueError as error:
+        raise SyncRequestValidationError(
+            "Goal record and origin device IDs must be UUIDs."
+        ) from error
+    if incoming.deleted_at is not None:
+        if incoming.payload:
+            raise SyncRequestValidationError("Goal tombstone payload must be empty.")
+        return
+    try:
+        payload = PlanSyncPayload.model_validate(incoming.payload)
+    except (ValidationError, ValueError) as error:
+        raise SyncRequestValidationError("Invalid Goal payload.") from error
+    if payload.parent_goal_id == record_id:
+        raise SyncRequestValidationError("Goal cannot be its own parent.")
+
+
+def _validate_projected_goal_hierarchy(
+    session: Session,
+    user_id: str,
+    preflight: list[_PreflightItem],
+) -> None:
+    if not any(item.incoming.table_name == GOALS_TABLE for item in preflight):
+        return
+    current = session.scalars(
+        select(SyncItem)
+        .where(
+            SyncItem.user_id == user_id,
+            SyncItem.table_name == GOALS_TABLE,
+        )
+        .with_for_update()
+    ).all()
+    parents: dict[str, str | None] = {}
+    for item in current:
+        if item.deleted_at is not None:
+            continue
+        try:
+            payload = PlanSyncPayload.model_validate(json.loads(item.payload_json))
+        except (json.JSONDecodeError, ValidationError, ValueError) as error:
+            raise SyncRequestValidationError(
+                f"Stored Goal {item.record_id} has invalid hierarchy data."
+            ) from error
+        parents[item.record_id] = payload.parent_goal_id
+
+    for item in preflight:
+        incoming = item.incoming
+        if incoming.table_name != GOALS_TABLE:
+            continue
+        if incoming.deleted_at is not None:
+            parents.pop(item.record_id, None)
+            continue
+        payload = PlanSyncPayload.model_validate(incoming.payload)
+        parents[item.record_id] = payload.parent_goal_id
+
+    for record_id, parent_id in parents.items():
+        if parent_id is not None and parent_id not in parents:
+            raise SyncRequestValidationError(
+                f"Active Goal {record_id} references a missing parent."
+            )
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(record_id: str) -> None:
+        if record_id in visited:
+            return
+        if record_id in visiting:
+            raise SyncRequestValidationError("Goal hierarchy contains a cycle.")
+        visiting.add(record_id)
+        parent_id = parents[record_id]
+        if parent_id is not None:
+            visit(parent_id)
+        visiting.remove(record_id)
+        visited.add(record_id)
+
+    for record_id in parents:
+        visit(record_id)
+
+
+def _canonical_payload(payload: dict[str, object]) -> str:
+    return json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _is_exact_replay(
+    existing: SyncItem,
+    incoming: object,
+    payload_json: str,
+) -> bool:
+    try:
+        stored_payload = json.loads(existing.payload_json)
+        if not isinstance(stored_payload, dict):
+            return False
+        stored_payload_json = _canonical_payload(stored_payload)
+    except (json.JSONDecodeError, TypeError):
+        return False
+    return (
+        stored_payload_json == payload_json
+        and existing.client_updated_at == incoming.updated_at
+        and existing.deleted_at == incoming.deleted_at
+        and existing.origin_device_id == incoming.origin_device_id
+    )
+
+
+def _accepted(item: _PreflightItem) -> SyncAcceptedItem:
+    if item.existing is None:
+        raise RuntimeError("An idempotent item must already exist.")
+    return SyncAcceptedItem(
+        table=item.incoming.table_name,
+        id=item.record_id,
+        server_version=item.existing.server_version,
+    )
+
+
+def _conflict(item: _PreflightItem) -> SyncConflictResponse:
+    return SyncConflictResponse(
+        table=item.incoming.table_name,
+        id=item.record_id,
+        server_version=item.existing.server_version if item.existing else 0,
+        reason=item.conflict_reason or "stale_client",
+    )
 
 
 def pull(

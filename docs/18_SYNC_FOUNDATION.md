@@ -1,8 +1,8 @@
 # Rebirth Sync Foundation
 
-> Status: Sprint 10A.1 hardening; manual acceptance pending
+> Status: Sprint 10B Plan adapter implemented locally; deployment and manual acceptance pending
 > Protocol: Sync Protocol v2
-> Product scope: manual canonical Profile sync only
+> Product scope: manual canonical Profile sync and manual Plan two-way sync
 
 ## 1. Existing Contract Audit
 
@@ -23,12 +23,11 @@ parallel sync service or a new endpoint.
 | Record version | Server-assigned global monotonic `server_version` |
 | Pull cursor | Client-applied position, separate from record version |
 
-The v2 transport schema historically allowlists `user_profiles`,
+The v2 transport schema allowlists `user_profiles`,
 `today_records`, `journal_entries`, `goals`, and `health_records`. Sprint 10A
-does not narrow that existing Server contract. The Flutter adapter registry,
-however, registers only `ProfileSyncAdapter`; therefore the current product
-still synchronizes only Profile. Plan, Today, Journal, and Health have no
-client adapter and cannot enter a sync run.
+did not narrow that existing Server contract. Sprint 10B registers
+`ProfileSyncAdapter` and `PlanSyncAdapter`. Today, Journal, and Health still
+have no client adapter and cannot enter a product sync run.
 
 ## 2. Identity Boundaries
 
@@ -126,7 +125,7 @@ The original run continues normally.
 The Coordinator has no Widget dependency, does not show SnackBars, never logs
 payloads or credentials, and uses entity-neutral transport failure messages.
 
-Only manual Settings actions invoke the current Profile flow. There is no
+Only manual Settings actions invoke the current Profile or Plan flow. There is no
 timer, lifecycle hook, startup sync, background task, realtime push, or system
 notification.
 
@@ -145,7 +144,7 @@ notification.
 An adapter cannot log in, change Endpoint, display UI, or advance a cursor.
 Registration is explicit through `SyncEntityAdapterRegistry`.
 
-Sprint 10A registers only `ProfileSyncAdapter`.
+Sprint 10B registers `ProfileSyncAdapter` and `PlanSyncAdapter`.
 
 ## 7. Profile Adapter
 
@@ -225,10 +224,19 @@ inverse ordering never occurs: the cursor is never written before local apply.
 `server_version` belongs to a server sync record. `updated_at` remains client
 business time and never substitutes for the version or cursor.
 
-The Server's single `sync_clock` is unchanged. It initializes at or above the
+The Server's single `sync_clock` remains the allocator. It initializes at or above the
 largest existing item version and allocates new versions with database-level
 atomic `UPDATE ... RETURNING`. It does not use `max()+1`, a Python lock, or a
 single-worker assumption.
+
+Sprint 10B makes push concurrency strict. New records require client version
+zero; existing updates require an exact server-version baseline. Client
+timestamps never let stale data win. Exact payload/time/deletion/origin replay
+returns the existing version without allocating a clock value.
+
+Each push request is preflighted as one unit. A real conflict, invalid Plan
+payload, invalid projected hierarchy, or orphaning tombstone produces no new
+writes and no clock advancement.
 
 ## 11. Conflict And Tombstone Boundaries
 
@@ -245,6 +253,11 @@ Profile conflict detection remains conservative:
 - no field-level merge or overwrite-choice UI exists;
 - failure never resets Profile fields to defaults.
 
+Plan conflicts preserve local business fields and mark the affected rows
+`conflict`. The Plan page cursor does not advance. Safe “adopt cloud” recovery
+is deferred to Sprint 10B.1 because the current schema cannot guarantee
+restoration of conflict state after a failed network pull.
+
 ## 12. Privacy And Diagnostics
 
 Structured results may include entity type, phase, counts, controlled reason,
@@ -254,7 +267,7 @@ database URL/path, JWT secret, or Endpoint credentials.
 ## 13. Current Scope
 
 - Profile sync: implemented, manual.
-- Plan sync: not implemented.
+- Plan sync: implemented locally, manual two-way; cloud deployment pending.
 - Today sync: not implemented.
 - Journal sync: not implemented.
 - Health sync: not implemented.
@@ -265,20 +278,14 @@ database URL/path, JWT secret, or Endpoint credentials.
 
 ## 14. Sprint 10B Plan Adapter Boundary
 
-Plan Sync should:
+Plan uses the local Goal UUID as its cross-device record ID. Its typed payload,
+local mutation metadata, parent-first upserts, child-first tombstones,
+transactional acknowledgement, projected pull hierarchy, and non-destructive
+conflict behavior are documented in `docs/19_PLAN_CROSS_DEVICE_SYNC.md`.
 
-1. define a typed Plan payload without changing Profile payloads;
-2. implement a separate `SyncEntityAdapter` for `SyncEntityType.plan`;
-3. validate parent references, user ownership, soft delete, and ordering in the
-   Plan Repository/transaction boundary;
-4. register that adapter explicitly;
-5. reuse the same Coordinator, Endpoint/session/device checks, v2 transport,
-   cursor store, and structured run result;
-6. add Plan-specific conflict and hierarchy tests;
-7. avoid copying the Profile Coordinator or creating a second cursor system.
-
-Sprint 10B must separately decide Plan consent, manual UI wording, dependency
-ordering, and recoverable conflict behavior before enabling upload.
+The Plan action calls the existing Coordinator with `twoWay` and only
+`SyncEntityType.plan`. Settings keeps separate Profile controls. Plan success
+refreshes the current PlanController; failure does not clear its UI state.
 
 ## 15. Sprint 10A Automated Evidence
 
@@ -325,3 +332,32 @@ Multiworker, Flutter Analyze And Test, and Android Debug Build. The PostgreSQL
 marker was therefore executed and passed in GitHub CI rather than inferred from
 local results. All Windows, Android physical-device, and cross-device manual
 rows remain `NOT EXECUTED`.
+
+## 17. Sprint 10B Local Automated Evidence
+
+Executed locally on 2026-07-25:
+
+| Check | Result |
+|---|---|
+| `flutter pub get` | PASS; 24 newer incompatible versions reported, no dependency change required |
+| `flutter analyze` | PASS, no issues |
+| Sprint 10B targeted Flutter tests | PASS, `125 passed` |
+| `flutter test` | PASS, `775 passed / 2 skipped` |
+| Server SQLite/non-PostgreSQL pytest | PASS, `139 passed / 9 skipped` |
+| Local PostgreSQL marker selection | SKIPPED, `8 skipped / 140 deselected`; no isolated PostgreSQL URL configured |
+| Windows release build | PASS |
+| Windows release launch smoke | PASS; process launched and was closed after verification |
+| Android split release build | PASS, armv7 + arm64 + x86_64 |
+| Flutter `schemaVersion` | unchanged at `3` |
+| API / Sync Protocol | unchanged at `1` / `2` |
+
+The two Flutter skips remain the opt-in Uvicorn Fake full-stack tests. The
+Server skips include tests requiring opt-in external environments. The Android
+build emitted the existing CupertinoIcons asset warning and produced all three
+APKs.
+
+No cloud Alpha business database was contacted. The PostgreSQL marker has not
+run for this unpushed change set in GitHub CI. GitHub Quality, GHCR publication,
+cloud API deployment, Windows manual acceptance, Android physical acceptance,
+and cross-device manual acceptance remain `NOT VERIFIED` or `NOT EXECUTED` as
+applicable.

@@ -19,6 +19,7 @@ abstract interface class SyncEntityAdapter {
   });
 
   Future<SyncEntityResult> acknowledgePush({
+    required List<SyncPushItem> submitted,
     required List<SyncAcknowledgement> accepted,
     required List<SyncConflict> conflicts,
     required int syncedAt,

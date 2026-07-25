@@ -57,6 +57,30 @@ final class PlanLocalDataSource {
         .getSingleOrNull();
   }
 
+  Future<db.Goal?> selectByIdIncludingDeleted({
+    required String userId,
+    required String id,
+  }) {
+    return (database.select(database.goals)
+          ..where((row) => row.userId.equals(userId) & row.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<List<db.Goal>> selectAllForUser({required String userId}) {
+    return (database.select(
+      database.goals,
+    )..where((row) => row.userId.equals(userId))).get();
+  }
+
+  Future<List<db.Goal>> selectPendingForSync({required String userId}) {
+    return (database.select(database.goals)..where(
+          (row) =>
+              row.userId.equals(userId) &
+              row.syncStatus.isIn(const ['local_only', 'pending']),
+        ))
+        .get();
+  }
+
   Future<List<db.Goal>> selectGoals({
     required String userId,
     String? goalLevel,
@@ -143,6 +167,7 @@ final class PlanLocalDataSource {
     required String id,
     required int? archivedAt,
     required int timestamp,
+    required String originDeviceId,
   }) {
     return database.transaction(() async {
       final ids = await _activeSubtreeIds(userId: userId, rootId: id);
@@ -155,6 +180,8 @@ final class PlanLocalDataSource {
         db.GoalsCompanion(
           archivedAt: Value(archivedAt),
           updatedAt: Value(timestamp),
+          syncStatus: const Value('pending'),
+          originDeviceId: Value(originDeviceId),
         ),
       );
       return true;
@@ -165,6 +192,7 @@ final class PlanLocalDataSource {
     required String userId,
     required String id,
     required int timestamp,
+    required String originDeviceId,
   }) {
     return database.transaction(() async {
       final ids = await _activeSubtreeIds(userId: userId, rootId: id);
@@ -177,6 +205,8 @@ final class PlanLocalDataSource {
         db.GoalsCompanion(
           deletedAt: Value(timestamp),
           updatedAt: Value(timestamp),
+          syncStatus: const Value('pending'),
+          originDeviceId: Value(originDeviceId),
         ),
       );
       return true;

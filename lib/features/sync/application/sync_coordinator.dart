@@ -321,6 +321,7 @@ final class SyncCoordinator {
         );
         phases.add(SyncRunPhase.acknowledgePush);
         final acknowledged = await adapter.acknowledgePush(
+          submitted: pending,
           accepted: response.accepted
               .map(
                 (item) => SyncAcknowledgement(

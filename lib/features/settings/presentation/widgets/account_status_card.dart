@@ -3,6 +3,7 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
 
 class AccountStatusCard extends StatelessWidget {
   const AccountStatusCard({
@@ -16,6 +17,8 @@ class AccountStatusCard extends StatelessWidget {
     required this.profileSyncState,
     required this.onPushProfile,
     required this.onPullProfile,
+    required this.planSyncState,
+    required this.onSyncPlan,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     super.key,
@@ -31,6 +34,8 @@ class AccountStatusCard extends StatelessWidget {
   final ProfileSyncViewState profileSyncState;
   final VoidCallback onPushProfile;
   final VoidCallback onPullProfile;
+  final PlanSyncViewState planSyncState;
+  final VoidCallback onSyncPlan;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
 
@@ -60,7 +65,7 @@ class AccountStatusCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Profile 可手动同步；其他业务数据仍只保存在本地。',
+              'Profile 与 Plan 可手动同步；其他业务数据仍保存在本地。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -75,7 +80,7 @@ class AccountStatusCard extends StatelessWidget {
                   ? '开发服务已连接'
                   : '未连接',
             ),
-            const _StatusRow(label: '同步范围', value: '仅 Profile 手动同步'),
+            const _StatusRow(label: '同步范围', value: 'Profile 与 Plan 手动同步'),
             _StatusRow(
               label: '设备注册',
               value: accountStatus.deviceRegistered ? '已注册' : '未注册',
@@ -84,6 +89,7 @@ class AccountStatusCard extends StatelessWidget {
               label: 'Profile 同步',
               value: _profileSyncLabel(accountStatus, profileSyncState),
             ),
+            _StatusRow(label: 'Plan 同步', value: planSyncState.statusLabel),
             if (isSignedIn)
               _StatusRow(
                 label: '用户',
@@ -149,6 +155,26 @@ class AccountStatusCard extends StatelessWidget {
                   icon: const Icon(Icons.cloud_upload_outlined),
                   label: Text(
                     profileSyncState.isPushing ? '上传中...' : '上传 Profile',
+                  ),
+                ),
+                Tooltip(
+                  message: '双向同步 Plan',
+                  child: Semantics(
+                    button: true,
+                    label: '同步 Plan',
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('syncPlanButton'),
+                      onPressed:
+                          state.isBusy ||
+                              profileSyncState.isBusy ||
+                              planSyncState.isBusy ||
+                              !isSignedIn ||
+                              !accountStatus.deviceRegistered
+                          ? null
+                          : onSyncPlan,
+                      icon: const Icon(Icons.sync_outlined),
+                      label: Text(planSyncState.isBusy ? '同步中...' : '同步 Plan'),
+                    ),
                   ),
                 ),
                 OutlinedButton.icon(

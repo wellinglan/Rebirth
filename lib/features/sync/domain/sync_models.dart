@@ -112,6 +112,7 @@ final class SyncEntityResult {
     required this.message,
     this.pushedCount = 0,
     this.pulledCount = 0,
+    this.deletedCount = 0,
     this.ignoredCount = 0,
     this.conflictCount = 0,
     this.serverVersion,
@@ -122,6 +123,7 @@ final class SyncEntityResult {
   final String message;
   final int pushedCount;
   final int pulledCount;
+  final int deletedCount;
   final int ignoredCount;
   final int conflictCount;
   final int? serverVersion;
@@ -149,6 +151,7 @@ final class SyncEntityResult {
       message: other.message,
       pushedCount: pushedCount + other.pushedCount,
       pulledCount: pulledCount + other.pulledCount,
+      deletedCount: deletedCount + other.deletedCount,
       ignoredCount: ignoredCount + other.ignoredCount,
       conflictCount: conflictCount + other.conflictCount,
       serverVersion: other.serverVersion ?? serverVersion,

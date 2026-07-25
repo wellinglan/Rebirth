@@ -11,6 +11,9 @@ import 'package:rebirth/features/account/presentation/account_view_state.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_error_message.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
+import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 
 import 'settings_controller.dart';
 import 'settings_view_state.dart';
@@ -31,9 +34,12 @@ class SettingsPage extends ConsumerWidget {
     final settingsState = ref.watch(settingsControllerProvider);
     final accountState = ref.watch(accountControllerProvider);
     final profileSyncState = ref.watch(profileSyncControllerProvider);
+    final planSyncState = ref.watch(planSyncControllerProvider);
     final config = ref.watch(appConfigProvider);
     final endpoint = ref.watch(effectiveServerEndpointProvider);
-    final endpointSettings = ref.watch(serverEndpointSettingsControllerProvider);
+    final endpointSettings = ref.watch(
+      serverEndpointSettingsControllerProvider,
+    );
     return Scaffold(
       key: const ValueKey('settingsPage'),
       appBar: AppBar(title: const Text('Settings')),
@@ -70,6 +76,8 @@ class SettingsPage extends ConsumerWidget {
               profileSyncState: profileSyncState,
               onPushProfile: () => _pushProfile(context, ref),
               onPullProfile: () => _pullProfile(context, ref),
+              planSyncState: planSyncState,
+              onSyncPlan: () => _syncPlan(context, ref),
               onWeChatLogin: () => _showUnavailableDialog(
                 context,
                 key: 'wechatLoginDialog',
@@ -81,8 +89,8 @@ class SettingsPage extends ConsumerWidget {
                 key: 'syncSettingsDialog',
                 title: '同步范围',
                 message:
-                    '当前仅支持 Profile 手动同步。Today、Journal、Plan 和 Health '
-                    '暂未同步；同步失败不会删除本地数据。',
+                    'Profile 与 Plan 已支持手动同步。Today、Journal 和 Health '
+                    '尚未同步；当前没有后台自动同步。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
               onOpenAiCoach: () => context.push(RoutePaths.aiCoach),
@@ -100,13 +108,12 @@ class SettingsPage extends ConsumerWidget {
       builder: (context) => ServerEndpointDialog(initialValue: current.baseUrl),
     );
     if (candidate == null || !context.mounted) return;
-    final normalized = ref.read(serverEndpointValidatorProvider).normalize(candidate);
+    final normalized = ref
+        .read(serverEndpointValidatorProvider)
+        .normalize(candidate);
     final changed = normalized != current.baseUrl;
-    final signedIn = ref
-            .read(accountControllerProvider)
-            .value
-            ?.status
-            .isAuthenticated ==
+    final signedIn =
+        ref.read(accountControllerProvider).value?.status.isAuthenticated ==
         true;
     if (changed && signedIn) {
       final confirmed = await _confirmEndpointChange(context);
@@ -124,9 +131,7 @@ class SettingsPage extends ConsumerWidget {
       if (!context.mounted) return;
       _showMessage(
         context,
-        changed && signedIn
-            ? '服务器已切换，请在新服务器重新登录；本地数据保持不变'
-            : '服务器地址已保存',
+        changed && signedIn ? '服务器已切换，请在新服务器重新登录；本地数据保持不变' : '服务器地址已保存',
       );
     } catch (_) {
       if (context.mounted) _showMessage(context, '服务器地址保存失败，旧设置保持不变');
@@ -137,11 +142,8 @@ class SettingsPage extends ConsumerWidget {
     final current = ref.read(effectiveServerEndpointProvider);
     final fallback = ref.read(fallbackServerEndpointProvider);
     final changed = current.baseUrl != fallback.baseUrl;
-    final signedIn = ref
-            .read(accountControllerProvider)
-            .value
-            ?.status
-            .isAuthenticated ==
+    final signedIn =
+        ref.read(accountControllerProvider).value?.status.isAuthenticated ==
         true;
     if (changed && signedIn) {
       final confirmed = await _confirmEndpointChange(context);
@@ -258,6 +260,24 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _syncPlan(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await ref
+          .read(planSyncControllerProvider.notifier)
+          .syncPlan();
+      if (!context.mounted) return;
+      final entity = result.resultFor(SyncEntityType.plan);
+      _showMessage(
+        context,
+        entity?.message ?? result.failure?.message ?? 'Plan 同步完成',
+      );
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, 'Plan 同步失败，本地数据未受影响');
+      }
+    }
+  }
+
   Future<String?> _showDevLoginDialog(BuildContext context) async {
     var devUserKey = 'local-test-user';
     return showDialog<String>(
@@ -341,6 +361,8 @@ class _SettingsContent extends StatelessWidget {
     required this.profileSyncState,
     required this.onPushProfile,
     required this.onPullProfile,
+    required this.planSyncState,
+    required this.onSyncPlan,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     required this.onOpenProfile,
@@ -362,6 +384,8 @@ class _SettingsContent extends StatelessWidget {
   final ProfileSyncViewState profileSyncState;
   final VoidCallback onPushProfile;
   final VoidCallback onPullProfile;
+  final PlanSyncViewState planSyncState;
+  final VoidCallback onSyncPlan;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
@@ -402,6 +426,8 @@ class _SettingsContent extends StatelessWidget {
                     profileSyncState: profileSyncState,
                     onPushProfile: onPushProfile,
                     onPullProfile: onPullProfile,
+                    planSyncState: planSyncState,
+                    onSyncPlan: onSyncPlan,
                     onWeChatLogin: onWeChatLogin,
                     onSyncSettings: onSyncSettings,
                   ),

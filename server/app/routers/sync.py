@@ -9,7 +9,12 @@ from app.schemas import (
     SyncPushResponse,
 )
 from app.security import require_user_id
-from app.services.sync_service import DeviceUnavailableError, pull, push
+from app.services.sync_service import (
+    DeviceUnavailableError,
+    SyncRequestValidationError,
+    pull,
+    push,
+)
 
 
 router = APIRouter(prefix="/sync", tags=["sync"])
@@ -26,6 +31,11 @@ def push_items(
     except DeviceUnavailableError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except SyncRequestValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(error),
         ) from error
 

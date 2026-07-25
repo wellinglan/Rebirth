@@ -120,6 +120,11 @@ final class PlanRepositoryImpl implements PlanRepository {
       userId: bootstrap.activeUserId,
       parentGoalId: data.parentGoalId,
     );
+    await _validateNoDescendantParent(
+      userId: bootstrap.activeUserId,
+      goalId: id,
+      parentGoalId: data.parentGoalId,
+    );
 
     final snapshot = dateTimeService.currentSnapshot();
     final completedAt = switch (data.status) {
@@ -141,6 +146,8 @@ final class PlanRepositoryImpl implements PlanRepository {
         completedAt: Value(completedAt),
         sortOrder: Value(data.sortOrder),
         updatedAt: Value(snapshot.utcMilliseconds),
+        syncStatus: const Value('pending'),
+        originDeviceId: Value(bootstrap.localInstallationId),
       ),
     );
     if (updated == null) {
@@ -165,6 +172,8 @@ final class PlanRepositoryImpl implements PlanRepository {
           status == PlanGoalStatus.completed ? snapshot.utcMilliseconds : null,
         ),
         updatedAt: Value(snapshot.utcMilliseconds),
+        syncStatus: const Value('pending'),
+        originDeviceId: Value(bootstrap.localInstallationId),
       ),
     );
     if (updated == null) {
@@ -191,6 +200,8 @@ final class PlanRepositoryImpl implements PlanRepository {
         ),
         completedAt: Value(completed ? snapshot.utcMilliseconds : null),
         updatedAt: Value(snapshot.utcMilliseconds),
+        syncStatus: const Value('pending'),
+        originDeviceId: Value(bootstrap.localInstallationId),
       ),
     );
     if (updated == null) {
@@ -208,6 +219,7 @@ final class PlanRepositoryImpl implements PlanRepository {
       id: id,
       archivedAt: timestamp,
       timestamp: timestamp,
+      originDeviceId: bootstrap.localInstallationId,
     );
     if (!archived) {
       throw PlanGoalNotFoundException(id);
@@ -223,6 +235,7 @@ final class PlanRepositoryImpl implements PlanRepository {
       id: id,
       archivedAt: null,
       timestamp: timestamp,
+      originDeviceId: bootstrap.localInstallationId,
     );
     if (!restored) {
       throw PlanGoalNotFoundException(id);
@@ -237,6 +250,7 @@ final class PlanRepositoryImpl implements PlanRepository {
       userId: bootstrap.activeUserId,
       id: id,
       timestamp: snapshot.utcMilliseconds,
+      originDeviceId: bootstrap.localInstallationId,
     );
     if (!deleted) {
       throw PlanGoalNotFoundException(id);
@@ -256,6 +270,28 @@ final class PlanRepositoryImpl implements PlanRepository {
     );
     if (parent == null) {
       throw PlanGoalNotFoundException(parentGoalId);
+    }
+  }
+
+  Future<void> _validateNoDescendantParent({
+    required String userId,
+    required String goalId,
+    required String? parentGoalId,
+  }) async {
+    var currentId = parentGoalId;
+    final visited = <String>{};
+    while (currentId != null) {
+      if (currentId == goalId || !visited.add(currentId)) {
+        throw InvalidPlanGoalParentException(parentGoalId ?? goalId);
+      }
+      final current = await _localDataSource.selectById(
+        userId: userId,
+        id: currentId,
+      );
+      if (current == null) {
+        return;
+      }
+      currentId = current.parentGoalId;
     }
   }
 

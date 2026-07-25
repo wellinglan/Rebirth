@@ -2,9 +2,9 @@
 
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
-> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 9C 代码已完成但人工验收暂缓，Sprint 10A 与 Sprint 10A.1 代码均已推送。
+> 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 10A 与 Sprint 10A.1 已推送并通过 Quality CI。
 >
-> 当前开发：Sprint 10A.1 Sync Foundation Hardening 的本地验证与 GitHub Quality CI 已通过、人工验收未执行；Sprint 10B 尚未开始，云端架构和 Sync Protocol v2 保持不变。
+> 当前开发：Sprint 10B Plan 跨端同步已在本地实现并进入验证；尚未 commit/push、发布 API 镜像、部署云端或执行人工验收。云端架构、API 1 和 Sync Protocol v2 保持不变。
 
 ## 1. 当前主架构
 
@@ -370,7 +370,7 @@ https://rebirth-alpha-bj.taila61d27.ts.net
 当前开发目标：
 
 ```text
-Sprint 10A.1：Sync Foundation Hardening
+Sprint 10B：Plan Cross-device Sync & Strict Optimistic Concurrency
 ```
 
 Sprint 9C 的 Windows 与 Android 人工验收仍为 `NOT EXECUTED`，不得用自动化测试
@@ -424,8 +424,9 @@ manual Profile action
 - Device Registration 与稳定 local installation ID 继续复用；
 - canonical Profile cloud identity 继续为 `user_profiles/profile`；
 - Server `sync_clock` 与 `UPDATE ... RETURNING` 不变；
-- 当前只有 Profile Adapter 注册；
-- Plan、Today、Journal、Health、Growth 与 AI Report 尚未同步；
+- 在 Sprint 10A.1 提交时只有 Profile Adapter 注册；
+- 在 Sprint 10A.1 提交时 Plan、Today、Journal、Health、Growth 与 AI Report
+  尚未同步；Sprint 10B 当前状态见下一节；
 - 没有后台、定时或启动自动同步；
 - 云端仍是 Development + Fake Provider + Tailscale 私网；
 - 当前不是 Production。
@@ -435,7 +436,29 @@ Sprint 10A 人工矩阵见
 `NOT EXECUTED`。Sprint 10A.1 的补充人工检查同样保持 `NOT EXECUTED`，
 不得把自动化测试结果写成人工 PASS。
 
-## 16. 对 Codex 的强制要求
+## 16. Sprint 10B 本地状态（DEPLOYMENT / MANUAL PENDING）
+
+Sprint 10B 复用现有 Coordinator、Endpoint、Session、Device Registration、
+Cursor Store 和 Protocol v2，增加：
+
+- strict serverVersion optimistic concurrency；
+- request-level atomic push preflight；
+- typed Plan payload；
+- hierarchy-safe Plan Adapter；
+- Settings 手动 two-way Plan sync；
+- 非破坏性 Plan conflict；
+- Profile 与 Plan 独立 cursor scope。
+
+当前本地代码没有 Drift、Alembic 或 PostgreSQL schema migration。Flutter
+`schemaVersion` 仍为 `3`。Server 行为发生改变，因此人工跨端验收前需要发布
+新的 API GHCR 镜像并只重建 API 容器；不需要重建 PostgreSQL、修改 Compose
+或修改客户端 Endpoint。
+
+代码尚未 push，因此 GitHub Quality、PostgreSQL marker、GHCR 镜像、云端
+部署以及 Windows/Android/跨端人工矩阵均不得标记为 PASS。人工矩阵见
+`docs/manual_tests/25_plan_cross_device_sync.md`。
+
+## 17. 对 Codex 的强制要求
 
 涉及 Server、部署、migration、API 或测试时：
 
@@ -461,7 +484,7 @@ Sprint 10A 人工矩阵见
 14. 镜像供应链继续使用 GitHub Actions + GHCR。
 15. 避免任何可能完整输出 Secret 的命令。
 
-## 17. 禁止误判
+## 18. 禁止误判
 
 以下说法均错误：
 
@@ -477,7 +500,7 @@ Sprint 10A 人工矩阵见
 “Phone model 与 Android version 会阻止 Sprint 9C 开始”
 “Sprint 9C 已完成人工验收”
 “Sprint 10A 已实现 Plan、Today、Journal 或 Health 同步”
-“Sprint 10B 已经开始”
+“Sprint 10B 已部署到云端并完成人工验收”
 “通用 Coordinator 等同于后台自动同步”
 ```
 
@@ -489,7 +512,7 @@ Sprint 10A 人工矩阵见
 Sprint 9B.1 / 9B.2 功能验收已通过，
 Phone model 与 Android version 是非阻塞性元数据缺口，
 Sprint 9C 代码已完成但人工验收暂缓，
-Sprint 10A 与 Sprint 10A.1 代码均已推送，Quality CI 已通过；当前仍只注册
-Profile Adapter，人工验收未执行，Sprint 10B 尚未开始，
+Sprint 10A 与 Sprint 10A.1 代码均已推送，Quality CI 已通过；Sprint 10B
+已在本地实现 Profile + Plan Adapter，但尚未提交、部署或人工验收，
 且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```

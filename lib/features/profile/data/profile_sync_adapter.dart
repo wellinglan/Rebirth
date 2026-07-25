@@ -91,11 +91,17 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
 
   @override
   Future<SyncEntityResult> acknowledgePush({
+    required List<SyncPushItem> submitted,
     required List<SyncAcknowledgement> accepted,
     required List<SyncConflict> conflicts,
     required int syncedAt,
   }) {
     return _database.transaction(() async {
+      if (submitted.length != 1 ||
+          submitted.single.entityType != entityType ||
+          submitted.single.recordId != SyncRecordKeys.profile) {
+        throw const SyncException('Profile 上传上下文无效。');
+      }
       final context = await _loadLocalContext();
       final conflict = conflicts
           .where(

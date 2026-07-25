@@ -30,6 +30,9 @@ import 'package:rebirth/features/sync/domain/profile_sync_direction.dart';
 import 'package:rebirth/features/sync/domain/profile_sync_repository.dart';
 import 'package:rebirth/features/sync/domain/profile_sync_result.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
+import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/sync/domain/sync_models.dart';
+import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -48,11 +51,7 @@ void main() {
     final profileRepository = _FakeProfileRepository(
       loadError: StateError('failed'),
     );
-    await _pumpSettings(
-      tester,
-      profileRepository,
-      _FakeAuthRepository(),
-    );
+    await _pumpSettings(tester, profileRepository, _FakeAuthRepository());
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('settingsErrorState')), findsOneWidget);
@@ -70,11 +69,7 @@ void main() {
     tester,
   ) async {
     final authRepository = _FakeAuthRepository();
-    await _pumpSettings(
-      tester,
-      _FakeProfileRepository(),
-      authRepository,
-    );
+    await _pumpSettings(tester, _FakeProfileRepository(), authRepository);
     await tester.pumpAndSettle();
 
     expect(find.text('当前模式'), findsOneWidget);
@@ -86,7 +81,7 @@ void main() {
     expect(find.text('云账号'), findsOneWidget);
     expect(find.text('尚未连接'), findsOneWidget);
     expect(find.text('同步范围'), findsOneWidget);
-    expect(find.text('仅 Profile 手动同步'), findsOneWidget);
+    expect(find.text('Profile 与 Plan 手动同步'), findsOneWidget);
     expect(find.text('设备注册'), findsOneWidget);
     expect(find.text('未注册'), findsOneWidget);
     expect(find.text('Profile 同步'), findsOneWidget);
@@ -100,11 +95,7 @@ void main() {
     tester,
   ) async {
     final authRepository = _FakeAuthRepository();
-    await _pumpSettings(
-      tester,
-      _FakeProfileRepository(),
-      authRepository,
-    );
+    await _pumpSettings(tester, _FakeProfileRepository(), authRepository);
     await tester.pumpAndSettle();
 
     await _tapByKey(tester, 'checkBackendButton');
@@ -122,11 +113,7 @@ void main() {
         message: '无法连接开发后端，请确认服务已启动且网络可达。',
         isNetworkError: true,
       );
-    await _pumpSettings(
-      tester,
-      _FakeProfileRepository(),
-      authRepository,
-    );
+    await _pumpSettings(tester, _FakeProfileRepository(), authRepository);
     await tester.pumpAndSettle();
 
     await _tapByKey(tester, 'checkBackendButton');
@@ -156,11 +143,7 @@ void main() {
     tester,
   ) async {
     final authRepository = _FakeAuthRepository();
-    await _pumpSettings(
-      tester,
-      _FakeProfileRepository(),
-      authRepository,
-    );
+    await _pumpSettings(tester, _FakeProfileRepository(), authRepository);
     await tester.pumpAndSettle();
 
     await _login(tester, 'research-user');
@@ -171,7 +154,7 @@ void main() {
     expect(find.text('开发账号已连接'), findsOneWidget);
     expect(find.text('Dev research-user'), findsOneWidget);
     expect(find.text('开发登录成功'), findsOneWidget);
-    expect(find.text('仅 Profile 手动同步'), findsOneWidget);
+    expect(find.text('Profile 与 Plan 手动同步'), findsOneWidget);
   });
 
   testWidgets('registering a device while signed out asks for login', (
@@ -192,11 +175,7 @@ void main() {
 
   testWidgets('signed-in user can register the current device', (tester) async {
     final authRepository = _FakeAuthRepository();
-    await _pumpSettings(
-      tester,
-      _FakeProfileRepository(),
-      authRepository,
-    );
+    await _pumpSettings(tester, _FakeProfileRepository(), authRepository);
     await tester.pumpAndSettle();
     await _login(tester, 'local-test-user');
 
@@ -260,9 +239,45 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('可手动同步'), findsOneWidget);
+    expect(find.text('可手动同步'), findsNWidgets(2));
     expect(find.byKey(const ValueKey('pushProfileButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('pullProfileButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('syncPlanButton')), findsOneWidget);
+    final planButton = tester.widget<OutlinedButton>(
+      find.byKey(const ValueKey('syncPlanButton')),
+    );
+    expect(planButton.onPressed, isNotNull);
+  });
+
+  testWidgets('manual Plan sync shows progress and success counts', (
+    tester,
+  ) async {
+    final completer = Completer<SyncRunResult>();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      planSyncRunner: () => completer.future,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const ValueKey('syncPlanButton')));
+    await tester.tap(find.byKey(const ValueKey('syncPlanButton')));
+    await tester.pump();
+
+    expect(find.text('同步中...'), findsWidgets);
+    expect(
+      tester
+          .widget<OutlinedButton>(find.byKey(const ValueKey('syncPlanButton')))
+          .onPressed,
+      isNull,
+    );
+
+    completer.complete(_planSuccessResult());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('上传 1，拉取 2，删除 1'), findsOneWidget);
+    expect(find.text('Plan 已更新'), findsOneWidget);
   });
 
   testWidgets('successful Profile upload shows an honest result', (
@@ -363,10 +378,7 @@ void main() {
     tester,
   ) async {
     final syncRepository = _FakeProfileSyncRepository(
-      pushError: const ApiException(
-        message: '无法连接开发后端',
-        isNetworkError: true,
-      ),
+      pushError: const ApiException(message: '无法连接开发后端', isNetworkError: true),
     );
     await _pumpSettings(
       tester,
@@ -417,7 +429,7 @@ void main() {
     expect(find.textContaining('微信开放平台配置'), findsOneWidget);
   });
 
-  testWidgets('sync settings explains the Profile-only manual scope', (
+  testWidgets('sync settings explains the Profile and Plan manual scope', (
     tester,
   ) async {
     await _pumpSettings(
@@ -431,9 +443,45 @@ void main() {
 
     expect(find.byKey(const ValueKey('syncSettingsDialog')), findsOneWidget);
     expect(find.text('同步范围'), findsWidgets);
-    expect(find.textContaining('当前仅支持 Profile 手动同步'), findsOneWidget);
-    expect(find.textContaining('同步失败不会删除本地数据'), findsOneWidget);
+    expect(find.textContaining('Profile 与 Plan 已支持手动同步'), findsOneWidget);
+    expect(find.textContaining('Today、Journal 和 Health'), findsOneWidget);
+    expect(find.textContaining('没有后台自动同步'), findsOneWidget);
   });
+
+  for (final width in [320.0, 360.0, 412.0, 720.0, 840.0, 1200.0]) {
+    testWidgets('Settings Plan sync has no overflow at width $width', (
+      tester,
+    ) async {
+      await _pumpSettings(
+        tester,
+        _FakeProfileRepository(),
+        _registeredAuthRepository(),
+        surfaceSize: Size(width, 1100),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('syncPlanButton')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final scale in [1.0, 1.3, 1.5, 2.0]) {
+    testWidgets('Settings Plan sync has no overflow at text scale $scale', (
+      tester,
+    ) async {
+      await _pumpSettings(
+        tester,
+        _FakeProfileRepository(),
+        _registeredAuthRepository(),
+        surfaceSize: const Size(320, 1100),
+        textScaler: TextScaler.linear(scale),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('双向同步 Plan'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('account UI never claims unavailable cloud capabilities', (
     tester,
@@ -590,8 +638,11 @@ Future<void> _pumpSettings(
   ProfileSyncRepository? syncRepository,
   ServerEndpointConnectionTester? endpointTester,
   AiConsentRepository? aiConsentRepository,
+  PlanSyncRunner? planSyncRunner,
+  Size surfaceSize = const Size(900, 1100),
+  TextScaler textScaler = TextScaler.noScaling,
 }) async {
-  await tester.binding.setSurfaceSize(const Size(900, 1100));
+  await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
@@ -604,13 +655,42 @@ Future<void> _pumpSettings(
         profileSyncRepositoryProvider.overrideWithValue(
           syncRepository ?? _FakeProfileSyncRepository(),
         ),
+        planSyncRunnerProvider.overrideWithValue(
+          planSyncRunner ?? () async => _planSuccessResult(),
+        ),
+        planViewRefresherProvider.overrideWithValue(() async {}),
         if (endpointTester != null)
           serverEndpointConnectionTesterProvider.overrideWithValue(
             endpointTester,
           ),
       ],
-      child: const MaterialApp(home: SettingsPage()),
+      child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
+        home: const SettingsPage(),
+      ),
     ),
+  );
+}
+
+SyncRunResult _planSuccessResult() {
+  return SyncRunResult(
+    direction: SyncRunDirection.twoWay,
+    phases: const [SyncRunPhase.completed],
+    entityResults: const [
+      SyncEntityResult(
+        entityType: SyncEntityType.plan,
+        status: SyncEntityStatus.succeeded,
+        message: 'Plan 已更新',
+        pushedCount: 1,
+        pulledCount: 2,
+        deletedCount: 1,
+      ),
+    ],
+    startedAt: 1,
+    completedAt: 2,
   );
 }
 
@@ -725,9 +805,7 @@ final class _FakeProfileSyncRepository implements ProfileSyncRepository {
 }
 
 final class _FakeAuthRepository implements AuthRepository {
-  AccountStatus status = const AccountStatus.localOnly(
-    backendConfigured: true,
-  );
+  AccountStatus status = const AccountStatus.localOnly(backendConfigured: true);
   Object? healthError;
   int healthCalls = 0;
   int loginCalls = 0;

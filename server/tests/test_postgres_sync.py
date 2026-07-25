@@ -92,5 +92,66 @@ def test_postgres_migration_and_concurrent_sync_versions_are_atomic(
         assert len(set(versions)) == len(versions)
         assert all(left < right for left, right in zip(sorted(versions), sorted(versions)[1:]))
 
-    app.state.database.engine.dispose()
+        headers, device_id = credentials[0]
+        parent_id = str(uuid.uuid4())
+        child_id = str(uuid.uuid4())
+        plan_origin_id = str(uuid.uuid4())
+        plan_batch = client.post(
+            "/sync/push",
+            headers=headers,
+            json={
+                "device_id": device_id,
+                "items": [
+                    {
+                        "table": "goals",
+                        "id": child_id,
+                        "payload": {
+                            "parent_goal_id": parent_id,
+                            "title": "PostgreSQL child",
+                            "description": None,
+                            "goal_level": "month",
+                            "status": "not_started",
+                            "start_date": "2026-07-01",
+                            "target_date": "2026-07-31",
+                            "completed_at": None,
+                            "archived_at": None,
+                            "sort_order": 0,
+                            "created_at": 1_784_160_100_000,
+                        },
+                        "updated_at": 1_784_160_100_000,
+                        "deleted_at": None,
+                        "origin_device_id": plan_origin_id,
+                        "client_version": 0,
+                    },
+                    {
+                        "table": "goals",
+                        "id": parent_id,
+                        "payload": {
+                            "parent_goal_id": None,
+                            "title": "PostgreSQL parent",
+                            "description": None,
+                            "goal_level": "year",
+                            "status": "not_started",
+                            "start_date": "2026-01-01",
+                            "target_date": "2026-12-31",
+                            "completed_at": None,
+                            "archived_at": None,
+                            "sort_order": 0,
+                            "created_at": 1_784_160_100_000,
+                        },
+                        "updated_at": 1_784_160_100_000,
+                        "deleted_at": None,
+                        "origin_device_id": plan_origin_id,
+                        "client_version": 0,
+                    },
+                ],
+            },
+        )
+        assert plan_batch.status_code == 200
+        assert plan_batch.json()["conflicts"] == []
+        assert {item["id"] for item in plan_batch.json()["accepted"]} == {
+            parent_id,
+            child_id,
+        }
 
+    app.state.database.engine.dispose()

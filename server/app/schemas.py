@@ -1,8 +1,17 @@
 from __future__ import annotations
 
+from datetime import date
+import re
 from typing import Any, Literal
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 
 Platform = Literal["windows", "android", "ios", "macos", "web"]
@@ -14,6 +23,69 @@ SyncTable = Literal[
     "goals",
     "health_records",
 ]
+PlanGoalLevel = Literal["life", "year", "quarter", "month", "week", "day", "custom"]
+PlanGoalStatus = Literal[
+    "not_started",
+    "in_progress",
+    "completed",
+    "paused",
+    "cancelled",
+]
+
+
+class PlanSyncPayload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    parent_goal_id: str | None
+    title: str
+    description: str | None
+    goal_level: PlanGoalLevel
+    status: PlanGoalStatus
+    start_date: str | None
+    target_date: str | None
+    completed_at: int | None = Field(ge=0)
+    archived_at: int | None = Field(ge=0)
+    sort_order: int = Field(ge=0)
+    created_at: int = Field(ge=0)
+
+    @field_validator("parent_goal_id")
+    @classmethod
+    def validate_parent_goal_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        UUID(value)
+        return value
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("title must not be blank")
+        return value.strip()
+
+    @field_validator("start_date", "target_date")
+    @classmethod
+    def validate_local_date(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("date must use YYYY-MM-DD")
+        date.fromisoformat(value)
+        return value
+
+    @model_validator(mode="after")
+    def validate_business_consistency(self) -> "PlanSyncPayload":
+        if (
+            self.start_date is not None
+            and self.target_date is not None
+            and self.target_date < self.start_date
+        ):
+            raise ValueError("target_date must not be before start_date")
+        if self.status == "completed" and self.completed_at is None:
+            raise ValueError("completed goals require completed_at")
+        if self.status != "completed" and self.completed_at is not None:
+            raise ValueError("non-completed goals must not have completed_at")
+        return self
 
 
 class HealthResponse(BaseModel):

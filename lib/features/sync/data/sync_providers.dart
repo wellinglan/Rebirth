@@ -4,6 +4,7 @@ import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/profile/data/profile_sync_adapter.dart';
+import 'package:rebirth/features/plan/data/plan_sync_adapter.dart';
 import 'package:rebirth/features/sync/application/sync_coordinator.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_adapter.dart';
 
@@ -13,10 +14,17 @@ final profileSyncAdapterProvider = Provider<ProfileSyncAdapter>((ref) {
   return ProfileSyncAdapter(ref.watch(appDatabaseProvider));
 });
 
+final planSyncAdapterProvider = Provider<PlanSyncAdapter>((ref) {
+  return PlanSyncAdapter(ref.watch(appDatabaseProvider));
+});
+
 final syncEntityAdapterRegistryProvider = Provider<SyncEntityAdapterRegistry>((
   ref,
 ) {
-  return SyncEntityAdapterRegistry([ref.watch(profileSyncAdapterProvider)]);
+  return SyncEntityAdapterRegistry([
+    ref.watch(profileSyncAdapterProvider),
+    ref.watch(planSyncAdapterProvider),
+  ]);
 });
 
 final syncCoordinatorProvider = Provider<SyncCoordinator>((ref) {

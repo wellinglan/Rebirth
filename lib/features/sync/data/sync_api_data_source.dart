@@ -19,7 +19,7 @@ abstract interface class SyncRemoteDataSource {
 final class SyncApiDataSource implements SyncRemoteDataSource {
   const SyncApiDataSource(this.apiClient);
 
-  static const _supportedTable = 'user_profiles';
+  static const _supportedTables = {'user_profiles', 'goals'};
 
   final ApiClient apiClient;
 
@@ -69,7 +69,7 @@ final class SyncApiDataSource implements SyncRemoteDataSource {
   }
 
   void _validateTable(String tableName) {
-    if (tableName != _supportedTable) {
+    if (!_supportedTables.contains(tableName)) {
       throw SyncUnsupportedTableException(tableName);
     }
   }

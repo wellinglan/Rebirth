@@ -573,6 +573,7 @@ final class _FakeAdapter implements SyncEntityAdapter {
 
   @override
   Future<SyncEntityResult> acknowledgePush({
+    required List<SyncPushItem> submitted,
     required List<SyncAcknowledgement> accepted,
     required List<SyncConflict> conflicts,
     required int syncedAt,

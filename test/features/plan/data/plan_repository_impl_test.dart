@@ -57,6 +57,9 @@ void main() {
     expect(goal.createdAt, timestamp);
     expect(goal.updatedAt, timestamp);
     expect(raw.originDeviceId, settings.localInstallationId);
+    expect(raw.syncStatus, 'local_only');
+    expect(raw.serverVersion, isNull);
+    expect(raw.lastSyncedAt, isNull);
   });
 
   test('new schema creates and reads a custom goal', () async {
@@ -171,7 +174,41 @@ void main() {
     expect(updated.sortOrder, 4);
     expect(updated.updatedAt, timestamp);
     expect(updated.updatedAt, greaterThan(created.updatedAt));
+    final raw = await (database.select(
+      database.goals,
+    )..where((row) => row.id.equals(created.id))).getSingle();
+    expect(raw.syncStatus, 'pending');
   });
+
+  test(
+    'local edit preserves sync baseline and marks the current device',
+    () async {
+      final created = await _create(repository, title: 'Synced goal');
+      await (database.update(
+        database.goals,
+      )..where((row) => row.id.equals(created.id))).write(
+        const GoalsCompanion(
+          syncStatus: Value('synced'),
+          serverVersion: Value(8),
+          lastSyncedAt: Value(700),
+          originDeviceId: Value('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+        ),
+      );
+      currentTime = currentTime.add(const Duration(minutes: 5));
+
+      await repository.updateStatus(
+        id: created.id,
+        status: PlanGoalStatus.paused,
+      );
+
+      final raw = await database.select(database.goals).getSingle();
+      final settings = await database.select(database.appSettings).getSingle();
+      expect(raw.syncStatus, 'pending');
+      expect(raw.serverVersion, 8);
+      expect(raw.lastSyncedAt, 700);
+      expect(raw.originDeviceId, settings.localInstallationId);
+    },
+  );
 
   test('updateStatus sets and clears completedAt', () async {
     final created = await _create(repository, title: '状态目标');
@@ -247,6 +284,8 @@ void main() {
     expect(archivedRoots.single.archivedAt, archivedAt);
     expect(archivedChildren.single.id, child.id);
     expect(archivedChildren.single.archivedAt, archivedAt);
+    var rows = await database.select(database.goals).get();
+    expect(rows.every((row) => row.syncStatus == 'pending'), isTrue);
 
     currentTime = currentTime.add(const Duration(minutes: 30));
     await repository.restoreGoal(parent.id);
@@ -255,6 +294,8 @@ void main() {
       (await repository.listChildren(parent.id)).single.archivedAt,
       isNull,
     );
+    rows = await database.select(database.goals).get();
+    expect(rows.every((row) => row.syncStatus == 'pending'), isTrue);
   });
 
   test(
@@ -284,8 +325,31 @@ void main() {
       expect(rows.map((row) => row.id), containsAll([created.id, child.id]));
       expect(rows.every((row) => row.deletedAt == timestamp), isTrue);
       expect(rows.every((row) => row.updatedAt == timestamp), isTrue);
+      expect(rows.every((row) => row.syncStatus == 'pending'), isTrue);
     },
   );
+
+  test('reparenting a goal below its descendant is rejected', () async {
+    final parent = await _create(repository, title: 'Parent');
+    final child = await _create(
+      repository,
+      title: 'Child',
+      parentGoalId: parent.id,
+    );
+
+    await expectLater(
+      repository.updateGoal(
+        id: parent.id,
+        data: PlanGoalSaveData(
+          parentGoalId: child.id,
+          title: parent.title,
+          goalLevel: parent.goalLevel,
+        ),
+      ),
+      throwsA(isA<InvalidPlanGoalParentException>()),
+    );
+    expect((await repository.getById(parent.id))?.parentGoalId, isNull);
+  });
 
   test('queries and mutations are isolated to the active user', () async {
     final own = await _create(repository, title: '当前用户目标');

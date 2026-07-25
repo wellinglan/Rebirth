@@ -1,6 +1,6 @@
 # Rebirth Cloud-Ready Development API
 
-Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, and manual canonical Profile sync only. It is not a production-safe cloud deployment.
+Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, manual canonical Profile sync, and manual Plan sync. It is not a production-safe cloud deployment.
 
 Sprint 8D added a durable, JWT-user-isolated AI request ledger to the explicit Weekly generation gateway. Sprint 9A adds a typed Daily Insight foundation on the same ledger, without a user-facing Daily action or database migration. Provider defaults to `disabled`; `fake` is development/test only; `openai` uses the official Python SDK Responses API. Flutter never receives or stores `OPENAI_API_KEY`.
 
@@ -101,7 +101,7 @@ $env:REBIRTH_POSTGRES_TEST_URL = 'postgresql+psycopg://rebirth:password@127.0.0.
 .\.venv\Scripts\python.exe -m pytest -m postgres
 ```
 
-The PostgreSQL test runs Alembic and concurrent sync writes. It is skipped, not passed, when `REBIRTH_POSTGRES_TEST_URL` is absent.
+The PostgreSQL test runs Alembic, concurrent sync writes, and an atomic Plan parent/child batch. It is skipped, not passed, when `REBIRTH_POSTGRES_TEST_URL` is absent.
 
 For an isolated PostgreSQL 17 AI reliability run:
 
@@ -133,22 +133,31 @@ GitHub Actions runs Server SQLite, PostgreSQL multiprocessing/multi-worker, Flut
 - The clock initializes at or above the greatest existing SyncItem version.
 - Flutter record `server_version` and client pull cursor are separate.
 
-Sprint 10A adds a typed Flutter Coordinator and Adapter boundary without
-changing this Server runtime contract. The historical Protocol v2 schema still
+Sprint 10A adds a typed Flutter Coordinator and Adapter boundary. The Protocol v2 schema
 allowlists `user_profiles`, `today_records`, `journal_entries`, `goals`, and
-`health_records` for backward compatibility. The current Flutter adapter
-registry registers only Profile, so Today, Journal, Plan, and Health are not
-product sync capabilities yet.
+`health_records` for backward compatibility. Sprint 10B registers Profile and
+Plan adapters; Today, Journal, and Health are not product sync capabilities.
 
 The Profile client continues to call `POST /sync/push` and
 `POST /sync/pull`. Deletion remains represented by `deleted_at`; Protocol v2
 has no separate `operation` field. The Server derives the owner only from the
 bearer JWT and requires a registered Device owned by that user.
 
-The Flutter Profile cursor remains stored outside SQLite under the existing
+Flutter Profile and Plan cursors remain stored outside SQLite under the existing
 endpoint/user/scope-bound SharedPreferences key. It advances only after local
-apply. No Server model, API field, `sync_clock` allocation rule, Alembic
-revision, or PostgreSQL schema changed in Sprint 10A.
+apply.
+
+Sprint 10B enforces strict optimistic concurrency: cloud-new records require
+client version zero, existing updates require the current server version, and
+client timestamps never resolve stale writes. Exact retries return the current
+version without a new clock allocation. Push batches are preflighted before
+writes or version allocation, including Goal UUID, payload, hierarchy, cycle,
+and subtree tombstone validation. Any real conflict produces no partial write
+and does not advance `sync_clock`.
+
+Plan keeps Goal UUIDs as stable cloud IDs and continues storing cloud rows in
+`sync_items`; there is no dedicated Server Goal table. No Server model, API
+field, Alembic revision, or PostgreSQL schema changed in Sprint 10B.
 
 ## Configuration and Security Boundary
 
@@ -170,4 +179,4 @@ revision, or PostgreSQL schema changed in Sprint 10A.
 
 Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Weekly manual flow is documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`; the developer-only Daily contract is documented in `docs/manual_tests/21_daily_insight_contract.md`.
 
-Outside `development`, `REBIRTH_JWT_SECRET` is mandatory. Production must use HTTPS, managed secrets, PostgreSQL backups, secure client token storage, token refresh/revoke, rate limiting, observability, and a security review. The current SharedPreferences session is development-level only. There is no real WeChat login, background sync, field-level conflict merge, or Today/Journal/Plan/Health sync.
+Outside `development`, `REBIRTH_JWT_SECRET` is mandatory. Production must use HTTPS, managed secrets, PostgreSQL backups, secure client token storage, token refresh/revoke, rate limiting, observability, and a security review. The current SharedPreferences session is development-level only. There is no real WeChat login, background sync, field-level conflict merge, or Today/Journal/Health sync.
