@@ -207,8 +207,8 @@ final class _Harness {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final windowsDatabase = AppDatabase.forTesting(NativeDatabase.memory());
     final androidDatabase = AppDatabase.forTesting(NativeDatabase.memory());
-    final windowsBootstrap = await windowsDatabase.bootstrapDao.bootstrap();
-    final androidBootstrap = await androidDatabase.bootstrapDao.bootstrap();
+    final windowsBootstrap = await windowsDatabase.bootstrapDao.bootstrap(createUnboundProfile: true);
+    final androidBootstrap = await androidDatabase.bootstrapDao.bootstrap(createUnboundProfile: true);
     const endpoint = 'http://server-a:8000';
     const cloudUser = 'cloud-user-a';
     final windowsScope = SyncConflictScope(

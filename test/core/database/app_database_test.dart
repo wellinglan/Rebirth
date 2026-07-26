@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 4 with all core tables', () async {
+  test('creates schema version 5 with account boundary tables', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -34,19 +34,23 @@ void main() {
         'health_records',
         'ai_reports',
         'sync_conflicts',
+        'installation_info',
+        'cloud_account_bindings',
       }),
     );
 
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 4);
+    expect(versionRow.read<int>('user_version'), 5);
   });
 
   test(
     'active sync conflict is unique while resolved history remains',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       final first = _conflict(
         localUserId: bootstrap.activeUserId,
         id: uuid.v4(),
@@ -82,7 +86,9 @@ void main() {
   test(
     'sync conflict constraints reject invalid operation and version',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       await expectLater(
         database
             .into(database.syncConflicts)
@@ -110,9 +116,24 @@ void main() {
     },
   );
 
-  test('bootstrap creates one default user and matching settings', () async {
+  test('bootstrap refuses to create an anonymous profile by default', () async {
+    await expectLater(
+      database.bootstrapDao.bootstrap(createUnboundProfile: false),
+      throwsA(isA<ActiveUserProfileRequiredException>()),
+    );
+
+    expect(await database.select(database.userProfiles).get(), isEmpty);
+    expect(await database.select(database.appSettings).get(), isEmpty);
+    expect(
+      await database.select(database.installationInfo).get(),
+      isEmpty,
+    );
+  });
+
+  test('explicit legacy bootstrap creates one unbound profile', () async {
     final result = await database.bootstrapDao.bootstrap(
       defaultTimezoneId: 'Asia/Shanghai',
+      createUnboundProfile: true,
     );
 
     expect(result.activeUser.isActive, isTrue);
@@ -121,11 +142,16 @@ void main() {
     expect(result.settings.userId, result.activeUserId);
     expect(await database.select(database.userProfiles).get(), hasLength(1));
     expect(await database.select(database.appSettings).get(), hasLength(1));
+    expect(await database.select(database.cloudAccountBindings).get(), isEmpty);
   });
 
   test('bootstrap is idempotent and keeps installation ID stable', () async {
-    final first = await database.bootstrapDao.bootstrap();
-    final second = await database.bootstrapDao.bootstrap();
+    final first = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
+    final second = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
 
     expect(second.activeUserId, first.activeUserId);
     expect(second.localInstallationId, first.localInstallationId);
@@ -136,7 +162,7 @@ void main() {
   test(
     'bootstrap diagnoses multiple active users instead of choosing one',
     () async {
-      await database.bootstrapDao.bootstrap();
+      await database.bootstrapDao.bootstrap(createUnboundProfile: true);
       await database.customStatement('DROP INDEX user_profiles_one_active');
       await database
           .into(database.userProfiles)
@@ -148,14 +174,16 @@ void main() {
           );
 
       await expectLater(
-        database.bootstrapDao.bootstrap(),
+        database.bootstrapDao.bootstrap(createUnboundProfile: true),
         throwsA(isA<MultipleActiveUserProfilesException>()),
       );
     },
   );
 
   test('rejects two active Today records for the same user and date', () async {
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     final firstRecord = TodayRecordsCompanion.insert(
       userId: bootstrap.activeUserId,
       recordDate: '2026-07-10',
@@ -178,7 +206,9 @@ void main() {
   });
 
   test('stores NULL and zero as different Today values', () async {
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
 
     await database
         .into(database.todayRecords)

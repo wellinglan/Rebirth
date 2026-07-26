@@ -9318,6 +9318,823 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
   }
 }
 
+class $InstallationInfoTable extends InstallationInfo
+    with TableInfo<$InstallationInfoTable, InstallationInfoRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InstallationInfoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _singletonIdMeta = const VerificationMeta(
+    'singletonId',
+  );
+  @override
+  late final GeneratedColumn<int> singletonId = GeneratedColumn<int>(
+    'singleton_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _installationIdMeta = const VerificationMeta(
+    'installationId',
+  );
+  @override
+  late final GeneratedColumn<String> installationId = GeneratedColumn<String>(
+    'installation_id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _platformMeta = const VerificationMeta(
+    'platform',
+  );
+  @override
+  late final GeneratedColumn<String> platform = GeneratedColumn<String>(
+    'platform',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    singletonId,
+    installationId,
+    createdAt,
+    platform,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'installation_info';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InstallationInfoRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('singleton_id')) {
+      context.handle(
+        _singletonIdMeta,
+        singletonId.isAcceptableOrUnknown(
+          data['singleton_id']!,
+          _singletonIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('installation_id')) {
+      context.handle(
+        _installationIdMeta,
+        installationId.isAcceptableOrUnknown(
+          data['installation_id']!,
+          _installationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_installationIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('platform')) {
+      context.handle(
+        _platformMeta,
+        platform.isAcceptableOrUnknown(data['platform']!, _platformMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {singletonId};
+  @override
+  InstallationInfoRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InstallationInfoRow(
+      singletonId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}singleton_id'],
+      )!,
+      installationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}installation_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      platform: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}platform'],
+      ),
+    );
+  }
+
+  @override
+  $InstallationInfoTable createAlias(String alias) {
+    return $InstallationInfoTable(attachedDatabase, alias);
+  }
+}
+
+class InstallationInfoRow extends DataClass
+    implements Insertable<InstallationInfoRow> {
+  final int singletonId;
+  final String installationId;
+  final int createdAt;
+  final String? platform;
+  const InstallationInfoRow({
+    required this.singletonId,
+    required this.installationId,
+    required this.createdAt,
+    this.platform,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['singleton_id'] = Variable<int>(singletonId);
+    map['installation_id'] = Variable<String>(installationId);
+    map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || platform != null) {
+      map['platform'] = Variable<String>(platform);
+    }
+    return map;
+  }
+
+  InstallationInfoCompanion toCompanion(bool nullToAbsent) {
+    return InstallationInfoCompanion(
+      singletonId: Value(singletonId),
+      installationId: Value(installationId),
+      createdAt: Value(createdAt),
+      platform: platform == null && nullToAbsent
+          ? const Value.absent()
+          : Value(platform),
+    );
+  }
+
+  factory InstallationInfoRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InstallationInfoRow(
+      singletonId: serializer.fromJson<int>(json['singletonId']),
+      installationId: serializer.fromJson<String>(json['installationId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      platform: serializer.fromJson<String?>(json['platform']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'singletonId': serializer.toJson<int>(singletonId),
+      'installationId': serializer.toJson<String>(installationId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'platform': serializer.toJson<String?>(platform),
+    };
+  }
+
+  InstallationInfoRow copyWith({
+    int? singletonId,
+    String? installationId,
+    int? createdAt,
+    Value<String?> platform = const Value.absent(),
+  }) => InstallationInfoRow(
+    singletonId: singletonId ?? this.singletonId,
+    installationId: installationId ?? this.installationId,
+    createdAt: createdAt ?? this.createdAt,
+    platform: platform.present ? platform.value : this.platform,
+  );
+  InstallationInfoRow copyWithCompanion(InstallationInfoCompanion data) {
+    return InstallationInfoRow(
+      singletonId: data.singletonId.present
+          ? data.singletonId.value
+          : this.singletonId,
+      installationId: data.installationId.present
+          ? data.installationId.value
+          : this.installationId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      platform: data.platform.present ? data.platform.value : this.platform,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InstallationInfoRow(')
+          ..write('singletonId: $singletonId, ')
+          ..write('installationId: $installationId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('platform: $platform')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(singletonId, installationId, createdAt, platform);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InstallationInfoRow &&
+          other.singletonId == this.singletonId &&
+          other.installationId == this.installationId &&
+          other.createdAt == this.createdAt &&
+          other.platform == this.platform);
+}
+
+class InstallationInfoCompanion extends UpdateCompanion<InstallationInfoRow> {
+  final Value<int> singletonId;
+  final Value<String> installationId;
+  final Value<int> createdAt;
+  final Value<String?> platform;
+  const InstallationInfoCompanion({
+    this.singletonId = const Value.absent(),
+    this.installationId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.platform = const Value.absent(),
+  });
+  InstallationInfoCompanion.insert({
+    this.singletonId = const Value.absent(),
+    required String installationId,
+    required int createdAt,
+    this.platform = const Value.absent(),
+  }) : installationId = Value(installationId),
+       createdAt = Value(createdAt);
+  static Insertable<InstallationInfoRow> custom({
+    Expression<int>? singletonId,
+    Expression<String>? installationId,
+    Expression<int>? createdAt,
+    Expression<String>? platform,
+  }) {
+    return RawValuesInsertable({
+      if (singletonId != null) 'singleton_id': singletonId,
+      if (installationId != null) 'installation_id': installationId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (platform != null) 'platform': platform,
+    });
+  }
+
+  InstallationInfoCompanion copyWith({
+    Value<int>? singletonId,
+    Value<String>? installationId,
+    Value<int>? createdAt,
+    Value<String?>? platform,
+  }) {
+    return InstallationInfoCompanion(
+      singletonId: singletonId ?? this.singletonId,
+      installationId: installationId ?? this.installationId,
+      createdAt: createdAt ?? this.createdAt,
+      platform: platform ?? this.platform,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (singletonId.present) {
+      map['singleton_id'] = Variable<int>(singletonId.value);
+    }
+    if (installationId.present) {
+      map['installation_id'] = Variable<String>(installationId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (platform.present) {
+      map['platform'] = Variable<String>(platform.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InstallationInfoCompanion(')
+          ..write('singletonId: $singletonId, ')
+          ..write('installationId: $installationId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('platform: $platform')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CloudAccountBindingsTable extends CloudAccountBindings
+    with TableInfo<$CloudAccountBindingsTable, CloudAccountBindingRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CloudAccountBindingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: databaseUuid.v4,
+  );
+  static const VerificationMeta _localUserIdMeta = const VerificationMeta(
+    'localUserId',
+  );
+  @override
+  late final GeneratedColumn<String> localUserId = GeneratedColumn<String>(
+    'local_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES user_profiles (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _endpointKeyMeta = const VerificationMeta(
+    'endpointKey',
+  );
+  @override
+  late final GeneratedColumn<String> endpointKey = GeneratedColumn<String>(
+    'endpoint_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cloudUserIdMeta = const VerificationMeta(
+    'cloudUserId',
+  );
+  @override
+  late final GeneratedColumn<String> cloudUserId = GeneratedColumn<String>(
+    'cloud_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastUsedAtMeta = const VerificationMeta(
+    'lastUsedAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastUsedAt = GeneratedColumn<int>(
+    'last_used_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    localUserId,
+    endpointKey,
+    cloudUserId,
+    createdAt,
+    lastUsedAt,
+    status,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cloud_account_bindings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CloudAccountBindingRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('local_user_id')) {
+      context.handle(
+        _localUserIdMeta,
+        localUserId.isAcceptableOrUnknown(
+          data['local_user_id']!,
+          _localUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localUserIdMeta);
+    }
+    if (data.containsKey('endpoint_key')) {
+      context.handle(
+        _endpointKeyMeta,
+        endpointKey.isAcceptableOrUnknown(
+          data['endpoint_key']!,
+          _endpointKeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_endpointKeyMeta);
+    }
+    if (data.containsKey('cloud_user_id')) {
+      context.handle(
+        _cloudUserIdMeta,
+        cloudUserId.isAcceptableOrUnknown(
+          data['cloud_user_id']!,
+          _cloudUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cloudUserIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_used_at')) {
+      context.handle(
+        _lastUsedAtMeta,
+        lastUsedAt.isAcceptableOrUnknown(
+          data['last_used_at']!,
+          _lastUsedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastUsedAtMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {endpointKey, cloudUserId},
+    {localUserId},
+  ];
+  @override
+  CloudAccountBindingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CloudAccountBindingRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      localUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_user_id'],
+      )!,
+      endpointKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}endpoint_key'],
+      )!,
+      cloudUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cloud_user_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastUsedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_used_at'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+    );
+  }
+
+  @override
+  $CloudAccountBindingsTable createAlias(String alias) {
+    return $CloudAccountBindingsTable(attachedDatabase, alias);
+  }
+}
+
+class CloudAccountBindingRow extends DataClass
+    implements Insertable<CloudAccountBindingRow> {
+  final String id;
+  final String localUserId;
+  final String endpointKey;
+  final String cloudUserId;
+  final int createdAt;
+  final int lastUsedAt;
+  final String status;
+  const CloudAccountBindingRow({
+    required this.id,
+    required this.localUserId,
+    required this.endpointKey,
+    required this.cloudUserId,
+    required this.createdAt,
+    required this.lastUsedAt,
+    required this.status,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['local_user_id'] = Variable<String>(localUserId);
+    map['endpoint_key'] = Variable<String>(endpointKey);
+    map['cloud_user_id'] = Variable<String>(cloudUserId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['last_used_at'] = Variable<int>(lastUsedAt);
+    map['status'] = Variable<String>(status);
+    return map;
+  }
+
+  CloudAccountBindingsCompanion toCompanion(bool nullToAbsent) {
+    return CloudAccountBindingsCompanion(
+      id: Value(id),
+      localUserId: Value(localUserId),
+      endpointKey: Value(endpointKey),
+      cloudUserId: Value(cloudUserId),
+      createdAt: Value(createdAt),
+      lastUsedAt: Value(lastUsedAt),
+      status: Value(status),
+    );
+  }
+
+  factory CloudAccountBindingRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CloudAccountBindingRow(
+      id: serializer.fromJson<String>(json['id']),
+      localUserId: serializer.fromJson<String>(json['localUserId']),
+      endpointKey: serializer.fromJson<String>(json['endpointKey']),
+      cloudUserId: serializer.fromJson<String>(json['cloudUserId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      lastUsedAt: serializer.fromJson<int>(json['lastUsedAt']),
+      status: serializer.fromJson<String>(json['status']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'localUserId': serializer.toJson<String>(localUserId),
+      'endpointKey': serializer.toJson<String>(endpointKey),
+      'cloudUserId': serializer.toJson<String>(cloudUserId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'lastUsedAt': serializer.toJson<int>(lastUsedAt),
+      'status': serializer.toJson<String>(status),
+    };
+  }
+
+  CloudAccountBindingRow copyWith({
+    String? id,
+    String? localUserId,
+    String? endpointKey,
+    String? cloudUserId,
+    int? createdAt,
+    int? lastUsedAt,
+    String? status,
+  }) => CloudAccountBindingRow(
+    id: id ?? this.id,
+    localUserId: localUserId ?? this.localUserId,
+    endpointKey: endpointKey ?? this.endpointKey,
+    cloudUserId: cloudUserId ?? this.cloudUserId,
+    createdAt: createdAt ?? this.createdAt,
+    lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+    status: status ?? this.status,
+  );
+  CloudAccountBindingRow copyWithCompanion(CloudAccountBindingsCompanion data) {
+    return CloudAccountBindingRow(
+      id: data.id.present ? data.id.value : this.id,
+      localUserId: data.localUserId.present
+          ? data.localUserId.value
+          : this.localUserId,
+      endpointKey: data.endpointKey.present
+          ? data.endpointKey.value
+          : this.endpointKey,
+      cloudUserId: data.cloudUserId.present
+          ? data.cloudUserId.value
+          : this.cloudUserId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastUsedAt: data.lastUsedAt.present
+          ? data.lastUsedAt.value
+          : this.lastUsedAt,
+      status: data.status.present ? data.status.value : this.status,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CloudAccountBindingRow(')
+          ..write('id: $id, ')
+          ..write('localUserId: $localUserId, ')
+          ..write('endpointKey: $endpointKey, ')
+          ..write('cloudUserId: $cloudUserId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('status: $status')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    localUserId,
+    endpointKey,
+    cloudUserId,
+    createdAt,
+    lastUsedAt,
+    status,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CloudAccountBindingRow &&
+          other.id == this.id &&
+          other.localUserId == this.localUserId &&
+          other.endpointKey == this.endpointKey &&
+          other.cloudUserId == this.cloudUserId &&
+          other.createdAt == this.createdAt &&
+          other.lastUsedAt == this.lastUsedAt &&
+          other.status == this.status);
+}
+
+class CloudAccountBindingsCompanion
+    extends UpdateCompanion<CloudAccountBindingRow> {
+  final Value<String> id;
+  final Value<String> localUserId;
+  final Value<String> endpointKey;
+  final Value<String> cloudUserId;
+  final Value<int> createdAt;
+  final Value<int> lastUsedAt;
+  final Value<String> status;
+  final Value<int> rowid;
+  const CloudAccountBindingsCompanion({
+    this.id = const Value.absent(),
+    this.localUserId = const Value.absent(),
+    this.endpointKey = const Value.absent(),
+    this.cloudUserId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CloudAccountBindingsCompanion.insert({
+    this.id = const Value.absent(),
+    required String localUserId,
+    required String endpointKey,
+    required String cloudUserId,
+    required int createdAt,
+    required int lastUsedAt,
+    this.status = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : localUserId = Value(localUserId),
+       endpointKey = Value(endpointKey),
+       cloudUserId = Value(cloudUserId),
+       createdAt = Value(createdAt),
+       lastUsedAt = Value(lastUsedAt);
+  static Insertable<CloudAccountBindingRow> custom({
+    Expression<String>? id,
+    Expression<String>? localUserId,
+    Expression<String>? endpointKey,
+    Expression<String>? cloudUserId,
+    Expression<int>? createdAt,
+    Expression<int>? lastUsedAt,
+    Expression<String>? status,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (localUserId != null) 'local_user_id': localUserId,
+      if (endpointKey != null) 'endpoint_key': endpointKey,
+      if (cloudUserId != null) 'cloud_user_id': cloudUserId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      if (status != null) 'status': status,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CloudAccountBindingsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? localUserId,
+    Value<String>? endpointKey,
+    Value<String>? cloudUserId,
+    Value<int>? createdAt,
+    Value<int>? lastUsedAt,
+    Value<String>? status,
+    Value<int>? rowid,
+  }) {
+    return CloudAccountBindingsCompanion(
+      id: id ?? this.id,
+      localUserId: localUserId ?? this.localUserId,
+      endpointKey: endpointKey ?? this.endpointKey,
+      cloudUserId: cloudUserId ?? this.cloudUserId,
+      createdAt: createdAt ?? this.createdAt,
+      lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+      status: status ?? this.status,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (localUserId.present) {
+      map['local_user_id'] = Variable<String>(localUserId.value);
+    }
+    if (endpointKey.present) {
+      map['endpoint_key'] = Variable<String>(endpointKey.value);
+    }
+    if (cloudUserId.present) {
+      map['cloud_user_id'] = Variable<String>(cloudUserId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (lastUsedAt.present) {
+      map['last_used_at'] = Variable<int>(lastUsedAt.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CloudAccountBindingsCompanion(')
+          ..write('id: $id, ')
+          ..write('localUserId: $localUserId, ')
+          ..write('endpointKey: $endpointKey, ')
+          ..write('cloudUserId: $cloudUserId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('status: $status, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9329,6 +10146,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HealthRecordsTable healthRecords = $HealthRecordsTable(this);
   late final $AiReportsTable aiReports = $AiReportsTable(this);
   late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
+  late final $InstallationInfoTable installationInfo = $InstallationInfoTable(
+    this,
+  );
+  late final $CloudAccountBindingsTable cloudAccountBindings =
+      $CloudAccountBindingsTable(this);
   late final BootstrapDao bootstrapDao = BootstrapDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -9343,6 +10165,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     healthRecords,
     aiReports,
     syncConflicts,
+    installationInfo,
+    cloudAccountBindings,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -9550,6 +10374,31 @@ final class $$UserProfilesTableReferences
     ).filter((f) => f.localUserId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_syncConflictsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CloudAccountBindingsTable,
+    List<CloudAccountBindingRow>
+  >
+  _cloudAccountBindingsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.cloudAccountBindings,
+        aliasName: 'user_profiles__id__cloud_account_bindings__local_user_id',
+      );
+
+  $$CloudAccountBindingsTableProcessedTableManager
+  get cloudAccountBindingsRefs {
+    final manager = $$CloudAccountBindingsTableTableManager(
+      $_db,
+      $_db.cloudAccountBindings,
+    ).filter((f) => f.localUserId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _cloudAccountBindingsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -9791,6 +10640,31 @@ class $$UserProfilesTableFilterComposer
           }) => $$SyncConflictsTableFilterComposer(
             $db: $db,
             $table: $db.syncConflicts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> cloudAccountBindingsRefs(
+    Expression<bool> Function($$CloudAccountBindingsTableFilterComposer f) f,
+  ) {
+    final $$CloudAccountBindingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.cloudAccountBindings,
+      getReferencedColumn: (t) => t.localUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CloudAccountBindingsTableFilterComposer(
+            $db: $db,
+            $table: $db.cloudAccountBindings,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10104,6 +10978,32 @@ class $$UserProfilesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> cloudAccountBindingsRefs<T extends Object>(
+    Expression<T> Function($$CloudAccountBindingsTableAnnotationComposer a) f,
+  ) {
+    final $$CloudAccountBindingsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.cloudAccountBindings,
+          getReferencedColumn: (t) => t.localUserId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CloudAccountBindingsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.cloudAccountBindings,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$UserProfilesTableTableManager
@@ -10127,6 +11027,7 @@ class $$UserProfilesTableTableManager
             bool healthRecordsRefs,
             bool aiReportsRefs,
             bool syncConflictsRefs,
+            bool cloudAccountBindingsRefs,
           })
         > {
   $$UserProfilesTableTableManager(_$AppDatabase db, $UserProfilesTable table)
@@ -10217,6 +11118,7 @@ class $$UserProfilesTableTableManager
                 healthRecordsRefs = false,
                 aiReportsRefs = false,
                 syncConflictsRefs = false,
+                cloudAccountBindingsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -10228,6 +11130,7 @@ class $$UserProfilesTableTableManager
                     if (healthRecordsRefs) db.healthRecords,
                     if (aiReportsRefs) db.aiReports,
                     if (syncConflictsRefs) db.syncConflicts,
+                    if (cloudAccountBindingsRefs) db.cloudAccountBindings,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -10379,6 +11282,27 @@ class $$UserProfilesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (cloudAccountBindingsRefs)
+                        await $_getPrefetchedData<
+                          UserProfile,
+                          $UserProfilesTable,
+                          CloudAccountBindingRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UserProfilesTableReferences
+                              ._cloudAccountBindingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UserProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).cloudAccountBindingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.localUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -10407,6 +11331,7 @@ typedef $$UserProfilesTableProcessedTableManager =
         bool healthRecordsRefs,
         bool aiReportsRefs,
         bool syncConflictsRefs,
+        bool cloudAccountBindingsRefs,
       })
     >;
 typedef $$AppSettingsTableCreateCompanionBuilder =
@@ -15960,6 +16885,576 @@ typedef $$SyncConflictsTableProcessedTableManager =
       SyncConflictRow,
       PrefetchHooks Function({bool localUserId})
     >;
+typedef $$InstallationInfoTableCreateCompanionBuilder =
+    InstallationInfoCompanion Function({
+      Value<int> singletonId,
+      required String installationId,
+      required int createdAt,
+      Value<String?> platform,
+    });
+typedef $$InstallationInfoTableUpdateCompanionBuilder =
+    InstallationInfoCompanion Function({
+      Value<int> singletonId,
+      Value<String> installationId,
+      Value<int> createdAt,
+      Value<String?> platform,
+    });
+
+class $$InstallationInfoTableFilterComposer
+    extends Composer<_$AppDatabase, $InstallationInfoTable> {
+  $$InstallationInfoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get singletonId => $composableBuilder(
+    column: $table.singletonId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get installationId => $composableBuilder(
+    column: $table.installationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get platform => $composableBuilder(
+    column: $table.platform,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$InstallationInfoTableOrderingComposer
+    extends Composer<_$AppDatabase, $InstallationInfoTable> {
+  $$InstallationInfoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get singletonId => $composableBuilder(
+    column: $table.singletonId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get installationId => $composableBuilder(
+    column: $table.installationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get platform => $composableBuilder(
+    column: $table.platform,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$InstallationInfoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $InstallationInfoTable> {
+  $$InstallationInfoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get singletonId => $composableBuilder(
+    column: $table.singletonId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get installationId => $composableBuilder(
+    column: $table.installationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get platform =>
+      $composableBuilder(column: $table.platform, builder: (column) => column);
+}
+
+class $$InstallationInfoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $InstallationInfoTable,
+          InstallationInfoRow,
+          $$InstallationInfoTableFilterComposer,
+          $$InstallationInfoTableOrderingComposer,
+          $$InstallationInfoTableAnnotationComposer,
+          $$InstallationInfoTableCreateCompanionBuilder,
+          $$InstallationInfoTableUpdateCompanionBuilder,
+          (
+            InstallationInfoRow,
+            BaseReferences<
+              _$AppDatabase,
+              $InstallationInfoTable,
+              InstallationInfoRow
+            >,
+          ),
+          InstallationInfoRow,
+          PrefetchHooks Function()
+        > {
+  $$InstallationInfoTableTableManager(
+    _$AppDatabase db,
+    $InstallationInfoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InstallationInfoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$InstallationInfoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$InstallationInfoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> singletonId = const Value.absent(),
+                Value<String> installationId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<String?> platform = const Value.absent(),
+              }) => InstallationInfoCompanion(
+                singletonId: singletonId,
+                installationId: installationId,
+                createdAt: createdAt,
+                platform: platform,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> singletonId = const Value.absent(),
+                required String installationId,
+                required int createdAt,
+                Value<String?> platform = const Value.absent(),
+              }) => InstallationInfoCompanion.insert(
+                singletonId: singletonId,
+                installationId: installationId,
+                createdAt: createdAt,
+                platform: platform,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$InstallationInfoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $InstallationInfoTable,
+      InstallationInfoRow,
+      $$InstallationInfoTableFilterComposer,
+      $$InstallationInfoTableOrderingComposer,
+      $$InstallationInfoTableAnnotationComposer,
+      $$InstallationInfoTableCreateCompanionBuilder,
+      $$InstallationInfoTableUpdateCompanionBuilder,
+      (
+        InstallationInfoRow,
+        BaseReferences<
+          _$AppDatabase,
+          $InstallationInfoTable,
+          InstallationInfoRow
+        >,
+      ),
+      InstallationInfoRow,
+      PrefetchHooks Function()
+    >;
+typedef $$CloudAccountBindingsTableCreateCompanionBuilder =
+    CloudAccountBindingsCompanion Function({
+      Value<String> id,
+      required String localUserId,
+      required String endpointKey,
+      required String cloudUserId,
+      required int createdAt,
+      required int lastUsedAt,
+      Value<String> status,
+      Value<int> rowid,
+    });
+typedef $$CloudAccountBindingsTableUpdateCompanionBuilder =
+    CloudAccountBindingsCompanion Function({
+      Value<String> id,
+      Value<String> localUserId,
+      Value<String> endpointKey,
+      Value<String> cloudUserId,
+      Value<int> createdAt,
+      Value<int> lastUsedAt,
+      Value<String> status,
+      Value<int> rowid,
+    });
+
+final class $$CloudAccountBindingsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CloudAccountBindingsTable,
+          CloudAccountBindingRow
+        > {
+  $$CloudAccountBindingsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UserProfilesTable _localUserIdTable(_$AppDatabase db) => db
+      .userProfiles
+      .createAlias('cloud_account_bindings__local_user_id__user_profiles__id');
+
+  $$UserProfilesTableProcessedTableManager get localUserId {
+    final $_column = $_itemColumn<String>('local_user_id')!;
+
+    final manager = $$UserProfilesTableTableManager(
+      $_db,
+      $_db.userProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_localUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CloudAccountBindingsTableFilterComposer
+    extends Composer<_$AppDatabase, $CloudAccountBindingsTable> {
+  $$CloudAccountBindingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endpointKey => $composableBuilder(
+    column: $table.endpointKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cloudUserId => $composableBuilder(
+    column: $table.cloudUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UserProfilesTableFilterComposer get localUserId {
+    final $$UserProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CloudAccountBindingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CloudAccountBindingsTable> {
+  $$CloudAccountBindingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endpointKey => $composableBuilder(
+    column: $table.endpointKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cloudUserId => $composableBuilder(
+    column: $table.cloudUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UserProfilesTableOrderingComposer get localUserId {
+    final $$UserProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CloudAccountBindingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CloudAccountBindingsTable> {
+  $$CloudAccountBindingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get endpointKey => $composableBuilder(
+    column: $table.endpointKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cloudUserId => $composableBuilder(
+    column: $table.cloudUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  $$UserProfilesTableAnnotationComposer get localUserId {
+    final $$UserProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CloudAccountBindingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CloudAccountBindingsTable,
+          CloudAccountBindingRow,
+          $$CloudAccountBindingsTableFilterComposer,
+          $$CloudAccountBindingsTableOrderingComposer,
+          $$CloudAccountBindingsTableAnnotationComposer,
+          $$CloudAccountBindingsTableCreateCompanionBuilder,
+          $$CloudAccountBindingsTableUpdateCompanionBuilder,
+          (CloudAccountBindingRow, $$CloudAccountBindingsTableReferences),
+          CloudAccountBindingRow,
+          PrefetchHooks Function({bool localUserId})
+        > {
+  $$CloudAccountBindingsTableTableManager(
+    _$AppDatabase db,
+    $CloudAccountBindingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CloudAccountBindingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CloudAccountBindingsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CloudAccountBindingsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> localUserId = const Value.absent(),
+                Value<String> endpointKey = const Value.absent(),
+                Value<String> cloudUserId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> lastUsedAt = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CloudAccountBindingsCompanion(
+                id: id,
+                localUserId: localUserId,
+                endpointKey: endpointKey,
+                cloudUserId: cloudUserId,
+                createdAt: createdAt,
+                lastUsedAt: lastUsedAt,
+                status: status,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required String localUserId,
+                required String endpointKey,
+                required String cloudUserId,
+                required int createdAt,
+                required int lastUsedAt,
+                Value<String> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CloudAccountBindingsCompanion.insert(
+                id: id,
+                localUserId: localUserId,
+                endpointKey: endpointKey,
+                cloudUserId: cloudUserId,
+                createdAt: createdAt,
+                lastUsedAt: lastUsedAt,
+                status: status,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CloudAccountBindingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({localUserId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (localUserId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.localUserId,
+                                referencedTable:
+                                    $$CloudAccountBindingsTableReferences
+                                        ._localUserIdTable(db),
+                                referencedColumn:
+                                    $$CloudAccountBindingsTableReferences
+                                        ._localUserIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CloudAccountBindingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CloudAccountBindingsTable,
+      CloudAccountBindingRow,
+      $$CloudAccountBindingsTableFilterComposer,
+      $$CloudAccountBindingsTableOrderingComposer,
+      $$CloudAccountBindingsTableAnnotationComposer,
+      $$CloudAccountBindingsTableCreateCompanionBuilder,
+      $$CloudAccountBindingsTableUpdateCompanionBuilder,
+      (CloudAccountBindingRow, $$CloudAccountBindingsTableReferences),
+      CloudAccountBindingRow,
+      PrefetchHooks Function({bool localUserId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15980,4 +17475,8 @@ class $AppDatabaseManager {
       $$AiReportsTableTableManager(_db, _db.aiReports);
   $$SyncConflictsTableTableManager get syncConflicts =>
       $$SyncConflictsTableTableManager(_db, _db.syncConflicts);
+  $$InstallationInfoTableTableManager get installationInfo =>
+      $$InstallationInfoTableTableManager(_db, _db.installationInfo);
+  $$CloudAccountBindingsTableTableManager get cloudAccountBindings =>
+      $$CloudAccountBindingsTableTableManager(_db, _db.cloudAccountBindings);
 }

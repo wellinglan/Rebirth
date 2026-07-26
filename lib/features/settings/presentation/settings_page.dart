@@ -8,6 +8,7 @@ import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
+import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_error_message.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
@@ -131,7 +132,7 @@ class SettingsPage extends ConsumerWidget {
           .read(serverEndpointSettingsControllerProvider.notifier)
           .save(candidate);
       if (changed && signedIn) {
-        await ref.read(accountControllerProvider.notifier).logout();
+        await ref.read(appAuthControllerProvider.notifier).logout();
       } else {
         await ref.read(accountControllerProvider.notifier).reload();
       }
@@ -161,7 +162,7 @@ class SettingsPage extends ConsumerWidget {
         .read(serverEndpointSettingsControllerProvider.notifier)
         .restoreDefault();
     if (changed && signedIn) {
-      await ref.read(accountControllerProvider.notifier).logout();
+      await ref.read(appAuthControllerProvider.notifier).logout();
     } else {
       await ref.read(accountControllerProvider.notifier).reload();
     }
@@ -213,7 +214,7 @@ class SettingsPage extends ConsumerWidget {
     final key = await _showDevLoginDialog(context);
     if (key == null || !context.mounted) return;
     final success = await ref
-        .read(accountControllerProvider.notifier)
+        .read(appAuthControllerProvider.notifier)
         .devLogin(key);
     _refreshConflictScope(ref);
     if (!context.mounted) return;
@@ -240,10 +241,9 @@ class SettingsPage extends ConsumerWidget {
   }
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    final success = await ref.read(accountControllerProvider.notifier).logout();
-    _refreshConflictScope(ref);
+    await ref.read(appAuthControllerProvider.notifier).logout();
     if (!context.mounted) return;
-    _showMessage(context, success ? '已退出开发账号，本地数据保持不变' : '退出登录失败');
+    _showMessage(context, '已退出开发账号，本地数据保持不变');
   }
 
   Future<void> _pushProfile(BuildContext context, WidgetRef ref) async {

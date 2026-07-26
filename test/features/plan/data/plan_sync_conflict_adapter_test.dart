@@ -29,7 +29,7 @@ void main() {
 
   setUp(() async {
     database = AppDatabase.forTesting(NativeDatabase.memory());
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
     scope = SyncConflictScope(
       localUserId: bootstrap.activeUserId,
       endpointKey: 'http://server-a:8000',

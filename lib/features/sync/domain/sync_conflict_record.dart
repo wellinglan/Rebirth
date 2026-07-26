@@ -26,7 +26,10 @@ enum SyncConflictResolutionStatus {
   keepLocalRequested('keep_local_requested'),
   resolvedAdoptRemote('resolved_adopt_remote'),
   resolvedKeepLocal('resolved_keep_local'),
-  superseded('superseded');
+  superseded('superseded'),
+  supersededByAccountIsolationMigration(
+    'superseded_by_account_isolation_migration',
+  );
 
   const SyncConflictResolutionStatus(this.wireValue);
 
@@ -35,7 +38,8 @@ enum SyncConflictResolutionStatus {
   bool get isResolved =>
       this == resolvedAdoptRemote ||
       this == resolvedKeepLocal ||
-      this == superseded;
+      this == superseded ||
+      this == supersededByAccountIsolationMigration;
 
   static SyncConflictResolutionStatus parse(String value) {
     return values.firstWhere(

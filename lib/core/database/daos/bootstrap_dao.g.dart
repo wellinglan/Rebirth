@@ -6,6 +6,8 @@ part of 'bootstrap_dao.dart';
 mixin _$BootstrapDaoMixin on DatabaseAccessor<AppDatabase> {
   $UserProfilesTable get userProfiles => attachedDatabase.userProfiles;
   $AppSettingsTable get appSettings => attachedDatabase.appSettings;
+  $InstallationInfoTable get installationInfo =>
+      attachedDatabase.installationInfo;
   BootstrapDaoManager get managers => BootstrapDaoManager(this);
 }
 
@@ -16,4 +18,9 @@ class BootstrapDaoManager {
       $$UserProfilesTableTableManager(_db.attachedDatabase, _db.userProfiles);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db.attachedDatabase, _db.appSettings);
+  $$InstallationInfoTableTableManager get installationInfo =>
+      $$InstallationInfoTableTableManager(
+        _db.attachedDatabase,
+        _db.installationInfo,
+      );
 }

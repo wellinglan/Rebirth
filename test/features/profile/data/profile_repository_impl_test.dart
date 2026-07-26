@@ -23,7 +23,9 @@ void main() {
   tearDown(() => database.close());
 
   test('getActiveProfile returns the bootstrap active user', () async {
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
 
     final profile = await repository.getActiveProfile();
 
@@ -75,7 +77,9 @@ void main() {
   test(
     'getDeviceStatus reads bootstrap installation and active user IDs',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
 
       final status = await repository.getDeviceStatus();
 
@@ -112,7 +116,7 @@ void main() {
     expect(other.isActive, isFalse);
   });
 
-  test('schemaVersion remains 4', () {
-    expect(database.schemaVersion, 4);
+  test('schemaVersion is 5', () {
+    expect(database.schemaVersion, 5);
   });
 }

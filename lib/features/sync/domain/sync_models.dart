@@ -91,6 +91,7 @@ enum SyncRunDirection { push, pull, twoWay }
 enum SyncRunPhase {
   endpointCheck,
   sessionCheck,
+  accountScopeCheck,
   deviceCheck,
   cursorRead,
   collectPending,
@@ -163,6 +164,7 @@ enum SyncFailureReason {
   endpointUnavailable,
   authenticationRequired,
   cloudUserUnavailable,
+  accountScopeMismatch,
   deviceRegistrationRequired,
   syncInProgress,
   unsupportedEntity,

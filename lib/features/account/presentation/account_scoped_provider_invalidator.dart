@@ -1,0 +1,40 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/features/account/presentation/account_controller.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_pending_recovery_controller.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
+import 'package:rebirth/features/growth/presentation/growth_controller.dart';
+import 'package:rebirth/features/health/presentation/health_controller.dart';
+import 'package:rebirth/features/journal/presentation/journal_controller.dart';
+import 'package:rebirth/features/journal/presentation/journal_today_controller.dart';
+import 'package:rebirth/features/plan/presentation/plan_controller.dart';
+import 'package:rebirth/features/profile/presentation/profile_controller.dart';
+import 'package:rebirth/features/settings/presentation/settings_controller.dart';
+import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
+import 'package:rebirth/features/sync/data/sync_providers.dart';
+import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
+import 'package:rebirth/features/today/presentation/today_controller.dart';
+import 'package:rebirth/features/today/presentation/today_history_controller.dart';
+
+void invalidateAccountScopedProviders(Ref ref) {
+  ref.invalidate(appBootstrapProvider);
+  ref.invalidate(accountControllerProvider);
+  ref.invalidate(profileControllerProvider);
+  ref.invalidate(todayControllerProvider);
+  ref.invalidate(todayHistoryControllerProvider);
+  ref.invalidate(journalControllerProvider);
+  ref.invalidate(journalTodayControllerProvider);
+  ref.invalidate(planControllerProvider);
+  ref.invalidate(healthControllerProvider);
+  ref.invalidate(growthControllerProvider);
+  ref.invalidate(settingsControllerProvider);
+  ref.invalidate(profileSyncControllerProvider);
+  ref.invalidate(planSyncControllerProvider);
+  ref.invalidate(syncCoordinatorProvider);
+  ref.invalidate(syncConflictScopeProvider);
+  ref.invalidate(activeSyncConflictCountProvider);
+  ref.invalidate(activeSyncConflictListProvider);
+  ref.invalidate(aiPendingRecoveryControllerProvider);
+  ref.invalidate(aiReportHistoryControllerProvider);
+}

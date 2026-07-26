@@ -44,7 +44,7 @@ void main() {
     ).readAsStringSync();
     final shell = File('lib/core/app/home_shell.dart').readAsStringSync();
 
-    expect(database, contains('int get schemaVersion => 4'));
+    expect(database, contains('int get schemaVersion => 5'));
     final labels = ['今日', '复盘', '计划', '健康', '成长'];
     var previousIndex = -1;
     for (final label in labels) {

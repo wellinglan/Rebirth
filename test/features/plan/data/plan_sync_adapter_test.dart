@@ -133,7 +133,7 @@ void main() {
         changes: [child, parent],
         syncedAt: 1000,
       );
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
       final rows = await database.select(database.goals).get();
 
       expect(result.pulledCount, 2);

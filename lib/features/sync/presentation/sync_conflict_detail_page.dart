@@ -427,6 +427,8 @@ String _statusLabel(SyncConflictResolutionStatus status) => switch (status) {
   SyncConflictResolutionStatus.resolvedAdoptRemote => '已采用云端版本',
   SyncConflictResolutionStatus.resolvedKeepLocal => '已保留本地版本',
   SyncConflictResolutionStatus.superseded => '已被新冲突替代',
+  SyncConflictResolutionStatus.supersededByAccountIsolationMigration =>
+    '已由账号隔离迁移安全关闭',
 };
 
 String _formatTimestamp(int value) {

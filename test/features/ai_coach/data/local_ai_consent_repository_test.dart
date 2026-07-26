@@ -66,7 +66,7 @@ void main() {
   });
 
   test('grant and revoke preserve cloud sync, profile, and business rows', () async {
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
     await (database.update(database.appSettings)
           ..where((row) => row.id.equals(bootstrap.settings.id)))
         .write(const AppSettingsCompanion(cloudSyncEnabled: Value(true)));

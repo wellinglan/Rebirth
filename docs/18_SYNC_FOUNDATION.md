@@ -1,6 +1,6 @@
 # Rebirth Sync Foundation
 
-> Status: Alpha API deployed; manual acceptance in progress; cloud-account/local-data isolation release blocker confirmed
+> Status: Sprint 10B.2-A account-bound local isolation implemented; manual acceptance pending
 > Protocol: Sync Protocol v2
 > Product scope: manual canonical Profile sync and manual Plan two-way sync
 
@@ -44,10 +44,12 @@ that UUID or silently bind a second local profile.
 
 ### Device
 
-`app_settings.local_installation_id` is generated during Bootstrap and remains
-stable for the installation lifecycle. `/devices/register` idempotently maps
-that value to a cloud Device owned by the JWT user. It is not an IMEI, MAC,
-Android ID, credential, or user identity.
+`installation_info.installation_id` is generated once per installation and
+remains stable independently of every local Profile and cloud account.
+`/devices/register` idempotently maps that value to a cloud Device owned by the
+JWT user. It is not an IMEI, MAC, Android ID, credential, or user identity.
+The old `app_settings.local_installation_id` column remains a schema-compatibility
+mirror and is normalized to the singleton value during schema 5 migration.
 
 The development session stores the returned cloud `device_id` in
 SharedPreferences. A session is bound to its normalized Endpoint. Changing
@@ -477,3 +479,49 @@ profile binding model, migration questions, and acceptance criteria are in
 `docs/21_CLOUD_ACCOUNT_LOCAL_DATA_ISOLATION.md`. No architecture or schema
 change is approved by this discovery document. Sprint 10C remains blocked
 until a correction Sprint is designed, implemented, and manually verified.
+
+## 23. Sprint 10B.2-A Account Boundary Foundation
+
+Sprint 10B.2-A selects the separate-binding model described in the discovery
+document. Flutter schema 5 adds:
+
+- `installation_info`, a one-row installation identity store;
+- `cloud_account_bindings`, with unique normalized Endpoint + cloud user and
+  unique local Profile constraints.
+
+`user_profiles` remains the local data-space model and receives no Endpoint or
+cloud identity columns. A first login on a clean database creates one local
+Profile and binding. Returning accounts reactivate their existing bound
+Profile. A different account receives a different Profile; no business row or
+sync metadata is copied between profiles.
+
+An existing unbound Profile is preserved and produces `bindingRequired`.
+Production Bootstrap no longer creates anonymous Profiles. It does not guess
+ownership, clear `server_version`, or start sync. A test-only database factory
+may still create unbound fixtures so legacy Repository tests remain isolated
+from authentication setup.
+
+Before any sync-side read or mutation, `SyncCoordinator` verifies that the
+active local Profile is bound to the session's normalized Endpoint and cloud
+user. `accountScopeMismatch` stops before device registration, cursor access,
+local collection, push, pull, acknowledge, apply, or conflict creation.
+
+The schema 4 to 5 migration preserves Profile, Goal, sync cursor storage,
+conflict snapshots, and AI pending rows. Active unhydrated legacy conflicts
+become `superseded_by_account_isolation_migration`; they remain durable history
+and are no longer counted as actionable conflicts.
+
+Local automated evidence:
+
+| Check | Result |
+|---|---|
+| `flutter analyze` | PASS, no issues |
+| `flutter test` | PASS, `845 passed / 2 skipped` |
+| Flutter schema | `5` |
+| API / Sync Protocol | unchanged at `1` / `2` |
+
+Server pytest, release builds, GitHub Quality, and manual account-isolation
+acceptance are recorded separately when executed. Until
+`docs/manual_tests/27_account_boundary_isolation.md` passes on Windows,
+Android, and cross-device flows, the account-isolation Release Gate remains
+open and Sprint 10C remains blocked.

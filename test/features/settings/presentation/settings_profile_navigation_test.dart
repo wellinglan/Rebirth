@@ -12,6 +12,8 @@ import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
+import 'package:rebirth/features/account/domain/app_auth_state.dart';
+import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
 
 void main() {
   testWidgets('Settings opens globally and Profile returns an updated name', (
@@ -19,6 +21,9 @@ void main() {
   ) async {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(database.close);
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     await tester.binding.setSurfaceSize(const Size(900, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -30,6 +35,15 @@ void main() {
             DateTimeService(now: () => DateTime(2026, 7, 15, 9)),
           ),
           authSessionStoreProvider.overrideWithValue(_MemorySessionStore()),
+          appAuthStateProvider.overrideWithValue(
+            AsyncData(
+              AppAuthState(
+                status: AppAuthStatus.authenticated,
+                localUserId: bootstrap.activeUserId,
+                cloudUserId: 'settings-user',
+              ),
+            ),
+          ),
         ],
         child: const RebirthApp(),
       ),
@@ -109,7 +123,7 @@ void main() {
       expect(revisionSource, isNot(contains('features/')));
       expect(routeNamesSource, contains("'/settings/profile'"));
       expect(routerSource, isNot(contains('RoutePaths.profile')));
-      expect(databaseSource, contains('int get schemaVersion => 4'));
+      expect(databaseSource, contains('int get schemaVersion => 5'));
       expect(pubspec, isNot(contains('firebase_auth')));
       expect(pubspec, isNot(contains('supabase')));
       expect(pubspec, isNot(contains('oauth')));

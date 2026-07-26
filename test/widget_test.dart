@@ -7,11 +7,16 @@ import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/features/account/domain/app_auth_state.dart';
+import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
 
 void main() {
   testWidgets('renders Today state and switches destinations', (tester) async {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(database.close);
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -19,6 +24,15 @@ void main() {
           appDatabaseProvider.overrideWithValue(database),
           dateTimeServiceProvider.overrideWithValue(
             DateTimeService(now: () => DateTime(2026, 7, 10, 9)),
+          ),
+          appAuthStateProvider.overrideWithValue(
+            AsyncData(
+              AppAuthState(
+                status: AppAuthStatus.authenticated,
+                localUserId: bootstrap.activeUserId,
+                cloudUserId: 'widget-user',
+              ),
+            ),
           ),
         ],
         child: const RebirthApp(),

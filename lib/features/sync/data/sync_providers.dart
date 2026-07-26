@@ -45,5 +45,10 @@ final syncCoordinatorProvider = Provider<SyncCoordinator>((ref) {
       await ref.read(serverEndpointConnectionTesterProvider).test(candidate);
     },
     dateTimeService: ref.watch(dateTimeServiceProvider),
+    accountScopeGuard: ({required endpoint, required cloudUserId}) {
+      return ref
+          .read(accountBoundaryRepositoryProvider)
+          .requireActiveScope(endpoint: endpoint, cloudUserId: cloudUserId);
+    },
   );
 });

@@ -4,9 +4,11 @@ import 'daos/bootstrap_dao.dart';
 import 'database_connection.dart';
 import 'tables/ai_reports_table.dart';
 import 'tables/app_settings_table.dart';
+import 'tables/cloud_account_bindings_table.dart';
 import 'tables/common_columns.dart';
 import 'tables/goals_table.dart';
 import 'tables/health_records_table.dart';
+import 'tables/installation_info_table.dart';
 import 'tables/journal_entries_table.dart';
 import 'tables/sync_conflicts_table.dart';
 import 'tables/today_records_table.dart';
@@ -24,16 +26,23 @@ part 'app_database.g.dart';
     HealthRecords,
     AiReports,
     SyncConflicts,
+    InstallationInfo,
+    CloudAccountBindings,
   ],
   daos: [BootstrapDao],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(openDatabaseConnection());
+  AppDatabase()
+    : allowUnboundProfileBootstrapForTesting = false,
+      super(openDatabaseConnection());
 
-  AppDatabase.forTesting(super.executor);
+  AppDatabase.forTesting(super.executor)
+    : allowUnboundProfileBootstrapForTesting = true;
+
+  final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -41,6 +50,7 @@ class AppDatabase extends _$AppDatabase {
       await migrator.createAll();
       await _createVersionOneIndexes();
       await _createSyncConflictIndexes();
+      await _createAccountBoundaryIndexes();
     },
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
@@ -54,6 +64,17 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await migrator.createTable(syncConflicts);
         await _createSyncConflictIndexes();
+      }
+      if (from < 5) {
+        await migrator.createTable(installationInfo);
+        await migrator.createTable(cloudAccountBindings);
+        if (from >= 4) {
+          await migrator.alterTable(TableMigration(syncConflicts));
+          await _createSyncConflictIndexes();
+        }
+        await _migrateInstallationInfo();
+        await _supersedeUnhydratedLegacyConflicts();
+        await _createAccountBoundaryIndexes();
       }
     },
     beforeOpen: (details) async {
@@ -81,6 +102,45 @@ class AppDatabase extends _$AppDatabase {
     for (final statement in _syncConflictIndexes) {
       await customStatement(statement);
     }
+  }
+
+  Future<void> _createAccountBoundaryIndexes() async {
+    for (final statement in _accountBoundaryIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _migrateInstallationInfo() async {
+    await customStatement(
+      'INSERT OR IGNORE INTO installation_info '
+      '(singleton_id, installation_id, created_at, platform) '
+      'SELECT 1, settings.local_installation_id, settings.created_at, NULL '
+      'FROM app_settings AS settings '
+      'LEFT JOIN user_profiles AS profile ON profile.id = settings.user_id '
+      'ORDER BY '
+      'CASE WHEN profile.is_active = 1 AND profile.deleted_at IS NULL '
+      'THEN 0 ELSE 1 END, settings.created_at ASC '
+      'LIMIT 1',
+    );
+    await customStatement(
+      'UPDATE app_settings '
+      'SET local_installation_id = ('
+      'SELECT installation_id FROM installation_info WHERE singleton_id = 1'
+      ') '
+      'WHERE EXISTS ('
+      'SELECT 1 FROM installation_info WHERE singleton_id = 1'
+      ')',
+    );
+  }
+
+  Future<void> _supersedeUnhydratedLegacyConflicts() {
+    return customStatement(
+      "UPDATE sync_conflicts SET "
+      "resolution_status = 'superseded_by_account_isolation_migration', "
+      'resolved_at = last_seen_at '
+      "WHERE resolution_status = 'awaiting_remote_snapshot' "
+      'AND resolved_at IS NULL',
+    );
   }
 }
 
@@ -146,4 +206,9 @@ const _syncConflictIndexes = <String>[
       'ON sync_conflicts '
       '(endpoint_key, cloud_user_id, entity_type, record_id) '
       'WHERE resolved_at IS NULL',
+];
+
+const _accountBoundaryIndexes = <String>[
+  'CREATE INDEX IF NOT EXISTS cloud_account_bindings_status_last_used '
+      'ON cloud_account_bindings (status, last_used_at DESC)',
 ];

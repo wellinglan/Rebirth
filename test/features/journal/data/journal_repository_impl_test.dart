@@ -250,7 +250,7 @@ void main() {
   });
 
   test('createEntry links an active Today record on the same date', () async {
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
     final todayId = uuid.v4();
     await database
         .into(database.todayRecords)
@@ -341,6 +341,6 @@ void main() {
 
     expect(await database.select(database.journalEntries).get(), isEmpty);
     expect(clockReads, 0);
-    expect(database.schemaVersion, 4);
+    expect(database.schemaVersion, 5);
   });
 }

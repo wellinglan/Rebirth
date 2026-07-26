@@ -18,6 +18,9 @@ import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/account/domain/backend_health.dart';
 import 'package:rebirth/features/account/domain/device_registration.dart';
+import 'package:rebirth/features/account/domain/app_auth_state.dart';
+import 'package:rebirth/features/account/presentation/account_controller.dart';
+import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
 import 'package:rebirth/features/profile/data/profile_repository_provider.dart';
 import 'package:rebirth/features/profile/data/profile_sync_repository_provider.dart';
 import 'package:rebirth/features/profile/domain/device_profile_status.dart';
@@ -673,6 +676,9 @@ Future<void> _pumpSettings(
       overrides: [
         profileRepositoryProvider.overrideWithValue(profileRepository),
         accountRepositoryProvider.overrideWithValue(authRepository),
+        appAuthControllerProvider.overrideWith(
+          () => _FakeAppAuthController(authRepository),
+        ),
         aiConsentRepositoryProvider.overrideWithValue(
           aiConsentRepository ?? _FakeAiConsentRepository(),
         ),
@@ -897,6 +903,46 @@ final class _FakeAuthRepository implements AuthRepository {
   @override
   Future<void> refreshSession() async {
     throw UnsupportedError('Not available in this sprint.');
+  }
+}
+
+final class _FakeAppAuthController extends AppAuthController {
+  _FakeAppAuthController(this.authRepository);
+
+  final AuthRepository authRepository;
+
+  @override
+  Future<AppAuthState> build() async {
+    final status = await authRepository.getAccountStatus();
+    if (status.user case final user?) {
+      return AppAuthState(
+        status: AppAuthStatus.authenticated,
+        localUserId: 'local-test-user',
+        cloudUserId: user.id,
+      );
+    }
+    return const AppAuthState.signedOut();
+  }
+
+  @override
+  Future<bool> devLogin(String devUserKey) async {
+    final session = await authRepository.devLogin(devUserKey);
+    state = AsyncData(
+      AppAuthState(
+        status: AppAuthStatus.authenticated,
+        localUserId: 'local-test-user',
+        cloudUserId: session.user.id,
+      ),
+    );
+    ref.invalidate(accountControllerProvider);
+    return true;
+  }
+
+  @override
+  Future<void> logout() async {
+    await authRepository.logout();
+    state = const AsyncData(AppAuthState.signedOut());
+    ref.invalidate(accountControllerProvider);
   }
 }
 

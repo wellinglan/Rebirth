@@ -70,12 +70,15 @@ class SyncConflicts extends Table with UuidPrimaryKey {
         "'keep_local_requested', "
         "'resolved_adopt_remote', "
         "'resolved_keep_local', "
-        "'superseded'))",
+        "'superseded', "
+        "'superseded_by_account_isolation_migration'))",
     "CHECK ((resolution_status IN ("
-        "'resolved_adopt_remote', 'resolved_keep_local', 'superseded') "
+        "'resolved_adopt_remote', 'resolved_keep_local', 'superseded', "
+        "'superseded_by_account_isolation_migration') "
         'AND resolved_at IS NOT NULL) OR '
         "(resolution_status NOT IN ("
-        "'resolved_adopt_remote', 'resolved_keep_local', 'superseded') "
+        "'resolved_adopt_remote', 'resolved_keep_local', 'superseded', "
+        "'superseded_by_account_isolation_migration') "
         'AND resolved_at IS NULL))',
     'CHECK (resolved_at IS NULL OR resolved_at >= detected_at)',
   ];

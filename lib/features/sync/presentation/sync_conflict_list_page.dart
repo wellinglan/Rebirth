@@ -124,6 +124,8 @@ String _statusLabel(SyncConflictResolutionStatus status) {
     SyncConflictResolutionStatus.resolvedAdoptRemote => '已采用云端',
     SyncConflictResolutionStatus.resolvedKeepLocal => '已保留本地',
     SyncConflictResolutionStatus.superseded => '已被新冲突替代',
+    SyncConflictResolutionStatus.supersededByAccountIsolationMigration =>
+      '已由账号隔离迁移关闭',
   };
 }
 

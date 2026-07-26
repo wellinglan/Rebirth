@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/account/domain/device_registration.dart';
@@ -24,6 +25,8 @@ void main() {
   late _MemorySessionStore sessionStore;
   late SyncCoordinator coordinator;
   late bool endpointAvailable;
+  late Object? accountScopeError;
+  late int accountScopeChecks;
 
   setUp(() {
     adapter = _FakeAdapter();
@@ -31,6 +34,8 @@ void main() {
     cursorStore = _MemoryCursorStore();
     sessionStore = _MemorySessionStore(_registeredSession);
     endpointAvailable = true;
+    accountScopeError = null;
+    accountScopeChecks = 0;
     coordinator = SyncCoordinator(
       endpoint: _endpoint,
       sessionStore: sessionStore,
@@ -45,6 +50,10 @@ void main() {
       dateTimeService: DateTimeService(
         now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
       ),
+      accountScopeGuard: ({required endpoint, required cloudUserId}) async {
+        accountScopeChecks += 1;
+        if (accountScopeError case final error?) throw error;
+      },
     );
   });
 
@@ -57,6 +66,47 @@ void main() {
       throwsA(isA<SyncUnsupportedEntityException>()),
     );
   });
+
+  test(
+    'cloud user scope mismatch blocks push before local collection',
+    () async {
+      adapter.pending = [_pushItem()];
+      accountScopeError = const AccountScopeMismatchException(
+        'cloud user mismatch',
+      );
+
+      final result = await coordinator.run(direction: SyncRunDirection.twoWay);
+
+      expect(result.failure?.reason, SyncFailureReason.accountScopeMismatch);
+      expect(result.failure?.phase, SyncRunPhase.accountScopeCheck);
+      expect(result.failure?.message, 'cloud user mismatch');
+      expect(accountScopeChecks, 1);
+      expect(adapter.collectCalls, 0);
+      expect(remote.pushCalls, 0);
+      expect(remote.pullCalls, 0);
+      expect(cursorStore.readCalls, 0);
+      expect(cursorStore.writeCalls, 0);
+      expect(adapter.acknowledgeCalls, 0);
+    },
+  );
+
+  test(
+    'binding endpoint mismatch creates no cursor or conflict work',
+    () async {
+      accountScopeError = const AccountScopeMismatchException(
+        'endpoint binding mismatch',
+      );
+
+      final result = await coordinator.run(direction: SyncRunDirection.pull);
+
+      expect(result.failure?.reason, SyncFailureReason.accountScopeMismatch);
+      expect(result.failure?.message, 'endpoint binding mismatch');
+      expect(accountScopeChecks, 1);
+      expect(remote.pullCalls, 0);
+      expect(cursorStore.readCalls, 0);
+      expect(adapter.applyCalls, 0);
+    },
+  );
 
   test(
     'coordinator rejects an unregistered entity before network work',
@@ -339,6 +389,7 @@ void main() {
       dateTimeService: DateTimeService(
         now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
       ),
+      accountScopeGuard: ({required endpoint, required cloudUserId}) async {},
     );
     remote.pullCompleter = Completer<SyncPullResponseDto>();
 
@@ -441,6 +492,7 @@ void main() {
       dateTimeService: DateTimeService(
         now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
       ),
+      accountScopeGuard: ({required endpoint, required cloudUserId}) async {},
     );
     remote.pullCompleter = Completer<SyncPullResponseDto>();
 

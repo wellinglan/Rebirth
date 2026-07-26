@@ -20,7 +20,7 @@ void main() {
 
   setUp(() async {
     database = AppDatabase.forTesting(NativeDatabase.memory());
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
     scope = SyncConflictScope(
       localUserId: bootstrap.activeUserId,
       endpointKey: 'http://server-a:8000',
@@ -255,7 +255,7 @@ void main() {
     });
     final file = File('${directory.path}/rebirth.sqlite');
     final firstDatabase = AppDatabase.forTesting(NativeDatabase(file));
-    final bootstrap = await firstDatabase.bootstrapDao.bootstrap();
+    final bootstrap = await firstDatabase.bootstrapDao.bootstrap(createUnboundProfile: true);
     final diskScope = SyncConflictScope(
       localUserId: bootstrap.activeUserId,
       endpointKey: 'http://server-a:8000',

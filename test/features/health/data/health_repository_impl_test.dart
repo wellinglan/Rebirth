@@ -122,7 +122,7 @@ void main() {
     final own = await repository.saveForDate(
       HealthSaveData(recordDate: '2026-07-14', waterIntakeMl: 1000),
     );
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
     final otherUserId = uuid.v4();
     await database.into(database.userProfiles).insert(
       UserProfilesCompanion.insert(
@@ -163,7 +163,7 @@ void main() {
     final settings = await database.select(database.appSettings).getSingle();
 
     expect(raw.originDeviceId, settings.localInstallationId);
-    expect(database.schemaVersion, 4);
+    expect(database.schemaVersion, 5);
   });
 
   test('Today health save is readable through Health', () async {

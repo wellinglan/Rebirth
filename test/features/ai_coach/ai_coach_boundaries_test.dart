@@ -22,12 +22,12 @@ void main() {
   });
 
   test(
-    'schema remains version 4 and presentation keeps local-only boundaries',
+    'schema version 5 keeps AI presentation local-only boundaries',
     () {
       final database = File(
         'lib/core/database/app_database.dart',
       ).readAsStringSync();
-      expect(database, contains('int get schemaVersion => 4;'));
+      expect(database, contains('int get schemaVersion => 5;'));
       final presentation = [
         ..._dartSources('lib/features/ai_coach/presentation/widgets'),
         File(

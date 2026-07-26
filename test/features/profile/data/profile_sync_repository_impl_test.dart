@@ -49,12 +49,13 @@ void main() {
       adapterRegistry: SyncEntityAdapterRegistry([adapter]),
       endpointProbe: (_) async {},
       dateTimeService: DateTimeService(now: () => now),
+      accountScopeGuard: ({required endpoint, required cloudUserId}) async {},
     );
     repository = ProfileSyncRepositoryImpl(
       coordinator: coordinator,
       adapter: adapter,
     );
-    await database.bootstrapDao.bootstrap();
+    await database.bootstrapDao.bootstrap(createUnboundProfile: true);
   });
 
   tearDown(() => database.close());
@@ -102,7 +103,9 @@ void main() {
   );
 
   test('pushProfile success writes all local sync metadata', () async {
-    final bootstrap = await database.bootstrapDao.bootstrap();
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     remote.pushResponse = SyncPushResponseDto(
       accepted: [
         SyncedRecord(
@@ -178,7 +181,9 @@ void main() {
   test(
     'pullProfile no update uses and advances the independent cursor',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       await ProfileLocalDataSource(database).updateSyncMetadata(
         userId: bootstrap.activeUserId,
         syncStatus: 'synced',
@@ -206,7 +211,9 @@ void main() {
   test(
     'pullProfile applies the newest cloud Profile to the local UUID',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       remote.pullResponse = SyncPullResponseDto(
         serverVersion: 8,
         items: [
@@ -243,7 +250,9 @@ void main() {
   test(
     'pullProfile detects local pending changes and never overwrites them',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       final localDataSource = ProfileLocalDataSource(database);
       await localDataSource.updateSyncMetadata(
         userId: bootstrap.activeUserId,
@@ -420,7 +429,9 @@ void main() {
   test(
     'replayed server version is ignored without changing local content',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       await ProfileLocalDataSource(database).applyRemoteProfile(
         userId: bootstrap.activeUserId,
         displayName: 'Newer local copy',
@@ -452,7 +463,9 @@ void main() {
   test(
     'older server version cannot overwrite a newer synced Profile',
     () async {
-      final bootstrap = await database.bootstrapDao.bootstrap();
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       await ProfileLocalDataSource(database).applyRemoteProfile(
         userId: bootstrap.activeUserId,
         displayName: 'Version ten',
@@ -533,8 +546,8 @@ void main() {
     expect((await activePush).pushed, isTrue);
   });
 
-  test('schemaVersion remains 4', () {
-    expect(database.schemaVersion, 4);
+  test('schemaVersion is 5', () {
+    expect(database.schemaVersion, 5);
   });
 
   test(
@@ -553,8 +566,12 @@ void main() {
         driftRuntimeOptions.dontWarnAboutMultipleDatabases =
             previousWarningSetting;
       });
-      final windowsBootstrap = await windowsDatabase.bootstrapDao.bootstrap();
-      final androidBootstrap = await androidDatabase.bootstrapDao.bootstrap();
+      final windowsBootstrap = await windowsDatabase.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
+      final androidBootstrap = await androidDatabase.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
       final windowsAdapter = ProfileSyncAdapter(windowsDatabase);
       final androidAdapter = ProfileSyncAdapter(androidDatabase);
       final windowsRepository = ProfileSyncRepositoryImpl(
@@ -568,6 +585,8 @@ void main() {
           adapterRegistry: SyncEntityAdapterRegistry([windowsAdapter]),
           endpointProbe: (_) async {},
           dateTimeService: DateTimeService(now: () => sharedNow),
+          accountScopeGuard:
+              ({required endpoint, required cloudUserId}) async {},
         ),
         adapter: windowsAdapter,
       );
@@ -582,6 +601,8 @@ void main() {
           adapterRegistry: SyncEntityAdapterRegistry([androidAdapter]),
           endpointProbe: (_) async {},
           dateTimeService: DateTimeService(now: () => sharedNow),
+          accountScopeGuard:
+              ({required endpoint, required cloudUserId}) async {},
         ),
         adapter: androidAdapter,
       );
@@ -631,7 +652,9 @@ Future<void> _setLocalProfileSyncState(
   required int updatedAt,
   required int lastSyncedAt,
 }) async {
-  final bootstrap = await database.bootstrapDao.bootstrap();
+  final bootstrap = await database.bootstrapDao.bootstrap(
+    createUnboundProfile: true,
+  );
   await (database.update(
     database.userProfiles,
   )..where((row) => row.id.equals(bootstrap.activeUserId))).write(

@@ -6,12 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 
 void main() {
-  test('v2 to v4 preserves goals and adds nullable archived_at', () async {
+  test('v2 to v5 preserves goals and adds account boundary tables', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(original.close);
-    final bootstrap = await original.bootstrapDao.bootstrap();
+    final bootstrap = await original.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     await original
         .into(original.goals)
         .insert(
@@ -31,7 +33,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 4);
+    expect(version.read<int>('user_version'), 5);
 
     final goal =
         await (migrated.select(migrated.goals)..where(
@@ -48,7 +50,9 @@ void main() {
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(original.close);
-    final bootstrap = await original.bootstrapDao.bootstrap();
+    final bootstrap = await original.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     await original
         .into(original.goals)
         .insert(
@@ -65,7 +69,7 @@ void main() {
 
     final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(migrated.close);
-    expect(migrated.schemaVersion, 4);
+    expect(migrated.schemaVersion, 5);
     final existing = await migrated.select(migrated.goals).getSingle();
     expect(existing.title, 'v1 普通目标');
     expect(existing.archivedAt, isNull);
@@ -96,11 +100,13 @@ void main() {
     );
   });
 
-  test('v3 to v4 preserves goals and creates conflict indexes', () async {
+  test('v3 to v5 preserves goals and creates conflict indexes', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
-    final bootstrap = await original.bootstrapDao.bootstrap();
+    final bootstrap = await original.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     await original
         .into(original.goals)
         .insert(
@@ -123,7 +129,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 4);
+    expect(version.read<int>('user_version'), 5);
     final goal = await migrated.select(migrated.goals).getSingle();
     expect(goal.id, '00000000-0000-4000-8000-000000000021');
     expect(goal.syncStatus, 'conflict');
@@ -146,6 +152,80 @@ void main() {
       }),
     );
   });
+
+  test(
+    'v4 to v5 preserves data and supersedes unhydrated legacy conflicts',
+    () async {
+      final fixture = await _createDatabaseFixture();
+      addTearDown(fixture.dispose);
+      final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      final bootstrap = await original.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
+      const goalId = '00000000-0000-4000-8000-000000000031';
+      await original
+          .into(original.goals)
+          .insert(
+            GoalsCompanion.insert(
+              id: const Value(goalId),
+              userId: bootstrap.activeUserId,
+              title: 'v4 账号隔离迁移目标',
+              goalLevel: 'month',
+              syncStatus: const Value('conflict'),
+              serverVersion: const Value(7),
+              originDeviceId: Value(bootstrap.localInstallationId),
+            ),
+          );
+      await original
+          .into(original.syncConflicts)
+          .insert(
+            SyncConflictsCompanion.insert(
+              id: const Value('00000000-0000-4000-8000-000000000032'),
+              localUserId: bootstrap.activeUserId,
+              endpointKey: 'https://alpha.example.test',
+              cloudUserId: 'cloud-user-b',
+              entityType: 'goals',
+              recordId: goalId,
+              localUpdatedAt: 100,
+              localDeletedAt: const Value(100),
+              localServerVersion: const Value(7),
+              remoteOperation: 'unknown_pending_pull',
+              remoteServerVersion: 0,
+              detectedAt: 110,
+              lastSeenAt: 120,
+              resolutionStatus: 'awaiting_remote_snapshot',
+            ),
+          );
+      await original.customStatement('DROP TABLE cloud_account_bindings');
+      await original.customStatement('DROP TABLE installation_info');
+      await original.customStatement('PRAGMA user_version = 4');
+      await original.close();
+
+      final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      addTearDown(migrated.close);
+      expect(migrated.schemaVersion, 5);
+      expect(await migrated.select(migrated.goals).get(), hasLength(1));
+      expect(await migrated.select(migrated.userProfiles).get(), hasLength(1));
+      expect(await migrated.select(migrated.appSettings).get(), hasLength(1));
+      expect(
+        await migrated.select(migrated.cloudAccountBindings).get(),
+        isEmpty,
+      );
+      final installation = await migrated
+          .select(migrated.installationInfo)
+          .getSingle();
+      expect(installation.installationId, bootstrap.localInstallationId);
+      final conflict = await migrated
+          .select(migrated.syncConflicts)
+          .getSingle();
+      expect(
+        conflict.resolutionStatus,
+        'superseded_by_account_isolation_migration',
+      );
+      expect(conflict.resolvedAt, 120);
+      expect(conflict.localServerVersion, 7);
+    },
+  );
 }
 
 Future<void> _replaceGoalsWithVersionTwoDefinition(AppDatabase database) {
@@ -227,6 +307,8 @@ Future<void> _expectCoreTableSet(AppDatabase database) async {
     'health_records',
     'ai_reports',
     'sync_conflicts',
+    'installation_info',
+    'cloud_account_bindings',
   });
 }
 

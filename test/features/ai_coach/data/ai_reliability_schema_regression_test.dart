@@ -4,12 +4,12 @@ import 'package:rebirth/core/database/app_database.dart';
 
 void main() {
   test(
-    'AI reliability keeps schema version 4 without a binding table',
+    'account boundary schema adds no AI request binding table',
     () async {
       final database = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 4);
+      expect(database.schemaVersion, 5);
       final tables = await database
           .customSelect("SELECT name FROM sqlite_master WHERE type='table'")
           .get();

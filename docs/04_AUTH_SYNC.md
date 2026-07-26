@@ -1,7 +1,7 @@
 # Rebirth Auth & Sync Architecture
 
-> Status: Sprint 6E cloud-ready Profile sync foundation
-> Scope: manual canonical Profile-only sync, not production or full business sync
+> Status: Sprint 10B.2-A authenticated account-bound local data foundation
+> Scope: Auth Gate plus manual Profile/Plan sync; not production authentication or full business sync
 
 ## 目标
 
@@ -31,7 +31,7 @@ Rebirth 自己的云端用户。其 ID 由 Rebirth 后端生成，不等于微�
 
 ### Local Installation
 
-Flutter 本地 `app_settings.local_installation_id` 表示一次安装生命周期。它不代表用户身份，也不用于跨安装追踪；注册设备后才与云端 Device 建立关联。
+Flutter 本地 `installation_info.installation_id` 表示一次安装生命周期。它不属于云账号或本地 UserProfile，也不用于跨安装追踪；注册设备后才与云端 Device 建立关联。`app_settings.local_installation_id` 在 schema 5 中仅作为兼容镜像保留，并由迁移统一为 installation singleton 的值。
 
 ### Sync Item
 
@@ -91,8 +91,8 @@ Sprint 6B 仅预留 start/callback endpoint 合同，不实现浏览器回调、
 
 ## 本地优先与同步边界
 
-1. Flutter 现有 Today、Journal、Plan、Health 保存路径保持不变。
-2. 本地保存成功不依赖后端在线，也不依赖账号状态。
+1. Flutter 现有 Today、Journal、Plan、Health 保存路径保持本地优先，但只对已认证且已激活绑定数据空间的用户开放。
+2. 已绑定用户可在后端离线时继续访问和保存自己的本地数据；signed-out 或 `bindingRequired` 状态不能进入业务页面。
 3. 后续同步层只能读取明确标记为待同步的本地变更，并通过 Repository 边界回写结果。
 4. 同步范围必须由用户明确启用；在敏感数据范围设计完成前，不默认上传全部本地表。
 5. 服务端接收时间可用于诊断，但不得静默改写自然日或客户端业务时间。
@@ -123,7 +123,26 @@ Sprint 6B 仅预留 start/callback endpoint 合同，不实现浏览器回调、
 - 同步失败影响本地保存。
 - 在没有真实会话或同步结果时展示“已登录”“已同步”或“云端已连接”。
 
-## Sprint 6E 当前限制
+## Sprint 10B.2-A Account Boundary
+
+Flutter schema 5 使用独立 `cloud_account_bindings` 表连接本地数据空间与云端身份：
+
+```text
+normalized endpoint + cloud_user_id
+  -> exactly one cloud_account_binding
+  -> exactly one local user_profiles row
+  -> that profile's local business rows and sync metadata
+```
+
+`UNIQUE(endpoint_key, cloud_user_id)` 防止同一云账号映射到多个本地空间，`UNIQUE(local_user_id)` 防止一个本地空间属于多个云账号。登录和账号切换在同一 Drift transaction 中解析或创建绑定、切换唯一 active Profile，并在提交后失效账号范围内的 Riverpod 状态。
+
+App 启动由 `initializing`、`signedOut`、`authenticated`、`authenticatedOffline`、`sessionRejected`、`bindingRequired` 和 `fatalMigrationError` 控制。Router 在未认证或迁移待确认状态下阻止 Today、Journal、Plan、Health、Growth 和 AI Coach。当前 Alpha 登录页继续使用 `/auth/dev-login`，并允许在进入业务页面前配置 Server Base URL。
+
+Sync Coordinator 在 device registration、cursor read、collect、push、pull 和 apply 前验证 active local profile 的 binding 与当前 normalized Endpoint、cloud user 完全一致。失败返回 `accountScopeMismatch`，且不得上传、拉取、推进 cursor 或创建 conflict。
+
+schema 4 升级到 5 时不自动认领旧 Profile。旧未绑定数据原样保留并进入 `bindingRequired`；现有未完成的 `awaiting_remote_snapshot` conflict 保留 snapshot 与时间，并标记为 `superseded_by_account_isolation_migration`。
+
+## 当前限制
 
 Sprint 8D 的 AI pending recovery 额外将 request ID 绑定到 normalized endpoint 与当前 Rebirth cloud user ID。切换 endpoint 或账号后不会向新 Server/其他账号查询旧请求；用户切回原绑定后才能检查。Binding 不保存 token、业务 payload 或报告正文。
 
@@ -138,3 +157,5 @@ Sprint 8D 的 AI pending recovery 额外将 request ID 绑定到 normalized endp
 - SharedPreferences 中的 token 仍是开发级存储，尚未接入 secure storage。
 - 没有完整 refresh/revoke 生命周期、字段级 Profile 冲突合并或真实微信登录。
 - HTTP 仅限本机、局域网与 alpha 测试，正式云部署必须使用 HTTPS。
+- 旧未绑定 Profile 的“绑定现有数据”或“创建新空间”迁移 UI 尚未实现；本 Sprint 只安全阻断访问与同步。
+- 当前登录仍是 Development User Key，不是生产级注册、OAuth、微信登录或安全凭据存储。

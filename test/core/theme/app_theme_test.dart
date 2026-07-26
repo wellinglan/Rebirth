@@ -98,10 +98,10 @@ void main() {
     expect(fontFiles, isEmpty);
   });
 
-  test('database schema remains version 4', () async {
+  test('database schema is version 5', () async {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(database.close);
 
-    expect(database.schemaVersion, 4);
+    expect(database.schemaVersion, 5);
   });
 }

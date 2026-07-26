@@ -3,8 +3,8 @@
 > Discovery date: 2026-07-26
 > Source: Sprint 10B / 10B.1 manual acceptance
 > Defect: `PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001`
-> Status: `CONFIRMED RELEASE BLOCKER`
-> Implementation status: not started; architecture decision required
+> Status: correction implemented; manual Release Gate pending
+> Implementation status: Sprint 10B.2-A automated verification passed
 
 ## Executive Summary
 
@@ -23,6 +23,11 @@ request, but account B has no remote row to hydrate. The client persists an
 The local data itself should remain safe for offline use. The defect is that
 data and sync metadata from one account remain active and sync-eligible under a
 different account.
+
+Sprint 10B.2-A corrects that boundary with a separate durable binding between
+normalized Endpoint + cloud user and local UserProfile. This document retains
+the original discovery evidence below; the implemented decision and migration
+outcome are recorded in the later implementation section.
 
 ## Verified Environment
 
@@ -397,7 +402,70 @@ At minimum, the correction must prove:
 
 - Sprint 10B API deployment: PASS.
 - Ordinary Plan cross-device baseline: partially PASS.
-- Cloud-user isolation: FAIL.
-- Persistent conflict recovery Release Gate: OPEN and blocked.
-- Sprint 10C: do not start until this blocker is corrected and affected manual
-  rows are rerun.
+- Cloud-user isolation implementation: AUTOMATED PASS.
+- Persistent conflict recovery Release Gate: OPEN pending schema 5 Windows,
+  Android, and cross-device manual acceptance.
+- Sprint 10C: do not start until the matrix in
+  `docs/manual_tests/27_account_boundary_isolation.md` passes.
+
+## Sprint 10B.2-A Implemented Decision
+
+The implementation selects Option A: one local UserProfile data space belongs
+to exactly one normalized Endpoint and cloud user through
+`cloud_account_bindings`.
+
+### Durable Model
+
+- Flutter schema moves from 4 to 5.
+- `cloud_account_bindings` has unique `(endpoint_key, cloud_user_id)` and
+  unique `local_user_id` constraints.
+- `installation_info` owns the installation UUID independently from accounts
+  and Profiles.
+- `user_profiles` receives no cloud identity columns.
+- The Server API, Sync Protocol v2, PostgreSQL, and Alembic are unchanged.
+
+### Activation Rules
+
+- Signed out: all Profiles are inactive and business routes are blocked.
+- Clean first login: create a new Profile and binding in one transaction.
+- Returning login: reactivate the exact bound Profile in one transaction.
+- Different account or Endpoint: use a distinct binding and data space.
+- Existing unbound Profile: preserve it, deactivate it, expose
+  `bindingRequired`, and do not sync.
+
+After a successful switch, account-scoped Profile, Today, Journal, Plan,
+Health, Growth, Settings, sync, conflict, and AI runtime providers are
+invalidated. Widgets do not access Drift to perform the switch.
+
+### Sync Protection
+
+The account scope guard runs before device registration, cursor lookup, local
+change collection, push, pull, acknowledge, apply, or conflict creation. It
+requires one active Profile and an exact binding match for normalized Endpoint
+and cloud user. A mismatch returns `accountScopeMismatch` and leaves every
+sync-side state unchanged.
+
+### Migration Outcome
+
+The schema 4 to 5 migration preserves existing UserProfile, Goal, cursor,
+conflict snapshot, and AI pending data. It creates one installation singleton
+from the existing deterministic installation value and normalizes compatibility
+mirrors. It does not auto-bind legacy Profiles.
+
+Existing unresolved `awaiting_remote_snapshot` rows are retained and changed
+to `superseded_by_account_isolation_migration`, with their original local and
+server snapshots, timestamps, and reason intact. No row is hard-deleted and no
+`server_version` is reset.
+
+### Verification State
+
+- `flutter analyze`: PASS.
+- `flutter test`: PASS, 845 passed and 2 existing opt-in tests skipped.
+- Schema migration and uniqueness: automated PASS.
+- Auth states and Router gate: automated PASS.
+- Account A/B switch and isolation: automated PASS.
+- Cloud-user and Endpoint sync guard: automated PASS.
+- Windows, Android, and cross-device acceptance: `NOT EXECUTED`.
+
+The correction is implemented but the Release Gate is not closed until the
+manual matrix passes.

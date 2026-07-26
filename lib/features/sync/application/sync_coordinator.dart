@@ -2,6 +2,7 @@ import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/sync/data/dto/sync_dto.dart';
 import 'package:rebirth/features/sync/data/sync_api_data_source.dart';
@@ -12,6 +13,11 @@ import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/domain/sync_cursor_store.dart';
 
 typedef SyncEndpointProbe = Future<void> Function(String endpoint);
+typedef SyncAccountScopeGuard =
+    Future<void> Function({
+      required String endpoint,
+      required String cloudUserId,
+    });
 
 final class SyncCoordinator {
   SyncCoordinator({
@@ -22,6 +28,7 @@ final class SyncCoordinator {
     required this.adapterRegistry,
     required this.endpointProbe,
     required this.dateTimeService,
+    required this.accountScopeGuard,
     this.endpointValidator = const ServerEndpointValidator(),
   });
 
@@ -32,6 +39,7 @@ final class SyncCoordinator {
   final SyncEntityAdapterRegistry adapterRegistry;
   final SyncEndpointProbe endpointProbe;
   final DateTimeService dateTimeService;
+  final SyncAccountScopeGuard accountScopeGuard;
   final ServerEndpointValidator endpointValidator;
 
   _ActiveSyncRun? _activeRun;
@@ -193,6 +201,25 @@ final class SyncCoordinator {
         reason: SyncFailureReason.authenticationRequired,
         phase: SyncRunPhase.sessionCheck,
         message: 'Endpoint 已变化，请重新登录并注册设备。',
+      );
+      return finish();
+    }
+
+    phases.add(SyncRunPhase.accountScopeCheck);
+    try {
+      await accountScopeGuard(endpoint: endpoint, cloudUserId: session.user.id);
+    } on AccountScopeMismatchException catch (error) {
+      firstFailure = SyncFailure(
+        reason: SyncFailureReason.accountScopeMismatch,
+        phase: SyncRunPhase.accountScopeCheck,
+        message: error.message,
+      );
+      return finish();
+    } catch (_) {
+      firstFailure = const SyncFailure(
+        reason: SyncFailureReason.accountScopeMismatch,
+        phase: SyncRunPhase.accountScopeCheck,
+        message: '无法验证当前账号的数据空间，已停止同步。',
       );
       return finish();
     }
@@ -454,6 +481,9 @@ final class SyncCoordinator {
     }
     if (error is SyncDeviceRegistrationRequiredException) {
       return SyncFailureReason.deviceRegistrationRequired;
+    }
+    if (error is AccountScopeMismatchException) {
+      return SyncFailureReason.accountScopeMismatch;
     }
     if (error is ApiException) {
       return phase == SyncRunPhase.push

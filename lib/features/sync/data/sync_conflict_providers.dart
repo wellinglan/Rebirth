@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
+import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/plan/data/plan_conflict_resolution_service_impl.dart';
 import 'package:rebirth/features/plan/data/plan_sync_payload_codec.dart';
 import 'package:rebirth/features/plan/domain/plan_conflict_resolution_service.dart';
@@ -37,12 +38,16 @@ final syncConflictScopeProvider = FutureProvider<SyncConflictScope?>((
       .read(serverEndpointValidatorProvider)
       .normalize(session.serverBaseUrl);
   if (sessionEndpoint != normalized) return null;
-  final bootstrap = await ref
-      .watch(appDatabaseProvider)
-      .bootstrapDao
-      .bootstrap();
+  final String localUserId;
+  try {
+    localUserId = await ref
+        .watch(accountBoundaryRepositoryProvider)
+        .requireActiveScope(endpoint: normalized, cloudUserId: session.user.id);
+  } on AccountScopeMismatchException {
+    return null;
+  }
   return SyncConflictScope(
-    localUserId: bootstrap.activeUserId,
+    localUserId: localUserId,
     endpointKey: normalized,
     cloudUserId: session.user.id,
   );
