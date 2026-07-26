@@ -45,6 +45,8 @@ final syncConflictScopeProvider = FutureProvider<SyncConflictScope?>((
         .requireActiveScope(endpoint: normalized, cloudUserId: session.user.id);
   } on AccountScopeMismatchException {
     return null;
+  } on AccountSyncReviewRequiredException {
+    return null;
   }
   return SyncConflictScope(
     localUserId: localUserId,

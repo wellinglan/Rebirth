@@ -38,9 +38,7 @@ void main() {
   test('valid session and reachable backend become authenticated', () async {
     final container = _container(
       sessionStore: _MemorySessionStore(_session),
-      boundary: _FakeBoundary(
-        resolution: const AccountBindingResolution.activated('local-a'),
-      ),
+      boundary: _FakeBoundary(resolution: _activatedResolution),
       authRepository: _FakeAuthRepository(),
     );
     addTearDown(container.dispose);
@@ -56,9 +54,7 @@ void main() {
   test('valid bound session remains usable while backend is offline', () async {
     final container = _container(
       sessionStore: _MemorySessionStore(_session),
-      boundary: _FakeBoundary(
-        resolution: const AccountBindingResolution.activated('local-a'),
-      ),
+      boundary: _FakeBoundary(resolution: _activatedResolution),
       authRepository: _FakeAuthRepository(
         healthError: const ApiException(
           message: 'offline',
@@ -96,7 +92,10 @@ void main() {
     final container = _container(
       sessionStore: _MemorySessionStore(_session),
       boundary: _FakeBoundary(
-        resolution: const AccountBindingResolution.bindingRequired(1),
+        resolution: const AccountBindingResolution.bindingRequired(
+          unboundProfileCount: 1,
+          accountScope: _scope,
+        ),
       ),
       authRepository: _FakeAuthRepository(),
     );
@@ -107,6 +106,60 @@ void main() {
     expect(state.status, AppAuthStatus.bindingRequired);
     expect(state.unboundProfileCount, 1);
     expect(state.canAccessBusiness, isFalse);
+  });
+
+  test('legacy claim enters local app with sync review quarantine', () async {
+    final boundary = _FakeBoundary(
+      resolution: const AccountBindingResolution.bindingRequired(
+        unboundProfileCount: 1,
+        accountScope: _scope,
+      ),
+    );
+    final container = _container(
+      sessionStore: _MemorySessionStore(_session),
+      boundary: boundary,
+      authRepository: _FakeAuthRepository(),
+    );
+    addTearDown(container.dispose);
+    await container.read(appAuthControllerProvider.future);
+
+    await container
+        .read(appAuthControllerProvider.notifier)
+        .claimLegacyDataSpace('legacy-local');
+
+    final state = container.read(appAuthControllerProvider).value!;
+    expect(state.status, AppAuthStatus.authenticated);
+    expect(state.localUserId, 'legacy-local');
+    expect(state.syncEligibility, AccountSyncEligibility.legacyReviewRequired);
+    expect(state.canAccessBusiness, isTrue);
+    expect(state.canUseCloudSync, isFalse);
+    expect(boundary.claimCalls, 1);
+  });
+
+  test('fresh space enters local app with ready sync eligibility', () async {
+    final boundary = _FakeBoundary(
+      resolution: const AccountBindingResolution.bindingRequired(
+        unboundProfileCount: 1,
+        accountScope: _scope,
+      ),
+    );
+    final container = _container(
+      sessionStore: _MemorySessionStore(_session),
+      boundary: boundary,
+      authRepository: _FakeAuthRepository(),
+    );
+    addTearDown(container.dispose);
+    await container.read(appAuthControllerProvider.future);
+
+    await container
+        .read(appAuthControllerProvider.notifier)
+        .createFreshDataSpace();
+
+    final state = container.read(appAuthControllerProvider).value!;
+    expect(state.localUserId, 'fresh-local');
+    expect(state.syncEligibility, AccountSyncEligibility.ready);
+    expect(state.canUseCloudSync, isTrue);
+    expect(boundary.createFreshCalls, 1);
   });
 }
 
@@ -144,18 +197,44 @@ final class _MemorySessionStore implements AuthSessionStore {
 }
 
 final class _FakeBoundary implements AccountBoundaryRepository {
-  _FakeBoundary({
-    this.resolution = const AccountBindingResolution.activated('local-a'),
-    this.error,
-  });
+  _FakeBoundary({this.resolution = _activatedResolution, this.error});
 
   final AccountBindingResolution resolution;
   final Object? error;
   int deactivateCalls = 0;
+  int claimCalls = 0;
+  int createFreshCalls = 0;
 
   @override
   Future<void> deactivateAllProfiles() async {
     deactivateCalls += 1;
+  }
+
+  @override
+  Future<AccountBindingResolution> claimLegacyDataSpace({
+    required AuthSession session,
+    required CloudAccountScope expectedScope,
+    required String localUserId,
+  }) async {
+    claimCalls += 1;
+    return AccountBindingResolution.activated(
+      localUserId: localUserId,
+      accountScope: expectedScope,
+      syncEligibility: AccountSyncEligibility.legacyReviewRequired,
+    );
+  }
+
+  @override
+  Future<AccountBindingResolution> createFreshDataSpace({
+    required AuthSession session,
+    required CloudAccountScope expectedScope,
+  }) async {
+    createFreshCalls += 1;
+    return AccountBindingResolution.activated(
+      localUserId: 'fresh-local',
+      accountScope: expectedScope,
+      syncEligibility: AccountSyncEligibility.ready,
+    );
   }
 
   @override
@@ -169,6 +248,11 @@ final class _FakeBoundary implements AccountBoundaryRepository {
     required String cloudUserId,
   }) async {
     return resolution.localUserId ?? 'local-a';
+  }
+
+  @override
+  Future<List<LegacyLocalDataSpaceCandidate>> listLegacyDataSpaces() async {
+    return const [];
   }
 
   @override
@@ -218,4 +302,15 @@ const _session = AuthSession(
   refreshToken: 'refresh',
   user: AuthUser(id: 'cloud-a', displayName: 'Account A'),
   serverBaseUrl: 'https://alpha.example.test',
+);
+
+const _scope = CloudAccountScope(
+  endpointKey: 'https://alpha.example.test',
+  cloudUserId: 'cloud-a',
+);
+
+const _activatedResolution = AccountBindingResolution.activated(
+  localUserId: 'local-a',
+  accountScope: _scope,
+  syncEligibility: AccountSyncEligibility.ready,
 );

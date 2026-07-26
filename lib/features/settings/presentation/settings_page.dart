@@ -9,6 +9,7 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
+import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_error_message.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
@@ -35,6 +36,7 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsState = ref.watch(settingsControllerProvider);
     final accountState = ref.watch(accountControllerProvider);
+    final authState = ref.watch(appAuthStateProvider).value;
     final profileSyncState = ref.watch(profileSyncControllerProvider);
     final planSyncState = ref.watch(planSyncControllerProvider);
     final activeConflictCount =
@@ -67,6 +69,8 @@ class SettingsPage extends ConsumerWidget {
             data: (account) => _SettingsContent(
               state: value,
               account: account,
+              syncEligibility:
+                  authState?.syncEligibility ?? AccountSyncEligibility.ready,
               apiBaseUrl: endpoint.baseUrl,
               endpoint: endpoint,
               endpointHealth: endpointSettings.health,
@@ -98,7 +102,9 @@ class SettingsPage extends ConsumerWidget {
                     '尚未同步；当前没有后台自动同步。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
-              onOpenSyncConflicts: account.status.isAuthenticated
+              onOpenSyncConflicts:
+                  account.status.isAuthenticated &&
+                      authState?.canUseCloudSync == true
                   ? () => context.push(RoutePaths.syncConflicts)
                   : null,
               onOpenAiCoach: () => context.push(RoutePaths.aiCoach),
@@ -366,6 +372,7 @@ class _SettingsContent extends StatelessWidget {
   const _SettingsContent({
     required this.state,
     required this.account,
+    required this.syncEligibility,
     required this.apiBaseUrl,
     required this.endpoint,
     required this.endpointHealth,
@@ -391,6 +398,7 @@ class _SettingsContent extends StatelessWidget {
 
   final SettingsViewState state;
   final AccountViewState account;
+  final AccountSyncEligibility syncEligibility;
   final String apiBaseUrl;
   final ServerEndpoint endpoint;
   final ServerEndpointHealth? endpointHealth;
@@ -453,6 +461,7 @@ class _SettingsContent extends StatelessWidget {
                   child: AccountStatusCard(
                     state: account,
                     apiBaseUrl: apiBaseUrl,
+                    syncEligibility: syncEligibility,
                     enableDevLogin: enableDevLogin,
                     onCheckBackend: onCheckBackend,
                     onDevLogin: onDevLogin,

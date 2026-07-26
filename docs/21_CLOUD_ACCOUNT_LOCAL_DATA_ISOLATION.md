@@ -469,3 +469,42 @@ server snapshots, timestamps, and reason intact. No row is hard-deleted and no
 
 The correction is implemented but the Release Gate is not closed until the
 manual matrix passes.
+
+## Sprint 10B.2-B Ownership Resolution Decision
+
+Sprint 10B.2-A intentionally stopped on unbound legacy data because automatic
+ownership assignment could expose one person's local records to another cloud
+identity. Sprint 10B.2-B completes that safe stop with explicit user choices:
+
+1. claim exactly one unbound Profile for the current normalized Endpoint and
+   cloud user;
+2. create a fresh empty Profile for the current account;
+3. defer and log out without changing local data.
+
+Both mutating choices require a second confirmation and re-read the current
+AuthSession inside the operation. The transaction validates the expected
+scope and current Profile availability, writes one binding, switches the
+single active Profile, and preserves all business and sync metadata.
+Repeated operations reactivate the already-created binding instead of
+creating duplicate Profiles or bindings.
+
+Schema 6 adds `binding_origin`, `sync_eligibility_status`, and
+`ownership_confirmed_at`. Existing schema 5 bindings migrate to
+`clean_first_login + ready`, with confirmation time backfilled from
+`created_at`. Unbound Profiles remain unbound.
+
+A claimed legacy Profile becomes locally accessible with
+`legacy_review_required`. It cannot use Profile or Plan cloud synchronization
+until a later Sprint proves or explicitly migrates its historical cloud
+ownership. No `server_version`, `last_synced_at`, `sync_status`, cursor,
+conflict, tombstone, or AI pending row is cleared to manufacture eligibility.
+
+The privacy-safe summary exposes dates, per-module counts, tombstone count,
+and boolean sync/conflict/AI-pending indicators. It does not expose business
+text, display name, raw JSON, Development User Key, token, complete Endpoint,
+complete cloud/local IDs, or complete device IDs.
+
+Automated implementation evidence does not close the manual Release Gate.
+The original isolation matrix remains in
+`docs/manual_tests/27_account_boundary_isolation.md`; the explicit upgrade
+workflow is in `docs/manual_tests/28_legacy_local_data_resolution.md`.

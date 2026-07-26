@@ -18,6 +18,14 @@ class CloudAccountBindings extends Table with UuidPrimaryKey {
 
   TextColumn get status => text().withDefault(const Constant('active'))();
 
+  TextColumn get bindingOrigin =>
+      text().withDefault(const Constant('clean_first_login'))();
+
+  TextColumn get syncEligibilityStatus =>
+      text().withDefault(const Constant('ready'))();
+
+  IntColumn get ownershipConfirmedAt => integer().nullable()();
+
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
     {endpointKey, cloudUserId},
@@ -31,5 +39,12 @@ class CloudAccountBindings extends Table with UuidPrimaryKey {
     'CHECK (created_at >= 0)',
     'CHECK (last_used_at >= created_at)',
     "CHECK (status IN ('active', 'disabled'))",
+    "CHECK (binding_origin IN ("
+        "'clean_first_login', 'fresh_space', 'legacy_claim'))",
+    "CHECK (sync_eligibility_status IN ("
+        "'ready', 'legacy_review_required'))",
+    'CHECK (ownership_confirmed_at IS NULL OR ownership_confirmed_at >= 0)',
+    "CHECK (binding_origin != 'legacy_claim' "
+        'OR ownership_confirmed_at IS NOT NULL)',
   ];
 }

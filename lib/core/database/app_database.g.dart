@@ -9731,6 +9731,40 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
     requiredDuringInsert: false,
     defaultValue: const Constant('active'),
   );
+  static const VerificationMeta _bindingOriginMeta = const VerificationMeta(
+    'bindingOrigin',
+  );
+  @override
+  late final GeneratedColumn<String> bindingOrigin = GeneratedColumn<String>(
+    'binding_origin',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('clean_first_login'),
+  );
+  static const VerificationMeta _syncEligibilityStatusMeta =
+      const VerificationMeta('syncEligibilityStatus');
+  @override
+  late final GeneratedColumn<String> syncEligibilityStatus =
+      GeneratedColumn<String>(
+        'sync_eligibility_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('ready'),
+      );
+  static const VerificationMeta _ownershipConfirmedAtMeta =
+      const VerificationMeta('ownershipConfirmedAt');
+  @override
+  late final GeneratedColumn<int> ownershipConfirmedAt = GeneratedColumn<int>(
+    'ownership_confirmed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9740,6 +9774,9 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
     createdAt,
     lastUsedAt,
     status,
+    bindingOrigin,
+    syncEligibilityStatus,
+    ownershipConfirmedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9814,6 +9851,33 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('binding_origin')) {
+      context.handle(
+        _bindingOriginMeta,
+        bindingOrigin.isAcceptableOrUnknown(
+          data['binding_origin']!,
+          _bindingOriginMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sync_eligibility_status')) {
+      context.handle(
+        _syncEligibilityStatusMeta,
+        syncEligibilityStatus.isAcceptableOrUnknown(
+          data['sync_eligibility_status']!,
+          _syncEligibilityStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ownership_confirmed_at')) {
+      context.handle(
+        _ownershipConfirmedAtMeta,
+        ownershipConfirmedAt.isAcceptableOrUnknown(
+          data['ownership_confirmed_at']!,
+          _ownershipConfirmedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9856,6 +9920,18 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      bindingOrigin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}binding_origin'],
+      )!,
+      syncEligibilityStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_eligibility_status'],
+      )!,
+      ownershipConfirmedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ownership_confirmed_at'],
+      ),
     );
   }
 
@@ -9874,6 +9950,9 @@ class CloudAccountBindingRow extends DataClass
   final int createdAt;
   final int lastUsedAt;
   final String status;
+  final String bindingOrigin;
+  final String syncEligibilityStatus;
+  final int? ownershipConfirmedAt;
   const CloudAccountBindingRow({
     required this.id,
     required this.localUserId,
@@ -9882,6 +9961,9 @@ class CloudAccountBindingRow extends DataClass
     required this.createdAt,
     required this.lastUsedAt,
     required this.status,
+    required this.bindingOrigin,
+    required this.syncEligibilityStatus,
+    this.ownershipConfirmedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9893,6 +9975,11 @@ class CloudAccountBindingRow extends DataClass
     map['created_at'] = Variable<int>(createdAt);
     map['last_used_at'] = Variable<int>(lastUsedAt);
     map['status'] = Variable<String>(status);
+    map['binding_origin'] = Variable<String>(bindingOrigin);
+    map['sync_eligibility_status'] = Variable<String>(syncEligibilityStatus);
+    if (!nullToAbsent || ownershipConfirmedAt != null) {
+      map['ownership_confirmed_at'] = Variable<int>(ownershipConfirmedAt);
+    }
     return map;
   }
 
@@ -9905,6 +9992,11 @@ class CloudAccountBindingRow extends DataClass
       createdAt: Value(createdAt),
       lastUsedAt: Value(lastUsedAt),
       status: Value(status),
+      bindingOrigin: Value(bindingOrigin),
+      syncEligibilityStatus: Value(syncEligibilityStatus),
+      ownershipConfirmedAt: ownershipConfirmedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownershipConfirmedAt),
     );
   }
 
@@ -9921,6 +10013,13 @@ class CloudAccountBindingRow extends DataClass
       createdAt: serializer.fromJson<int>(json['createdAt']),
       lastUsedAt: serializer.fromJson<int>(json['lastUsedAt']),
       status: serializer.fromJson<String>(json['status']),
+      bindingOrigin: serializer.fromJson<String>(json['bindingOrigin']),
+      syncEligibilityStatus: serializer.fromJson<String>(
+        json['syncEligibilityStatus'],
+      ),
+      ownershipConfirmedAt: serializer.fromJson<int?>(
+        json['ownershipConfirmedAt'],
+      ),
     );
   }
   @override
@@ -9934,6 +10033,9 @@ class CloudAccountBindingRow extends DataClass
       'createdAt': serializer.toJson<int>(createdAt),
       'lastUsedAt': serializer.toJson<int>(lastUsedAt),
       'status': serializer.toJson<String>(status),
+      'bindingOrigin': serializer.toJson<String>(bindingOrigin),
+      'syncEligibilityStatus': serializer.toJson<String>(syncEligibilityStatus),
+      'ownershipConfirmedAt': serializer.toJson<int?>(ownershipConfirmedAt),
     };
   }
 
@@ -9945,6 +10047,9 @@ class CloudAccountBindingRow extends DataClass
     int? createdAt,
     int? lastUsedAt,
     String? status,
+    String? bindingOrigin,
+    String? syncEligibilityStatus,
+    Value<int?> ownershipConfirmedAt = const Value.absent(),
   }) => CloudAccountBindingRow(
     id: id ?? this.id,
     localUserId: localUserId ?? this.localUserId,
@@ -9953,6 +10058,11 @@ class CloudAccountBindingRow extends DataClass
     createdAt: createdAt ?? this.createdAt,
     lastUsedAt: lastUsedAt ?? this.lastUsedAt,
     status: status ?? this.status,
+    bindingOrigin: bindingOrigin ?? this.bindingOrigin,
+    syncEligibilityStatus: syncEligibilityStatus ?? this.syncEligibilityStatus,
+    ownershipConfirmedAt: ownershipConfirmedAt.present
+        ? ownershipConfirmedAt.value
+        : this.ownershipConfirmedAt,
   );
   CloudAccountBindingRow copyWithCompanion(CloudAccountBindingsCompanion data) {
     return CloudAccountBindingRow(
@@ -9971,6 +10081,15 @@ class CloudAccountBindingRow extends DataClass
           ? data.lastUsedAt.value
           : this.lastUsedAt,
       status: data.status.present ? data.status.value : this.status,
+      bindingOrigin: data.bindingOrigin.present
+          ? data.bindingOrigin.value
+          : this.bindingOrigin,
+      syncEligibilityStatus: data.syncEligibilityStatus.present
+          ? data.syncEligibilityStatus.value
+          : this.syncEligibilityStatus,
+      ownershipConfirmedAt: data.ownershipConfirmedAt.present
+          ? data.ownershipConfirmedAt.value
+          : this.ownershipConfirmedAt,
     );
   }
 
@@ -9983,7 +10102,10 @@ class CloudAccountBindingRow extends DataClass
           ..write('cloudUserId: $cloudUserId, ')
           ..write('createdAt: $createdAt, ')
           ..write('lastUsedAt: $lastUsedAt, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('bindingOrigin: $bindingOrigin, ')
+          ..write('syncEligibilityStatus: $syncEligibilityStatus, ')
+          ..write('ownershipConfirmedAt: $ownershipConfirmedAt')
           ..write(')'))
         .toString();
   }
@@ -9997,6 +10119,9 @@ class CloudAccountBindingRow extends DataClass
     createdAt,
     lastUsedAt,
     status,
+    bindingOrigin,
+    syncEligibilityStatus,
+    ownershipConfirmedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -10008,7 +10133,10 @@ class CloudAccountBindingRow extends DataClass
           other.cloudUserId == this.cloudUserId &&
           other.createdAt == this.createdAt &&
           other.lastUsedAt == this.lastUsedAt &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.bindingOrigin == this.bindingOrigin &&
+          other.syncEligibilityStatus == this.syncEligibilityStatus &&
+          other.ownershipConfirmedAt == this.ownershipConfirmedAt);
 }
 
 class CloudAccountBindingsCompanion
@@ -10020,6 +10148,9 @@ class CloudAccountBindingsCompanion
   final Value<int> createdAt;
   final Value<int> lastUsedAt;
   final Value<String> status;
+  final Value<String> bindingOrigin;
+  final Value<String> syncEligibilityStatus;
+  final Value<int?> ownershipConfirmedAt;
   final Value<int> rowid;
   const CloudAccountBindingsCompanion({
     this.id = const Value.absent(),
@@ -10029,6 +10160,9 @@ class CloudAccountBindingsCompanion
     this.createdAt = const Value.absent(),
     this.lastUsedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.bindingOrigin = const Value.absent(),
+    this.syncEligibilityStatus = const Value.absent(),
+    this.ownershipConfirmedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CloudAccountBindingsCompanion.insert({
@@ -10039,6 +10173,9 @@ class CloudAccountBindingsCompanion
     required int createdAt,
     required int lastUsedAt,
     this.status = const Value.absent(),
+    this.bindingOrigin = const Value.absent(),
+    this.syncEligibilityStatus = const Value.absent(),
+    this.ownershipConfirmedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : localUserId = Value(localUserId),
        endpointKey = Value(endpointKey),
@@ -10053,6 +10190,9 @@ class CloudAccountBindingsCompanion
     Expression<int>? createdAt,
     Expression<int>? lastUsedAt,
     Expression<String>? status,
+    Expression<String>? bindingOrigin,
+    Expression<String>? syncEligibilityStatus,
+    Expression<int>? ownershipConfirmedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10063,6 +10203,11 @@ class CloudAccountBindingsCompanion
       if (createdAt != null) 'created_at': createdAt,
       if (lastUsedAt != null) 'last_used_at': lastUsedAt,
       if (status != null) 'status': status,
+      if (bindingOrigin != null) 'binding_origin': bindingOrigin,
+      if (syncEligibilityStatus != null)
+        'sync_eligibility_status': syncEligibilityStatus,
+      if (ownershipConfirmedAt != null)
+        'ownership_confirmed_at': ownershipConfirmedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10075,6 +10220,9 @@ class CloudAccountBindingsCompanion
     Value<int>? createdAt,
     Value<int>? lastUsedAt,
     Value<String>? status,
+    Value<String>? bindingOrigin,
+    Value<String>? syncEligibilityStatus,
+    Value<int?>? ownershipConfirmedAt,
     Value<int>? rowid,
   }) {
     return CloudAccountBindingsCompanion(
@@ -10085,6 +10233,10 @@ class CloudAccountBindingsCompanion
       createdAt: createdAt ?? this.createdAt,
       lastUsedAt: lastUsedAt ?? this.lastUsedAt,
       status: status ?? this.status,
+      bindingOrigin: bindingOrigin ?? this.bindingOrigin,
+      syncEligibilityStatus:
+          syncEligibilityStatus ?? this.syncEligibilityStatus,
+      ownershipConfirmedAt: ownershipConfirmedAt ?? this.ownershipConfirmedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10113,6 +10265,17 @@ class CloudAccountBindingsCompanion
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (bindingOrigin.present) {
+      map['binding_origin'] = Variable<String>(bindingOrigin.value);
+    }
+    if (syncEligibilityStatus.present) {
+      map['sync_eligibility_status'] = Variable<String>(
+        syncEligibilityStatus.value,
+      );
+    }
+    if (ownershipConfirmedAt.present) {
+      map['ownership_confirmed_at'] = Variable<int>(ownershipConfirmedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10129,6 +10292,9 @@ class CloudAccountBindingsCompanion
           ..write('createdAt: $createdAt, ')
           ..write('lastUsedAt: $lastUsedAt, ')
           ..write('status: $status, ')
+          ..write('bindingOrigin: $bindingOrigin, ')
+          ..write('syncEligibilityStatus: $syncEligibilityStatus, ')
+          ..write('ownershipConfirmedAt: $ownershipConfirmedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17083,6 +17249,9 @@ typedef $$CloudAccountBindingsTableCreateCompanionBuilder =
       required int createdAt,
       required int lastUsedAt,
       Value<String> status,
+      Value<String> bindingOrigin,
+      Value<String> syncEligibilityStatus,
+      Value<int?> ownershipConfirmedAt,
       Value<int> rowid,
     });
 typedef $$CloudAccountBindingsTableUpdateCompanionBuilder =
@@ -17094,6 +17263,9 @@ typedef $$CloudAccountBindingsTableUpdateCompanionBuilder =
       Value<int> createdAt,
       Value<int> lastUsedAt,
       Value<String> status,
+      Value<String> bindingOrigin,
+      Value<String> syncEligibilityStatus,
+      Value<int?> ownershipConfirmedAt,
       Value<int> rowid,
     });
 
@@ -17168,6 +17340,21 @@ class $$CloudAccountBindingsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get bindingOrigin => $composableBuilder(
+    column: $table.bindingOrigin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncEligibilityStatus => $composableBuilder(
+    column: $table.syncEligibilityStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ownershipConfirmedAt => $composableBuilder(
+    column: $table.ownershipConfirmedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$UserProfilesTableFilterComposer get localUserId {
     final $$UserProfilesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -17231,6 +17418,21 @@ class $$CloudAccountBindingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get bindingOrigin => $composableBuilder(
+    column: $table.bindingOrigin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncEligibilityStatus => $composableBuilder(
+    column: $table.syncEligibilityStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ownershipConfirmedAt => $composableBuilder(
+    column: $table.ownershipConfirmedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UserProfilesTableOrderingComposer get localUserId {
     final $$UserProfilesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -17287,6 +17489,21 @@ class $$CloudAccountBindingsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get bindingOrigin => $composableBuilder(
+    column: $table.bindingOrigin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncEligibilityStatus => $composableBuilder(
+    column: $table.syncEligibilityStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get ownershipConfirmedAt => $composableBuilder(
+    column: $table.ownershipConfirmedAt,
+    builder: (column) => column,
+  );
 
   $$UserProfilesTableAnnotationComposer get localUserId {
     final $$UserProfilesTableAnnotationComposer composer = $composerBuilder(
@@ -17355,6 +17572,9 @@ class $$CloudAccountBindingsTableTableManager
                 Value<int> createdAt = const Value.absent(),
                 Value<int> lastUsedAt = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String> bindingOrigin = const Value.absent(),
+                Value<String> syncEligibilityStatus = const Value.absent(),
+                Value<int?> ownershipConfirmedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloudAccountBindingsCompanion(
                 id: id,
@@ -17364,6 +17584,9 @@ class $$CloudAccountBindingsTableTableManager
                 createdAt: createdAt,
                 lastUsedAt: lastUsedAt,
                 status: status,
+                bindingOrigin: bindingOrigin,
+                syncEligibilityStatus: syncEligibilityStatus,
+                ownershipConfirmedAt: ownershipConfirmedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17375,6 +17598,9 @@ class $$CloudAccountBindingsTableTableManager
                 required int createdAt,
                 required int lastUsedAt,
                 Value<String> status = const Value.absent(),
+                Value<String> bindingOrigin = const Value.absent(),
+                Value<String> syncEligibilityStatus = const Value.absent(),
+                Value<int?> ownershipConfirmedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloudAccountBindingsCompanion.insert(
                 id: id,
@@ -17384,6 +17610,9 @@ class $$CloudAccountBindingsTableTableManager
                 createdAt: createdAt,
                 lastUsedAt: lastUsedAt,
                 status: status,
+                bindingOrigin: bindingOrigin,
+                syncEligibilityStatus: syncEligibilityStatus,
+                ownershipConfirmedAt: ownershipConfirmedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

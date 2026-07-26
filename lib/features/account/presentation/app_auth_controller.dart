@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
+import 'package:rebirth/features/account/domain/auth_session.dart';
 
 import 'account_scoped_provider_invalidator.dart';
 
@@ -15,6 +16,8 @@ final appAuthStateProvider = Provider<AsyncValue<AppAuthState>>(
 );
 
 class AppAuthController extends AsyncNotifier<AppAuthState> {
+  bool _ownershipMutationInProgress = false;
+
   @override
   Future<AppAuthState> build() => _restore();
 
@@ -34,8 +37,9 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
         return AppAuthState(
           status: AppAuthStatus.bindingRequired,
           cloudUserId: session.user.id,
+          accountScope: resolution.accountScope,
           unboundProfileCount: resolution.unboundProfileCount,
-          message: '检测到未绑定的旧本地数据，需要后续迁移确认。',
+          message: '检测到旧本地数据。请明确选择其归属，系统不会自动绑定或同步。',
         );
       }
       final online = await _backendIsReachable();
@@ -45,6 +49,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
             : AppAuthStatus.authenticatedOffline,
         localUserId: resolution.localUserId,
         cloudUserId: session.user.id,
+        accountScope: resolution.accountScope,
+        syncEligibility: resolution.syncEligibility,
       );
     } on AccountSessionRejectedException catch (error) {
       return AppAuthState(
@@ -80,8 +86,9 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
           AppAuthState(
             status: AppAuthStatus.bindingRequired,
             cloudUserId: session.user.id,
+            accountScope: resolution.accountScope,
             unboundProfileCount: resolution.unboundProfileCount,
-            message: '检测到未绑定的旧本地数据，本 Sprint 不会自动绑定或同步。',
+            message: '检测到旧本地数据。请明确选择其归属，系统不会自动绑定或同步。',
           ),
         );
         return false;
@@ -91,6 +98,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
           status: AppAuthStatus.authenticated,
           localUserId: resolution.localUserId,
           cloudUserId: session.user.id,
+          accountScope: resolution.accountScope,
+          syncEligibility: resolution.syncEligibility,
         ),
       );
       return true;
@@ -100,6 +109,67 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
       invalidateAccountScopedProviders(ref);
       state = AsyncData(AppAuthState.signedOut(message: _messageFor(error)));
       return false;
+    }
+  }
+
+  Future<void> claimLegacyDataSpace(String localUserId) {
+    return _completeOwnershipResolution(
+      (session, scope) => ref
+          .read(accountBoundaryRepositoryProvider)
+          .claimLegacyDataSpace(
+            session: session,
+            expectedScope: scope,
+            localUserId: localUserId,
+          ),
+    );
+  }
+
+  Future<void> createFreshDataSpace() {
+    return _completeOwnershipResolution(
+      (session, scope) => ref
+          .read(accountBoundaryRepositoryProvider)
+          .createFreshDataSpace(session: session, expectedScope: scope),
+    );
+  }
+
+  Future<void> _completeOwnershipResolution(
+    Future<AccountBindingResolution> Function(
+      AuthSession session,
+      CloudAccountScope scope,
+    )
+    operation,
+  ) async {
+    if (_ownershipMutationInProgress) return;
+    final current = state.value;
+    final scope = current?.accountScope;
+    if (current?.status != AppAuthStatus.bindingRequired || scope == null) {
+      throw const AccountSessionRejectedException('当前页面状态已变化，请重新登录后操作。');
+    }
+    _ownershipMutationInProgress = true;
+    try {
+      final session = await ref.read(authSessionStoreProvider).read();
+      if (session == null) {
+        throw const AccountSessionRejectedException('登录会话已失效，请重新登录。');
+      }
+      final resolution = await operation(session, scope);
+      if (!resolution.isActivated) {
+        throw const AccountScopeMismatchException('本地数据归属操作未完成。');
+      }
+      invalidateAccountScopedProviders(ref);
+      final online = await _backendIsReachable();
+      state = AsyncData(
+        AppAuthState(
+          status: online
+              ? AppAuthStatus.authenticated
+              : AppAuthStatus.authenticatedOffline,
+          localUserId: resolution.localUserId,
+          cloudUserId: session.user.id,
+          accountScope: resolution.accountScope,
+          syncEligibility: resolution.syncEligibility,
+        ),
+      );
+    } finally {
+      _ownershipMutationInProgress = false;
     }
   }
 

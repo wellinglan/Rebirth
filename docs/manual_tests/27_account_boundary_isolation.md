@@ -1,14 +1,18 @@
 # Manual Test: Account Boundary And Local Data Isolation
 
-> Sprint: 10B.2-A
+> Sprint: 10B.2-A foundation + 10B.2-B ownership resolution
 > Initial status: all rows are `NOT EXECUTED`
 > Environment: Development + Fake Provider + Tailscale private Alpha
-> Flutter schema: 5
+> Flutter schema: 6
 
 This matrix closes `ACCOUNT-DATA-ISOLATION-001` and
 `PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001`. Automated tests do not replace it. Do
 not record Development User Keys, tokens, full Endpoint values, full cloud or
 device IDs, private Profile text, or private Goal text as evidence.
+
+The explicit legacy claim and fresh-space workflow is executed in
+`docs/manual_tests/28_legacy_local_data_resolution.md`. Results from that
+matrix must be referenced here without replacing any existing real status.
 
 ## Preconditions
 

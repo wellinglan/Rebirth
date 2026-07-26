@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +74,27 @@ class AppDatabase extends _$AppDatabase {
         }
         await _migrateInstallationInfo();
         await _supersedeUnhydratedLegacyConflicts();
+        await _createAccountBoundaryIndexes();
+      }
+      if (from == 5) {
+        await migrator.addColumn(
+          cloudAccountBindings,
+          cloudAccountBindings.bindingOrigin,
+        );
+        await migrator.addColumn(
+          cloudAccountBindings,
+          cloudAccountBindings.syncEligibilityStatus,
+        );
+        await migrator.addColumn(
+          cloudAccountBindings,
+          cloudAccountBindings.ownershipConfirmedAt,
+        );
+        await customStatement(
+          'UPDATE cloud_account_bindings '
+          'SET ownership_confirmed_at = created_at '
+          'WHERE ownership_confirmed_at IS NULL',
+        );
+        await migrator.alterTable(TableMigration(cloudAccountBindings));
         await _createAccountBoundaryIndexes();
       }
     },

@@ -8,6 +8,19 @@ abstract interface class AccountBoundaryRepository {
 
   Future<AccountBindingResolution> resolveAndActivate(AuthSession session);
 
+  Future<List<LegacyLocalDataSpaceCandidate>> listLegacyDataSpaces();
+
+  Future<AccountBindingResolution> claimLegacyDataSpace({
+    required AuthSession session,
+    required CloudAccountScope expectedScope,
+    required String localUserId,
+  });
+
+  Future<AccountBindingResolution> createFreshDataSpace({
+    required AuthSession session,
+    required CloudAccountScope expectedScope,
+  });
+
   Future<void> deactivateAllProfiles();
 
   Future<String> requireActiveScope({

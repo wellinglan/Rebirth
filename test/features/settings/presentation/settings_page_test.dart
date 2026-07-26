@@ -11,6 +11,7 @@ import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dar
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
+import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/account_exception.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
 import 'package:rebirth/features/account/domain/auth_repository.dart';
@@ -252,6 +253,43 @@ void main() {
       find.byKey(const ValueKey('syncPlanButton')),
     );
     expect(planButton.onPressed, isNotNull);
+  });
+
+  testWidgets('legacy review disables Profile and Plan sync actions', (
+    tester,
+  ) async {
+    final authRepository = _registeredAuthRepository();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      authRepository,
+      syncEligibility: AccountSyncEligibility.legacyReviewRequired,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('旧数据待验证，暂不可同步'), findsNWidgets(3));
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.byKey(const ValueKey('pushProfileButton')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.byKey(const ValueKey('pullProfileButton')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(find.byKey(const ValueKey('syncPlanButton')))
+          .onPressed,
+      isNull,
+    );
   });
 
   testWidgets('Settings conflict entry shows zero and active counts', (
@@ -667,6 +705,7 @@ Future<void> _pumpSettings(
   int activeConflictCount = 0,
   Size surfaceSize = const Size(900, 1100),
   TextScaler textScaler = TextScaler.noScaling,
+  AccountSyncEligibility syncEligibility = AccountSyncEligibility.ready,
 }) async {
   await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -677,7 +716,7 @@ Future<void> _pumpSettings(
         profileRepositoryProvider.overrideWithValue(profileRepository),
         accountRepositoryProvider.overrideWithValue(authRepository),
         appAuthControllerProvider.overrideWith(
-          () => _FakeAppAuthController(authRepository),
+          () => _FakeAppAuthController(authRepository, syncEligibility),
         ),
         aiConsentRepositoryProvider.overrideWithValue(
           aiConsentRepository ?? _FakeAiConsentRepository(),
@@ -907,9 +946,10 @@ final class _FakeAuthRepository implements AuthRepository {
 }
 
 final class _FakeAppAuthController extends AppAuthController {
-  _FakeAppAuthController(this.authRepository);
+  _FakeAppAuthController(this.authRepository, this.syncEligibility);
 
   final AuthRepository authRepository;
+  final AccountSyncEligibility syncEligibility;
 
   @override
   Future<AppAuthState> build() async {
@@ -919,6 +959,7 @@ final class _FakeAppAuthController extends AppAuthController {
         status: AppAuthStatus.authenticated,
         localUserId: 'local-test-user',
         cloudUserId: user.id,
+        syncEligibility: syncEligibility,
       );
     }
     return const AppAuthState.signedOut();
@@ -932,6 +973,7 @@ final class _FakeAppAuthController extends AppAuthController {
         status: AppAuthStatus.authenticated,
         localUserId: 'local-test-user',
         cloudUserId: session.user.id,
+        syncEligibility: AccountSyncEligibility.ready,
       ),
     );
     ref.invalidate(accountControllerProvider);

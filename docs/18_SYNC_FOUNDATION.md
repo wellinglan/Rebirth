@@ -525,3 +525,31 @@ acceptance are recorded separately when executed. Until
 `docs/manual_tests/27_account_boundary_isolation.md` passes on Windows,
 Android, and cross-device flows, the account-isolation Release Gate remains
 open and Sprint 10C remains blocked.
+
+## 24. Sprint 10B.2-B Sync Eligibility Quarantine
+
+Schema 6 keeps exact account ownership validation and adds a separate
+technical sync eligibility check:
+
+| Binding state | Local business access | Profile/Plan manual sync |
+|---|---|---|
+| `clean_first_login + ready` | allowed | allowed |
+| `fresh_space + ready` | allowed | allowed |
+| `legacy_claim + legacy_review_required` | allowed | blocked |
+| scope mismatch | blocked | blocked |
+
+For `legacy_review_required`, `SyncCoordinator` returns
+`accountSyncReviewRequired` during `accountScopeCheck`. This is distinct from
+`accountScopeMismatch`: the Profile belongs to the signed-in account, but its
+historical cloud metadata has not been proven safe for that account.
+
+The rejection occurs before device validation, cursor read/write, adapter
+collection, push, pull, acknowledge, apply, or conflict creation. Existing
+cursor storage is neither read nor rewritten. Conflict snapshots and AI
+pending rows remain durable but are not exposed as actionable cloud work for
+the quarantined scope. Settings disabling is a usability layer only; the
+Coordinator guard remains authoritative.
+
+This Sprint adds no background synchronization and no Today, Journal, Health,
+Growth, AI Report, or AI Consent synchronization. API `1` and Sync Protocol
+`2` remain unchanged.

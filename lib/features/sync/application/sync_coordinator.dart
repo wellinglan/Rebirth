@@ -208,6 +208,13 @@ final class SyncCoordinator {
     phases.add(SyncRunPhase.accountScopeCheck);
     try {
       await accountScopeGuard(endpoint: endpoint, cloudUserId: session.user.id);
+    } on AccountSyncReviewRequiredException catch (error) {
+      firstFailure = SyncFailure(
+        reason: SyncFailureReason.accountSyncReviewRequired,
+        phase: SyncRunPhase.accountScopeCheck,
+        message: error.message,
+      );
+      return finish();
     } on AccountScopeMismatchException catch (error) {
       firstFailure = SyncFailure(
         reason: SyncFailureReason.accountScopeMismatch,
@@ -484,6 +491,9 @@ final class SyncCoordinator {
     }
     if (error is AccountScopeMismatchException) {
       return SyncFailureReason.accountScopeMismatch;
+    }
+    if (error is AccountSyncReviewRequiredException) {
+      return SyncFailureReason.accountSyncReviewRequired;
     }
     if (error is ApiException) {
       return phase == SyncRunPhase.push

@@ -49,6 +49,7 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
         case SyncFailureReason.cloudUserUnavailable:
           throw const SyncAuthenticationRequiredException();
         case SyncFailureReason.accountScopeMismatch:
+        case SyncFailureReason.accountSyncReviewRequired:
           throw SyncException(failure.message);
         case SyncFailureReason.deviceRegistrationRequired:
           throw const SyncDeviceRegistrationRequiredException();

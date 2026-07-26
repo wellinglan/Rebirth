@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
+import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
@@ -9,6 +10,7 @@ class AccountStatusCard extends StatelessWidget {
   const AccountStatusCard({
     required this.state,
     required this.apiBaseUrl,
+    this.syncEligibility = AccountSyncEligibility.ready,
     required this.enableDevLogin,
     required this.onCheckBackend,
     required this.onDevLogin,
@@ -26,6 +28,7 @@ class AccountStatusCard extends StatelessWidget {
 
   final AccountViewState state;
   final String apiBaseUrl;
+  final AccountSyncEligibility syncEligibility;
   final bool enableDevLogin;
   final VoidCallback onCheckBackend;
   final VoidCallback onDevLogin;
@@ -44,6 +47,9 @@ class AccountStatusCard extends StatelessWidget {
     final theme = Theme.of(context);
     final accountStatus = state.status;
     final isSignedIn = accountStatus.isAuthenticated;
+    final syncReviewRequired =
+        syncEligibility == AccountSyncEligibility.legacyReviewRequired;
+    final syncAllowed = isSignedIn && !syncReviewRequired;
     return Card(
       key: const ValueKey('accountStatusCard'),
       child: Padding(
@@ -82,6 +88,18 @@ class AccountStatusCard extends StatelessWidget {
             ),
             const _StatusRow(label: '同步范围', value: 'Profile 与 Plan 手动同步'),
             _StatusRow(
+              label: '本地数据归属',
+              value: isSignedIn ? '已归属当前登录账号' : '登录后确认',
+            ),
+            _StatusRow(
+              label: '云同步资格',
+              value: !isSignedIn
+                  ? '登录后检查'
+                  : syncAllowed
+                  ? '已通过本地资格检查'
+                  : '旧数据待验证，暂不可同步',
+            ),
+            _StatusRow(
               label: '设备注册',
               value: accountStatus.deviceRegistered ? '已注册' : '未注册',
             ),
@@ -89,7 +107,13 @@ class AccountStatusCard extends StatelessWidget {
               label: 'Profile 同步',
               value: _profileSyncLabel(accountStatus, profileSyncState),
             ),
-            _StatusRow(label: 'Plan 同步', value: planSyncState.statusLabel),
+            _StatusRow(
+              label: 'Plan 同步',
+              value:
+                  syncEligibility == AccountSyncEligibility.legacyReviewRequired
+                  ? '旧数据待验证，暂不可同步'
+                  : planSyncState.statusLabel,
+            ),
             if (isSignedIn)
               _StatusRow(
                 label: '用户',
@@ -98,7 +122,7 @@ class AccountStatusCard extends StatelessWidget {
             if (accountStatus.deviceIdShort case final deviceId?)
               _StatusRow(label: '设备 ID', value: deviceId),
             const _StatusRow(label: '数据位置', value: '本地 SQLite'),
-            _StatusRow(label: '开发后端', value: apiBaseUrl),
+            const _StatusRow(label: '开发后端', value: '已配置（详情见下方服务器设置）'),
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Android 真机请使用电脑局域网 IP，例如 http://192.168.x.x:8000',
@@ -129,7 +153,7 @@ class AccountStatusCard extends StatelessWidget {
                 ),
                 OutlinedButton.icon(
                   key: const ValueKey('devLoginButton'),
-                  onPressed: state.isBusy || !enableDevLogin
+                  onPressed: state.isBusy || !enableDevLogin || isSignedIn
                       ? null
                       : onDevLogin,
                   icon: const Icon(Icons.terminal_outlined),
@@ -149,7 +173,10 @@ class AccountStatusCard extends StatelessWidget {
                 ),
                 OutlinedButton.icon(
                   key: const ValueKey('pushProfileButton'),
-                  onPressed: state.isBusy || profileSyncState.isBusy
+                  onPressed:
+                      state.isBusy ||
+                          profileSyncState.isBusy ||
+                          syncReviewRequired
                       ? null
                       : onPushProfile,
                   icon: const Icon(Icons.cloud_upload_outlined),
@@ -169,6 +196,7 @@ class AccountStatusCard extends StatelessWidget {
                               profileSyncState.isBusy ||
                               planSyncState.isBusy ||
                               !isSignedIn ||
+                              syncReviewRequired ||
                               !accountStatus.deviceRegistered
                           ? null
                           : onSyncPlan,
@@ -179,7 +207,10 @@ class AccountStatusCard extends StatelessWidget {
                 ),
                 OutlinedButton.icon(
                   key: const ValueKey('pullProfileButton'),
-                  onPressed: state.isBusy || profileSyncState.isBusy
+                  onPressed:
+                      state.isBusy ||
+                          profileSyncState.isBusy ||
+                          syncReviewRequired
                       ? null
                       : onPullProfile,
                   icon: const Icon(Icons.cloud_download_outlined),
@@ -220,6 +251,9 @@ class AccountStatusCard extends StatelessWidget {
     ProfileSyncViewState syncState,
   ) {
     if (!accountStatus.isAuthenticated) return '需要先登录';
+    if (syncEligibility == AccountSyncEligibility.legacyReviewRequired) {
+      return '旧数据待验证，暂不可同步';
+    }
     if (!accountStatus.deviceRegistered) return '需要先注册设备';
     if (syncState.lastResult?.conflict ?? false) return '检测到冲突';
     if (syncState.lastResult?.pushed ?? false) return '最近已上传';

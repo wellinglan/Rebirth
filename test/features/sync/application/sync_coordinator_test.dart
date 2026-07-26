@@ -109,6 +109,30 @@ void main() {
   );
 
   test(
+    'legacy review binding is quarantined before cursor, adapter, or network',
+    () async {
+      adapter.pending = [_pushItem()];
+      accountScopeError = const AccountSyncReviewRequiredException();
+
+      final result = await coordinator.run(direction: SyncRunDirection.twoWay);
+
+      expect(
+        result.failure?.reason,
+        SyncFailureReason.accountSyncReviewRequired,
+      );
+      expect(result.failure?.phase, SyncRunPhase.accountScopeCheck);
+      expect(accountScopeChecks, 1);
+      expect(adapter.collectCalls, 0);
+      expect(adapter.acknowledgeCalls, 0);
+      expect(adapter.applyCalls, 0);
+      expect(cursorStore.readCalls, 0);
+      expect(cursorStore.writeCalls, 0);
+      expect(remote.pushCalls, 0);
+      expect(remote.pullCalls, 0);
+    },
+  );
+
+  test(
     'coordinator rejects an unregistered entity before network work',
     () async {
       final result = await coordinator.run(

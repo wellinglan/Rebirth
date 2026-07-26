@@ -157,5 +157,27 @@ Sprint 8D 的 AI pending recovery 额外将 request ID 绑定到 normalized endp
 - SharedPreferences 中的 token 仍是开发级存储，尚未接入 secure storage。
 - 没有完整 refresh/revoke 生命周期、字段级 Profile 冲突合并或真实微信登录。
 - HTTP 仅限本机、局域网与 alpha 测试，正式云部署必须使用 HTTPS。
-- 旧未绑定 Profile 的“绑定现有数据”或“创建新空间”迁移 UI 尚未实现；本 Sprint 只安全阻断访问与同步。
+- 旧未绑定 Profile 必须在 `bindingRequired` 页面显式认领或选择创建全新空间；系统不会自动猜测归属。
 - 当前登录仍是 Development User Key，不是生产级注册、OAuth、微信登录或安全凭据存储。
+
+## Sprint 10B.2-B Legacy Ownership Resolution
+
+Flutter schema 6 将本地所有权和云同步资格拆成两个持久状态：
+
+- `binding_origin` 记录 `clean_first_login`、`fresh_space` 或
+  `legacy_claim`；
+- `sync_eligibility_status` 记录 `ready` 或
+  `legacy_review_required`；
+- `ownership_confirmed_at` 记录显式确认或创建的 UTC 毫秒时间。
+
+升级用户登录后会看到不含正文、完整身份标识或完整 Endpoint 的本地数据
+空间概览。用户只能显式认领一个旧空间、创建一个全新空间，或退出登录。
+认领和新建都需要二次确认，并在 Drift transaction 中重新验证当前 Session
+与 Endpoint + cloud user 作用域。
+
+`legacy_claim` 完成后允许进入本地业务页面，但同步资格为
+`legacy_review_required`。`SyncCoordinator` 在 device、cursor、collect 和
+网络操作前返回 `accountSyncReviewRequired`；Settings 同时禁用 Profile 和
+Plan 手动同步。旧 `server_version`、`last_synced_at`、`sync_status`、cursor、
+conflict 和 AI pending 均保留。`fresh_space` 与干净首次登录的同步资格为
+`ready`，但仍然只允许用户主动使用既有手动同步，不增加自动同步。

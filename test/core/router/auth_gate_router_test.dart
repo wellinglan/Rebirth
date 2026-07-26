@@ -5,8 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/app/rebirth_app.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
+import 'package:rebirth/features/account/presentation/legacy_data_resolution_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -40,6 +42,9 @@ void main() {
                 unboundProfileCount: 1,
               ),
             ),
+          ),
+          legacyDataResolutionControllerProvider.overrideWith(
+            _FakeLegacyDataResolutionController.new,
           ),
         ],
         child: const RebirthApp(),
@@ -128,4 +133,31 @@ void main() {
     expect(find.byKey(const ValueKey('loginPage')), findsNothing);
     expect(find.byKey(const ValueKey('todayEmptyState')), findsOneWidget);
   });
+}
+
+final class _FakeLegacyDataResolutionController
+    extends LegacyDataResolutionController {
+  @override
+  Future<LegacyDataResolutionState> build() async {
+    return const LegacyDataResolutionState(
+      summaries: [
+        LegacyLocalDataSpaceSummary(
+          selectionKey: 'local-space-1',
+          displayIndex: 1,
+          profileCreatedDate: '2026-07-26',
+          latestBusinessUpdatedAt: null,
+          todayCount: 0,
+          journalCount: 0,
+          goalCount: 0,
+          healthCount: 0,
+          aiReportCount: 0,
+          tombstoneCount: 0,
+          hasSyncHistory: false,
+          hasConflictHistory: false,
+          hasAiPending: false,
+          isAlreadyBound: false,
+        ),
+      ],
+    );
+  }
 }

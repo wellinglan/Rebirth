@@ -582,6 +582,8 @@ Goal 会在切换到新 User Key 后继续保留原 `serverVersion`。删除该 
 “Sprint 10B 已完成人工验收”
 “Sprint 10B.1 自动化通过等同于人工验收通过”
 “通用 Coordinator 等同于后台自动同步”
+“认领旧本地数据后会立即上传旧记录”
+“legacyReviewRequired 等同于账号未登录”
 ```
 
 正确理解：
@@ -598,3 +600,22 @@ Quality CI 已通过；Sprint 10B 的 GHCR API 镜像已发布并在北京 Alpha
 但账号切换后的本地数据隔离缺陷仍阻断 Release Gate，
 且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```
+
+## 24. Sprint 10B.2-B Legacy Ownership Resolution
+
+Sprint 10B.2-B 将 Flutter schema 从 5 升到 6，仅扩展本地
+`cloud_account_bindings`。Server runtime、API `1`、Sync Protocol `2`、
+PostgreSQL 和 Alembic 均不变化，也不需要发布新的 GHCR API 镜像。
+
+旧未绑定 Profile 不再让用户永久停留在只可退出的页面。升级用户可以查看
+匿名安全概览，二次确认后认领一个旧空间，或二次确认后为当前账号创建全新
+空间。认领旧空间不会上传、复制、删除或重置任何旧数据。
+
+认领旧空间会持久化 `legacy_claim + legacy_review_required`：本地页面可用，
+Profile/Plan 云同步在任何 cursor、collect 或网络操作前停止。创建全新空间
+会持久化 `fresh_space + ready`，旧空间继续留在磁盘并保持隔离。AI Consent
+不会因登录、归属确认或同步资格改变。
+
+自动化验证不能关闭 Windows、Android 和跨端人工 Gate。执行步骤与证据边界
+见 `docs/manual_tests/28_legacy_local_data_resolution.md`；人工执行前所有行
+保持 `NOT EXECUTED`，Sprint 10C 继续被 Gate 阻止。

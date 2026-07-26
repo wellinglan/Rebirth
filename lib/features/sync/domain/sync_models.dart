@@ -165,6 +165,7 @@ enum SyncFailureReason {
   authenticationRequired,
   cloudUserUnavailable,
   accountScopeMismatch,
+  accountSyncReviewRequired,
   deviceRegistrationRequired,
   syncInProgress,
   unsupportedEntity,
