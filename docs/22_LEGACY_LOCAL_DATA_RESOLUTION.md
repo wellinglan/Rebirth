@@ -161,3 +161,20 @@ Windows and Android release builds must execute
 close that Gate. Sprint 10C remains blocked until legacy claim, fresh space,
 restart, logout/re-login, account isolation, Endpoint isolation, sync
 quarantine, and data preservation pass manually.
+
+## Implementation And CI Verification
+
+- Baseline: `df452feb82f21b1a9a94d097b83c3ef13271b496`.
+- Implementation: `e2eaf3d58b151b06960644c7e971f75ed3a1e5bc`.
+- Quality run: `30202519332`.
+- Quality result: passed.
+- Flutter Analyze And Test: passed.
+- Android Debug Build: passed.
+- Server SQLite: passed.
+- Server PostgreSQL Multiprocess And Multiworker: passed, including
+  `alembic upgrade head`, PostgreSQL marker tests, and the two-worker AI
+  verification.
+- Manual matrix: not executed.
+- Sprint 10C: blocked until the manual release matrix passes.
+- Alpha API redeployment: not required because this Sprint does not change
+  Server runtime code or the sync protocol.
