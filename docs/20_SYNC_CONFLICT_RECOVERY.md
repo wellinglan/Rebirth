@@ -2,7 +2,7 @@
 
 > Sprint: 10B.1
 > Scope: Flutter-local generic conflict store; Plan resolution only
-> Status: implementation pushed and GitHub Quality passed; manual acceptance pending
+> Status: implementation and Quality passed; manual acceptance blocked by cross-account local data ownership
 > Flutter schemaVersion: 4
 
 ## Why Goal.syncStatus Is Not Enough
@@ -210,12 +210,12 @@ row. The next manual Plan pull can create and hydrate a real row.
   push, or conflict-history cleanup.
 - Server runtime, API version 1, Sync Protocol v2, PostgreSQL, and Alembic are
   unchanged.
-- Sprint 10B Alpha deployment must be confirmed separately.
+- Sprint 10B Alpha deployment was confirmed on 2026-07-26.
 - Automated tests do not close the Windows/Android/cross-device release gate.
 
-Sprint 10C should not start until the Sprint 10B API deployment is confirmed
-and the manual recovery matrix has been executed or explicitly deferred with
-known risks.
+Sprint 10C should not start until
+`PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001` is corrected and the affected recovery
+and account-isolation rows are rerun.
 
 ## Local Verification
 
@@ -248,5 +248,27 @@ deployment or device acceptance.
 - Flutter Analyze And Test: PASS
 - Android Debug Build: PASS
 - Publish Alpha Images: NOT RUN for this Flutter/docs-only implementation
-- Sprint 10B Alpha deployment: NOT VERIFIED
-- Windows, Android, and cross-device manual acceptance: NOT EXECUTED
+- Sprint 10B Alpha deployment: PASS on 2026-07-26
+- Windows, Android, and cross-device manual acceptance: IN PROGRESS
+- Release Gate: OPEN, blocked by
+  `PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001`
+
+## Manual Discovery: Cross-account Awaiting Conflict
+
+The manual matrix produced one conflict from an old local Goal that had
+previously synchronized under Development User Key A. After the same
+installation registered User Key B, deleting that Goal submitted A's nonzero
+`serverVersion` in B's cloud scope. Strict OCC rejected the stale version, but
+B had no remote record for a later pull to hydrate.
+
+The conflict store safely preserved the local tombstone and correctly scoped
+the conflict row to B. However, retry left the conflict count at one, retained
+`awaiting_remote_snapshot`, showed no remote summary, exposed no adopt/keep
+actions, and still displayed a success message. The app remained navigable and
+no unrelated Plan row was overwritten or duplicated.
+
+This is an upstream local data ownership defect, not evidence that conflict
+row scoping should be weakened. The complete evaluation is in
+`docs/21_CLOUD_ACCOUNT_LOCAL_DATA_ISOLATION.md`; recorded device evidence and
+matrix status are in `docs/manual_tests/25_plan_cross_device_sync.md` and
+`docs/manual_tests/26_sync_conflict_recovery.md`.

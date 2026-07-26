@@ -1,6 +1,6 @@
 # Rebirth Sync Foundation
 
-> Status: Sprint 10B.1 persistent conflict recovery pushed and Quality-verified; manual acceptance pending
+> Status: Alpha API deployed; manual acceptance in progress; cloud-account/local-data isolation release blocker confirmed
 > Protocol: Sync Protocol v2
 > Product scope: manual canonical Profile sync and manual Plan two-way sync
 
@@ -275,10 +275,10 @@ database URL/path, JWT secret, or Endpoint credentials.
 ## 13. Current Scope
 
 - Profile sync: implemented, manual.
-- Plan sync: pushed and Quality-verified, manual two-way; Alpha API deployment
-  remains pending confirmation.
+- Plan sync: deployed, Quality-verified, manual two-way; ordinary root/child
+  round trip passed on Windows and Android.
 - Plan conflict inbox and explicit recovery: implemented locally in Sprint
-  10B.1; manual acceptance pending.
+  10B.1; manual acceptance is blocked by cross-account local data ownership.
 - Today sync: not implemented.
 - Journal sync: not implemented.
 - Health sync: not implemented.
@@ -382,9 +382,11 @@ multi-worker, Server SQLite, Flutter analyze/test, and Android Debug Build.
 Publish Alpha Images run `30148891659` also passed and published the matching
 API image.
 
-Image publication does not prove deployment. The Beijing Alpha API deployment
-and every Sprint 10B Windows, Android, and cross-device manual row remain
-pending or `NOT EXECUTED`.
+The Beijing Alpha API deployment was independently verified on 2026-07-26.
+The container was `healthy`, ran image
+`ghcr.io/wellinglan/rebirth-api:713f46a71ab5aa46be45ae62051a366859ab9a39`,
+and reported API `1`, Sync Protocol `2`, and environment `development`.
+Windows, Android, and cross-device manual rows are partially executed.
 
 ## 19. Sprint 10B.1 Conflict Store Boundary
 
@@ -398,8 +400,11 @@ Only Plan currently enters this store. Profile remains on its existing
 conservative path. Server runtime, API version 1, Sync Protocol v2, PostgreSQL,
 and Alembic are unchanged. Full state-machine and recovery details are in
 `docs/20_SYNC_CONFLICT_RECOVERY.md`; manual acceptance is defined in
-`docs/manual_tests/26_sync_conflict_recovery.md` and remains entirely
-`NOT EXECUTED`.
+`docs/manual_tests/26_sync_conflict_recovery.md` and is partially executed.
+
+The conflict store correctly scopes conflict rows, but it cannot repair Goal
+`server_version` metadata that was produced under a different cloud account
+before the push begins.
 
 ## 20. Sprint 10B.1 Local Automated Evidence
 
@@ -451,4 +456,24 @@ and cross-device manual acceptance remain `NOT EXECUTED`.
   PASS
 
 - Manual acceptance:
-  NOT EXECUTED
+  IN PROGRESS; blocked by `PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001`
+
+## 22. Cloud Account And Local Data Boundary Discovery
+
+Manual acceptance on 2026-07-26 proved the ordinary Plan cross-device path,
+but also confirmed a separate ownership defect. A Goal synchronized under
+cloud account A retained its nonzero `server_version` after the same
+installation signed in as account B. Deleting that Goal under B produced an
+`awaiting_remote_snapshot` conflict that B could not hydrate because B had no
+matching cloud row.
+
+The required product invariant is that one normalized Endpoint and cloud user
+own one local data space. Data may remain on disk after logout, but it must not
+become visible or sync-eligible under another cloud identity without an
+explicit user-approved transfer.
+
+The verified reproduction, source-level cause, candidate account-to-local
+profile binding model, migration questions, and acceptance criteria are in
+`docs/21_CLOUD_ACCOUNT_LOCAL_DATA_ISOLATION.md`. No architecture or schema
+change is approved by this discovery document. Sprint 10C remains blocked
+until a correction Sprint is designed, implemented, and manually verified.

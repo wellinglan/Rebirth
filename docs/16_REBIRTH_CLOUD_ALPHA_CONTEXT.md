@@ -4,7 +4,7 @@
 >
 > 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 10B 已推送并通过 Quality CI，匹配的 GHCR API 镜像已发布。
 >
-> 当前开发：Sprint 10B.1 持久化同步冲突中心已 commit/push 并通过 GitHub Quality CI；人工验收仍未执行。Sprint 10B Alpha API 部署仍待确认。云端架构、API 1 和 Sync Protocol v2 保持不变。
+> 当前开发：Sprint 10B Alpha API 已部署并通过健康检查；Sprint 10B.1 人工验收正在执行。普通 Plan 跨端往返已通过，但账号切换暴露出本地数据空间未绑定云账号的发布阻断缺陷 `PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001`。云端架构、API 1 和 Sync Protocol v2 保持不变。
 
 ## 1. 当前主架构
 
@@ -436,7 +436,7 @@ Sprint 10A 人工矩阵见
 `NOT EXECUTED`。Sprint 10A.1 的补充人工检查同样保持 `NOT EXECUTED`，
 不得把自动化测试结果写成人工 PASS。
 
-## 16. Sprint 10B 状态（PUSHED / QUALITY PASS / DEPLOYMENT PENDING）
+## 16. Sprint 10B 状态（PUSHED / QUALITY PASS / DEPLOYED）
 
 Sprint 10B 复用现有 Coordinator、Endpoint、Session、Device Registration、
 Cursor Store 和 Protocol v2，增加：
@@ -457,10 +457,15 @@ marker、Alembic upgrade、multi-worker、Flutter analyze/test 与 Android
 Debug Build 均已实际执行并通过。
 
 Sprint 10B 没有 Drift、Alembic 或 PostgreSQL schema migration；该提交的
-Flutter `schemaVersion` 为 `3`。Sprint 10B API 是否已部署到北京 Alpha
-仍待独立确认，不能由镜像发布推断。Windows、Android 与跨端人工矩阵仍全部
-`NOT EXECUTED`，Release Gate 保持 `OPEN`。人工矩阵见
-`docs/manual_tests/25_plan_cross_device_sync.md`。
+Flutter `schemaVersion` 为 `3`。2026-07-26 已在北京 Alpha Server 确认
+API 容器为 `healthy`，实际运行镜像为
+`ghcr.io/wellinglan/rebirth-api:713f46a71ab5aa46be45ae62051a366859ab9a39`，
+`/health` 返回 API `1`、Sync Protocol `2` 和 `development` 环境。
+
+Windows、Android 与跨端人工矩阵已部分执行。普通 root/child 创建、拉取、
+完成状态回传与去重均通过，但账号切换后的旧 Plan tombstone 暴露发布阻断
+缺陷 `PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001`，因此 Release Gate 保持
+`OPEN`。人工结果见 `docs/manual_tests/25_plan_cross_device_sync.md`。
 
 ## 17. Sprint 10B.1 状态（PUSHED / QUALITY PASS / MANUAL PENDING）
 
@@ -488,13 +493,13 @@ Sprint 10B.1 实现提交为
 - Android Debug Build。
 
 本次改动未触发 Publish Alpha Images；Sprint 10B.1 不包含 Server runtime
-变化，也不需要发布或部署新 API 镜像。Sprint 10B Alpha API 部署仍为
-`NOT VERIFIED`。
+变化，也不需要发布或部署新 API 镜像。Sprint 10B Alpha API 部署已于
+2026-07-26 独立验证。
 
 本地自动化不能替代人工验收。Sprint 10B.1 的 Windows、Android、
 跨端、网络失败、重启、tombstone 和隔离矩阵见
-`docs/manual_tests/26_sync_conflict_recovery.md`，初始全部为
-`NOT EXECUTED`。
+`docs/manual_tests/26_sync_conflict_recovery.md`。矩阵已部分执行，
+其中不同 Development User Key 的本地数据隔离检查失败。
 
 2026-07-25 本地验证结果：
 
@@ -510,8 +515,27 @@ Sprint 10B.1 实现提交为
 | Windows release build | PASS |
 | Android split release build | PASS, armv7 + arm64 + x86_64 |
 
-Windows、Android 和跨端人工验收仍全部为 `NOT EXECUTED`，不得用上述
-自动化结果替代人工 PASS。
+Windows、Android 和跨端人工验收仍未全部完成，不得用上述自动化结果替代
+人工 PASS。
+
+### 17.1 账号切换与本地数据空间发布阻断
+
+2026-07-26 人工验收确认：同一安装中，旧 Development User Key 同步过的
+Goal 会在切换到新 User Key 后继续保留原 `serverVersion`。删除该 Goal
+并同步时，新账号没有对应云端记录，冲突会永久停留在
+`awaiting_remote_snapshot`。一次在线重试虽提示“冲突操作已完成”，但
+冲突数量、状态和空白云端摘要均未变化，也没有可用的采用云端或保留本地
+操作。
+
+这证明当前缺少“云账号作用域绑定本地数据空间”的持久化边界。详细复现、
+根因、产品不变量、候选方案和下一 Sprint 评审问题见
+`docs/21_CLOUD_ACCOUNT_LOCAL_DATA_ISOLATION.md`。在方案获批并修复前：
+
+- 不开始 Sprint 10C；
+- 不启动 Today、Journal 或 Health 同步；
+- 不通过清空 `serverVersion` 将旧账号数据隐式复制到新账号；
+- 不删除旧本地数据；
+- Release Gate 保持 `OPEN`。
 
 ## 18. 对 Codex 的强制要求
 
@@ -555,7 +579,7 @@ Windows、Android 和跨端人工验收仍全部为 `NOT EXECUTED`，不得用�
 “Phone model 与 Android version 会阻止 Sprint 9C 开始”
 “Sprint 9C 已完成人工验收”
 “Sprint 10A 已实现 Plan、Today、Journal 或 Health 同步”
-“Sprint 10B 已确认部署到云端并完成人工验收”
+“Sprint 10B 已完成人工验收”
 “Sprint 10B.1 自动化通过等同于人工验收通过”
 “通用 Coordinator 等同于后台自动同步”
 ```
@@ -569,7 +593,8 @@ Sprint 9B.1 / 9B.2 功能验收已通过，
 Phone model 与 Android version 是非阻塞性元数据缺口，
 Sprint 9C 代码已完成但人工验收暂缓，
 Sprint 10A、Sprint 10A.1、Sprint 10B 与 Sprint 10B.1 代码均已推送，
-Quality CI 已通过；Sprint 10B 的 GHCR API 镜像已发布但 Alpha 部署仍待
-确认，Sprint 10B.1 冲突恢复人工验收尚未执行，
+Quality CI 已通过；Sprint 10B 的 GHCR API 镜像已发布并在北京 Alpha
+部署验证，Sprint 10B / 10B.1 人工验收正在执行，普通 Plan 跨端往返通过，
+但账号切换后的本地数据隔离缺陷仍阻断 Release Gate，
 且当前云端仍是 Development + Fake Provider + Tailscale 私网。
 ```

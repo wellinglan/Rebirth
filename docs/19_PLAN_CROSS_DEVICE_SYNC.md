@@ -1,7 +1,7 @@
 # Plan Cross-device Sync
 
 > Sprint: 10B
-> Status: Sprint 10B pushed and Quality-verified; Alpha deployment and manual acceptance pending
+> Status: Alpha deployed; ordinary cross-device round trip passed; account-isolation release blocker open
 > API: version 1
 > Sync protocol: version 2
 
@@ -181,8 +181,10 @@ history; a later higher-version conflict creates a new active row.
 
 Sprint 10B server behavior was published in implementation commit
 `713f46a71ab5aa46be45ae62051a366859ab9a39`; Quality run `30148891653` and
-Publish Alpha Images run `30148891659` passed. The matching API image exists,
-but deployment to the Beijing Alpha server is still pending confirmation.
+Publish Alpha Images run `30148891659` passed. Deployment to the Beijing Alpha
+server was verified on 2026-07-26 using the matching commit-SHA API image. The
+container was `healthy` and `/health` reported API `1`, Sync Protocol `2`, and
+environment `development`.
 
 Sprint 10B.1 changes only Flutter local storage and client behavior. It does
 not require a new API image, API container recreation, PostgreSQL rebuild,
@@ -192,3 +194,18 @@ Manual acceptance is defined in
 `docs/manual_tests/25_plan_cross_device_sync.md` and persistent recovery
 acceptance in `docs/manual_tests/26_sync_conflict_recovery.md`. Both remain
 separate from automated results.
+
+## Known Release Blocker
+
+`PLAN-SYNC-CLOUD-SCOPE-TOMBSTONE-001` was confirmed during manual acceptance.
+A Goal synchronized under Development User Key A retained A's nonzero
+`serverVersion` after the installation signed in as User Key B. Deleting the
+old Goal under B caused a permanent `awaiting_remote_snapshot` conflict because
+B had no matching cloud row.
+
+The ordinary Windows-to-Android-to-Windows root/child round trip passed and did
+not create duplicate Goals. The blocker concerns the ownership boundary
+between a cloud identity and the local `UserProfile` data space. Details and
+candidate correction designs are in
+`docs/21_CLOUD_ACCOUNT_LOCAL_DATA_ISOLATION.md`. This document does not approve
+a schema change or alter Plan date, hierarchy, or synchronization semantics.
