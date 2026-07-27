@@ -202,3 +202,32 @@ class SyncPullItem(BaseModel):
 class SyncPullResponse(BaseModel):
     server_version: int
     items: list[SyncPullItem]
+
+
+OwnershipVerificationTable = Literal["user_profiles", "goals"]
+OwnershipVerificationStatus = Literal["verified", "unknown", "rejected"]
+
+
+class OwnershipVerificationEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    table_name: OwnershipVerificationTable = Field(alias="table")
+    record_id: str = Field(alias="id", min_length=1, max_length=128)
+    server_version: int = Field(ge=1)
+    metadata_fingerprint: str = Field(
+        pattern=r"^[0-9a-f]{64}$",
+    )
+
+
+class OwnershipVerificationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    evidence: list[OwnershipVerificationEvidence] = Field(max_length=500)
+
+
+class OwnershipVerificationResponse(BaseModel):
+    status: OwnershipVerificationStatus
+    verified_count: int = Field(ge=0)
+    rejected_count: int = Field(ge=0)
+    unknown_count: int = Field(ge=0)
+    reason: str

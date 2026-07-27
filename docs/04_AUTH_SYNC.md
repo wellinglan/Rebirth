@@ -181,3 +181,33 @@ Flutter schema 6 将本地所有权和云同步资格拆成两个持久状态：
 Plan 手动同步。旧 `server_version`、`last_synced_at`、`sync_status`、cursor、
 conflict 和 AI pending 均保留。`fresh_space` 与干净首次登录的同步资格为
 `ready`，但仍然只允许用户主动使用既有手动同步，不增加自动同步。
+
+## Sprint 10B.3 Legacy Cloud Ownership Verification
+
+Flutter schema 7 adds an auditable verification state to each account
+binding. Local ownership remains defined by `cloud_account_bindings`; cloud
+history verification is a separate proof that old Profile/Plan sync metadata
+matches records owned by the current JWT user.
+
+The user must explicitly select `验证云同步资格` in Settings. The client sends
+only `table`, canonical record ID, positive `server_version`, and a SHA-256
+fingerprint over non-content sync metadata. It never sends a trusted
+`user_id`, local Profile ID, business payload, token in the body, cursor,
+conflict snapshot, or AI data. `POST /sync/verify-ownership` derives the owner
+only from the bearer JWT.
+
+Only a structured `verified` response changes
+`legacy_review_required -> ready`. `unknown` remains `not_verified`;
+`rejected` becomes `failed`; both keep sync closed. The transition rechecks
+the Session, normalized Endpoint, active local Profile, and binding in a Drift
+transaction. Verification success does not run Profile or Plan sync. Users
+must still invoke an existing manual action.
+
+The Sync Coordinator keeps the order:
+
+```text
+Auth scope -> binding -> sync eligibility + verification -> network
+```
+
+Cursor, conflict, tombstone, AI pending, and AI Consent state are never read
+for recovery or changed by verification.

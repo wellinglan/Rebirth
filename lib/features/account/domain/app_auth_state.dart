@@ -17,6 +17,8 @@ final class AppAuthState {
     this.cloudUserId,
     this.accountScope,
     this.syncEligibility,
+    this.verificationStatus = AccountOwnershipVerificationStatus.verified,
+    this.verificationReason,
     this.unboundProfileCount = 0,
     this.message,
   });
@@ -31,6 +33,8 @@ final class AppAuthState {
   final String? cloudUserId;
   final CloudAccountScope? accountScope;
   final AccountSyncEligibility? syncEligibility;
+  final AccountOwnershipVerificationStatus? verificationStatus;
+  final String? verificationReason;
   final int unboundProfileCount;
   final String? message;
 
@@ -41,5 +45,7 @@ final class AppAuthState {
   bool get isOffline => status == AppAuthStatus.authenticatedOffline;
 
   bool get canUseCloudSync =>
-      canAccessBusiness && syncEligibility == AccountSyncEligibility.ready;
+      canAccessBusiness &&
+      syncEligibility == AccountSyncEligibility.ready &&
+      verificationStatus == AccountOwnershipVerificationStatus.verified;
 }

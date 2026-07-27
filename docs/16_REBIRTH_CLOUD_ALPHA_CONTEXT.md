@@ -619,3 +619,24 @@ Profile/Plan 云同步在任何 cursor、collect 或网络操作前停止。创�
 自动化验证不能关闭 Windows、Android 和跨端人工 Gate。执行步骤与证据边界
 见 `docs/manual_tests/28_legacy_local_data_resolution.md`；人工执行前所有行
 保持 `NOT EXECUTED`，Sprint 10C 继续被 Gate 阻止。
+
+## 25. Sprint 10B.3 Legacy Cloud Ownership Verification
+
+Sprint 10B.3 adds authenticated `POST /sync/verify-ownership` while preserving
+API Version `1` and Sync Protocol `2`. The endpoint makes no PostgreSQL schema
+or Alembic change. It compares content-free Profile/Plan metadata evidence
+against `sync_items` owned by the JWT user and returns `verified`, `unknown`,
+or `rejected`.
+
+Flutter schema 7 persists verification status, time, method, and a
+whitelisted reason separately from ownership confirmation and sync
+eligibility. Only `verified` changes a legacy binding to `ready`; no result
+automatically uploads, pulls, merges, advances a cursor, or changes conflict,
+tombstone, AI pending, or AI Consent state.
+
+Because Server runtime changes, GitHub Actions must publish a new
+`rebirth-api` image. Alpha deployment updates only the API container. It must
+not rebuild PostgreSQL, delete a volume, or run a new Alembic revision. Manual
+release evidence belongs in
+`docs/manual_tests/29_legacy_cloud_ownership_verification.md`; every row starts
+as `NOT EXECUTED`.

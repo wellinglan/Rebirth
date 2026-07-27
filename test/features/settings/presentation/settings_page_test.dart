@@ -20,8 +20,10 @@ import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/account/domain/backend_health.dart';
 import 'package:rebirth/features/account/domain/device_registration.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
+import 'package:rebirth/features/account/domain/legacy_ownership_verification.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
+import 'package:rebirth/features/account/presentation/legacy_ownership_verification_controller.dart';
 import 'package:rebirth/features/profile/data/profile_repository_provider.dart';
 import 'package:rebirth/features/profile/data/profile_sync_repository_provider.dart';
 import 'package:rebirth/features/profile/domain/device_profile_status.dart';
@@ -267,7 +269,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('旧数据待验证，暂不可同步'), findsNWidgets(3));
+    expect(find.text('等待验证，同步保持关闭'), findsOneWidget);
+    expect(find.text('旧数据待验证，暂不可同步'), findsNWidgets(2));
+    expect(
+      find.byKey(const ValueKey('verifySyncEligibilityButton')),
+      findsOneWidget,
+    );
     expect(
       tester
           .widget<OutlinedButton>(
@@ -290,6 +297,90 @@ void main() {
           .onPressed,
       isNull,
     );
+  });
+
+  testWidgets('ownership verification disables repeat action while running', (
+    tester,
+  ) async {
+    final completer = Completer<LegacyOwnershipVerificationResult>();
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncEligibility: AccountSyncEligibility.legacyReviewRequired,
+      ownershipVerification: () => completer.future,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('verifySyncEligibilityButton')),
+    );
+    await tester.tap(find.byKey(const ValueKey('verifySyncEligibilityButton')));
+    await tester.pump();
+
+    final running = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('verifySyncEligibilityButton')),
+    );
+    expect(running.onPressed, isNull);
+    expect(find.text('验证中...'), findsOneWidget);
+
+    completer.complete(
+      _ownershipResult(LegacyOwnershipVerificationOutcome.verified),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('云同步资格验证通过'), findsOneWidget);
+    expect(find.textContaining('不会自动执行'), findsOneWidget);
+  });
+
+  testWidgets('unknown ownership remains retryable and keeps sync disabled', (
+    tester,
+  ) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncEligibility: AccountSyncEligibility.legacyReviewRequired,
+      ownershipVerification: () async =>
+          _ownershipResult(LegacyOwnershipVerificationOutcome.unknown),
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'verifySyncEligibilityButton');
+
+    expect(find.textContaining('同步继续保持关闭'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey('verifySyncEligibilityButton')),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(find.byKey(const ValueKey('syncPlanButton')))
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('failed verification status is explicit and retryable', (
+    tester,
+  ) async {
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncEligibility: AccountSyncEligibility.legacyReviewRequired,
+      verificationStatus: AccountOwnershipVerificationStatus.failed,
+      ownershipVerification: () async =>
+          _ownershipResult(LegacyOwnershipVerificationOutcome.rejected),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('验证失败，同步保持关闭'), findsOneWidget);
+    await _tapByKey(tester, 'verifySyncEligibilityButton');
+    expect(find.textContaining('归属验证失败'), findsOneWidget);
   });
 
   testWidgets('Settings conflict entry shows zero and active counts', (
@@ -706,6 +797,9 @@ Future<void> _pumpSettings(
   Size surfaceSize = const Size(900, 1100),
   TextScaler textScaler = TextScaler.noScaling,
   AccountSyncEligibility syncEligibility = AccountSyncEligibility.ready,
+  AccountOwnershipVerificationStatus verificationStatus =
+      AccountOwnershipVerificationStatus.verified,
+  Future<LegacyOwnershipVerificationResult> Function()? ownershipVerification,
 }) async {
   await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -716,7 +810,19 @@ Future<void> _pumpSettings(
         profileRepositoryProvider.overrideWithValue(profileRepository),
         accountRepositoryProvider.overrideWithValue(authRepository),
         appAuthControllerProvider.overrideWith(
-          () => _FakeAppAuthController(authRepository, syncEligibility),
+          () => _FakeAppAuthController(
+            authRepository,
+            syncEligibility,
+            verificationStatus,
+          ),
+        ),
+        legacyOwnershipVerificationControllerProvider.overrideWith(
+          () => _FakeOwnershipVerificationController(
+            ownershipVerification ??
+                () async => _ownershipResult(
+                  LegacyOwnershipVerificationOutcome.verified,
+                ),
+          ),
         ),
         aiConsentRepositoryProvider.overrideWithValue(
           aiConsentRepository ?? _FakeAiConsentRepository(),
@@ -764,6 +870,29 @@ SyncRunResult _planSuccessResult() {
     ],
     startedAt: 1,
     completedAt: 2,
+  );
+}
+
+LegacyOwnershipVerificationResult _ownershipResult(
+  LegacyOwnershipVerificationOutcome outcome,
+) {
+  return LegacyOwnershipVerificationResult(
+    outcome: outcome,
+    verifiedCount: outcome == LegacyOwnershipVerificationOutcome.verified
+        ? 1
+        : 0,
+    rejectedCount: outcome == LegacyOwnershipVerificationOutcome.rejected
+        ? 1
+        : 0,
+    unknownCount: outcome == LegacyOwnershipVerificationOutcome.unknown ? 1 : 0,
+    reason: switch (outcome) {
+      LegacyOwnershipVerificationOutcome.verified =>
+        LegacyOwnershipVerificationReason.allEvidenceMatchesCurrentUser,
+      LegacyOwnershipVerificationOutcome.unknown =>
+        LegacyOwnershipVerificationReason.remoteRecordMissing,
+      LegacyOwnershipVerificationOutcome.rejected =>
+        LegacyOwnershipVerificationReason.metadataMismatchOrOtherOwner,
+    },
   );
 }
 
@@ -946,10 +1075,15 @@ final class _FakeAuthRepository implements AuthRepository {
 }
 
 final class _FakeAppAuthController extends AppAuthController {
-  _FakeAppAuthController(this.authRepository, this.syncEligibility);
+  _FakeAppAuthController(
+    this.authRepository,
+    this.syncEligibility,
+    this.verificationStatus,
+  );
 
   final AuthRepository authRepository;
   final AccountSyncEligibility syncEligibility;
+  final AccountOwnershipVerificationStatus verificationStatus;
 
   @override
   Future<AppAuthState> build() async {
@@ -960,6 +1094,7 @@ final class _FakeAppAuthController extends AppAuthController {
         localUserId: 'local-test-user',
         cloudUserId: user.id,
         syncEligibility: syncEligibility,
+        verificationStatus: verificationStatus,
       );
     }
     return const AppAuthState.signedOut();
@@ -974,6 +1109,7 @@ final class _FakeAppAuthController extends AppAuthController {
         localUserId: 'local-test-user',
         cloudUserId: session.user.id,
         syncEligibility: AccountSyncEligibility.ready,
+        verificationStatus: AccountOwnershipVerificationStatus.verified,
       ),
     );
     ref.invalidate(accountControllerProvider);
@@ -985,6 +1121,29 @@ final class _FakeAppAuthController extends AppAuthController {
     await authRepository.logout();
     state = const AsyncData(AppAuthState.signedOut());
     ref.invalidate(accountControllerProvider);
+  }
+}
+
+final class _FakeOwnershipVerificationController
+    extends LegacyOwnershipVerificationController {
+  _FakeOwnershipVerificationController(this.operation);
+
+  final Future<LegacyOwnershipVerificationResult> Function() operation;
+
+  @override
+  Future<LegacyOwnershipVerificationResult?> build() async => null;
+
+  @override
+  Future<LegacyOwnershipVerificationResult> verify() async {
+    state = const AsyncLoading();
+    try {
+      final result = await operation();
+      state = AsyncData(result);
+      return result;
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+      rethrow;
+    }
   }
 }
 

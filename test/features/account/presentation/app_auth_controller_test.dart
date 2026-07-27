@@ -131,6 +131,10 @@ void main() {
     expect(state.status, AppAuthStatus.authenticated);
     expect(state.localUserId, 'legacy-local');
     expect(state.syncEligibility, AccountSyncEligibility.legacyReviewRequired);
+    expect(
+      state.verificationStatus,
+      AccountOwnershipVerificationStatus.notVerified,
+    );
     expect(state.canAccessBusiness, isTrue);
     expect(state.canUseCloudSync, isFalse);
     expect(boundary.claimCalls, 1);
@@ -158,6 +162,10 @@ void main() {
     final state = container.read(appAuthControllerProvider).value!;
     expect(state.localUserId, 'fresh-local');
     expect(state.syncEligibility, AccountSyncEligibility.ready);
+    expect(
+      state.verificationStatus,
+      AccountOwnershipVerificationStatus.verified,
+    );
     expect(state.canUseCloudSync, isTrue);
     expect(boundary.createFreshCalls, 1);
   });
@@ -221,6 +229,7 @@ final class _FakeBoundary implements AccountBoundaryRepository {
       localUserId: localUserId,
       accountScope: expectedScope,
       syncEligibility: AccountSyncEligibility.legacyReviewRequired,
+      verificationStatus: AccountOwnershipVerificationStatus.notVerified,
     );
   }
 

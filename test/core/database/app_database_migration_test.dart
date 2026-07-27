@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 
 void main() {
-  test('v2 to v6 preserves goals and adds account boundary tables', () async {
+  test('v2 to v7 preserves goals and adds account boundary tables', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -33,7 +33,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 6);
+    expect(version.read<int>('user_version'), 7);
 
     final goal =
         await (migrated.select(migrated.goals)..where(
@@ -69,7 +69,7 @@ void main() {
 
     final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(migrated.close);
-    expect(migrated.schemaVersion, 6);
+    expect(migrated.schemaVersion, 7);
     final existing = await migrated.select(migrated.goals).getSingle();
     expect(existing.title, 'v1 普通目标');
     expect(existing.archivedAt, isNull);
@@ -100,7 +100,7 @@ void main() {
     );
   });
 
-  test('v3 to v6 preserves goals and creates conflict indexes', () async {
+  test('v3 to v7 preserves goals and creates conflict indexes', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -129,7 +129,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 6);
+    expect(version.read<int>('user_version'), 7);
     final goal = await migrated.select(migrated.goals).getSingle();
     expect(goal.id, '00000000-0000-4000-8000-000000000021');
     expect(goal.syncStatus, 'conflict');
@@ -154,7 +154,7 @@ void main() {
   });
 
   test(
-    'v4 to v6 preserves data and supersedes unhydrated legacy conflicts',
+    'v4 to v7 preserves data and supersedes unhydrated legacy conflicts',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -203,7 +203,7 @@ void main() {
 
       final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
       addTearDown(migrated.close);
-      expect(migrated.schemaVersion, 6);
+      expect(migrated.schemaVersion, 7);
       expect(await migrated.select(migrated.goals).get(), hasLength(1));
       expect(await migrated.select(migrated.userProfiles).get(), hasLength(1));
       expect(await migrated.select(migrated.appSettings).get(), hasLength(1));
@@ -228,7 +228,7 @@ void main() {
   );
 
   test(
-    'v5 to v6 backfills existing binding without claiming legacy data',
+    'v5 to v7 backfills existing binding without claiming legacy data',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -246,6 +246,11 @@ void main() {
               cloudUserId: 'existing-cloud-user',
               createdAt: 100,
               lastUsedAt: 200,
+              verificationTime: const Value(100),
+              verificationMethod: const Value('account_space_creation'),
+              verificationReason: const Value(
+                'all_evidence_matches_current_user',
+              ),
             ),
           );
       await original.customStatement(
@@ -291,6 +296,10 @@ CREATE TABLE cloud_account_bindings_v5 (
       expect(binding.bindingOrigin, 'clean_first_login');
       expect(binding.syncEligibilityStatus, 'ready');
       expect(binding.ownershipConfirmedAt, 100);
+      expect(binding.verificationStatus, 'verified');
+      expect(binding.verificationTime, 100);
+      expect(binding.verificationMethod, 'account_space_creation');
+      expect(binding.verificationReason, 'all_evidence_matches_current_user');
       expect(binding.localUserId, bootstrap.activeUserId);
       expect(await migrated.select(migrated.userProfiles).get(), hasLength(1));
       expect(
@@ -304,6 +313,94 @@ CREATE TABLE cloud_account_bindings_v5 (
         ),
         throwsA(isA<Exception>()),
       );
+    },
+  );
+
+  test(
+    'v6 to v7 preserves legacy quarantine and business sync metadata',
+    () async {
+      final fixture = await _createDatabaseFixture();
+      addTearDown(fixture.dispose);
+      final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      final bootstrap = await original.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
+      await (original.update(
+        original.userProfiles,
+      )..where((row) => row.id.equals(bootstrap.activeUserId))).write(
+        const UserProfilesCompanion(
+          syncStatus: Value('conflict'),
+          serverVersion: Value(17),
+          lastSyncedAt: Value(900),
+        ),
+      );
+      await original
+          .into(original.cloudAccountBindings)
+          .insert(
+            CloudAccountBindingsCompanion.insert(
+              id: const Value('70000000-0000-4000-8000-000000000006'),
+              localUserId: bootstrap.activeUserId,
+              endpointKey: 'https://alpha.example.test',
+              cloudUserId: 'legacy-cloud-user',
+              createdAt: 100,
+              lastUsedAt: 200,
+              bindingOrigin: const Value('legacy_claim'),
+              syncEligibilityStatus: const Value('legacy_review_required'),
+              ownershipConfirmedAt: const Value(100),
+              verificationStatus: const Value('not_verified'),
+            ),
+          );
+      await original.customStatement(
+        'DROP INDEX cloud_account_bindings_status_last_used',
+      );
+      await original.customStatement('''
+CREATE TABLE cloud_account_bindings_v6 (
+  id TEXT NOT NULL PRIMARY KEY,
+  local_user_id TEXT NOT NULL REFERENCES user_profiles(id) ON DELETE RESTRICT,
+  endpoint_key TEXT NOT NULL,
+  cloud_user_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  last_used_at INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  binding_origin TEXT NOT NULL DEFAULT 'clean_first_login',
+  sync_eligibility_status TEXT NOT NULL DEFAULT 'ready',
+  ownership_confirmed_at INTEGER,
+  UNIQUE(endpoint_key, cloud_user_id),
+  UNIQUE(local_user_id)
+)
+''');
+      await original.customStatement(
+        'INSERT INTO cloud_account_bindings_v6 '
+        '(id, local_user_id, endpoint_key, cloud_user_id, created_at, '
+        'last_used_at, status, binding_origin, sync_eligibility_status, '
+        'ownership_confirmed_at) '
+        'SELECT id, local_user_id, endpoint_key, cloud_user_id, created_at, '
+        'last_used_at, status, binding_origin, sync_eligibility_status, '
+        'ownership_confirmed_at FROM cloud_account_bindings',
+      );
+      await original.customStatement('DROP TABLE cloud_account_bindings');
+      await original.customStatement(
+        'ALTER TABLE cloud_account_bindings_v6 '
+        'RENAME TO cloud_account_bindings',
+      );
+      await original.customStatement('PRAGMA user_version = 6');
+      await original.close();
+
+      final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      addTearDown(migrated.close);
+      final binding = await migrated
+          .select(migrated.cloudAccountBindings)
+          .getSingle();
+      final profile = await migrated.select(migrated.userProfiles).getSingle();
+      expect(migrated.schemaVersion, 7);
+      expect(binding.syncEligibilityStatus, 'legacy_review_required');
+      expect(binding.verificationStatus, 'not_verified');
+      expect(binding.verificationTime, isNull);
+      expect(binding.verificationMethod, isNull);
+      expect(binding.verificationReason, isNull);
+      expect(profile.serverVersion, 17);
+      expect(profile.lastSyncedAt, 900);
+      expect(profile.syncStatus, 'conflict');
     },
   );
 }

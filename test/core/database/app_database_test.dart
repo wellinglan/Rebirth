@@ -42,7 +42,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 6);
+    expect(versionRow.read<int>('user_version'), 7);
   });
 
   test(

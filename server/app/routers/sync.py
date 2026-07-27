@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_session
 from app.schemas import (
+    OwnershipVerificationRequest,
+    OwnershipVerificationResponse,
     SyncPullRequest,
     SyncPullResponse,
     SyncPushRequest,
@@ -14,10 +16,29 @@ from app.services.sync_service import (
     SyncRequestValidationError,
     pull,
     push,
+    verify_ownership,
 )
 
 
 router = APIRouter(prefix="/sync", tags=["sync"])
+
+
+@router.post(
+    "/verify-ownership",
+    response_model=OwnershipVerificationResponse,
+)
+def verify_sync_ownership(
+    body: OwnershipVerificationRequest,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> OwnershipVerificationResponse:
+    try:
+        return verify_ownership(session, user_id, body)
+    except SyncRequestValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(error),
+        ) from error
 
 
 @router.post("/push", response_model=SyncPushResponse)

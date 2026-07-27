@@ -553,3 +553,38 @@ Coordinator guard remains authoritative.
 This Sprint adds no background synchronization and no Today, Journal, Health,
 Growth, AI Report, or AI Consent synchronization. API `1` and Sync Protocol
 `2` remain unchanged.
+
+## 25. Sprint 10B.3 Ownership Verification And Re-entry
+
+`POST /sync/verify-ownership` is an authenticated proof endpoint, not a sync
+run. The request accepts at most 500 evidence rows for `user_profiles` and
+`goals`. Each row contains:
+
+- canonical table and record identity;
+- a positive historical `server_version`;
+- a lowercase SHA-256 fingerprint of table, record ID, server version,
+  client update time, deletion time, and origin device ID.
+
+No business payload, local user ID, cloud user ID, cursor, conflict snapshot,
+or AI state is sent. The Server ignores client ownership claims by forbidding
+unknown request fields and derives the owner from the JWT. Exact metadata
+owned by another user is rejected without disclosing that user's identity or
+payload. Missing evidence on the selected Server is unknown.
+
+All submitted evidence must match the current JWT user's current remote rows
+for a `verified` result. This is intentionally conservative: if the remote
+row changed after the old client last synchronized and the Server has no
+version history, the result remains unknown instead of guessing.
+
+Schema 7 binding invariants are:
+
+| Sync eligibility | Verification | Coordinator behavior |
+|---|---|---|
+| `ready` | `verified` | existing manual Profile/Plan sync may run |
+| `legacy_review_required` | `not_verified` | stop before cursor/collect/network |
+| `legacy_review_required` | `failed` | stop before cursor/collect/network |
+
+Successful verification updates both fields atomically, invalidates
+account-scoped providers, and refreshes Auth state. It does not call the
+Coordinator. Cursor, conflicts, tombstones, and pending business changes are
+therefore unchanged until a later explicit manual sync.

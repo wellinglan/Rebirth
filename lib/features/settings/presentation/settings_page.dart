@@ -9,7 +9,9 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
+import 'package:rebirth/features/account/presentation/legacy_ownership_verification_controller.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
+import 'package:rebirth/features/account/domain/legacy_ownership_verification.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_error_message.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
@@ -37,6 +39,9 @@ class SettingsPage extends ConsumerWidget {
     final settingsState = ref.watch(settingsControllerProvider);
     final accountState = ref.watch(accountControllerProvider);
     final authState = ref.watch(appAuthStateProvider).value;
+    final ownershipVerificationState = ref.watch(
+      legacyOwnershipVerificationControllerProvider,
+    );
     final profileSyncState = ref.watch(profileSyncControllerProvider);
     final planSyncState = ref.watch(planSyncControllerProvider);
     final activeConflictCount =
@@ -71,6 +76,11 @@ class SettingsPage extends ConsumerWidget {
               account: account,
               syncEligibility:
                   authState?.syncEligibility ?? AccountSyncEligibility.ready,
+              verificationStatus:
+                  authState?.verificationStatus ??
+                  AccountOwnershipVerificationStatus.verified,
+              verificationInProgress: ownershipVerificationState.isLoading,
+              onVerifyOwnership: () => _verifyOwnership(context, ref),
               apiBaseUrl: endpoint.baseUrl,
               endpoint: endpoint,
               endpointHealth: endpointSettings.health,
@@ -296,6 +306,26 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _verifyOwnership(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await ref
+          .read(legacyOwnershipVerificationControllerProvider.notifier)
+          .verify();
+      if (!context.mounted) return;
+      final message = switch (result.outcome) {
+        LegacyOwnershipVerificationOutcome.verified =>
+          '云同步资格验证通过；同步不会自动执行，请按需手动同步',
+        LegacyOwnershipVerificationOutcome.unknown => '无法确认旧同步数据归属，同步继续保持关闭',
+        LegacyOwnershipVerificationOutcome.rejected => '旧同步数据归属验证失败，同步继续保持关闭',
+      };
+      _showMessage(context, message);
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, '同步资格验证请求失败，本地数据未变化，可稍后重试');
+      }
+    }
+  }
+
   void _refreshConflictScope(WidgetRef ref) {
     ref.invalidate(syncConflictScopeProvider);
     ref.invalidate(activeSyncConflictCountProvider);
@@ -373,6 +403,8 @@ class _SettingsContent extends StatelessWidget {
     required this.state,
     required this.account,
     required this.syncEligibility,
+    required this.verificationStatus,
+    required this.verificationInProgress,
     required this.apiBaseUrl,
     required this.endpoint,
     required this.endpointHealth,
@@ -389,6 +421,7 @@ class _SettingsContent extends StatelessWidget {
     required this.planSyncState,
     required this.activeConflictCount,
     required this.onSyncPlan,
+    required this.onVerifyOwnership,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     required this.onOpenProfile,
@@ -399,6 +432,8 @@ class _SettingsContent extends StatelessWidget {
   final SettingsViewState state;
   final AccountViewState account;
   final AccountSyncEligibility syncEligibility;
+  final AccountOwnershipVerificationStatus verificationStatus;
+  final bool verificationInProgress;
   final String apiBaseUrl;
   final ServerEndpoint endpoint;
   final ServerEndpointHealth? endpointHealth;
@@ -415,6 +450,7 @@ class _SettingsContent extends StatelessWidget {
   final PlanSyncViewState planSyncState;
   final int activeConflictCount;
   final VoidCallback onSyncPlan;
+  final VoidCallback onVerifyOwnership;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
@@ -462,6 +498,8 @@ class _SettingsContent extends StatelessWidget {
                     state: account,
                     apiBaseUrl: apiBaseUrl,
                     syncEligibility: syncEligibility,
+                    verificationStatus: verificationStatus,
+                    verificationInProgress: verificationInProgress,
                     enableDevLogin: enableDevLogin,
                     onCheckBackend: onCheckBackend,
                     onDevLogin: onDevLogin,
@@ -472,6 +510,7 @@ class _SettingsContent extends StatelessWidget {
                     onPullProfile: onPullProfile,
                     planSyncState: planSyncState,
                     onSyncPlan: onSyncPlan,
+                    onVerifyOwnership: onVerifyOwnership,
                     onWeChatLogin: onWeChatLogin,
                     onSyncSettings: onSyncSettings,
                   ),

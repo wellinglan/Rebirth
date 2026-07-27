@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
@@ -45,6 +45,8 @@ void main() {
     expect(bindings.single.bindingOrigin, 'clean_first_login');
     expect(bindings.single.syncEligibilityStatus, 'ready');
     expect(bindings.single.ownershipConfirmedAt, isNotNull);
+    expect(bindings.single.verificationStatus, 'verified');
+    expect(bindings.single.verificationMethod, 'account_space_creation');
     expect(installation.platform, 'windows');
   });
 
@@ -139,8 +141,34 @@ void main() {
               cloudUserId: 'account-other',
               createdAt: now,
               lastUsedAt: now,
+              verificationTime: Value(now),
+              verificationMethod: const Value('account_space_creation'),
+              verificationReason: const Value(
+                'all_evidence_matches_current_user',
+              ),
             ),
           ),
+      throwsA(isA<Exception>()),
+    );
+  });
+
+  test('binding verification constraints keep eligibility consistent', () async {
+    await repository.resolveAndActivate(_session('account-a'));
+
+    await expectLater(
+      database.customStatement(
+        "UPDATE cloud_account_bindings "
+        "SET verification_status = 'failed' "
+        "WHERE cloud_user_id = 'account-a'",
+      ),
+      throwsA(isA<Exception>()),
+    );
+    await expectLater(
+      database.customStatement(
+        "UPDATE cloud_account_bindings "
+        "SET verification_reason = 'free_text_reason' "
+        "WHERE cloud_user_id = 'account-a'",
+      ),
       throwsA(isA<Exception>()),
     );
   });
@@ -212,6 +240,8 @@ void main() {
       expect(binding.bindingOrigin, 'legacy_claim');
       expect(binding.syncEligibilityStatus, 'legacy_review_required');
       expect(binding.ownershipConfirmedAt, isNotNull);
+      expect(binding.verificationStatus, 'not_verified');
+      expect(binding.verificationTime, isNull);
       expect(
         repository.requireActiveScope(
           endpoint: _endpoint,
@@ -272,6 +302,8 @@ void main() {
         .getSingle();
     expect(binding.bindingOrigin, 'fresh_space');
     expect(binding.syncEligibilityStatus, 'ready');
+    expect(binding.verificationStatus, 'verified');
+    expect(binding.verificationMethod, 'account_space_creation');
     expect(
       await (database.select(
         database.goals,

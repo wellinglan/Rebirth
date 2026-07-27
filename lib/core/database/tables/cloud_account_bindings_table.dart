@@ -26,6 +26,15 @@ class CloudAccountBindings extends Table with UuidPrimaryKey {
 
   IntColumn get ownershipConfirmedAt => integer().nullable()();
 
+  TextColumn get verificationStatus =>
+      text().withDefault(const Constant('verified'))();
+
+  IntColumn get verificationTime => integer().nullable()();
+
+  TextColumn get verificationMethod => text().nullable()();
+
+  TextColumn get verificationReason => text().nullable()();
+
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
     {endpointKey, cloudUserId},
@@ -46,5 +55,18 @@ class CloudAccountBindings extends Table with UuidPrimaryKey {
     'CHECK (ownership_confirmed_at IS NULL OR ownership_confirmed_at >= 0)',
     "CHECK (binding_origin != 'legacy_claim' "
         'OR ownership_confirmed_at IS NOT NULL)',
+    "CHECK (verification_status IN ('not_verified', 'verified', 'failed'))",
+    'CHECK (verification_time IS NULL OR verification_time >= 0)',
+    "CHECK (verification_method IS NULL OR verification_method IN ("
+        "'account_space_creation', 'server_sync_metadata_v1'))",
+    "CHECK (verification_reason IS NULL OR verification_reason IN ("
+        "'all_evidence_matches_current_user', 'no_verifiable_evidence', "
+        "'remote_record_missing', 'metadata_mismatch_or_other_owner'))",
+    "CHECK (verification_status != 'verified' OR "
+        '(verification_time IS NOT NULL AND verification_method IS NOT NULL))',
+    "CHECK ((sync_eligibility_status = 'ready' AND "
+        "verification_status = 'verified') OR "
+        "(sync_eligibility_status = 'legacy_review_required' AND "
+        "verification_status IN ('not_verified', 'failed')))",
   ];
 }

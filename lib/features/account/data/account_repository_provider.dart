@@ -6,6 +6,7 @@ import 'package:rebirth/core/network/api_client_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary_repository.dart';
 import 'package:rebirth/features/account/domain/auth_repository.dart';
+import 'package:rebirth/features/account/domain/legacy_ownership_verification_repository.dart';
 
 import 'account_boundary_repository_impl.dart';
 import 'account_api_data_source.dart';
@@ -13,6 +14,8 @@ import 'account_repository_impl.dart';
 import 'auth_session_store.dart';
 import 'device_info_service.dart';
 import 'local_auth_session_store.dart';
+import 'legacy_ownership_verification_api_data_source.dart';
+import 'legacy_ownership_verification_repository_impl.dart';
 
 final authSessionStoreProvider = Provider<AuthSessionStore>(
   (ref) => LocalAuthSessionStore(
@@ -55,3 +58,23 @@ final accountRepositoryProvider = Provider<AuthRepository>((ref) {
     serverBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
   );
 });
+
+final legacyOwnershipVerificationRemoteDataSourceProvider =
+    Provider<LegacyOwnershipVerificationRemoteDataSource>(
+      (ref) => LegacyOwnershipVerificationApiDataSource(
+        ref.watch(apiClientProvider),
+      ),
+    );
+
+final legacyOwnershipVerificationRepositoryProvider =
+    Provider<LegacyOwnershipVerificationRepository>((ref) {
+      return LegacyOwnershipVerificationRepositoryImpl(
+        database: ref.watch(appDatabaseProvider),
+        sessionStore: ref.watch(authSessionStoreProvider),
+        remoteDataSource: ref.watch(
+          legacyOwnershipVerificationRemoteDataSourceProvider,
+        ),
+        dateTimeService: ref.watch(dateTimeServiceProvider),
+        endpointValidator: ref.watch(serverEndpointValidatorProvider),
+      );
+    });

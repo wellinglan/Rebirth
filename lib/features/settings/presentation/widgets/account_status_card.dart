@@ -11,6 +11,8 @@ class AccountStatusCard extends StatelessWidget {
     required this.state,
     required this.apiBaseUrl,
     this.syncEligibility = AccountSyncEligibility.ready,
+    this.verificationStatus = AccountOwnershipVerificationStatus.verified,
+    this.verificationInProgress = false,
     required this.enableDevLogin,
     required this.onCheckBackend,
     required this.onDevLogin,
@@ -21,6 +23,7 @@ class AccountStatusCard extends StatelessWidget {
     required this.onPullProfile,
     required this.planSyncState,
     required this.onSyncPlan,
+    required this.onVerifyOwnership,
     required this.onWeChatLogin,
     required this.onSyncSettings,
     super.key,
@@ -29,6 +32,8 @@ class AccountStatusCard extends StatelessWidget {
   final AccountViewState state;
   final String apiBaseUrl;
   final AccountSyncEligibility syncEligibility;
+  final AccountOwnershipVerificationStatus verificationStatus;
+  final bool verificationInProgress;
   final bool enableDevLogin;
   final VoidCallback onCheckBackend;
   final VoidCallback onDevLogin;
@@ -39,6 +44,7 @@ class AccountStatusCard extends StatelessWidget {
   final VoidCallback onPullProfile;
   final PlanSyncViewState planSyncState;
   final VoidCallback onSyncPlan;
+  final VoidCallback onVerifyOwnership;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
 
@@ -49,7 +55,10 @@ class AccountStatusCard extends StatelessWidget {
     final isSignedIn = accountStatus.isAuthenticated;
     final syncReviewRequired =
         syncEligibility == AccountSyncEligibility.legacyReviewRequired;
-    final syncAllowed = isSignedIn && !syncReviewRequired;
+    final syncAllowed =
+        isSignedIn &&
+        !syncReviewRequired &&
+        verificationStatus == AccountOwnershipVerificationStatus.verified;
     return Card(
       key: const ValueKey('accountStatusCard'),
       child: Padding(
@@ -96,8 +105,11 @@ class AccountStatusCard extends StatelessWidget {
               value: !isSignedIn
                   ? '登录后检查'
                   : syncAllowed
-                  ? '已通过本地资格检查'
-                  : '旧数据待验证，暂不可同步',
+                  ? '可同步'
+                  : verificationStatus ==
+                        AccountOwnershipVerificationStatus.failed
+                  ? '验证失败，同步保持关闭'
+                  : '等待验证，同步保持关闭',
             ),
             _StatusRow(
               label: '设备注册',
@@ -171,6 +183,20 @@ class AccountStatusCard extends StatelessWidget {
                   icon: const Icon(Icons.logout),
                   label: Text(state.isLoggingOut ? '退出中...' : '退出登录'),
                 ),
+                if (isSignedIn && syncReviewRequired)
+                  FilledButton.icon(
+                    key: const ValueKey('verifySyncEligibilityButton'),
+                    onPressed: state.isBusy || verificationInProgress
+                        ? null
+                        : onVerifyOwnership,
+                    icon: verificationInProgress
+                        ? const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.verified_user_outlined),
+                    label: Text(verificationInProgress ? '验证中...' : '验证云同步资格'),
+                  ),
                 OutlinedButton.icon(
                   key: const ValueKey('pushProfileButton'),
                   onPressed:

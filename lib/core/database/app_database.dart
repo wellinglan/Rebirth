@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -93,6 +93,41 @@ class AppDatabase extends _$AppDatabase {
           'UPDATE cloud_account_bindings '
           'SET ownership_confirmed_at = created_at '
           'WHERE ownership_confirmed_at IS NULL',
+        );
+        await _createAccountBoundaryIndexes();
+      }
+      if (from >= 5 && from < 7) {
+        await migrator.addColumn(
+          cloudAccountBindings,
+          cloudAccountBindings.verificationStatus,
+        );
+        await migrator.addColumn(
+          cloudAccountBindings,
+          cloudAccountBindings.verificationTime,
+        );
+        await migrator.addColumn(
+          cloudAccountBindings,
+          cloudAccountBindings.verificationMethod,
+        );
+        await migrator.addColumn(
+          cloudAccountBindings,
+          cloudAccountBindings.verificationReason,
+        );
+        await customStatement(
+          'UPDATE cloud_account_bindings '
+          "SET verification_status = 'verified', "
+          'verification_time = COALESCE(ownership_confirmed_at, created_at), '
+          "verification_method = 'account_space_creation', "
+          "verification_reason = 'all_evidence_matches_current_user' "
+          "WHERE sync_eligibility_status = 'ready'",
+        );
+        await customStatement(
+          'UPDATE cloud_account_bindings '
+          "SET verification_status = 'not_verified', "
+          'verification_time = NULL, '
+          'verification_method = NULL, '
+          'verification_reason = NULL '
+          "WHERE sync_eligibility_status = 'legacy_review_required'",
         );
         await migrator.alterTable(TableMigration(cloudAccountBindings));
         await _createAccountBoundaryIndexes();

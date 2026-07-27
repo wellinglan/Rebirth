@@ -9,7 +9,7 @@ void main() {
       final database = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 6);
+      expect(database.schemaVersion, 7);
       final tables = await database
           .customSelect("SELECT name FROM sqlite_master WHERE type='table'")
           .get();

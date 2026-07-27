@@ -179,6 +179,7 @@ final class AccountBoundaryRepositoryImpl implements AccountBoundaryRepository {
         localUserId: localUserId,
         accountScope: scope,
         syncEligibility: AccountSyncEligibility.legacyReviewRequired,
+        verificationStatus: AccountOwnershipVerificationStatus.notVerified,
       );
     });
   }
@@ -251,6 +252,12 @@ final class AccountBoundaryRepositoryImpl implements AccountBoundaryRepository {
       binding.syncEligibilityStatus,
     );
     if (eligibility == AccountSyncEligibility.legacyReviewRequired) {
+      throw const AccountSyncReviewRequiredException();
+    }
+    final verification = AccountOwnershipVerificationStatus.fromWire(
+      binding.verificationStatus,
+    );
+    if (verification != AccountOwnershipVerificationStatus.verified) {
       throw const AccountSyncReviewRequiredException();
     }
     return activeUserId;
@@ -356,6 +363,10 @@ final class AccountBoundaryRepositoryImpl implements AccountBoundaryRepository {
       syncEligibility: AccountSyncEligibility.fromWire(
         binding.syncEligibilityStatus,
       ),
+      verificationStatus: AccountOwnershipVerificationStatus.fromWire(
+        binding.verificationStatus,
+      ),
+      verificationReason: binding.verificationReason,
     );
   }
 
@@ -393,6 +404,7 @@ final class AccountBoundaryRepositoryImpl implements AccountBoundaryRepository {
       localUserId: profileId,
       accountScope: scope,
       syncEligibility: AccountSyncEligibility.ready,
+      verificationStatus: AccountOwnershipVerificationStatus.verified,
     );
   }
 
@@ -416,6 +428,26 @@ final class AccountBoundaryRepositoryImpl implements AccountBoundaryRepository {
             bindingOrigin: Value(origin.wireValue),
             syncEligibilityStatus: Value(eligibility.wireValue),
             ownershipConfirmedAt: Value(now),
+            verificationStatus: Value(
+              eligibility == AccountSyncEligibility.ready
+                  ? AccountOwnershipVerificationStatus.verified.wireValue
+                  : AccountOwnershipVerificationStatus.notVerified.wireValue,
+            ),
+            verificationTime: Value(
+              eligibility == AccountSyncEligibility.ready ? now : null,
+            ),
+            verificationMethod: Value(
+              eligibility == AccountSyncEligibility.ready
+                  ? AccountOwnershipVerificationMethod
+                        .accountSpaceCreation
+                        .wireValue
+                  : null,
+            ),
+            verificationReason: Value(
+              eligibility == AccountSyncEligibility.ready
+                  ? 'all_evidence_matches_current_user'
+                  : null,
+            ),
           ),
         );
   }

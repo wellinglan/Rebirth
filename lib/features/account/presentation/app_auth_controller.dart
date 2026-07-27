@@ -51,6 +51,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
         cloudUserId: session.user.id,
         accountScope: resolution.accountScope,
         syncEligibility: resolution.syncEligibility,
+        verificationStatus: resolution.verificationStatus,
+        verificationReason: resolution.verificationReason,
       );
     } on AccountSessionRejectedException catch (error) {
       return AppAuthState(
@@ -100,6 +102,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
           cloudUserId: session.user.id,
           accountScope: resolution.accountScope,
           syncEligibility: resolution.syncEligibility,
+          verificationStatus: resolution.verificationStatus,
+          verificationReason: resolution.verificationReason,
         ),
       );
       return true;
@@ -166,6 +170,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
           cloudUserId: session.user.id,
           accountScope: resolution.accountScope,
           syncEligibility: resolution.syncEligibility,
+          verificationStatus: resolution.verificationStatus,
+          verificationReason: resolution.verificationReason,
         ),
       );
     } finally {

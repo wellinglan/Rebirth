@@ -116,7 +116,7 @@ void main() {
     expect(other.isActive, isFalse);
   });
 
-  test('schemaVersion is 6', () {
-    expect(database.schemaVersion, 6);
+  test('schemaVersion is 7', () {
+    expect(database.schemaVersion, 7);
   });
 }

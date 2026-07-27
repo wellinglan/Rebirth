@@ -508,3 +508,28 @@ Automated implementation evidence does not close the manual Release Gate.
 The original isolation matrix remains in
 `docs/manual_tests/27_account_boundary_isolation.md`; the explicit upgrade
 workflow is in `docs/manual_tests/28_legacy_local_data_resolution.md`.
+
+## Sprint 10B.3 Verification Decision
+
+An explicit local claim proves who may open a local Profile, but it cannot
+prove which cloud account created historical `server_version` values. Sprint
+10B.3 keeps those concepts separate and adds a Server-backed metadata proof.
+
+The Server authenticates the request with the current JWT and compares
+Profile/Plan identity, global server version, and a content-free metadata
+fingerprint with its own `sync_items`. The request contains no business text
+and cannot nominate a cloud or local user. Exact evidence belonging to the
+current user is verified; missing evidence is unknown; mismatch or exact
+evidence owned elsewhere is rejected.
+
+Schema 7 adds `verification_status`, `verification_time`,
+`verification_method`, and `verification_reason`. Existing clean/fresh
+`ready` bindings backfill to verified with `account_space_creation`.
+Quarantined legacy bindings backfill to `not_verified`. Only a verified Server
+result writes `ready + verified`; unknown and rejected remain
+`legacy_review_required`.
+
+This decision does not clear, reassign, or infer cursor ownership. It does not
+delete conflicts or tombstones, alter local business versions, or change AI
+Consent. Verification success only unlocks the existing manual Profile/Plan
+buttons. The user still decides whether and when to sync.

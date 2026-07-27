@@ -46,12 +46,40 @@ enum AccountSyncEligibility {
   }
 }
 
+enum AccountOwnershipVerificationStatus {
+  notVerified('not_verified'),
+  verified('verified'),
+  failed('failed');
+
+  const AccountOwnershipVerificationStatus(this.wireValue);
+
+  final String wireValue;
+
+  static AccountOwnershipVerificationStatus fromWire(String value) {
+    return values.firstWhere(
+      (candidate) => candidate.wireValue == value,
+      orElse: () => throw StateError('Unknown ownership verification status.'),
+    );
+  }
+}
+
+enum AccountOwnershipVerificationMethod {
+  accountSpaceCreation('account_space_creation'),
+  serverSyncMetadataV1('server_sync_metadata_v1');
+
+  const AccountOwnershipVerificationMethod(this.wireValue);
+
+  final String wireValue;
+}
+
 final class AccountBindingResolution {
   const AccountBindingResolution._({
     required this.status,
     this.localUserId,
     this.accountScope,
     this.syncEligibility,
+    this.verificationStatus,
+    this.verificationReason,
     this.unboundProfileCount = 0,
   });
 
@@ -59,11 +87,16 @@ final class AccountBindingResolution {
     required String localUserId,
     required CloudAccountScope accountScope,
     required AccountSyncEligibility syncEligibility,
+    AccountOwnershipVerificationStatus verificationStatus =
+        AccountOwnershipVerificationStatus.verified,
+    String? verificationReason,
   }) : this._(
          status: AccountBindingResolutionStatus.activated,
          localUserId: localUserId,
          accountScope: accountScope,
          syncEligibility: syncEligibility,
+         verificationStatus: verificationStatus,
+         verificationReason: verificationReason,
        );
 
   const AccountBindingResolution.bindingRequired({
@@ -79,6 +112,8 @@ final class AccountBindingResolution {
   final String? localUserId;
   final CloudAccountScope? accountScope;
   final AccountSyncEligibility? syncEligibility;
+  final AccountOwnershipVerificationStatus? verificationStatus;
+  final String? verificationReason;
   final int unboundProfileCount;
 
   bool get isActivated =>

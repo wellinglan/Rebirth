@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 import uuid
@@ -22,6 +23,8 @@ from app.schemas import (
     SyncPullResponse,
     SyncPushRequest,
     SyncPushResponse,
+    OwnershipVerificationRequest,
+    OwnershipVerificationResponse,
 )
 
 
@@ -37,6 +40,110 @@ class DeviceUnavailableError(RuntimeError):
 
 class SyncRequestValidationError(ValueError):
     pass
+
+
+def verify_ownership(
+    session: Session,
+    user_id: str,
+    body: OwnershipVerificationRequest,
+) -> OwnershipVerificationResponse:
+    if not body.evidence:
+        return OwnershipVerificationResponse(
+            status="unknown",
+            verified_count=0,
+            rejected_count=0,
+            unknown_count=0,
+            reason="no_verifiable_evidence",
+        )
+
+    verified_count = 0
+    rejected_count = 0
+    unknown_count = 0
+    seen: set[tuple[str, str, int]] = set()
+    for evidence in body.evidence:
+        key = (
+            evidence.table_name,
+            evidence.record_id,
+            evidence.server_version,
+        )
+        if key in seen:
+            raise SyncRequestValidationError("Duplicate ownership evidence.")
+        seen.add(key)
+
+        current_user_item = session.scalar(
+            select(SyncItem).where(
+                SyncItem.user_id == user_id,
+                SyncItem.table_name == evidence.table_name,
+                SyncItem.record_id == evidence.record_id,
+            )
+        )
+        if current_user_item is not None:
+            if (
+                current_user_item.server_version == evidence.server_version
+                and ownership_metadata_fingerprint(current_user_item)
+                == evidence.metadata_fingerprint
+            ):
+                verified_count += 1
+            else:
+                rejected_count += 1
+            continue
+
+        exact_item = session.scalar(
+            select(SyncItem).where(
+                SyncItem.table_name == evidence.table_name,
+                SyncItem.record_id == evidence.record_id,
+                SyncItem.server_version == evidence.server_version,
+            )
+        )
+        if (
+            exact_item is not None
+            and ownership_metadata_fingerprint(exact_item)
+            == evidence.metadata_fingerprint
+        ):
+            rejected_count += 1
+        else:
+            unknown_count += 1
+
+    if rejected_count > 0:
+        return OwnershipVerificationResponse(
+            status="rejected",
+            verified_count=verified_count,
+            rejected_count=rejected_count,
+            unknown_count=unknown_count,
+            reason="metadata_mismatch_or_other_owner",
+        )
+    if unknown_count > 0:
+        return OwnershipVerificationResponse(
+            status="unknown",
+            verified_count=verified_count,
+            rejected_count=0,
+            unknown_count=unknown_count,
+            reason="remote_record_missing",
+        )
+    return OwnershipVerificationResponse(
+        status="verified",
+        verified_count=verified_count,
+        rejected_count=0,
+        unknown_count=0,
+        reason="all_evidence_matches_current_user",
+    )
+
+
+def ownership_metadata_fingerprint(item: SyncItem) -> str:
+    canonical = json.dumps(
+        {
+            "deleted_at": item.deleted_at,
+            "origin_device_id": item.origin_device_id,
+            "record_id": item.record_id,
+            "server_version": item.server_version,
+            "table": item.table_name,
+            "updated_at": item.client_updated_at,
+        },
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)

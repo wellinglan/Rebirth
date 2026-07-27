@@ -488,7 +488,7 @@ void main() {
   });
 
   test('schema version is 3', () {
-    expect(database.schemaVersion, 6);
+    expect(database.schemaVersion, 7);
   });
 }
 

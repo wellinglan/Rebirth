@@ -9765,6 +9765,51 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _verificationStatusMeta =
+      const VerificationMeta('verificationStatus');
+  @override
+  late final GeneratedColumn<String> verificationStatus =
+      GeneratedColumn<String>(
+        'verification_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('verified'),
+      );
+  static const VerificationMeta _verificationTimeMeta = const VerificationMeta(
+    'verificationTime',
+  );
+  @override
+  late final GeneratedColumn<int> verificationTime = GeneratedColumn<int>(
+    'verification_time',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _verificationMethodMeta =
+      const VerificationMeta('verificationMethod');
+  @override
+  late final GeneratedColumn<String> verificationMethod =
+      GeneratedColumn<String>(
+        'verification_method',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _verificationReasonMeta =
+      const VerificationMeta('verificationReason');
+  @override
+  late final GeneratedColumn<String> verificationReason =
+      GeneratedColumn<String>(
+        'verification_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9777,6 +9822,10 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
     bindingOrigin,
     syncEligibilityStatus,
     ownershipConfirmedAt,
+    verificationStatus,
+    verificationTime,
+    verificationMethod,
+    verificationReason,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9878,6 +9927,42 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
         ),
       );
     }
+    if (data.containsKey('verification_status')) {
+      context.handle(
+        _verificationStatusMeta,
+        verificationStatus.isAcceptableOrUnknown(
+          data['verification_status']!,
+          _verificationStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('verification_time')) {
+      context.handle(
+        _verificationTimeMeta,
+        verificationTime.isAcceptableOrUnknown(
+          data['verification_time']!,
+          _verificationTimeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('verification_method')) {
+      context.handle(
+        _verificationMethodMeta,
+        verificationMethod.isAcceptableOrUnknown(
+          data['verification_method']!,
+          _verificationMethodMeta,
+        ),
+      );
+    }
+    if (data.containsKey('verification_reason')) {
+      context.handle(
+        _verificationReasonMeta,
+        verificationReason.isAcceptableOrUnknown(
+          data['verification_reason']!,
+          _verificationReasonMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9932,6 +10017,22 @@ class $CloudAccountBindingsTable extends CloudAccountBindings
         DriftSqlType.int,
         data['${effectivePrefix}ownership_confirmed_at'],
       ),
+      verificationStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verification_status'],
+      )!,
+      verificationTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}verification_time'],
+      ),
+      verificationMethod: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verification_method'],
+      ),
+      verificationReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verification_reason'],
+      ),
     );
   }
 
@@ -9953,6 +10054,10 @@ class CloudAccountBindingRow extends DataClass
   final String bindingOrigin;
   final String syncEligibilityStatus;
   final int? ownershipConfirmedAt;
+  final String verificationStatus;
+  final int? verificationTime;
+  final String? verificationMethod;
+  final String? verificationReason;
   const CloudAccountBindingRow({
     required this.id,
     required this.localUserId,
@@ -9964,6 +10069,10 @@ class CloudAccountBindingRow extends DataClass
     required this.bindingOrigin,
     required this.syncEligibilityStatus,
     this.ownershipConfirmedAt,
+    required this.verificationStatus,
+    this.verificationTime,
+    this.verificationMethod,
+    this.verificationReason,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9979,6 +10088,16 @@ class CloudAccountBindingRow extends DataClass
     map['sync_eligibility_status'] = Variable<String>(syncEligibilityStatus);
     if (!nullToAbsent || ownershipConfirmedAt != null) {
       map['ownership_confirmed_at'] = Variable<int>(ownershipConfirmedAt);
+    }
+    map['verification_status'] = Variable<String>(verificationStatus);
+    if (!nullToAbsent || verificationTime != null) {
+      map['verification_time'] = Variable<int>(verificationTime);
+    }
+    if (!nullToAbsent || verificationMethod != null) {
+      map['verification_method'] = Variable<String>(verificationMethod);
+    }
+    if (!nullToAbsent || verificationReason != null) {
+      map['verification_reason'] = Variable<String>(verificationReason);
     }
     return map;
   }
@@ -9997,6 +10116,16 @@ class CloudAccountBindingRow extends DataClass
       ownershipConfirmedAt: ownershipConfirmedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(ownershipConfirmedAt),
+      verificationStatus: Value(verificationStatus),
+      verificationTime: verificationTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verificationTime),
+      verificationMethod: verificationMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verificationMethod),
+      verificationReason: verificationReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verificationReason),
     );
   }
 
@@ -10020,6 +10149,16 @@ class CloudAccountBindingRow extends DataClass
       ownershipConfirmedAt: serializer.fromJson<int?>(
         json['ownershipConfirmedAt'],
       ),
+      verificationStatus: serializer.fromJson<String>(
+        json['verificationStatus'],
+      ),
+      verificationTime: serializer.fromJson<int?>(json['verificationTime']),
+      verificationMethod: serializer.fromJson<String?>(
+        json['verificationMethod'],
+      ),
+      verificationReason: serializer.fromJson<String?>(
+        json['verificationReason'],
+      ),
     );
   }
   @override
@@ -10036,6 +10175,10 @@ class CloudAccountBindingRow extends DataClass
       'bindingOrigin': serializer.toJson<String>(bindingOrigin),
       'syncEligibilityStatus': serializer.toJson<String>(syncEligibilityStatus),
       'ownershipConfirmedAt': serializer.toJson<int?>(ownershipConfirmedAt),
+      'verificationStatus': serializer.toJson<String>(verificationStatus),
+      'verificationTime': serializer.toJson<int?>(verificationTime),
+      'verificationMethod': serializer.toJson<String?>(verificationMethod),
+      'verificationReason': serializer.toJson<String?>(verificationReason),
     };
   }
 
@@ -10050,6 +10193,10 @@ class CloudAccountBindingRow extends DataClass
     String? bindingOrigin,
     String? syncEligibilityStatus,
     Value<int?> ownershipConfirmedAt = const Value.absent(),
+    String? verificationStatus,
+    Value<int?> verificationTime = const Value.absent(),
+    Value<String?> verificationMethod = const Value.absent(),
+    Value<String?> verificationReason = const Value.absent(),
   }) => CloudAccountBindingRow(
     id: id ?? this.id,
     localUserId: localUserId ?? this.localUserId,
@@ -10063,6 +10210,16 @@ class CloudAccountBindingRow extends DataClass
     ownershipConfirmedAt: ownershipConfirmedAt.present
         ? ownershipConfirmedAt.value
         : this.ownershipConfirmedAt,
+    verificationStatus: verificationStatus ?? this.verificationStatus,
+    verificationTime: verificationTime.present
+        ? verificationTime.value
+        : this.verificationTime,
+    verificationMethod: verificationMethod.present
+        ? verificationMethod.value
+        : this.verificationMethod,
+    verificationReason: verificationReason.present
+        ? verificationReason.value
+        : this.verificationReason,
   );
   CloudAccountBindingRow copyWithCompanion(CloudAccountBindingsCompanion data) {
     return CloudAccountBindingRow(
@@ -10090,6 +10247,18 @@ class CloudAccountBindingRow extends DataClass
       ownershipConfirmedAt: data.ownershipConfirmedAt.present
           ? data.ownershipConfirmedAt.value
           : this.ownershipConfirmedAt,
+      verificationStatus: data.verificationStatus.present
+          ? data.verificationStatus.value
+          : this.verificationStatus,
+      verificationTime: data.verificationTime.present
+          ? data.verificationTime.value
+          : this.verificationTime,
+      verificationMethod: data.verificationMethod.present
+          ? data.verificationMethod.value
+          : this.verificationMethod,
+      verificationReason: data.verificationReason.present
+          ? data.verificationReason.value
+          : this.verificationReason,
     );
   }
 
@@ -10105,7 +10274,11 @@ class CloudAccountBindingRow extends DataClass
           ..write('status: $status, ')
           ..write('bindingOrigin: $bindingOrigin, ')
           ..write('syncEligibilityStatus: $syncEligibilityStatus, ')
-          ..write('ownershipConfirmedAt: $ownershipConfirmedAt')
+          ..write('ownershipConfirmedAt: $ownershipConfirmedAt, ')
+          ..write('verificationStatus: $verificationStatus, ')
+          ..write('verificationTime: $verificationTime, ')
+          ..write('verificationMethod: $verificationMethod, ')
+          ..write('verificationReason: $verificationReason')
           ..write(')'))
         .toString();
   }
@@ -10122,6 +10295,10 @@ class CloudAccountBindingRow extends DataClass
     bindingOrigin,
     syncEligibilityStatus,
     ownershipConfirmedAt,
+    verificationStatus,
+    verificationTime,
+    verificationMethod,
+    verificationReason,
   );
   @override
   bool operator ==(Object other) =>
@@ -10136,7 +10313,11 @@ class CloudAccountBindingRow extends DataClass
           other.status == this.status &&
           other.bindingOrigin == this.bindingOrigin &&
           other.syncEligibilityStatus == this.syncEligibilityStatus &&
-          other.ownershipConfirmedAt == this.ownershipConfirmedAt);
+          other.ownershipConfirmedAt == this.ownershipConfirmedAt &&
+          other.verificationStatus == this.verificationStatus &&
+          other.verificationTime == this.verificationTime &&
+          other.verificationMethod == this.verificationMethod &&
+          other.verificationReason == this.verificationReason);
 }
 
 class CloudAccountBindingsCompanion
@@ -10151,6 +10332,10 @@ class CloudAccountBindingsCompanion
   final Value<String> bindingOrigin;
   final Value<String> syncEligibilityStatus;
   final Value<int?> ownershipConfirmedAt;
+  final Value<String> verificationStatus;
+  final Value<int?> verificationTime;
+  final Value<String?> verificationMethod;
+  final Value<String?> verificationReason;
   final Value<int> rowid;
   const CloudAccountBindingsCompanion({
     this.id = const Value.absent(),
@@ -10163,6 +10348,10 @@ class CloudAccountBindingsCompanion
     this.bindingOrigin = const Value.absent(),
     this.syncEligibilityStatus = const Value.absent(),
     this.ownershipConfirmedAt = const Value.absent(),
+    this.verificationStatus = const Value.absent(),
+    this.verificationTime = const Value.absent(),
+    this.verificationMethod = const Value.absent(),
+    this.verificationReason = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CloudAccountBindingsCompanion.insert({
@@ -10176,6 +10365,10 @@ class CloudAccountBindingsCompanion
     this.bindingOrigin = const Value.absent(),
     this.syncEligibilityStatus = const Value.absent(),
     this.ownershipConfirmedAt = const Value.absent(),
+    this.verificationStatus = const Value.absent(),
+    this.verificationTime = const Value.absent(),
+    this.verificationMethod = const Value.absent(),
+    this.verificationReason = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : localUserId = Value(localUserId),
        endpointKey = Value(endpointKey),
@@ -10193,6 +10386,10 @@ class CloudAccountBindingsCompanion
     Expression<String>? bindingOrigin,
     Expression<String>? syncEligibilityStatus,
     Expression<int>? ownershipConfirmedAt,
+    Expression<String>? verificationStatus,
+    Expression<int>? verificationTime,
+    Expression<String>? verificationMethod,
+    Expression<String>? verificationReason,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10208,6 +10405,10 @@ class CloudAccountBindingsCompanion
         'sync_eligibility_status': syncEligibilityStatus,
       if (ownershipConfirmedAt != null)
         'ownership_confirmed_at': ownershipConfirmedAt,
+      if (verificationStatus != null) 'verification_status': verificationStatus,
+      if (verificationTime != null) 'verification_time': verificationTime,
+      if (verificationMethod != null) 'verification_method': verificationMethod,
+      if (verificationReason != null) 'verification_reason': verificationReason,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10223,6 +10424,10 @@ class CloudAccountBindingsCompanion
     Value<String>? bindingOrigin,
     Value<String>? syncEligibilityStatus,
     Value<int?>? ownershipConfirmedAt,
+    Value<String>? verificationStatus,
+    Value<int?>? verificationTime,
+    Value<String?>? verificationMethod,
+    Value<String?>? verificationReason,
     Value<int>? rowid,
   }) {
     return CloudAccountBindingsCompanion(
@@ -10237,6 +10442,10 @@ class CloudAccountBindingsCompanion
       syncEligibilityStatus:
           syncEligibilityStatus ?? this.syncEligibilityStatus,
       ownershipConfirmedAt: ownershipConfirmedAt ?? this.ownershipConfirmedAt,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      verificationTime: verificationTime ?? this.verificationTime,
+      verificationMethod: verificationMethod ?? this.verificationMethod,
+      verificationReason: verificationReason ?? this.verificationReason,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10276,6 +10485,18 @@ class CloudAccountBindingsCompanion
     if (ownershipConfirmedAt.present) {
       map['ownership_confirmed_at'] = Variable<int>(ownershipConfirmedAt.value);
     }
+    if (verificationStatus.present) {
+      map['verification_status'] = Variable<String>(verificationStatus.value);
+    }
+    if (verificationTime.present) {
+      map['verification_time'] = Variable<int>(verificationTime.value);
+    }
+    if (verificationMethod.present) {
+      map['verification_method'] = Variable<String>(verificationMethod.value);
+    }
+    if (verificationReason.present) {
+      map['verification_reason'] = Variable<String>(verificationReason.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10295,6 +10516,10 @@ class CloudAccountBindingsCompanion
           ..write('bindingOrigin: $bindingOrigin, ')
           ..write('syncEligibilityStatus: $syncEligibilityStatus, ')
           ..write('ownershipConfirmedAt: $ownershipConfirmedAt, ')
+          ..write('verificationStatus: $verificationStatus, ')
+          ..write('verificationTime: $verificationTime, ')
+          ..write('verificationMethod: $verificationMethod, ')
+          ..write('verificationReason: $verificationReason, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17252,6 +17477,10 @@ typedef $$CloudAccountBindingsTableCreateCompanionBuilder =
       Value<String> bindingOrigin,
       Value<String> syncEligibilityStatus,
       Value<int?> ownershipConfirmedAt,
+      Value<String> verificationStatus,
+      Value<int?> verificationTime,
+      Value<String?> verificationMethod,
+      Value<String?> verificationReason,
       Value<int> rowid,
     });
 typedef $$CloudAccountBindingsTableUpdateCompanionBuilder =
@@ -17266,6 +17495,10 @@ typedef $$CloudAccountBindingsTableUpdateCompanionBuilder =
       Value<String> bindingOrigin,
       Value<String> syncEligibilityStatus,
       Value<int?> ownershipConfirmedAt,
+      Value<String> verificationStatus,
+      Value<int?> verificationTime,
+      Value<String?> verificationMethod,
+      Value<String?> verificationReason,
       Value<int> rowid,
     });
 
@@ -17355,6 +17588,26 @@ class $$CloudAccountBindingsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get verificationStatus => $composableBuilder(
+    column: $table.verificationStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get verificationTime => $composableBuilder(
+    column: $table.verificationTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get verificationMethod => $composableBuilder(
+    column: $table.verificationMethod,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get verificationReason => $composableBuilder(
+    column: $table.verificationReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$UserProfilesTableFilterComposer get localUserId {
     final $$UserProfilesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -17433,6 +17686,26 @@ class $$CloudAccountBindingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get verificationStatus => $composableBuilder(
+    column: $table.verificationStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get verificationTime => $composableBuilder(
+    column: $table.verificationTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get verificationMethod => $composableBuilder(
+    column: $table.verificationMethod,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get verificationReason => $composableBuilder(
+    column: $table.verificationReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UserProfilesTableOrderingComposer get localUserId {
     final $$UserProfilesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -17502,6 +17775,26 @@ class $$CloudAccountBindingsTableAnnotationComposer
 
   GeneratedColumn<int> get ownershipConfirmedAt => $composableBuilder(
     column: $table.ownershipConfirmedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get verificationStatus => $composableBuilder(
+    column: $table.verificationStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get verificationTime => $composableBuilder(
+    column: $table.verificationTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get verificationMethod => $composableBuilder(
+    column: $table.verificationMethod,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get verificationReason => $composableBuilder(
+    column: $table.verificationReason,
     builder: (column) => column,
   );
 
@@ -17575,6 +17868,10 @@ class $$CloudAccountBindingsTableTableManager
                 Value<String> bindingOrigin = const Value.absent(),
                 Value<String> syncEligibilityStatus = const Value.absent(),
                 Value<int?> ownershipConfirmedAt = const Value.absent(),
+                Value<String> verificationStatus = const Value.absent(),
+                Value<int?> verificationTime = const Value.absent(),
+                Value<String?> verificationMethod = const Value.absent(),
+                Value<String?> verificationReason = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloudAccountBindingsCompanion(
                 id: id,
@@ -17587,6 +17884,10 @@ class $$CloudAccountBindingsTableTableManager
                 bindingOrigin: bindingOrigin,
                 syncEligibilityStatus: syncEligibilityStatus,
                 ownershipConfirmedAt: ownershipConfirmedAt,
+                verificationStatus: verificationStatus,
+                verificationTime: verificationTime,
+                verificationMethod: verificationMethod,
+                verificationReason: verificationReason,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17601,6 +17902,10 @@ class $$CloudAccountBindingsTableTableManager
                 Value<String> bindingOrigin = const Value.absent(),
                 Value<String> syncEligibilityStatus = const Value.absent(),
                 Value<int?> ownershipConfirmedAt = const Value.absent(),
+                Value<String> verificationStatus = const Value.absent(),
+                Value<int?> verificationTime = const Value.absent(),
+                Value<String?> verificationMethod = const Value.absent(),
+                Value<String?> verificationReason = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloudAccountBindingsCompanion.insert(
                 id: id,
@@ -17613,6 +17918,10 @@ class $$CloudAccountBindingsTableTableManager
                 bindingOrigin: bindingOrigin,
                 syncEligibilityStatus: syncEligibilityStatus,
                 ownershipConfirmedAt: ownershipConfirmedAt,
+                verificationStatus: verificationStatus,
+                verificationTime: verificationTime,
+                verificationMethod: verificationMethod,
+                verificationReason: verificationReason,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
