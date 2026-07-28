@@ -2,7 +2,7 @@
 
 > Sprint: 10B.3.1
 > Baseline: `52e60b33febb1bc2e94cafbae50927b4cefd4292`
-> Status: implemented; local automated and release-build verification passed
+> Status: implemented; automated verification passed; manual gate partially accepted
 > API: 1
 > Sync Protocol: 2
 > Flutter schema: 7
@@ -99,10 +99,16 @@ delete Alpha data to validate this remediation.
 ## Release Gate
 
 Automated tests prove state transitions and preservation, but do not prove the
-existing Alpha account history. Execute
-`docs/manual_tests/30_legacy_sync_reentry_remediation.md` on Windows and
-Android release builds against the updated API. The gate remains open until
-all required rows pass.
+existing Alpha account history. The available Windows, Android, cross-device,
+restart, and network-failure scenarios in
+`docs/manual_tests/30_legacy_sync_reentry_remediation.md` produced
+`27 PASS / 0 FAIL / 7 NOT EXECUTED`.
+
+The two reported remediation defects passed in every exercised scenario.
+The gate remains open because there was no independent legacy local space or
+spare installation for account B rejection checks, and one database-internal
+preservation audit was not manually observable. Automated coverage for those
+paths remains green but is not counted as manual PASS.
 
 ## Local Verification
 
@@ -119,8 +125,11 @@ Executed on 2026-07-28:
 | Android split release build | PASS, armv7 + arm64 + x86_64 |
 | Flutter schemaVersion | unchanged at `7` |
 | PostgreSQL schema and Alembic | unchanged |
-| Manual remediation matrix | `34 NOT EXECUTED` |
+| Manual remediation matrix | PARTIAL, `27 PASS / 0 FAIL / 7 NOT EXECUTED` |
+| Deployed API image | PASS, exact commit tag deployed with existing PostgreSQL volume |
+| GitHub Quality | PASS, run `30327537109` |
+| Alpha image publication | PASS, run `30327537091` |
 
 Android build retains the existing non-blocking CupertinoIcons asset warning.
-GitHub Quality, PostgreSQL markers, image publication, deployment, and device
-acceptance are recorded separately after push.
+The published API digest is
+`sha256:ae6eb94068de34e1c6ea323dcf0666cfe11ea3f4260e476d4cea9f3f78284b00`.
