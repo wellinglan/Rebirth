@@ -14,6 +14,8 @@ import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_repository.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/today/data/today_sync_payload_codec.dart';
+import 'package:rebirth/features/today/data/today_conflict_resolution_service_impl.dart';
+import 'package:rebirth/features/today/domain/today_conflict_resolution_service.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
@@ -105,6 +107,14 @@ final syncConflictDetailsProvider =
 final planConflictResolutionServiceProvider =
     Provider<PlanConflictResolutionService>((ref) {
       return PlanConflictResolutionServiceImpl(
+        ref.watch(appDatabaseProvider),
+        ref.watch(syncConflictRepositoryProvider),
+      );
+    });
+
+final todayConflictResolutionServiceProvider =
+    Provider<TodayConflictResolutionService>((ref) {
+      return TodayConflictResolutionServiceImpl(
         ref.watch(appDatabaseProvider),
         ref.watch(syncConflictRepositoryProvider),
       );

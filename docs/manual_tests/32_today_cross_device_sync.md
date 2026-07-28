@@ -139,3 +139,13 @@ paths passed. The remaining eight rows require unsupported Today deletion,
 independent same-date creation not exercised in this run, a second endpoint,
 a legacy quarantine fixture, or internal apply/cursor inspection. Automated
 coverage for those paths remains green but is not counted as manual PASS.
+
+## Sprint 11A.1 Follow-up
+
+This document remains the historical Sprint 11A result:
+`44 PASS / 0 FAIL / 8 NOT EXECUTED`. Do not rewrite those rows.
+
+Explicit deletion, tombstone recovery, adopt remote, keep local, and same-date
+different-UUID convergence are evaluated in
+`docs/manual_tests/33_today_conflict_recovery.md`. Internal cursor, rollback,
+guard, and replay results remain automated evidence, not manual PASS here.

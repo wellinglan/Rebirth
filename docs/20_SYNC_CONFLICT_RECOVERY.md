@@ -277,3 +277,21 @@ matrix status are in `docs/manual_tests/25_plan_cross_device_sync.md` and
 
 Profile re-entry remediation is documented separately in
 `docs/24_LEGACY_SYNC_REENTRY_REMEDIATION.md`.
+
+## Sprint 11A.1 Today Conflict Recovery
+
+Today joins Plan in the persistent generic conflict center. Conflict actions
+are dispatched by an explicit handler registry instead of a Plan controller
+hard-coded in the detail page. Plan behavior remains registered and
+unchanged; unregistered entities stay read-only.
+
+Today persists local `record_id` and nullable `remote_record_id`. Hydration
+and adopt use pull-only conflict mode from server version zero without
+clearing the normal cursor. Keep-local prepares the remote OCC baseline
+transactionally and uses push-only. Same-date different UUIDs converge to the
+cloud UUID only after user confirmation. Health business fields and sync
+metadata remain local and unchanged.
+
+See `docs/32_TODAY_CONFLICT_RECOVERY.md` and
+`docs/manual_tests/33_today_conflict_recovery.md`. Journal and Health conflict
+handlers are not implemented in this Sprint.

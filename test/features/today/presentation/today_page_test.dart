@@ -83,6 +83,29 @@ void main() {
     expect(find.byKey(const ValueKey('todayEmptyState')), findsNothing);
   });
 
+  testWidgets('current Today delete confirms through the controller', (
+    tester,
+  ) async {
+    final repository = _FakeTodayRepository(
+      entry: _sampleEntry(dailyNote: '删除我'),
+    );
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('deleteTodayButton')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('deleteTodayConfirmationDialog')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('同日 Health 数据会保留'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('confirmDeleteTodayButton')));
+    await tester.pumpAndSettle();
+
+    expect(repository.deleteAttempts, 1);
+    expect(find.textContaining('同日 Health 已保留'), findsOneWidget);
+  });
+
   testWidgets('editing daily note saves through TodayController', (
     tester,
   ) async {
@@ -449,6 +472,7 @@ final class _FakeTodayRepository implements TodayRepository {
   TodaySaveData? lastSaved;
   int saveAttempts = 0;
   int historyLoadAttempts = 0;
+  int deleteAttempts = 0;
 
   @override
   Future<TodayEntry> getToday() async {
@@ -512,6 +536,11 @@ final class _FakeTodayRepository implements TodayRepository {
       health: health,
     );
     return entry;
+  }
+
+  @override
+  Future<void> deleteTodayByDate(String recordDate) async {
+    deleteAttempts += 1;
   }
 
   @override

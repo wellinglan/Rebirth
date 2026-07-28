@@ -39,6 +39,7 @@ class TodayPage extends ConsumerWidget {
         data: (entry) => TodayForm(
           entry: entry,
           onSave: (data) => _save(context, ref, data),
+          onDelete: () => _confirmDelete(context, ref),
           onOpenHistory: () => context.push(RoutePaths.todayHistory),
           onOpenDailyInsight: () =>
               context.push(RoutePaths.aiCoachDaily(entry.recordDate)),
@@ -61,5 +62,49 @@ class TodayPage extends ConsumerWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(const SnackBar(content: Text('今日记录已保存')));
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            key: const ValueKey('deleteTodayConfirmationDialog'),
+            title: const Text('删除今日记录？'),
+            content: const SingleChildScrollView(
+              child: Text(
+                '只会删除 Today 记录，同日 Health 数据会保留。'
+                '删除将在你下次手动同步 Today 后传到其他设备；取消不会修改数据。',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmDeleteTodayButton'),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('确认删除'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !context.mounted) return;
+    try {
+      await ref.read(todayControllerProvider.notifier).deleteToday();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('Today 记录已删除，同日 Health 已保留')),
+        );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('删除失败，记录内容已保留，请稍后重试')));
+    }
   }
 }

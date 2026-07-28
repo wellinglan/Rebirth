@@ -20,7 +20,9 @@ void main() {
 
   setUp(() async {
     database = AppDatabase.forTesting(NativeDatabase.memory());
-    final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     scope = SyncConflictScope(
       localUserId: bootstrap.activeUserId,
       endpointKey: 'http://server-a:8000',
@@ -104,6 +106,7 @@ void main() {
       scope: scope,
       entityType: SyncEntityType.plan,
       recordId: _recordId,
+      remoteRecordId: _remoteRecordId,
       operation: SyncConflictOperation.upsert,
       remoteSnapshot: _snapshot(
         title: 'hydrated',
@@ -113,6 +116,7 @@ void main() {
       seenAt: 150,
     );
     expect(hydrated.resolutionStatus, SyncConflictResolutionStatus.unresolved);
+    expect(hydrated.remoteRecordId, _remoteRecordId);
     expect(
       (hydrated.remoteSnapshot.payload as PlanSyncPayload).title,
       'hydrated',
@@ -255,7 +259,9 @@ void main() {
     });
     final file = File('${directory.path}/rebirth.sqlite');
     final firstDatabase = AppDatabase.forTesting(NativeDatabase(file));
-    final bootstrap = await firstDatabase.bootstrapDao.bootstrap(createUnboundProfile: true);
+    final bootstrap = await firstDatabase.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     final diskScope = SyncConflictScope(
       localUserId: bootstrap.activeUserId,
       endpointKey: 'http://server-a:8000',
@@ -282,12 +288,14 @@ void main() {
     );
 
     expect(restored.recordId, _recordId);
+    expect(restored.remoteRecordId, _remoteRecordId);
     expect(restored.remoteSnapshot.serverVersion, 7);
     expect((restored.localSnapshot.payload as PlanSyncPayload).title, 'local');
   });
 }
 
 const _recordId = '00000000-0000-4000-8000-000000000091';
+const _remoteRecordId = '00000000-0000-4000-8000-000000000092';
 
 SyncConflictDetection _detection({
   required SyncConflictScope scope,
@@ -300,6 +308,7 @@ SyncConflictDetection _detection({
     scope: scope,
     entityType: SyncEntityType.plan,
     recordId: _recordId,
+    remoteRecordId: _remoteRecordId,
     localSnapshot: _snapshot(title: 'local', updatedAt: 90, serverVersion: 6),
     remoteSnapshot: awaiting
         ? SyncConflictSnapshot(

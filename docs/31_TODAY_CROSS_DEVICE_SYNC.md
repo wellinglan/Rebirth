@@ -5,7 +5,7 @@
 > Status: implemented; local automated verification passed; manual gate open
 > API: 1
 > Sync Protocol: 2
-> Flutter schema: 7
+> Flutter schema: 8 after Sprint 11A.1
 
 ## Scope
 
@@ -88,8 +88,11 @@ The first version is local-first:
 - pending local content is not overwritten by pull;
 - a nonblank local row with the same date but a different UUID is protected;
 - no field-level merge or automatic last-write-wins is performed;
-- Today conflict details are readable, but this Sprint adds no destructive
-  keep-local or adopt-cloud action.
+- Today conflict details were initially read-only.
+
+Sprint 11A.1 adds explicit delete, remote snapshot hydration, adopt remote,
+keep local, tombstone resolution, and same-date identity reconciliation. See
+`docs/32_TODAY_CONFLICT_RECOVERY.md` for the current behavior.
 
 The Server validates one active Today record per natural date for each JWT
 user and treats `record_date` as immutable for a record UUID. Independent
@@ -131,6 +134,11 @@ Automated checks do not replace the Windows and Android matrix in
 records `44 PASS / 0 FAIL / 8 NOT EXECUTED`. The gate remains open with partial
 acceptance because the remaining rows require unsupported operations or
 fixtures that were not available.
+
+The 32 matrix remains immutable Sprint 11A evidence at
+`44 PASS / 0 FAIL / 8 NOT EXECUTED`. Remaining product paths move to
+`docs/manual_tests/33_today_conflict_recovery.md`; automated evidence does not
+rewrite historical manual results.
 
 ## Local Verification
 

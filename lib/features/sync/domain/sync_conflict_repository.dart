@@ -6,6 +6,7 @@ final class SyncConflictDetection {
     required this.scope,
     required this.entityType,
     required this.recordId,
+    this.remoteRecordId,
     required this.localSnapshot,
     required this.remoteSnapshot,
     required this.remoteOperation,
@@ -16,6 +17,7 @@ final class SyncConflictDetection {
   final SyncConflictScope scope;
   final SyncEntityType entityType;
   final String recordId;
+  final String? remoteRecordId;
   final SyncConflictSnapshot localSnapshot;
   final SyncConflictSnapshot remoteSnapshot;
   final SyncConflictOperation remoteOperation;
@@ -36,6 +38,12 @@ abstract interface class SyncConflictRepository {
     required String recordId,
   });
 
+  Future<SyncConflictRecord?> findActiveConflictByRemoteRecordId({
+    required SyncConflictScope scope,
+    required SyncEntityType entityType,
+    required String remoteRecordId,
+  });
+
   Future<SyncConflictRecord> upsertDetectedConflict(
     SyncConflictDetection detection,
   );
@@ -44,6 +52,7 @@ abstract interface class SyncConflictRepository {
     required SyncConflictScope scope,
     required SyncEntityType entityType,
     required String recordId,
+    String? remoteRecordId,
     required SyncConflictOperation operation,
     required SyncConflictSnapshot remoteSnapshot,
     required int seenAt,

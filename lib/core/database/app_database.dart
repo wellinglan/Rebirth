@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -132,6 +132,11 @@ class AppDatabase extends _$AppDatabase {
         await migrator.alterTable(TableMigration(cloudAccountBindings));
         await _createAccountBoundaryIndexes();
       }
+      if (from < 8 && from >= 4) {
+        if (!await _columnExists('sync_conflicts', 'remote_record_id')) {
+          await migrator.addColumn(syncConflicts, syncConflicts.remoteRecordId);
+        }
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -197,6 +202,11 @@ class AppDatabase extends _$AppDatabase {
       "WHERE resolution_status = 'awaiting_remote_snapshot' "
       'AND resolved_at IS NULL',
     );
+  }
+
+  Future<bool> _columnExists(String tableName, String columnName) async {
+    final columns = await customSelect('PRAGMA table_info($tableName)').get();
+    return columns.any((row) => row.read<String>('name') == columnName);
   }
 }
 

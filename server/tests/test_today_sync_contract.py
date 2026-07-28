@@ -147,7 +147,7 @@ def test_today_tombstone_requires_an_empty_payload(
     assert accepted.status_code == 200
 
 
-def test_today_rejects_a_second_active_record_for_the_same_date(
+def test_today_returns_structured_conflict_for_second_identity_on_same_date(
     client: TestClient,
     auth_headers: dict[str, str],
     registered_device: str,
@@ -161,7 +161,17 @@ def test_today_rejects_a_second_active_record_for_the_same_date(
     )
 
     assert first.status_code == 200
-    assert second.status_code == 422
+    assert second.status_code == 200
+    assert second.json()["accepted"] == []
+    assert second.json()["conflicts"] == [
+        {
+            "table": "today_records",
+            "id": SECOND_TODAY_ID,
+            "server_version": first.json()["accepted"][0]["server_version"],
+            "reason": "today_record_date_conflict",
+            "remote_record_id": TODAY_ID,
+        }
+    ]
     pulled = client.post(
         "/sync/pull",
         headers=auth_headers,

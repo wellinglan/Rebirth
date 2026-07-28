@@ -72,6 +72,7 @@ final class SyncPushResponseDto {
           recordId: item['id'] as String,
           serverVersion: item['server_version'] as int,
           reason: item['reason'] as String,
+          remoteRecordId: item['remote_record_id'] as String?,
         );
       }),
     );

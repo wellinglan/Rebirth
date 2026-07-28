@@ -129,6 +129,34 @@ void main() {
     );
   });
 
+  testWidgets('historical Today can be deleted after explicit confirmation', (
+    tester,
+  ) async {
+    final repository = _HistoryRepository(entries: [_sampleHistoryEntry()]);
+    await _pumpHistoryPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('todayHistoryItem_history-id')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('deleteHistoricalTodayButton')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('deleteHistoricalTodayConfirmationDialog')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('confirmDeleteHistoricalTodayButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository.deletedDates, ['2026-07-12']);
+    expect(find.textContaining('同日 Health 已保留'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('todayHistoryEmptyState')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('exact date opens only the matching read-only detail once', (
     tester,
   ) async {
@@ -142,11 +170,7 @@ void main() {
         ),
       ],
     );
-    await _pumpHistoryPage(
-      tester,
-      repository,
-      targetDate: '2026-07-12',
-    );
+    await _pumpHistoryPage(tester, repository, targetDate: '2026-07-12');
     await tester.pumpAndSettle();
 
     final dialog = find.byKey(const ValueKey('todayEntryDetailDialog'));
@@ -165,7 +189,10 @@ void main() {
         .element(find.byKey(const ValueKey('todayHistoryPage')))
         .markNeedsBuild();
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('todayEntryDetailDialog')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('todayEntryDetailDialog')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('关闭'));
     await tester.pumpAndSettle();
@@ -181,11 +208,7 @@ void main() {
     tester,
   ) async {
     final repository = _HistoryRepository(entries: [_sampleHistoryEntry()]);
-    await _pumpHistoryPage(
-      tester,
-      repository,
-      targetDate: '2026-07-10',
-    );
+    await _pumpHistoryPage(tester, repository, targetDate: '2026-07-10');
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('todayHistoryPage')), findsOneWidget);
@@ -197,11 +220,7 @@ void main() {
     tester,
   ) async {
     final repository = _HistoryRepository(entries: [_sampleHistoryEntry()]);
-    await _pumpHistoryPage(
-      tester,
-      repository,
-      targetDate: '2026-02-30',
-    );
+    await _pumpHistoryPage(tester, repository, targetDate: '2026-02-30');
     await tester.pumpAndSettle();
 
     expect(find.text('日期参数无效，无法定位 Today 记录。'), findsOneWidget);
@@ -294,6 +313,13 @@ final class _HistoryRepository implements TodayRepository {
   Object? loadError;
   int loadAttempts = 0;
   int getByDateCalls = 0;
+  final List<String> deletedDates = [];
+
+  @override
+  Future<void> deleteTodayByDate(String recordDate) async {
+    deletedDates.add(recordDate);
+    entries.removeWhere((entry) => entry.recordDate == recordDate);
+  }
 
   @override
   Future<TodayEntry?> getByDate(String recordDate) async {

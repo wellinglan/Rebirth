@@ -21,6 +21,10 @@ final class TodayRecordNotFoundException implements Exception {
   String toString() => 'No active Today record exists for $recordDate.';
 }
 
+final class TodayRecordConflictException implements Exception {
+  const TodayRecordConflictException();
+}
+
 final class TodayLocalDataSource {
   const TodayLocalDataSource(this.database);
 
@@ -128,6 +132,41 @@ final class TodayLocalDataSource {
       )..where((row) => row.id.equals(today.id))).write(changes);
 
       return (await getByDate(userId: userId, recordDate: recordDate))!;
+    });
+  }
+
+  Future<void> softDeleteToday({
+    required String userId,
+    required String recordDate,
+    required int timestamp,
+    required String originDeviceId,
+  }) {
+    return database.transaction(() async {
+      final today = await _findToday(userId: userId, recordDate: recordDate);
+      if (today == null) {
+        return;
+      }
+      if (today.syncStatus == 'conflict') {
+        throw const TodayRecordConflictException();
+      }
+      final affected =
+          await (database.update(database.todayRecords)..where(
+                (row) =>
+                    row.userId.equals(userId) &
+                    row.id.equals(today.id) &
+                    row.deletedAt.isNull(),
+              ))
+              .write(
+                TodayRecordsCompanion(
+                  updatedAt: Value(timestamp),
+                  deletedAt: Value(timestamp),
+                  syncStatus: const Value('pending'),
+                  originDeviceId: Value(originDeviceId),
+                ),
+              );
+      if (affected != 1) {
+        throw TodayRecordNotFoundException(recordDate);
+      }
     });
   }
 

@@ -502,6 +502,13 @@ final class _FakeConflictRepository implements SyncConflictRepository {
   }) async => record.isActive ? record : null;
 
   @override
+  Future<SyncConflictRecord?> findActiveConflictByRemoteRecordId({
+    required SyncConflictScope scope,
+    required SyncEntityType entityType,
+    required String remoteRecordId,
+  }) async => record.isActive ? record : null;
+
+  @override
   Future<SyncConflictRecord> upsertDetectedConflict(
     SyncConflictDetection detection,
   ) async => record;
@@ -511,6 +518,7 @@ final class _FakeConflictRepository implements SyncConflictRepository {
     required SyncConflictScope scope,
     required SyncEntityType entityType,
     required String recordId,
+    String? remoteRecordId,
     required SyncConflictOperation operation,
     required SyncConflictSnapshot remoteSnapshot,
     required int seenAt,

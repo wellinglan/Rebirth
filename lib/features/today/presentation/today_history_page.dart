@@ -34,7 +34,8 @@ class _TodayHistoryPageState extends ConsumerState<TodayHistoryPage> {
     final today = dateTimeService.currentLocalDateString();
     final targetDate = widget.targetDate;
     final targetDateIsValid =
-        targetDate == null || dateTimeService.isValidLocalDateString(targetDate);
+        targetDate == null ||
+        dateTimeService.isValidLocalDateString(targetDate);
     final targetEntry = targetDate != null && targetDateIsValid
         ? ref.watch(todayHistoryEntryForDateProvider(targetDate))
         : null;
@@ -125,8 +126,61 @@ class _TodayHistoryPageState extends ConsumerState<TodayHistoryPage> {
   ) {
     return showDialog<void>(
       context: context,
-      builder: (context) => TodayEntryDetailDialog(entry: entry, today: today),
+      builder: (dialogContext) => TodayEntryDetailDialog(
+        entry: entry,
+        today: today,
+        onDelete: () {
+          Navigator.of(dialogContext).pop();
+          _confirmDelete(entry.recordDate);
+        },
+      ),
     );
+  }
+
+  Future<void> _confirmDelete(String recordDate) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            key: const ValueKey('deleteHistoricalTodayConfirmationDialog'),
+            title: Text('删除 $recordDate 的 Today 记录？'),
+            content: const SingleChildScrollView(
+              child: Text(
+                '只会删除 Today 记录，同日 Health 数据会保留。'
+                '删除将在你下次手动同步 Today 后传到其他设备；取消不会修改数据。',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmDeleteHistoricalTodayButton'),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('确认删除'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+    try {
+      await ref
+          .read(todayHistoryControllerProvider.notifier)
+          .deleteByDate(recordDate);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('Today 记录已删除，同日 Health 已保留')),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('删除失败，记录内容已保留，请稍后重试')));
+    }
   }
 
   void _scheduleTargetDialog(TodayEntry entry, String today) {
@@ -156,8 +210,7 @@ class _TodayTargetNotice extends StatelessWidget {
         ? '日期参数无效，无法定位 Today 记录。'
         : state?.when(
                 loading: () => '正在查找 $targetDate 的 Today 记录...',
-                error: (error, stackTrace) =>
-                    '$targetDate 的 Today 记录暂时无法读取。',
+                error: (error, stackTrace) => '$targetDate 的 Today 记录暂时无法读取。',
                 data: (entry) => entry?.recordDate == targetDate
                     ? '已定位 $targetDate 的 Today 记录。'
                     : '未找到 $targetDate 的 Today 记录。',

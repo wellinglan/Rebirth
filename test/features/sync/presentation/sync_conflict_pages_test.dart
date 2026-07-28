@@ -16,6 +16,7 @@ import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/sync_conflict_detail_page.dart';
 import 'package:rebirth/features/sync/presentation/sync_conflict_list_page.dart';
+import 'package:rebirth/features/sync/presentation/sync_conflict_resolution_handlers.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
@@ -114,7 +115,7 @@ void main() {
     expect(find.text('云端版本：6'), findsOneWidget);
   });
 
-  testWidgets('Today conflict is readable and remains locally protected', (
+  testWidgets('Today conflict is readable and offers explicit recovery', (
     tester,
   ) async {
     await _pumpDetails(tester, details: _todayDetails());
@@ -123,12 +124,31 @@ void main() {
     expect(find.text('日期：2026-07-28'), findsNWidgets(2));
     expect(find.text('心情：4'), findsOneWidget);
     expect(find.text('心情：5'), findsOneWidget);
+    expect(find.byKey(const ValueKey('adoptRemoteButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('keepLocalButton')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('todayConflictProtectedNotice')),
-      findsOneWidget,
+      find.byKey(const ValueKey('unsupportedConflictProtectedNotice')),
+      findsNothing,
     );
-    expect(find.byKey(const ValueKey('adoptRemoteButton')), findsNothing);
-    expect(find.byKey(const ValueKey('keepLocalButton')), findsNothing);
+  });
+
+  testWidgets('Today actions dispatch through the Today handler', (
+    tester,
+  ) async {
+    final handler = _RecordingConflictHandler(SyncEntityType.today);
+    await _pumpDetails(
+      tester,
+      details: _todayDetails(),
+      handlerRegistry: SyncConflictResolutionHandlerRegistry([handler]),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('adoptRemoteButton')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('同日 Health 不会删除'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('confirmAdoptRemoteButton')));
+    await tester.pumpAndSettle();
+
+    expect(handler.calls, ['adopt']);
   });
 
   testWidgets('adopt confirmation can cancel without invoking controller', (
@@ -353,6 +373,7 @@ Future<void> _pumpDetails(
   _RecordingPlanSyncController? controller,
   Size size = const Size(900, 900),
   TextScaler textScaler = TextScaler.noScaling,
+  SyncConflictResolutionHandlerRegistry? handlerRegistry,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -366,6 +387,10 @@ Future<void> _pumpDetails(
           return details ?? _details();
         }),
         planSyncControllerProvider.overrideWith(() => notifier),
+        if (handlerRegistry != null)
+          syncConflictResolutionHandlerRegistryProvider.overrideWithValue(
+            handlerRegistry,
+          ),
       ],
       child: MaterialApp(
         builder: (context, child) => MediaQuery(
@@ -377,6 +402,61 @@ Future<void> _pumpDetails(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+final class _RecordingConflictHandler implements SyncConflictResolutionHandler {
+  _RecordingConflictHandler(this.entityType);
+
+  @override
+  final SyncEntityType entityType;
+
+  final List<String> calls = [];
+
+  @override
+  bool get isBusy => false;
+
+  @override
+  String? get resolvingConflictId => null;
+
+  @override
+  Future<SyncRunResult> adoptRemote(String conflictId) async {
+    calls.add('adopt');
+    return _handlerResult(entityType);
+  }
+
+  @override
+  Future<SyncRunResult> keepLocal(String conflictId) async {
+    calls.add('keep');
+    return _handlerResult(entityType);
+  }
+
+  @override
+  Future<SyncRunResult> retryHydration(String conflictId) async {
+    calls.add('hydrate');
+    return _handlerResult(entityType);
+  }
+
+  @override
+  Future<SyncRunResult> retryRequestedResolution(String conflictId) async {
+    calls.add('retry');
+    return _handlerResult(entityType);
+  }
+}
+
+SyncRunResult _handlerResult(SyncEntityType entityType) {
+  return SyncRunResult(
+    direction: SyncRunDirection.pull,
+    phases: const [SyncRunPhase.completed],
+    entityResults: [
+      SyncEntityResult(
+        entityType: entityType,
+        status: SyncEntityStatus.succeeded,
+        message: 'ok',
+      ),
+    ],
+    startedAt: 1,
+    completedAt: 2,
+  );
 }
 
 const _conflictId = '00000000-0000-4000-8000-000000000041';

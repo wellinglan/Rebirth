@@ -8129,6 +8129,17 @@ class $SyncConflictsTable extends SyncConflicts
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _remoteRecordIdMeta = const VerificationMeta(
+    'remoteRecordId',
+  );
+  @override
+  late final GeneratedColumn<String> remoteRecordId = GeneratedColumn<String>(
+    'remote_record_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _localPayloadJsonMeta = const VerificationMeta(
     'localPayloadJson',
   );
@@ -8301,6 +8312,7 @@ class $SyncConflictsTable extends SyncConflicts
     cloudUserId,
     entityType,
     recordId,
+    remoteRecordId,
     localPayloadJson,
     localUpdatedAt,
     localDeletedAt,
@@ -8380,6 +8392,15 @@ class $SyncConflictsTable extends SyncConflicts
       );
     } else if (isInserting) {
       context.missing(_recordIdMeta);
+    }
+    if (data.containsKey('remote_record_id')) {
+      context.handle(
+        _remoteRecordIdMeta,
+        remoteRecordId.isAcceptableOrUnknown(
+          data['remote_record_id']!,
+          _remoteRecordIdMeta,
+        ),
+      );
     }
     if (data.containsKey('local_payload_json')) {
       context.handle(
@@ -8555,6 +8576,10 @@ class $SyncConflictsTable extends SyncConflicts
         DriftSqlType.string,
         data['${effectivePrefix}record_id'],
       )!,
+      remoteRecordId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_record_id'],
+      ),
       localPayloadJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}local_payload_json'],
@@ -8631,6 +8656,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
   final String cloudUserId;
   final String entityType;
   final String recordId;
+  final String? remoteRecordId;
   final String? localPayloadJson;
   final int localUpdatedAt;
   final int? localDeletedAt;
@@ -8653,6 +8679,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
     required this.cloudUserId,
     required this.entityType,
     required this.recordId,
+    this.remoteRecordId,
     this.localPayloadJson,
     required this.localUpdatedAt,
     this.localDeletedAt,
@@ -8678,6 +8705,9 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
     map['cloud_user_id'] = Variable<String>(cloudUserId);
     map['entity_type'] = Variable<String>(entityType);
     map['record_id'] = Variable<String>(recordId);
+    if (!nullToAbsent || remoteRecordId != null) {
+      map['remote_record_id'] = Variable<String>(remoteRecordId);
+    }
     if (!nullToAbsent || localPayloadJson != null) {
       map['local_payload_json'] = Variable<String>(localPayloadJson);
     }
@@ -8722,6 +8752,9 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
       cloudUserId: Value(cloudUserId),
       entityType: Value(entityType),
       recordId: Value(recordId),
+      remoteRecordId: remoteRecordId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteRecordId),
       localPayloadJson: localPayloadJson == null && nullToAbsent
           ? const Value.absent()
           : Value(localPayloadJson),
@@ -8770,6 +8803,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
       cloudUserId: serializer.fromJson<String>(json['cloudUserId']),
       entityType: serializer.fromJson<String>(json['entityType']),
       recordId: serializer.fromJson<String>(json['recordId']),
+      remoteRecordId: serializer.fromJson<String?>(json['remoteRecordId']),
       localPayloadJson: serializer.fromJson<String?>(json['localPayloadJson']),
       localUpdatedAt: serializer.fromJson<int>(json['localUpdatedAt']),
       localDeletedAt: serializer.fromJson<int?>(json['localDeletedAt']),
@@ -8805,6 +8839,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
       'cloudUserId': serializer.toJson<String>(cloudUserId),
       'entityType': serializer.toJson<String>(entityType),
       'recordId': serializer.toJson<String>(recordId),
+      'remoteRecordId': serializer.toJson<String?>(remoteRecordId),
       'localPayloadJson': serializer.toJson<String?>(localPayloadJson),
       'localUpdatedAt': serializer.toJson<int>(localUpdatedAt),
       'localDeletedAt': serializer.toJson<int?>(localDeletedAt),
@@ -8830,6 +8865,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
     String? cloudUserId,
     String? entityType,
     String? recordId,
+    Value<String?> remoteRecordId = const Value.absent(),
     Value<String?> localPayloadJson = const Value.absent(),
     int? localUpdatedAt,
     Value<int?> localDeletedAt = const Value.absent(),
@@ -8852,6 +8888,9 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
     cloudUserId: cloudUserId ?? this.cloudUserId,
     entityType: entityType ?? this.entityType,
     recordId: recordId ?? this.recordId,
+    remoteRecordId: remoteRecordId.present
+        ? remoteRecordId.value
+        : this.remoteRecordId,
     localPayloadJson: localPayloadJson.present
         ? localPayloadJson.value
         : this.localPayloadJson,
@@ -8900,6 +8939,9 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
           ? data.entityType.value
           : this.entityType,
       recordId: data.recordId.present ? data.recordId.value : this.recordId,
+      remoteRecordId: data.remoteRecordId.present
+          ? data.remoteRecordId.value
+          : this.remoteRecordId,
       localPayloadJson: data.localPayloadJson.present
           ? data.localPayloadJson.value
           : this.localPayloadJson,
@@ -8957,6 +8999,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
           ..write('cloudUserId: $cloudUserId, ')
           ..write('entityType: $entityType, ')
           ..write('recordId: $recordId, ')
+          ..write('remoteRecordId: $remoteRecordId, ')
           ..write('localPayloadJson: $localPayloadJson, ')
           ..write('localUpdatedAt: $localUpdatedAt, ')
           ..write('localDeletedAt: $localDeletedAt, ')
@@ -8984,6 +9027,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
     cloudUserId,
     entityType,
     recordId,
+    remoteRecordId,
     localPayloadJson,
     localUpdatedAt,
     localDeletedAt,
@@ -9010,6 +9054,7 @@ class SyncConflictRow extends DataClass implements Insertable<SyncConflictRow> {
           other.cloudUserId == this.cloudUserId &&
           other.entityType == this.entityType &&
           other.recordId == this.recordId &&
+          other.remoteRecordId == this.remoteRecordId &&
           other.localPayloadJson == this.localPayloadJson &&
           other.localUpdatedAt == this.localUpdatedAt &&
           other.localDeletedAt == this.localDeletedAt &&
@@ -9034,6 +9079,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
   final Value<String> cloudUserId;
   final Value<String> entityType;
   final Value<String> recordId;
+  final Value<String?> remoteRecordId;
   final Value<String?> localPayloadJson;
   final Value<int> localUpdatedAt;
   final Value<int?> localDeletedAt;
@@ -9057,6 +9103,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
     this.cloudUserId = const Value.absent(),
     this.entityType = const Value.absent(),
     this.recordId = const Value.absent(),
+    this.remoteRecordId = const Value.absent(),
     this.localPayloadJson = const Value.absent(),
     this.localUpdatedAt = const Value.absent(),
     this.localDeletedAt = const Value.absent(),
@@ -9081,6 +9128,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
     required String cloudUserId,
     required String entityType,
     required String recordId,
+    this.remoteRecordId = const Value.absent(),
     this.localPayloadJson = const Value.absent(),
     required int localUpdatedAt,
     this.localDeletedAt = const Value.absent(),
@@ -9115,6 +9163,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
     Expression<String>? cloudUserId,
     Expression<String>? entityType,
     Expression<String>? recordId,
+    Expression<String>? remoteRecordId,
     Expression<String>? localPayloadJson,
     Expression<int>? localUpdatedAt,
     Expression<int>? localDeletedAt,
@@ -9139,6 +9188,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
       if (cloudUserId != null) 'cloud_user_id': cloudUserId,
       if (entityType != null) 'entity_type': entityType,
       if (recordId != null) 'record_id': recordId,
+      if (remoteRecordId != null) 'remote_record_id': remoteRecordId,
       if (localPayloadJson != null) 'local_payload_json': localPayloadJson,
       if (localUpdatedAt != null) 'local_updated_at': localUpdatedAt,
       if (localDeletedAt != null) 'local_deleted_at': localDeletedAt,
@@ -9169,6 +9219,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
     Value<String>? cloudUserId,
     Value<String>? entityType,
     Value<String>? recordId,
+    Value<String?>? remoteRecordId,
     Value<String?>? localPayloadJson,
     Value<int>? localUpdatedAt,
     Value<int?>? localDeletedAt,
@@ -9193,6 +9244,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
       cloudUserId: cloudUserId ?? this.cloudUserId,
       entityType: entityType ?? this.entityType,
       recordId: recordId ?? this.recordId,
+      remoteRecordId: remoteRecordId ?? this.remoteRecordId,
       localPayloadJson: localPayloadJson ?? this.localPayloadJson,
       localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
       localDeletedAt: localDeletedAt ?? this.localDeletedAt,
@@ -9232,6 +9284,9 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
     }
     if (recordId.present) {
       map['record_id'] = Variable<String>(recordId.value);
+    }
+    if (remoteRecordId.present) {
+      map['remote_record_id'] = Variable<String>(remoteRecordId.value);
     }
     if (localPayloadJson.present) {
       map['local_payload_json'] = Variable<String>(localPayloadJson.value);
@@ -9297,6 +9352,7 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
           ..write('cloudUserId: $cloudUserId, ')
           ..write('entityType: $entityType, ')
           ..write('recordId: $recordId, ')
+          ..write('remoteRecordId: $remoteRecordId, ')
           ..write('localPayloadJson: $localPayloadJson, ')
           ..write('localUpdatedAt: $localUpdatedAt, ')
           ..write('localDeletedAt: $localDeletedAt, ')
@@ -16621,6 +16677,7 @@ typedef $$SyncConflictsTableCreateCompanionBuilder =
       required String cloudUserId,
       required String entityType,
       required String recordId,
+      Value<String?> remoteRecordId,
       Value<String?> localPayloadJson,
       required int localUpdatedAt,
       Value<int?> localDeletedAt,
@@ -16646,6 +16703,7 @@ typedef $$SyncConflictsTableUpdateCompanionBuilder =
       Value<String> cloudUserId,
       Value<String> entityType,
       Value<String> recordId,
+      Value<String?> remoteRecordId,
       Value<String?> localPayloadJson,
       Value<int> localUpdatedAt,
       Value<int?> localDeletedAt,
@@ -16723,6 +16781,11 @@ class $$SyncConflictsTableFilterComposer
 
   ColumnFilters<String> get recordId => $composableBuilder(
     column: $table.recordId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteRecordId => $composableBuilder(
+    column: $table.remoteRecordId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16859,6 +16922,11 @@ class $$SyncConflictsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get remoteRecordId => $composableBuilder(
+    column: $table.remoteRecordId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get localPayloadJson => $composableBuilder(
     column: $table.localPayloadJson,
     builder: (column) => ColumnOrderings(column),
@@ -16987,6 +17055,11 @@ class $$SyncConflictsTableAnnotationComposer
 
   GeneratedColumn<String> get recordId =>
       $composableBuilder(column: $table.recordId, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteRecordId => $composableBuilder(
+    column: $table.remoteRecordId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get localPayloadJson => $composableBuilder(
     column: $table.localPayloadJson,
@@ -17121,6 +17194,7 @@ class $$SyncConflictsTableTableManager
                 Value<String> cloudUserId = const Value.absent(),
                 Value<String> entityType = const Value.absent(),
                 Value<String> recordId = const Value.absent(),
+                Value<String?> remoteRecordId = const Value.absent(),
                 Value<String?> localPayloadJson = const Value.absent(),
                 Value<int> localUpdatedAt = const Value.absent(),
                 Value<int?> localDeletedAt = const Value.absent(),
@@ -17144,6 +17218,7 @@ class $$SyncConflictsTableTableManager
                 cloudUserId: cloudUserId,
                 entityType: entityType,
                 recordId: recordId,
+                remoteRecordId: remoteRecordId,
                 localPayloadJson: localPayloadJson,
                 localUpdatedAt: localUpdatedAt,
                 localDeletedAt: localDeletedAt,
@@ -17169,6 +17244,7 @@ class $$SyncConflictsTableTableManager
                 required String cloudUserId,
                 required String entityType,
                 required String recordId,
+                Value<String?> remoteRecordId = const Value.absent(),
                 Value<String?> localPayloadJson = const Value.absent(),
                 required int localUpdatedAt,
                 Value<int?> localDeletedAt = const Value.absent(),
@@ -17192,6 +17268,7 @@ class $$SyncConflictsTableTableManager
                 cloudUserId: cloudUserId,
                 entityType: entityType,
                 recordId: recordId,
+                remoteRecordId: remoteRecordId,
                 localPayloadJson: localPayloadJson,
                 localUpdatedAt: localUpdatedAt,
                 localDeletedAt: localDeletedAt,

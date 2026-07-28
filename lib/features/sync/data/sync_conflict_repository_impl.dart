@@ -81,6 +81,24 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
   }
 
   @override
+  Future<SyncConflictRecord?> findActiveConflictByRemoteRecordId({
+    required SyncConflictScope scope,
+    required SyncEntityType entityType,
+    required String remoteRecordId,
+  }) async {
+    final row =
+        await (_database.select(_database.syncConflicts)..where(
+              (row) =>
+                  _scopePredicate(row, scope) &
+                  row.entityType.equals(entityType.wireName) &
+                  row.remoteRecordId.equals(remoteRecordId) &
+                  row.resolvedAt.isNull(),
+            ))
+            .getSingleOrNull();
+    return row == null ? null : _toDomain(row);
+  }
+
+  @override
   Future<SyncConflictRecord> upsertDetectedConflict(
     SyncConflictDetection detection,
   ) async {
@@ -102,6 +120,7 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
               cloudUserId: detection.scope.cloudUserId,
               entityType: detection.entityType.wireName,
               recordId: detection.recordId,
+              remoteRecordId: Value(detection.remoteRecordId),
               localPayloadJson: Value(
                 _encodePayload(
                   detection.entityType,
@@ -149,6 +168,9 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
               ),
             )
           : const Value.absent(),
+      remoteRecordId: shouldReplaceRemote
+          ? Value(detection.remoteRecordId)
+          : const Value.absent(),
       remoteOperation: shouldReplaceRemote
           ? Value(detection.remoteOperation.wireValue)
           : const Value.absent(),
@@ -183,6 +205,7 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
     required SyncConflictScope scope,
     required SyncEntityType entityType,
     required String recordId,
+    String? remoteRecordId,
     required SyncConflictOperation operation,
     required SyncConflictSnapshot remoteSnapshot,
     required int seenAt,
@@ -207,6 +230,7 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
       _database.syncConflicts,
     )..where((row) => row.id.equals(existing.id))).write(
       db.SyncConflictsCompanion(
+        remoteRecordId: Value(remoteRecordId),
         remotePayloadJson: Value(
           _encodePayload(entityType, remoteSnapshot.payload),
         ),
@@ -389,6 +413,7 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
       ),
       entityType: entityType,
       recordId: row.recordId,
+      remoteRecordId: row.remoteRecordId,
       localSnapshot: SyncConflictSnapshot(
         payload: _decodePayload(entityType, row.recordId, row.localPayloadJson),
         updatedAt: row.localUpdatedAt,
@@ -399,7 +424,7 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
       remoteSnapshot: SyncConflictSnapshot(
         payload: _decodePayload(
           entityType,
-          row.recordId,
+          row.remoteRecordId ?? row.recordId,
           row.remotePayloadJson,
         ),
         updatedAt: row.remoteUpdatedAt,

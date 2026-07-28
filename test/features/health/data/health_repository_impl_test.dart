@@ -89,65 +89,71 @@ void main() {
     ]);
   });
 
-  test('listRecent ignores empty rows and summary uses requested days', () async {
-    await repository.getToday();
-    for (final day in [10, 13]) {
-      await repository.saveForDate(
-        HealthSaveData(
-          recordDate: '2026-07-$day',
-          sleepDurationMinutes: day == 10 ? 420 : 480,
-          exerciseDurationMinutes: 30,
-          waterIntakeMl: day == 10 ? 1000 : 2000,
-          weightKg: day == 10 ? 66 : 65.5,
-        ),
-      );
-    }
+  test(
+    'listRecent ignores empty rows and summary uses requested days',
+    () async {
+      await repository.getToday();
+      for (final day in [10, 13]) {
+        await repository.saveForDate(
+          HealthSaveData(
+            recordDate: '2026-07-$day',
+            sleepDurationMinutes: day == 10 ? 420 : 480,
+            exerciseDurationMinutes: 30,
+            waterIntakeMl: day == 10 ? 1000 : 2000,
+            weightKg: day == 10 ? 66 : 65.5,
+          ),
+        );
+      }
 
-    final recent = await repository.listRecent(days: 7);
-    final summary = await repository.getSummary(days: 7);
+      final recent = await repository.listRecent(days: 7);
+      final summary = await repository.getSummary(days: 7);
 
-    expect(recent.map((entry) => entry.recordDate), [
-      '2026-07-13',
-      '2026-07-10',
-    ]);
-    expect(summary.days, 7);
-    expect(summary.recordsCount, 2);
-    expect(summary.averageSleepMinutes, 450);
-    expect(summary.totalExerciseMinutes, 60);
-    expect(summary.averageWaterIntakeMl, 1500);
-    expect(summary.latestWeightKg, 65.5);
-  });
+      expect(recent.map((entry) => entry.recordDate), [
+        '2026-07-13',
+        '2026-07-10',
+      ]);
+      expect(summary.days, 7);
+      expect(summary.recordsCount, 2);
+      expect(summary.averageSleepMinutes, 450);
+      expect(summary.totalExerciseMinutes, 60);
+      expect(summary.averageWaterIntakeMl, 1500);
+      expect(summary.latestWeightKg, 65.5);
+    },
+  );
 
   test('queries isolate users and hide soft-deleted rows', () async {
     final own = await repository.saveForDate(
       HealthSaveData(recordDate: '2026-07-14', waterIntakeMl: 1000),
     );
-    final bootstrap = await database.bootstrapDao.bootstrap(createUnboundProfile: true);
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
     final otherUserId = uuid.v4();
-    await database.into(database.userProfiles).insert(
-      UserProfilesCompanion.insert(
-        id: Value(otherUserId),
-        timezoneId: 'Etc/UTC',
-        isActive: const Value(false),
-      ),
-    );
-    await database.into(database.healthRecords).insert(
-      HealthRecordsCompanion.insert(
-        id: Value(uuid.v4()),
-        userId: otherUserId,
-        recordDate: '2026-07-14',
-        timezoneOffsetMinutes: 0,
-        waterIntakeMl: const Value(2500),
-      ),
-    );
-    await (database.update(database.healthRecords)
-          ..where((row) => row.id.equals(own.id)))
-        .write(
-          const HealthRecordsCompanion(
-            deletedAt: Value(2),
-            updatedAt: Value(2),
+    await database
+        .into(database.userProfiles)
+        .insert(
+          UserProfilesCompanion.insert(
+            id: Value(otherUserId),
+            timezoneId: 'Etc/UTC',
+            isActive: const Value(false),
           ),
         );
+    await database
+        .into(database.healthRecords)
+        .insert(
+          HealthRecordsCompanion.insert(
+            id: Value(uuid.v4()),
+            userId: otherUserId,
+            recordDate: '2026-07-14',
+            timezoneOffsetMinutes: 0,
+            waterIntakeMl: const Value(2500),
+          ),
+        );
+    await (database.update(
+      database.healthRecords,
+    )..where((row) => row.id.equals(own.id))).write(
+      const HealthRecordsCompanion(deletedAt: Value(2), updatedAt: Value(2)),
+    );
 
     expect(await repository.getByDate('2026-07-14'), isNull);
     expect(await repository.listRecent(), isEmpty);
@@ -163,7 +169,7 @@ void main() {
     final settings = await database.select(database.appSettings).getSingle();
 
     expect(raw.originDeviceId, settings.localInstallationId);
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
   });
 
   test('Today health save is readable through Health', () async {
@@ -188,26 +194,29 @@ void main() {
     expect(await database.select(database.healthRecords).get(), hasLength(1));
   });
 
-  test('Health save is aggregated by Today without duplicate records', () async {
-    await repository.saveForDate(
-      HealthSaveData(
-        recordDate: '2026-07-14',
-        sleepDurationMinutes: 0,
-        exerciseDurationMinutes: 45,
-        physicalStateScore: 3,
-      ),
-    );
-    final todayRepository = TodayRepositoryImpl(
-      database: database,
-      dateTimeService: DateTimeService(now: () => currentTime),
-    );
-    final today = await todayRepository.getToday();
+  test(
+    'Health save is aggregated by Today without duplicate records',
+    () async {
+      await repository.saveForDate(
+        HealthSaveData(
+          recordDate: '2026-07-14',
+          sleepDurationMinutes: 0,
+          exerciseDurationMinutes: 45,
+          physicalStateScore: 3,
+        ),
+      );
+      final todayRepository = TodayRepositoryImpl(
+        database: database,
+        dateTimeService: DateTimeService(now: () => currentTime),
+      );
+      final today = await todayRepository.getToday();
 
-    expect(today.health?.sleepDurationMinutes, 0);
-    expect(today.health?.exerciseDurationMinutes, 45);
-    expect(today.health?.physicalStateScore, 3);
-    expect(await database.select(database.healthRecords).get(), hasLength(1));
-  });
+      expect(today.health?.sleepDurationMinutes, 0);
+      expect(today.health?.exerciseDurationMinutes, 45);
+      expect(today.health?.physicalStateScore, 3);
+      expect(await database.select(database.healthRecords).get(), hasLength(1));
+    },
+  );
 
   test('Health links an existing Today record but never creates one', () async {
     await repository.saveForDate(

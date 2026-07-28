@@ -236,6 +236,19 @@ final class TodayRepositoryImpl implements TodayRepository {
     );
   }
 
+  @override
+  Future<void> deleteTodayByDate(String recordDate) async {
+    _validateRecordDate(recordDate);
+    final snapshot = dateTimeService.currentSnapshot();
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    await _localDataSource.softDeleteToday(
+      userId: bootstrap.activeUserId,
+      recordDate: recordDate,
+      timestamp: snapshot.utcMilliseconds,
+      originDeviceId: bootstrap.localInstallationId,
+    );
+  }
+
   Future<TodayEntry> _updateToday({
     required String recordDate,
     required TodayRecordsCompanion Function(int timestamp) changesForTimestamp,

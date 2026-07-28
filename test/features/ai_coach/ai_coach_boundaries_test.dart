@@ -21,39 +21,36 @@ void main() {
     }
   });
 
-  test(
-    'schema version 5 keeps AI presentation local-only boundaries',
-    () {
-      final database = File(
-        'lib/core/database/app_database.dart',
-      ).readAsStringSync();
-      expect(database, contains('int get schemaVersion => 7;'));
-      final presentation = [
-        ..._dartSources('lib/features/ai_coach/presentation/widgets'),
-        File(
-          'lib/features/ai_coach/presentation/ai_coach_page.dart',
-        ).readAsStringSync(),
-        File(
-          'lib/features/ai_coach/presentation/ai_report_detail_page.dart',
-        ).readAsStringSync(),
-        File(
-          'lib/features/ai_coach/presentation/ai_daily_insight_page.dart',
-        ).readAsStringSync(),
-      ];
-      expect(presentation, isNotEmpty);
-      for (final source in presentation) {
-        expect(source, isNot(contains('package:drift')));
-        expect(source, isNot(contains('app_database')));
-        expect(source, isNot(contains('local_ai_')));
-        expect(source, isNot(contains('core/network')));
-        expect(source, isNot(contains('ApiClient')));
-        expect(source, isNot(contains('createPending(')));
-        expect(source, isNot(contains('markCompleted(')));
-        expect(source, isNot(contains('markFailed(')));
-        expect(source, isNot(contains('DateTime.now')));
-      }
-    },
-  );
+  test('schema version 5 keeps AI presentation local-only boundaries', () {
+    final database = File(
+      'lib/core/database/app_database.dart',
+    ).readAsStringSync();
+    expect(database, contains('int get schemaVersion => 8;'));
+    final presentation = [
+      ..._dartSources('lib/features/ai_coach/presentation/widgets'),
+      File(
+        'lib/features/ai_coach/presentation/ai_coach_page.dart',
+      ).readAsStringSync(),
+      File(
+        'lib/features/ai_coach/presentation/ai_report_detail_page.dart',
+      ).readAsStringSync(),
+      File(
+        'lib/features/ai_coach/presentation/ai_daily_insight_page.dart',
+      ).readAsStringSync(),
+    ];
+    expect(presentation, isNotEmpty);
+    for (final source in presentation) {
+      expect(source, isNot(contains('package:drift')));
+      expect(source, isNot(contains('app_database')));
+      expect(source, isNot(contains('local_ai_')));
+      expect(source, isNot(contains('core/network')));
+      expect(source, isNot(contains('ApiClient')));
+      expect(source, isNot(contains('createPending(')));
+      expect(source, isNot(contains('markCompleted(')));
+      expect(source, isNot(contains('markFailed(')));
+      expect(source, isNot(contains('DateTime.now')));
+    }
+  });
 
   test('AI Coach UI does not expose canonical JSON or snapshot bodies', () {
     final presentation = _dartSources('lib/features/ai_coach/presentation');

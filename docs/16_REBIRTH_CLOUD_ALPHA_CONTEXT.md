@@ -640,3 +640,24 @@ not rebuild PostgreSQL, delete a volume, or run a new Alembic revision. Manual
 release evidence belongs in
 `docs/manual_tests/29_legacy_cloud_ownership_verification.md`; every row starts
 as `NOT EXECUTED`.
+
+## 26. Sprint 11A.1 Today Conflict Recovery
+
+Today supports explicit soft deletion, tombstone propagation, remote snapshot
+hydration, adopt remote, keep local, and same-date UUID reconciliation.
+Flutter schema 8 adds only `sync_conflicts.remote_record_id`.
+
+Server runtime returns an additive `remote_record_id` for structured
+same-date Today conflicts. API 1 and Sync Protocol 2 remain unchanged.
+PostgreSQL schema and Alembic remain unchanged. The implementation commit
+therefore requires a new API image, but Alpha deployment updates only the API
+container and must not rebuild PostgreSQL, delete its volume, clear cursors,
+or change the Endpoint.
+
+Product acceptance belongs to
+`docs/manual_tests/33_today_conflict_recovery.md`; internal invariants are
+automated evidence. The 2026-07-28 Windows and Android release-client matrix
+passed `51 / 51` checks with no failure or Today product release blocker, so
+the Today Sync Product Gate is `CLOSED / ACCEPTED`. Account Boundary isolation
+remains conditionally accepted while a second independent Endpoint is
+unavailable.

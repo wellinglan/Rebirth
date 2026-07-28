@@ -42,4 +42,6 @@ abstract interface class TodayRepository {
     required String recordDate,
     required bool completed,
   });
+
+  Future<void> deleteTodayByDate(String recordDate);
 }

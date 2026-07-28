@@ -16,6 +16,8 @@ class SyncConflicts extends Table with UuidPrimaryKey {
 
   TextColumn get recordId => text()();
 
+  TextColumn get remoteRecordId => text().nullable()();
+
   TextColumn get localPayloadJson => text().nullable()();
 
   IntColumn get localUpdatedAt => integer()();
@@ -54,6 +56,7 @@ class SyncConflicts extends Table with UuidPrimaryKey {
         "'user_profiles', 'today_records', 'journal_entries', "
         "'goals', 'health_records'))",
     'CHECK (length(trim(record_id)) > 0)',
+    'CHECK (remote_record_id IS NULL OR length(trim(remote_record_id)) > 0)',
     'CHECK (local_updated_at >= 0)',
     'CHECK (local_deleted_at IS NULL OR local_deleted_at >= 0)',
     'CHECK (local_server_version IS NULL OR local_server_version >= 0)',

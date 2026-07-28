@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/today/data/today_repository_impl.dart';
+import 'package:rebirth/features/today/data/today_local_data_source.dart';
+import 'package:rebirth/features/today/data/today_sync_adapter.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 import 'package:uuid/uuid.dart';
@@ -269,6 +271,73 @@ void main() {
 
     expect(await repository.listRecentEntries(), isEmpty);
     expect(await database.select(database.todayRecords).get(), hasLength(1));
+  });
+
+  test(
+    'explicit delete creates a pending tombstone and preserves Health',
+    () async {
+      final entry = await repository.saveToday(
+        TodaySaveData(
+          dailyNote: '删除前内容',
+          health: const TodayHealthInput(
+            sleepDurationMinutes: 450,
+            exerciseDurationMinutes: 30,
+            physicalStateScore: 4,
+          ),
+        ),
+      );
+      await (database.update(
+        database.todayRecords,
+      )..where((row) => row.id.equals(entry.id))).write(
+        const TodayRecordsCompanion(
+          syncStatus: Value('synced'),
+          serverVersion: Value(9),
+          lastSyncedAt: Value(800),
+        ),
+      );
+      final healthBefore = await database
+          .select(database.healthRecords)
+          .getSingle();
+      currentTime = currentTime.add(const Duration(minutes: 5));
+
+      await repository.deleteTodayByDate(entry.recordDate);
+
+      final deleted = await database.select(database.todayRecords).getSingle();
+      final healthAfter = await database
+          .select(database.healthRecords)
+          .getSingle();
+      final timestamp = currentTime.toUtc().millisecondsSinceEpoch;
+      expect(deleted.deletedAt, timestamp);
+      expect(deleted.updatedAt, timestamp);
+      expect(deleted.syncStatus, 'pending');
+      expect(deleted.serverVersion, 9);
+      expect(deleted.lastSyncedAt, 800);
+      expect(deleted.dailyNote, '删除前内容');
+      expect(healthAfter, healthBefore);
+
+      final replacement = await repository.getToday();
+      expect(replacement.id, isNot(entry.id));
+      expect(replacement.health?.sleepDurationMinutes, 450);
+      final pending = await TodaySyncAdapter(database).collectPending();
+      expect(pending, hasLength(1));
+      expect(pending.single.recordId, entry.id);
+      expect(pending.single.operation.name, 'delete');
+    },
+  );
+
+  test('delete does not bypass an unresolved conflict', () async {
+    final entry = await repository.saveToday(TodaySaveData(dailyNote: '冲突内容'));
+    await (database.update(database.todayRecords)
+          ..where((row) => row.id.equals(entry.id)))
+        .write(const TodayRecordsCompanion(syncStatus: Value('conflict')));
+
+    await expectLater(
+      repository.deleteTodayByDate(entry.recordDate),
+      throwsA(isA<TodayRecordConflictException>()),
+    );
+    final unchanged = await database.select(database.todayRecords).getSingle();
+    expect(unchanged.deletedAt, isNull);
+    expect(unchanged.dailyNote, '冲突内容');
   });
 
   test('history aggregates the Health record from the same date', () async {

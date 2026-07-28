@@ -7,11 +7,13 @@ class TodayEntryDetailDialog extends StatelessWidget {
   const TodayEntryDetailDialog({
     required this.entry,
     required this.today,
+    this.onDelete,
     super.key,
   });
 
   final TodayEntry entry;
   final String today;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +68,13 @@ class TodayEntryDetailDialog extends StatelessWidget {
         ),
       ),
       actions: [
+        if (onDelete != null)
+          TextButton.icon(
+            key: const ValueKey('deleteHistoricalTodayButton'),
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('删除记录'),
+          ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('关闭'),

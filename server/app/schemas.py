@@ -244,6 +244,7 @@ class SyncConflictResponse(BaseModel):
     record_id: str = Field(alias="id")
     server_version: int
     reason: str
+    remote_record_id: str | None = None
 
 
 class SyncPushResponse(BaseModel):

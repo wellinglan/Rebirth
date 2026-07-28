@@ -4,9 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_repository.dart';
+import 'package:rebirth/features/sync/domain/sync_exception.dart';
 import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
+import 'package:rebirth/features/today/domain/today_conflict_resolution_service.dart';
 
 void main() {
   test('successful Today sync refreshes views and exposes counts', () async {
@@ -130,6 +134,122 @@ void main() {
       TodaySyncStatus.succeeded,
     );
   });
+
+  test(
+    'adopt and keep local use explicit pull-only and push-only runners',
+    () async {
+      final operations = <String>[];
+      final service = _FakeTodayConflictService(operations);
+      final container = ProviderContainer(
+        overrides: [
+          syncConflictScopeProvider.overrideWith((ref) async => _scope),
+          syncConflictRepositoryProvider.overrideWithValue(
+            _FakeConflictRepository(),
+          ),
+          todayConflictResolutionServiceProvider.overrideWithValue(service),
+          todayConflictPullRunnerProvider.overrideWithValue(() async {
+            operations.add('pull');
+            return _result(status: SyncEntityStatus.succeeded);
+          }),
+          todayPushRunnerProvider.overrideWithValue(() async {
+            operations.add('push');
+            return _result(status: SyncEntityStatus.succeeded);
+          }),
+          todayViewRefresherProvider.overrideWithValue(() async {
+            operations.add('refresh');
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(todaySyncControllerProvider.notifier);
+
+      await controller.adoptRemote('conflict');
+      await controller.keepLocal('conflict');
+
+      expect(operations, [
+        'adopt',
+        'pull',
+        'refresh',
+        'keep',
+        'push',
+        'refresh',
+      ]);
+      expect(
+        container.read(todaySyncControllerProvider).resolvingConflictId,
+        isNull,
+      );
+    },
+  );
+
+  test(
+    'different conflict operation is rejected while one is active',
+    () async {
+      final completer = Completer<SyncRunResult>();
+      final container = ProviderContainer(
+        overrides: [
+          syncConflictScopeProvider.overrideWith((ref) async => _scope),
+          syncConflictRepositoryProvider.overrideWithValue(
+            _FakeConflictRepository(),
+          ),
+          todayConflictResolutionServiceProvider.overrideWithValue(
+            _FakeTodayConflictService([]),
+          ),
+          todayConflictPullRunnerProvider.overrideWithValue(
+            () => completer.future,
+          ),
+          todayViewRefresherProvider.overrideWithValue(() async {}),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(todaySyncControllerProvider.notifier);
+
+      final adopt = controller.adoptRemote('conflict');
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        () => controller.keepLocal('conflict'),
+        throwsA(isA<SyncException>()),
+      );
+      completer.complete(_result(status: SyncEntityStatus.succeeded));
+      await adopt;
+    },
+  );
+}
+
+const _scope = SyncConflictScope(
+  localUserId: 'local-user',
+  endpointKey: 'http://server-a:8000',
+  cloudUserId: 'cloud-user',
+);
+
+final class _FakeTodayConflictService
+    implements TodayConflictResolutionService {
+  _FakeTodayConflictService(this.operations);
+
+  final List<String> operations;
+
+  @override
+  Future<void> requestAdoptRemote({
+    required SyncConflictScope scope,
+    required String conflictId,
+  }) async {
+    operations.add('adopt');
+  }
+
+  @override
+  Future<void> requestKeepLocal({
+    required SyncConflictScope scope,
+    required String conflictId,
+  }) async {
+    operations.add('keep');
+  }
+}
+
+final class _FakeConflictRepository extends Fake
+    implements SyncConflictRepository {
+  @override
+  Future<List<SyncConflictRecord>> listActiveConflicts(
+    SyncConflictScope scope,
+  ) async => const [];
 }
 
 SyncRunResult _result({

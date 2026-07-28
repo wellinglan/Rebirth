@@ -161,7 +161,7 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
       final trueConflicts = conflicts
           .where((item) => item.reason != 'request_conflict')
           .toList(growable: false);
-      final conflictScope = trueConflicts.isNotEmpty
+      final conflictScope = accepted.isNotEmpty || trueConflicts.isNotEmpty
           ? await _tryLoadConflictScope()
           : null;
 
@@ -182,6 +182,27 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
         if (affected != 1) {
           throw SyncException('找不到 Today 上传记录 ${item.recordId}。');
         }
+        if (conflictScope != null && _conflictRepository != null) {
+          final conflict =
+              await _conflictRepository.findActiveConflict(
+                scope: conflictScope,
+                entityType: entityType,
+                recordId: item.recordId,
+              ) ??
+              await _conflictRepository.findActiveConflictByRemoteRecordId(
+                scope: conflictScope,
+                entityType: entityType,
+                remoteRecordId: item.recordId,
+              );
+          if (conflict?.resolutionStatus ==
+              SyncConflictResolutionStatus.keepLocalRequested) {
+            await _conflictRepository.markResolvedKeepLocal(
+              conflictScope,
+              conflict!.id,
+              resolvedAt: syncedAt,
+            );
+          }
+        }
       }
 
       for (final item in trueConflicts) {
@@ -198,6 +219,7 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
               scope: conflictScope,
               entityType: entityType,
               recordId: local.id,
+              remoteRecordId: item.remoteRecordId ?? local.id,
               localSnapshot: _localSnapshot(local),
               remoteSnapshot: SyncConflictSnapshot(
                 payload: null,
@@ -253,9 +275,6 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
     required int syncedAt,
     SyncPullMode pullMode = SyncPullMode.incremental,
   }) {
-    if (pullMode != SyncPullMode.incremental) {
-      throw const SyncException('Today 尚不支持覆盖式冲突解决。');
-    }
     return _database.transaction(() async {
       final context = await _loadContext();
       final current = await (_database.select(
@@ -268,6 +287,7 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
       };
       final applicable = <SyncChange>[];
       final conflicts = <_TodayConflictCandidate>[];
+      final adoptRemoteConflicts = <String, SyncConflictRecord>{};
       final replaceablePlaceholders = <String>{};
       final seenIds = <String>{};
       final seenUpsertDates = <String>{};
@@ -291,7 +311,7 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
           continue;
         }
 
-        final activeConflict =
+        var activeConflict =
             conflictScope == null || _conflictRepository == null
             ? null
             : await _conflictRepository.findActiveConflict(
@@ -299,17 +319,34 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                 entityType: entityType,
                 recordId: local?.id ?? change.recordId,
               );
+        if (activeConflict == null &&
+            conflictScope != null &&
+            _conflictRepository != null) {
+          activeConflict = await _conflictRepository
+              .findActiveConflictByRemoteRecordId(
+                scope: conflictScope,
+                entityType: entityType,
+                remoteRecordId: change.recordId,
+              );
+        }
         if (activeConflict != null) {
           final localForConflict = local ?? byId[activeConflict.recordId];
           if (localForConflict == null) {
             throw const SyncException('Today 冲突缺少本地记录。');
           }
-          await _hydrateConflictIfNewer(
+          final refreshed = await _hydrateConflictIfNewer(
             scope: conflictScope!,
             active: activeConflict,
             change: change,
             seenAt: syncedAt,
           );
+          if (pullMode == SyncPullMode.preferRemoteConflictResolution &&
+              refreshed.resolutionStatus ==
+                  SyncConflictResolutionStatus.adoptRemoteRequested) {
+            applicable.add(change);
+            adoptRemoteConflicts[change.recordId] = refreshed;
+            continue;
+          }
           conflicts.add(
             _TodayConflictCandidate(change: change, local: localForConflict),
           );
@@ -369,10 +406,31 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
         current: current,
         changes: applicable,
         replaceablePlaceholders: replaceablePlaceholders,
+        adoptedConflicts: adoptRemoteConflicts,
       );
       var applied = 0;
       var deleted = 0;
       for (final change in applicable) {
+        final adoptedConflict = adoptRemoteConflicts[change.recordId];
+        if (adoptedConflict != null &&
+            adoptedConflict.recordId != change.recordId) {
+          await _applyAdoptRemoteDifferentIdentity(
+            context: context,
+            conflict: adoptedConflict,
+            change: change,
+            syncedAt: syncedAt,
+          );
+          await _conflictRepository!.markResolvedAdoptRemote(
+            conflictScope!,
+            adoptedConflict.id,
+            resolvedAt: syncedAt,
+          );
+          applied += 1;
+          if (change.operation == SyncOperation.delete) {
+            deleted += 1;
+          }
+          continue;
+        }
         if (change.operation == SyncOperation.delete) {
           final local = byId[change.recordId];
           if (local == null) {
@@ -396,6 +454,13 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
               );
           applied += 1;
           deleted += 1;
+          if (adoptedConflict != null && conflictScope != null) {
+            await _conflictRepository!.markResolvedAdoptRemote(
+              conflictScope,
+              adoptedConflict.id,
+              resolvedAt: syncedAt,
+            );
+          }
           continue;
         }
 
@@ -491,6 +556,13 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                 ),
               );
         }
+        if (adoptedConflict != null && conflictScope != null) {
+          await _conflictRepository!.markResolvedAdoptRemote(
+            conflictScope,
+            adoptedConflict.id,
+            resolvedAt: syncedAt,
+          );
+        }
         applied += 1;
       }
 
@@ -580,6 +652,7 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
           scope: scope,
           entityType: entityType,
           recordId: candidate.local.id,
+          remoteRecordId: candidate.change.recordId,
           localSnapshot: _localSnapshot(candidate.local),
           remoteSnapshot: remoteSnapshot,
           remoteOperation: operation,
@@ -597,7 +670,7 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
     );
   }
 
-  Future<void> _hydrateConflictIfNewer({
+  Future<SyncConflictRecord> _hydrateConflictIfNewer({
     required SyncConflictScope scope,
     required SyncConflictRecord active,
     required SyncChange change,
@@ -605,12 +678,13 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
   }) async {
     if (_conflictRepository == null ||
         change.serverVersion < (active.remoteSnapshot.serverVersion ?? 0)) {
-      return;
+      return active;
     }
-    await _conflictRepository.hydrateRemoteSnapshot(
+    return _conflictRepository.hydrateRemoteSnapshot(
       scope: scope,
       entityType: entityType,
       recordId: active.recordId,
+      remoteRecordId: change.recordId,
       operation: change.operation == SyncOperation.delete
           ? SyncConflictOperation.delete
           : SyncConflictOperation.upsert,
@@ -619,14 +693,186 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
     );
   }
 
+  Future<void> _applyAdoptRemoteDifferentIdentity({
+    required _TodayLocalContext context,
+    required SyncConflictRecord conflict,
+    required SyncChange change,
+    required int syncedAt,
+  }) async {
+    final local = await _selectById(
+      userId: context.userId,
+      id: conflict.recordId,
+    );
+    if (local == null) throw const SyncConflictNotFoundException();
+    final payload = change.payload;
+    if (change.operation == SyncOperation.upsert) {
+      if (payload is! TodaySyncPayload) {
+        throw const SyncException('云端 Today payload 类型无效。');
+      }
+      await _validateGoalReferences(context.userId, payload);
+    }
+    final global = await (_database.select(
+      _database.todayRecords,
+    )..where((row) => row.id.equals(change.recordId))).getSingleOrNull();
+    if (global != null && global.userId != context.userId) {
+      throw const SyncException('云端 Today ID 与其他本地用户冲突。');
+    }
+
+    await (_database.update(_database.todayRecords)..where(
+          (row) =>
+              row.userId.equals(context.userId) &
+              row.id.equals(conflict.recordId),
+        ))
+        .write(
+          db.TodayRecordsCompanion(
+            deletedAt: Value(local.deletedAt ?? syncedAt),
+            syncStatus: const Value('synced'),
+          ),
+        );
+
+    final remotePayload = payload is TodaySyncPayload ? payload : null;
+    if (global == null) {
+      await _database
+          .into(_database.todayRecords)
+          .insert(
+            db.TodayRecordsCompanion.insert(
+              id: Value(change.recordId),
+              userId: context.userId,
+              recordDate: remotePayload?.recordDate ?? local.recordDate,
+              timezoneOffsetMinutes:
+                  remotePayload?.timezoneOffsetMinutes ??
+                  local.timezoneOffsetMinutes,
+              priority1: Value(remotePayload?.priority1 ?? local.priority1),
+              priority1Completed: Value(
+                remotePayload?.priority1Completed ?? local.priority1Completed,
+              ),
+              priority1GoalId: Value(
+                remotePayload?.priority1GoalId ?? local.priority1GoalId,
+              ),
+              priority2: Value(remotePayload?.priority2 ?? local.priority2),
+              priority2Completed: Value(
+                remotePayload?.priority2Completed ?? local.priority2Completed,
+              ),
+              priority2GoalId: Value(
+                remotePayload?.priority2GoalId ?? local.priority2GoalId,
+              ),
+              priority3: Value(remotePayload?.priority3 ?? local.priority3),
+              priority3Completed: Value(
+                remotePayload?.priority3Completed ?? local.priority3Completed,
+              ),
+              priority3GoalId: Value(
+                remotePayload?.priority3GoalId ?? local.priority3GoalId,
+              ),
+              moodScore: Value(remotePayload?.moodScore ?? local.moodScore),
+              energyScore: Value(
+                remotePayload?.energyScore ?? local.energyScore,
+              ),
+              researchMinutes: Value(
+                remotePayload?.researchMinutes ?? local.researchMinutes,
+              ),
+              learningMinutes: Value(
+                remotePayload?.learningMinutes ?? local.learningMinutes,
+              ),
+              dailyNote: Value(remotePayload?.dailyNote ?? local.dailyNote),
+              recordStatus: Value(
+                remotePayload?.status.name ?? local.recordStatus,
+              ),
+              createdAt: Value(remotePayload?.createdAt ?? local.createdAt),
+              updatedAt: Value(change.updatedAt),
+              deletedAt: Value(change.deletedAt),
+              syncStatus: const Value('synced'),
+              serverVersion: Value(change.serverVersion),
+              lastSyncedAt: Value(syncedAt),
+              originDeviceId: Value(change.originDeviceId),
+            ),
+          );
+    } else {
+      await (_database.update(_database.todayRecords)..where(
+            (row) =>
+                row.userId.equals(context.userId) &
+                row.id.equals(change.recordId),
+          ))
+          .write(
+            db.TodayRecordsCompanion(
+              recordDate: Value(remotePayload?.recordDate ?? local.recordDate),
+              timezoneOffsetMinutes: Value(
+                remotePayload?.timezoneOffsetMinutes ??
+                    local.timezoneOffsetMinutes,
+              ),
+              priority1: Value(remotePayload?.priority1 ?? local.priority1),
+              priority1Completed: Value(
+                remotePayload?.priority1Completed ?? local.priority1Completed,
+              ),
+              priority1GoalId: Value(
+                remotePayload?.priority1GoalId ?? local.priority1GoalId,
+              ),
+              priority2: Value(remotePayload?.priority2 ?? local.priority2),
+              priority2Completed: Value(
+                remotePayload?.priority2Completed ?? local.priority2Completed,
+              ),
+              priority2GoalId: Value(
+                remotePayload?.priority2GoalId ?? local.priority2GoalId,
+              ),
+              priority3: Value(remotePayload?.priority3 ?? local.priority3),
+              priority3Completed: Value(
+                remotePayload?.priority3Completed ?? local.priority3Completed,
+              ),
+              priority3GoalId: Value(
+                remotePayload?.priority3GoalId ?? local.priority3GoalId,
+              ),
+              moodScore: Value(remotePayload?.moodScore ?? local.moodScore),
+              energyScore: Value(
+                remotePayload?.energyScore ?? local.energyScore,
+              ),
+              researchMinutes: Value(
+                remotePayload?.researchMinutes ?? local.researchMinutes,
+              ),
+              learningMinutes: Value(
+                remotePayload?.learningMinutes ?? local.learningMinutes,
+              ),
+              dailyNote: Value(remotePayload?.dailyNote ?? local.dailyNote),
+              recordStatus: Value(
+                remotePayload?.status.name ?? local.recordStatus,
+              ),
+              createdAt: Value(remotePayload?.createdAt ?? local.createdAt),
+              updatedAt: Value(change.updatedAt),
+              deletedAt: Value(change.deletedAt),
+              syncStatus: const Value('synced'),
+              serverVersion: Value(change.serverVersion),
+              lastSyncedAt: Value(syncedAt),
+              originDeviceId: Value(change.originDeviceId),
+            ),
+          );
+    }
+
+    await (_database.update(_database.healthRecords)..where(
+          (row) =>
+              row.userId.equals(context.userId) &
+              row.recordDate.equals(
+                remotePayload?.recordDate ?? local.recordDate,
+              ) &
+              row.deletedAt.isNull(),
+        ))
+        .write(
+          db.HealthRecordsCompanion(todayRecordId: Value(change.recordId)),
+        );
+  }
+
   void _validateProjectedDates({
     required List<db.TodayRecord> current,
     required List<SyncChange> changes,
     required Set<String> replaceablePlaceholders,
+    required Map<String, SyncConflictRecord> adoptedConflicts,
   }) {
     final dateById = {
       for (final row in current)
-        if (row.deletedAt == null && !replaceablePlaceholders.contains(row.id))
+        if (row.deletedAt == null &&
+            !replaceablePlaceholders.contains(row.id) &&
+            !adoptedConflicts.values.any(
+              (conflict) =>
+                  conflict.recordId == row.id &&
+                  conflict.remoteRecordId != row.id,
+            ))
           row.id: row.recordDate,
     };
     final ownerByDate = {

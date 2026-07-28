@@ -87,6 +87,7 @@ final class SyncConflictRecord {
     required this.scope,
     required this.entityType,
     required this.recordId,
+    this.remoteRecordId,
     required this.localSnapshot,
     required this.remoteSnapshot,
     required this.remoteOperation,
@@ -100,6 +101,7 @@ final class SyncConflictRecord {
   final SyncConflictScope scope;
   final SyncEntityType entityType;
   final String recordId;
+  final String? remoteRecordId;
   final SyncConflictSnapshot localSnapshot;
   final SyncConflictSnapshot remoteSnapshot;
   final SyncConflictOperation remoteOperation;

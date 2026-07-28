@@ -8,7 +8,7 @@ import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
-import 'plan_sync_controller.dart';
+import 'sync_conflict_resolution_handlers.dart';
 
 class SyncConflictDetailPage extends ConsumerWidget {
   const SyncConflictDetailPage({required this.conflictId, super.key});
@@ -18,7 +18,7 @@ class SyncConflictDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final conflict = ref.watch(syncConflictDetailsProvider(conflictId));
-    final syncState = ref.watch(planSyncControllerProvider);
+    final registry = ref.watch(syncConflictResolutionHandlerRegistryProvider);
     return Scaffold(
       key: const ValueKey('syncConflictDetailPage'),
       appBar: AppBar(title: const Text('同步冲突详情')),
@@ -34,38 +34,42 @@ class SyncConflictDetailPage extends ConsumerWidget {
             key: ValueKey('syncConflictDetailNotFound'),
             child: Text('未找到该冲突，或它不属于当前账号与服务器。'),
           ),
-          data: (details) => _ConflictDetails(
-            details: details,
-            isBusy:
-                syncState.isBusy &&
-                syncState.resolvingConflictId == details.record.id,
-            onRetryHydration: () => _run(
-              context,
-              ref,
-              () => ref
-                  .read(planSyncControllerProvider.notifier)
-                  .retryConflictHydration(details.record.id),
-            ),
-            onRetryRequested: () => _run(
-              context,
-              ref,
-              () => ref
-                  .read(planSyncControllerProvider.notifier)
-                  .retryRequestedResolution(details.record.id),
-            ),
-            onAdoptRemote: () => _confirmAndRun(
-              context,
-              ref,
-              details.record,
-              action: SyncConflictResolutionAction.adoptRemote,
-            ),
-            onKeepLocal: () => _confirmAndRun(
-              context,
-              ref,
-              details.record,
-              action: SyncConflictResolutionAction.keepLocal,
-            ),
-          ),
+          data: (details) {
+            final handler = registry.handlerFor(details.record.entityType);
+            return _ConflictDetails(
+              details: details,
+              hasHandler: handler != null,
+              isBusy:
+                  handler?.isBusy == true &&
+                  handler?.resolvingConflictId == details.record.id,
+              onRetryHydration: () => _run(
+                context,
+                ref,
+                details.record,
+                () => handler!.retryHydration(details.record.id),
+              ),
+              onRetryRequested: () => _run(
+                context,
+                ref,
+                details.record,
+                () => handler!.retryRequestedResolution(details.record.id),
+              ),
+              onAdoptRemote: () => _confirmAndRun(
+                context,
+                ref,
+                details.record,
+                handler: handler!,
+                action: SyncConflictResolutionAction.adoptRemote,
+              ),
+              onKeepLocal: () => _confirmAndRun(
+                context,
+                ref,
+                details.record,
+                handler: handler!,
+                action: SyncConflictResolutionAction.keepLocal,
+              ),
+            );
+          },
         ),
       ),
     );
@@ -75,6 +79,7 @@ class SyncConflictDetailPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     SyncConflictRecord record, {
+    required SyncConflictResolutionHandler handler,
     required SyncConflictResolutionAction action,
   }) async {
     final adopt = action == SyncConflictResolutionAction.adoptRemote;
@@ -87,13 +92,7 @@ class SyncConflictDetailPage extends ConsumerWidget {
             ),
             title: Text(adopt ? '采用服务器当前版本？' : '保留本地版本并上传？'),
             content: SingleChildScrollView(
-              child: Text(
-                adopt
-                    ? '本地冲突修改尚未上传。采用服务器当前版本后，本地该目标将被替换；'
-                          '如果云端已经删除该目标，本地也会软删除。操作失败时本地内容保持不变。'
-                    : '当前本地目标将覆盖服务器版本，其他设备随后会看到该版本。'
-                          '如果服务器再次变化，可能产生新的冲突。操作失败时本地内容保持不变。',
-              ),
+              child: Text(_confirmationMessage(record.entityType, adopt)),
             ),
             actions: [
               TextButton(
@@ -115,15 +114,16 @@ class SyncConflictDetailPage extends ConsumerWidget {
     await _run(
       context,
       ref,
-      () => adopt
-          ? ref.read(planSyncControllerProvider.notifier).adoptRemote(record.id)
-          : ref.read(planSyncControllerProvider.notifier).keepLocal(record.id),
+      record,
+      () =>
+          adopt ? handler.adoptRemote(record.id) : handler.keepLocal(record.id),
     );
   }
 
   Future<void> _run(
     BuildContext context,
     WidgetRef ref,
+    SyncConflictRecord record,
     Future<Object?> Function() action,
   ) async {
     try {
@@ -134,7 +134,12 @@ class SyncConflictDetailPage extends ConsumerWidget {
       _message(context, '冲突操作已完成');
     } catch (_) {
       if (!context.mounted) return;
-      _message(context, '操作未完成，本地 Plan 内容已保留');
+      _message(
+        context,
+        record.entityType == SyncEntityType.today
+            ? '操作未完成，本地 Today 内容已保留'
+            : '操作未完成，本地 Plan 内容已保留',
+      );
     }
   }
 
@@ -143,11 +148,27 @@ class SyncConflictDetailPage extends ConsumerWidget {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
+
+  String _confirmationMessage(SyncEntityType entityType, bool adopt) {
+    if (entityType == SyncEntityType.today) {
+      return adopt
+          ? '当前本地 Today 冲突修改尚未上传。采用云端后，本地 Today 内容将被服务器当前版本替换；'
+                '云端已删除时本地 Today 将软删除。同日 Health 不会删除，操作失败或取消时本地内容保持不变。'
+          : '当前本地 Today 将覆盖服务器当前版本，其他设备随后同步时会看到该版本。'
+                '云端如果再次变化可能重新产生冲突。同日 Health 不参与上传，操作失败或取消时本地内容保持不变。';
+    }
+    return adopt
+        ? '本地冲突修改尚未上传。采用服务器当前版本后，本地该目标将被替换；'
+              '如果云端已经删除该目标，本地也会软删除。操作失败时本地内容保持不变。'
+        : '当前本地目标将覆盖服务器版本，其他设备随后会看到该版本。'
+              '如果服务器再次变化，可能产生新的冲突。操作失败时本地内容保持不变。';
+  }
 }
 
 class _ConflictDetails extends StatelessWidget {
   const _ConflictDetails({
     required this.details,
+    required this.hasHandler,
     required this.isBusy,
     required this.onRetryHydration,
     required this.onRetryRequested,
@@ -156,6 +177,7 @@ class _ConflictDetails extends StatelessWidget {
   });
 
   final SyncConflictDetails details;
+  final bool hasHandler;
   final bool isBusy;
   final VoidCallback onRetryHydration;
   final VoidCallback onRetryRequested;
@@ -226,7 +248,7 @@ class _ConflictDetails extends StatelessWidget {
           ),
         const SizedBox(height: AppSpacing.md),
         if (record.isActive)
-          record.entityType == SyncEntityType.plan
+          hasHandler
               ? Wrap(
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
@@ -276,11 +298,11 @@ class _ConflictDetails extends StatelessWidget {
                   ],
                 )
               : const Card(
-                  key: ValueKey('todayConflictProtectedNotice'),
+                  key: ValueKey('unsupportedConflictProtectedNotice'),
                   child: ListTile(
                     leading: Icon(Icons.shield_outlined),
-                    title: Text('本地 Today 内容已保留'),
-                    subtitle: Text('本版本不会自动覆盖或合并 Today 冲突，请保留该状态等待后续处理。'),
+                    title: Text('本地内容已保留'),
+                    subtitle: Text('当前实体尚未注册冲突处理器，只能查看冲突详情。'),
                   ),
                 ),
       ],

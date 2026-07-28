@@ -588,3 +588,16 @@ Successful verification updates both fields atomically, invalidates
 account-scoped providers, and refreshes Auth state. It does not call the
 Coordinator. Cursor, conflicts, tombstones, and pending business changes are
 therefore unchanged until a later explicit manual sync.
+
+## Sprint 11A.1 Entity Conflict Handler Boundary
+
+The generic conflict detail UI now resolves actions through an entity handler
+registry. Plan and Today explicitly register hydration, adopt, keep-local, and
+requested-operation retry handlers. Handlers continue through
+`SyncCoordinator`; they do not call HTTP or cursor storage directly. Unknown
+entities are read-only and never default to Plan.
+
+Today conflict-mode pull requests from server version zero while leaving its
+persisted incremental cursor untouched until a complete legal apply succeeds.
+This boundary is reusable by later Journal and Health Sprints, but neither
+entity is enabled now.

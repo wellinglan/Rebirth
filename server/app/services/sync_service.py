@@ -188,7 +188,7 @@ def ownership_metadata_fingerprint(item: SyncItem) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-@dataclass(frozen=True)
+@dataclass
 class _PreflightItem:
     incoming: object
     record_id: str
@@ -196,6 +196,8 @@ class _PreflightItem:
     existing: SyncItem | None
     outcome: Literal["write", "idempotent", "conflict"]
     conflict_reason: str | None = None
+    remote_record_id: str | None = None
+    conflict_server_version: int | None = None
 
 
 def push(
@@ -410,6 +412,7 @@ def _validate_projected_today_dates(
         .with_for_update()
     ).all()
     payload_by_id: dict[str, TodaySyncPayload] = {}
+    current_by_id: dict[str, SyncItem] = {}
     for item in current:
         if item.deleted_at is not None:
             continue
@@ -417,17 +420,24 @@ def _validate_projected_today_dates(
             payload_by_id[item.record_id] = TodaySyncPayload.model_validate(
                 json.loads(item.payload_json)
             )
+            current_by_id[item.record_id] = item
         except (json.JSONDecodeError, ValidationError, ValueError) as error:
             raise SyncRequestValidationError(
                 f"Stored Today {item.record_id} has invalid date data."
             ) from error
 
+    owners = {
+        payload.record_date: record_id
+        for record_id, payload in payload_by_id.items()
+    }
     for item in preflight:
         incoming = item.incoming
         if incoming.table_name != TODAY_TABLE or item.outcome == "conflict":
             continue
         if incoming.deleted_at is not None:
-            payload_by_id.pop(item.record_id, None)
+            previous = payload_by_id.pop(item.record_id, None)
+            if previous is not None:
+                owners.pop(previous.record_date, None)
             continue
         payload = TodaySyncPayload.model_validate(incoming.payload)
         previous = payload_by_id.get(item.record_id)
@@ -435,16 +445,18 @@ def _validate_projected_today_dates(
             raise SyncRequestValidationError(
                 "Today record_date cannot change after creation."
             )
-        payload_by_id[item.record_id] = payload
-
-    owners: dict[str, str] = {}
-    for record_id, payload in payload_by_id.items():
         owner = owners.get(payload.record_date)
-        if owner is not None and owner != record_id:
-            raise SyncRequestValidationError(
-                "Only one active Today record is allowed per date."
-            )
-        owners[payload.record_date] = record_id
+        if owner is not None and owner != item.record_id:
+            remote = current_by_id[owner]
+            item.outcome = "conflict"
+            item.conflict_reason = "today_record_date_conflict"
+            item.remote_record_id = owner
+            item.conflict_server_version = remote.server_version
+            continue
+        if previous is not None:
+            owners.pop(previous.record_date, None)
+        payload_by_id[item.record_id] = payload
+        owners[payload.record_date] = item.record_id
 
 
 def _validate_projected_goal_hierarchy(
@@ -552,8 +564,13 @@ def _conflict(item: _PreflightItem) -> SyncConflictResponse:
     return SyncConflictResponse(
         table=item.incoming.table_name,
         id=item.record_id,
-        server_version=item.existing.server_version if item.existing else 0,
+        server_version=(
+            item.conflict_server_version
+            if item.conflict_server_version is not None
+            else item.existing.server_version if item.existing else 0
+        ),
         reason=item.conflict_reason or "stale_client",
+        remote_record_id=item.remote_record_id,
     )
 
 

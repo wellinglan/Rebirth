@@ -42,7 +42,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 7);
+    expect(versionRow.read<int>('user_version'), 8);
   });
 
   test(
@@ -124,10 +124,7 @@ void main() {
 
     expect(await database.select(database.userProfiles).get(), isEmpty);
     expect(await database.select(database.appSettings).get(), isEmpty);
-    expect(
-      await database.select(database.installationInfo).get(),
-      isEmpty,
-    );
+    expect(await database.select(database.installationInfo).get(), isEmpty);
   });
 
   test('explicit legacy bootstrap creates one unbound profile', () async {

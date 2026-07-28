@@ -10,6 +10,7 @@ class TodayForm extends StatefulWidget {
     required this.entry,
     required this.onSave,
     required this.onOpenHistory,
+    this.onDelete,
     this.onOpenDailyInsight,
     super.key,
   });
@@ -17,6 +18,7 @@ class TodayForm extends StatefulWidget {
   final TodayEntry entry;
   final Future<void> Function(TodaySaveData data) onSave;
   final VoidCallback onOpenHistory;
+  final VoidCallback? onDelete;
   final VoidCallback? onOpenDailyInsight;
 
   @override
@@ -113,6 +115,13 @@ class _TodayFormState extends State<TodayForm> {
                         icon: const Icon(Icons.history),
                         label: const Text('历史记录'),
                       ),
+                      if (widget.onDelete != null)
+                        TextButton.icon(
+                          key: const ValueKey('deleteTodayButton'),
+                          onPressed: widget.onDelete,
+                          icon: const Icon(Icons.delete_outline),
+                          label: const Text('删除记录'),
+                        ),
                     ],
                   ),
                   if (!_hasAnyInput) ...[

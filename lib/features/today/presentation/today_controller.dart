@@ -3,12 +3,15 @@ import 'package:rebirth/features/today/data/today_repository_provider.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_repository.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
+import 'package:rebirth/features/today/presentation/today_history_controller.dart';
 import 'package:rebirth/shared/state/health_record_revision_provider.dart';
 
 final todayControllerProvider =
     AsyncNotifierProvider<TodayController, TodayEntry>(TodayController.new);
 
 class TodayController extends AsyncNotifier<TodayEntry> {
+  Future<void>? _deleteOperation;
+
   @override
   Future<TodayEntry> build() {
     ref.watch(healthRecordRevisionProvider);
@@ -72,6 +75,27 @@ class TodayController extends AsyncNotifier<TodayEntry> {
         completed: completed,
       );
     });
+  }
+
+  Future<void> deleteToday() {
+    final active = _deleteOperation;
+    if (active != null) return active;
+    final current = state.asData?.value;
+    if (current == null) return Future<void>.value();
+    final future = _deleteAndReload(current.recordDate);
+    _deleteOperation = future;
+    future.whenComplete(() {
+      if (identical(_deleteOperation, future)) {
+        _deleteOperation = null;
+      }
+    });
+    return future;
+  }
+
+  Future<void> _deleteAndReload(String recordDate) async {
+    await ref.read(todayRepositoryProvider).deleteTodayByDate(recordDate);
+    ref.invalidate(todayHistoryControllerProvider);
+    await reload();
   }
 
   Future<void> _runWithCurrent(

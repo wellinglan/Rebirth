@@ -8,13 +8,14 @@ final todayHistoryControllerProvider =
       TodayHistoryController.new,
     );
 
-final todayHistoryEntryForDateProvider =
-    FutureProvider.autoDispose.family<TodayEntry?, String>((ref, recordDate) {
+final todayHistoryEntryForDateProvider = FutureProvider.autoDispose
+    .family<TodayEntry?, String>((ref, recordDate) {
       return ref.watch(todayRepositoryProvider).getByDate(recordDate);
     });
 
 class TodayHistoryController extends AsyncNotifier<List<TodayEntry>> {
   int _days = 30;
+  final Map<String, Future<void>> _deleteOperations = {};
 
   @override
   Future<List<TodayEntry>> build() async {
@@ -52,6 +53,21 @@ class TodayHistoryController extends AsyncNotifier<List<TodayEntry>> {
           );
       return _withoutToday(entries, _today());
     });
+  }
+
+  Future<void> deleteByDate(String recordDate) {
+    final active = _deleteOperations[recordDate];
+    if (active != null) return active;
+    final future = _deleteAndReload(recordDate);
+    _deleteOperations[recordDate] = future;
+    future.whenComplete(() => _deleteOperations.remove(recordDate));
+    return future;
+  }
+
+  Future<void> _deleteAndReload(String recordDate) async {
+    await ref.read(todayRepositoryProvider).deleteTodayByDate(recordDate);
+    ref.invalidate(todayHistoryEntryForDateProvider(recordDate));
+    await reload();
   }
 
   String _today() => ref.read(dateTimeServiceProvider).currentLocalDateString();
