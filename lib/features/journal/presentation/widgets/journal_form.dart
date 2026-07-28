@@ -11,6 +11,7 @@ class JournalForm extends StatefulWidget {
     required this.recordDate,
     required this.onSave,
     this.onOpenDailyInsight,
+    this.onDelete,
     super.key,
   });
 
@@ -19,6 +20,7 @@ class JournalForm extends StatefulWidget {
   final Future<void> Function(JournalSaveData data) onSave;
   final void Function(String recordDate, bool hasUnsavedChanges)?
   onOpenDailyInsight;
+  final VoidCallback? onDelete;
 
   @override
   State<JournalForm> createState() => _JournalFormState();
@@ -98,6 +100,13 @@ class _JournalFormState extends State<JournalForm> {
                         _hasUnsavedChanges,
                       ),
                       icon: const Icon(Icons.auto_awesome_outlined),
+                    ),
+                  if (widget.entry != null && widget.onDelete != null)
+                    IconButton(
+                      key: const ValueKey('deleteJournalButton'),
+                      tooltip: '删除该 Journal',
+                      onPressed: _isSaving ? null : widget.onDelete,
+                      icon: const Icon(Icons.delete_outline),
                     ),
                 ],
               ),

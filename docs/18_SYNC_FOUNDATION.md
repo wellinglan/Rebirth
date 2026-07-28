@@ -2,7 +2,7 @@
 
 > Status: Sprint 10B.2-A account-bound local isolation implemented; manual acceptance pending
 > Protocol: Sync Protocol v2
-> Product scope: manual canonical Profile sync and manual Plan two-way sync
+> Product scope: manual Profile, Plan, Today, and Journal synchronization
 
 ## 1. Existing Contract Audit
 
@@ -281,8 +281,8 @@ database URL/path, JWT secret, or Endpoint credentials.
   round trip passed on Windows and Android.
 - Plan conflict inbox and explicit recovery: implemented locally in Sprint
   10B.1; manual acceptance is blocked by cross-account local data ownership.
-- Today sync: not implemented.
-- Journal sync: not implemented.
+- Today sync: implemented, manual two-way with conflict recovery.
+- Journal sync: implemented in Sprint 11B; manual acceptance pending.
 - Health sync: not implemented.
 - Growth raw data sync: not implemented.
 - AI Report sync: not implemented.
@@ -599,5 +599,22 @@ entities are read-only and never default to Plan.
 
 Today conflict-mode pull requests from server version zero while leaving its
 persisted incremental cursor untouched until a complete legal apply succeeds.
-This boundary is reusable by later Journal and Health Sprints, but neither
-entity is enabled now.
+Journal uses this boundary in Sprint 11B. Health remains disabled.
+
+## Sprint 11B Journal Adapter Boundary
+
+Journal now registers an explicit handler in the generic conflict UI and uses
+its local UUID as the cloud record identity. Its strict typed payload excludes
+the local `today_record_id`; that association is rederived after pull. The
+existing table already contained all sync and tombstone metadata, so Flutter
+schema remains 8.
+
+Push acknowledgement, pull apply, conflict persistence, and adopt/keep
+transitions are transactional. The Coordinator alone advances the Journal
+cursor after a complete successful apply. Conflict, validation failure, and
+rollback leave the cursor unchanged. Settings exposes a separate manual
+Journal action; no automatic sync was added.
+
+Server validation is additive under API 1 and Sync Protocol 2. PostgreSQL and
+Alembic remain unchanged. Health remains disabled. See
+`docs/33_JOURNAL_CROSS_DEVICE_SYNC.md`.

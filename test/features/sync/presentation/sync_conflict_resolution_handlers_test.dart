@@ -4,14 +4,19 @@ import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/presentation/sync_conflict_resolution_handlers.dart';
 
 void main() {
-  test('registry resolves Plan and Today without a default fallback', () {
+  test('registry resolves Plan, Today, and Journal without a fallback', () {
     final plan = _FakeHandler(SyncEntityType.plan);
     final today = _FakeHandler(SyncEntityType.today);
-    final registry = SyncConflictResolutionHandlerRegistry([plan, today]);
+    final journal = _FakeHandler(SyncEntityType.journal);
+    final registry = SyncConflictResolutionHandlerRegistry([
+      plan,
+      today,
+      journal,
+    ]);
 
     expect(registry.handlerFor(SyncEntityType.plan), same(plan));
     expect(registry.handlerFor(SyncEntityType.today), same(today));
-    expect(registry.handlerFor(SyncEntityType.journal), isNull);
+    expect(registry.handlerFor(SyncEntityType.journal), same(journal));
     expect(registry.handlerFor(SyncEntityType.health), isNull);
   });
 

@@ -294,6 +294,52 @@ void main() {
     },
   );
 
+  test(
+    'Journal apply failure keeps its independent cursor unchanged',
+    () async {
+      final journalAdapter = _FakeAdapter(entityType: SyncEntityType.journal)
+        ..applyError = StateError('Journal transaction rolled back');
+      cursorStore.value = 4;
+      remote.pullResponse = SyncPullResponseDto(
+        serverVersion: 7,
+        items: [
+          PulledSyncItemDto(
+            tableName: 'journal_entries',
+            recordId: '41111111-1111-4111-8111-111111111111',
+            payload: {'value': 'journal-cloud'},
+            updatedAt: 200,
+            deletedAt: null,
+            originDeviceId: '43333333-3333-4333-8333-333333333333',
+            serverVersion: 7,
+          ),
+        ],
+      );
+      final journalCoordinator = SyncCoordinator(
+        endpoint: _endpoint,
+        sessionStore: sessionStore,
+        remoteDataSource: remote,
+        cursorStore: cursorStore,
+        adapterRegistry: SyncEntityAdapterRegistry([journalAdapter]),
+        endpointProbe: (_) async {},
+        dateTimeService: DateTimeService(
+          now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
+        ),
+        accountScopeGuard: ({required endpoint, required cloudUserId}) async {},
+      );
+
+      final result = await journalCoordinator.run(
+        direction: SyncRunDirection.pull,
+        entityTypes: const [SyncEntityType.journal],
+      );
+
+      expect(result.failure?.reason, SyncFailureReason.applyFailed);
+      expect(remote.lastPullRequest?.tables, ['journal_entries']);
+      expect(journalAdapter.applyCalls, 1);
+      expect(cursorStore.value, 4);
+      expect(cursorStore.writeCalls, 0);
+    },
+  );
+
   test('conflict resolution full-pulls without clearing the cursor', () async {
     cursorStore.value = 12;
     remote.pullResponse = SyncPullResponseDto(

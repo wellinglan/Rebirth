@@ -3,6 +3,7 @@ import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/domain/sync_models.dart';
 
 import 'plan_sync_controller.dart';
+import 'journal_sync_controller.dart';
 import 'today_sync_controller.dart';
 
 abstract interface class SyncConflictResolutionHandler {
@@ -24,9 +25,7 @@ abstract interface class SyncConflictResolutionHandler {
 final class SyncConflictResolutionHandlerRegistry {
   SyncConflictResolutionHandlerRegistry(
     Iterable<SyncConflictResolutionHandler> handlers,
-  ) : _handlers = {
-        for (final handler in handlers) handler.entityType: handler,
-      };
+  ) : _handlers = {for (final handler in handlers) handler.entityType: handler};
 
   final Map<SyncEntityType, SyncConflictResolutionHandler> _handlers;
 
@@ -39,6 +38,7 @@ final syncConflictResolutionHandlerRegistryProvider =
     Provider<SyncConflictResolutionHandlerRegistry>((ref) {
       final planState = ref.watch(planSyncControllerProvider);
       final todayState = ref.watch(todaySyncControllerProvider);
+      final journalState = ref.watch(journalSyncControllerProvider);
       return SyncConflictResolutionHandlerRegistry([
         _CallbackConflictResolutionHandler(
           entityType: SyncEntityType.plan,
@@ -68,6 +68,21 @@ final syncConflictResolutionHandlerRegistryProvider =
           keepLocal: ref.read(todaySyncControllerProvider.notifier).keepLocal,
           retryRequestedResolution: ref
               .read(todaySyncControllerProvider.notifier)
+              .retryRequestedResolution,
+        ),
+        _CallbackConflictResolutionHandler(
+          entityType: SyncEntityType.journal,
+          isBusy: journalState.isBusy,
+          resolvingConflictId: journalState.resolvingConflictId,
+          retryHydration: ref
+              .read(journalSyncControllerProvider.notifier)
+              .retryConflictHydration,
+          adoptRemote: ref
+              .read(journalSyncControllerProvider.notifier)
+              .adoptRemote,
+          keepLocal: ref.read(journalSyncControllerProvider.notifier).keepLocal,
+          retryRequestedResolution: ref
+              .read(journalSyncControllerProvider.notifier)
               .retryRequestedResolution,
         ),
       ]);

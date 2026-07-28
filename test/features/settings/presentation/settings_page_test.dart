@@ -41,6 +41,8 @@ import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/journal_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/journal_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -91,7 +93,7 @@ void main() {
     expect(find.text('云账号'), findsOneWidget);
     expect(find.text('尚未连接'), findsOneWidget);
     expect(find.text('同步范围'), findsOneWidget);
-    expect(find.text('Profile、Plan 与 Today 手动同步'), findsOneWidget);
+    expect(find.text('Profile、Plan、Today 与 Journal 手动同步'), findsOneWidget);
     expect(find.text('设备注册'), findsOneWidget);
     expect(find.text('未注册'), findsOneWidget);
     expect(find.text('Profile 同步'), findsOneWidget);
@@ -164,7 +166,7 @@ void main() {
     expect(find.text('开发账号已连接'), findsOneWidget);
     expect(find.text('Dev research-user'), findsOneWidget);
     expect(find.text('开发登录成功'), findsOneWidget);
-    expect(find.text('Profile、Plan 与 Today 手动同步'), findsOneWidget);
+    expect(find.text('Profile、Plan、Today 与 Journal 手动同步'), findsOneWidget);
   });
 
   testWidgets('registering a device while signed out asks for login', (
@@ -249,7 +251,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('可手动同步'), findsNWidgets(3));
+    expect(find.text('可手动同步'), findsNWidgets(4));
     expect(find.byKey(const ValueKey('pushProfileButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('pullProfileButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('syncPlanButton')), findsOneWidget);
@@ -277,7 +279,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('等待验证，同步保持关闭'), findsOneWidget);
-    expect(find.text('旧数据待验证，暂不可同步'), findsNWidgets(3));
+    expect(find.text('旧数据待验证，暂不可同步'), findsNWidgets(4));
     expect(
       find.byKey(const ValueKey('verifySyncEligibilityButton')),
       findsOneWidget,
@@ -475,8 +477,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.byKey(const ValueKey('syncTodayButton')));
-    await tester.tap(find.byKey(const ValueKey('syncTodayButton')));
+    await _tapByKey(tester, 'syncTodayButton');
     await tester.tap(find.byKey(const ValueKey('syncTodayButton')));
     await tester.pump();
 
@@ -500,6 +501,50 @@ void main() {
     expect(state.pulledCount, 2);
     expect(state.deletedCount, 1);
     expect(find.textContaining('上传 1，拉取 2，删除 1'), findsOneWidget);
+  });
+
+  testWidgets('manual Journal sync disables repeat taps and shows status', (
+    tester,
+  ) async {
+    final completer = Completer<SyncRunResult>();
+    var calls = 0;
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      journalSyncRunner: () {
+        calls += 1;
+        return completer.future;
+      },
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'syncJournalButton');
+    await tester.tap(find.byKey(const ValueKey('syncJournalButton')));
+    await tester.pump();
+
+    expect(calls, 1);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.byKey(const ValueKey('syncJournalButton')),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    completer.complete(_journalSuccessResult());
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsPage)),
+    );
+    final state = container.read(journalSyncControllerProvider);
+    expect(state.status, JournalSyncStatus.succeeded);
+    expect(state.pushedCount, 1);
+    expect(state.pulledCount, 2);
+    expect(state.deletedCount, 1);
+    expect(find.text('Journal 最近同步'), findsOneWidget);
   });
 
   testWidgets('successful Profile upload shows an honest result', (
@@ -767,8 +812,11 @@ void main() {
 
     expect(find.byKey(const ValueKey('syncSettingsDialog')), findsOneWidget);
     expect(find.text('同步范围'), findsWidgets);
-    expect(find.textContaining('Profile、Plan 与 Today 已支持手动同步'), findsOneWidget);
-    expect(find.textContaining('Journal 和 Health'), findsOneWidget);
+    expect(
+      find.textContaining('Profile、Plan、Today 与 Journal 已支持手动同步'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Health 尚未同步'), findsOneWidget);
     expect(find.textContaining('没有后台自动同步'), findsOneWidget);
   });
 
@@ -952,8 +1000,9 @@ Future<void> _pumpSettings(
   AiConsentRepository? aiConsentRepository,
   PlanSyncRunner? planSyncRunner,
   TodaySyncRunner? todaySyncRunner,
+  JournalSyncRunner? journalSyncRunner,
   int activeConflictCount = 0,
-  Size surfaceSize = const Size(900, 1100),
+  Size surfaceSize = const Size(900, 1250),
   TextScaler textScaler = TextScaler.noScaling,
   AccountSyncEligibility syncEligibility = AccountSyncEligibility.ready,
   AccountOwnershipVerificationStatus verificationStatus =
@@ -1000,6 +1049,16 @@ Future<void> _pumpSettings(
           () async => _todaySuccessResult(direction: SyncRunDirection.pull),
         ),
         todayViewRefresherProvider.overrideWithValue(() async {}),
+        journalSyncRunnerProvider.overrideWithValue(
+          journalSyncRunner ?? () async => _journalSuccessResult(),
+        ),
+        journalConflictPullRunnerProvider.overrideWithValue(
+          () async => _journalSuccessResult(direction: SyncRunDirection.pull),
+        ),
+        journalPushRunnerProvider.overrideWithValue(
+          () async => _journalSuccessResult(direction: SyncRunDirection.push),
+        ),
+        journalViewRefresherProvider.overrideWithValue(() async {}),
         syncConflictScopeProvider.overrideWith((ref) async => null),
         activeSyncConflictCountProvider.overrideWith(
           (ref) => Stream.value(activeConflictCount),
@@ -1050,6 +1109,27 @@ SyncRunResult _todaySuccessResult({
         entityType: SyncEntityType.today,
         status: SyncEntityStatus.succeeded,
         message: 'Today 已更新',
+        pushedCount: 1,
+        pulledCount: 2,
+        deletedCount: 1,
+      ),
+    ],
+    startedAt: 1,
+    completedAt: 2,
+  );
+}
+
+SyncRunResult _journalSuccessResult({
+  SyncRunDirection direction = SyncRunDirection.twoWay,
+}) {
+  return SyncRunResult(
+    direction: direction,
+    phases: const [SyncRunPhase.completed],
+    entityResults: const [
+      SyncEntityResult(
+        entityType: SyncEntityType.journal,
+        status: SyncEntityStatus.succeeded,
+        message: 'Journal 已更新',
         pushedCount: 1,
         pulledCount: 2,
         deletedCount: 1,

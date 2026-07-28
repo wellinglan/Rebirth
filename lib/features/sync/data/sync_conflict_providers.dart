@@ -5,6 +5,11 @@ import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
+import 'package:rebirth/features/journal/data/journal_conflict_resolution_service_impl.dart';
+import 'package:rebirth/features/journal/data/journal_sync_payload_codec.dart';
+import 'package:rebirth/features/journal/domain/journal_conflict_resolution_service.dart';
+import 'package:rebirth/features/journal/domain/journal_entry.dart';
+import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/plan/data/plan_conflict_resolution_service_impl.dart';
 import 'package:rebirth/features/plan/data/plan_sync_payload_codec.dart';
 import 'package:rebirth/features/plan/domain/plan_conflict_resolution_service.dart';
@@ -24,7 +29,11 @@ import 'sync_conflict_repository_impl.dart';
 final syncConflictRepositoryProvider = Provider<SyncConflictRepository>((ref) {
   return SyncConflictRepositoryImpl(
     ref.watch(appDatabaseProvider),
-    payloadCodecs: const [TodaySyncPayloadCodec(), PlanSyncPayloadCodec()],
+    payloadCodecs: const [
+      TodaySyncPayloadCodec(),
+      JournalSyncPayloadCodec(),
+      PlanSyncPayloadCodec(),
+    ],
   );
 });
 
@@ -120,6 +129,14 @@ final todayConflictResolutionServiceProvider =
       );
     });
 
+final journalConflictResolutionServiceProvider =
+    Provider<JournalConflictResolutionService>((ref) {
+      return JournalConflictResolutionServiceImpl(
+        ref.watch(appDatabaseProvider),
+        ref.watch(syncConflictRepositoryProvider),
+      );
+    });
+
 Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
   AppDatabase database,
   SyncConflictRecord record,
@@ -136,8 +153,49 @@ Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
       localUserId,
       record.recordId,
     ),
+    SyncEntityType.journal => _loadJournalSnapshot(
+      database,
+      localUserId,
+      record.recordId,
+    ),
     _ => null,
   };
+}
+
+Future<SyncConflictSnapshot?> _loadJournalSnapshot(
+  AppDatabase database,
+  String localUserId,
+  String recordId,
+) async {
+  final journal =
+      await (database.select(database.journalEntries)..where(
+            (row) => row.userId.equals(localUserId) & row.id.equals(recordId),
+          ))
+          .getSingleOrNull();
+  if (journal == null) return null;
+  return SyncConflictSnapshot(
+    payload: journal.deletedAt == null
+        ? JournalSyncPayload(
+            entryDate: journal.entryDate,
+            timezoneOffsetMinutes: journal.timezoneOffsetMinutes,
+            mostImportantAccomplishment: journal.mostImportantAccomplishment,
+            mostDrainingEvent: journal.mostDrainingEvent,
+            emotionSource: journal.emotionSource,
+            learning: journal.learning,
+            tomorrowAdjustment: journal.tomorrowAdjustment,
+            status: switch (journal.entryStatus) {
+              'draft' => JournalEntryStatus.draft,
+              'completed' => JournalEntryStatus.completed,
+              _ => throw StateError('Unknown Journal status.'),
+            },
+            createdAt: journal.createdAt,
+          )
+        : null,
+    updatedAt: journal.updatedAt,
+    deletedAt: journal.deletedAt,
+    serverVersion: journal.serverVersion,
+    originDeviceId: journal.originDeviceId,
+  );
 }
 
 Future<SyncConflictSnapshot?> _loadPlanSnapshot(
@@ -220,6 +278,10 @@ Future<SyncConflictSnapshot?> _loadTodaySnapshot(
 }
 
 bool _samePayload(Object? left, Object? right) {
+  if (left is JournalSyncPayload && right is JournalSyncPayload) {
+    return const JournalSyncPayloadCodec().canonicalJson(left) ==
+        const JournalSyncPayloadCodec().canonicalJson(right);
+  }
   if (left is TodaySyncPayload && right is TodaySyncPayload) {
     return const TodaySyncPayloadCodec().canonicalJson(left) ==
         const TodaySyncPayloadCodec().canonicalJson(right);

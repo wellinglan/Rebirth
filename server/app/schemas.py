@@ -32,6 +32,7 @@ PlanGoalStatus = Literal[
     "cancelled",
 ]
 TodayRecordStatus = Literal["draft", "completed"]
+JournalEntryStatus = Literal["draft", "completed"]
 
 
 class PlanSyncPayload(BaseModel):
@@ -155,6 +156,58 @@ class TodaySyncPayload(BaseModel):
             raise ValueError(
                 "empty priorities cannot be completed or linked to goals"
             )
+        return self
+
+
+class JournalSyncPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    entry_date: str
+    timezone_offset_minutes: int = Field(ge=-840, le=840)
+    most_important_accomplishment: str | None
+    most_draining_event: str | None
+    emotion_source: str | None
+    learning: str | None
+    tomorrow_adjustment: str | None
+    entry_status: JournalEntryStatus
+    created_at: int = Field(ge=0)
+
+    @field_validator("entry_date")
+    @classmethod
+    def validate_entry_date(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("entry_date must use YYYY-MM-DD")
+        date.fromisoformat(value)
+        return value
+
+    @field_validator(
+        "most_important_accomplishment",
+        "most_draining_event",
+        "emotion_source",
+        "learning",
+        "tomorrow_adjustment",
+    )
+    @classmethod
+    def validate_content(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("Journal content must not be blank")
+        return trimmed
+
+    @model_validator(mode="after")
+    def validate_has_content(self) -> "JournalSyncPayload":
+        if not any(
+            (
+                self.most_important_accomplishment,
+                self.most_draining_event,
+                self.emotion_source,
+                self.learning,
+                self.tomorrow_adjustment,
+            )
+        ):
+            raise ValueError("Journal requires at least one content field")
         return self
 
 

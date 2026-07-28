@@ -18,6 +18,8 @@ import 'package:rebirth/features/sync/presentation/profile_sync_error_message.da
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/journal_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/journal_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
@@ -50,6 +52,7 @@ class SettingsPage extends ConsumerWidget {
         ref.watch(profileSyncConflictProvider).value ?? false;
     final planSyncState = ref.watch(planSyncControllerProvider);
     final todaySyncState = ref.watch(todaySyncControllerProvider);
+    final journalSyncState = ref.watch(journalSyncControllerProvider);
     final activeConflictCount =
         ref.watch(activeSyncConflictCountProvider).value ?? 0;
     final config = ref.watch(appConfigProvider);
@@ -103,9 +106,11 @@ class SettingsPage extends ConsumerWidget {
               onPullProfile: () => _pullProfile(context, ref),
               planSyncState: planSyncState,
               todaySyncState: todaySyncState,
+              journalSyncState: journalSyncState,
               activeConflictCount: activeConflictCount,
               onSyncPlan: () => _syncPlan(context, ref),
               onSyncToday: () => _syncToday(context, ref),
+              onSyncJournal: () => _syncJournal(context, ref),
               onWeChatLogin: () => _showUnavailableDialog(
                 context,
                 key: 'wechatLoginDialog',
@@ -117,7 +122,7 @@ class SettingsPage extends ConsumerWidget {
                 key: 'syncSettingsDialog',
                 title: '同步范围',
                 message:
-                    'Profile、Plan 与 Today 已支持手动同步。Journal 和 Health '
+                    'Profile、Plan、Today 与 Journal 已支持手动同步。Health '
                     '尚未同步；当前没有后台自动同步。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
@@ -382,6 +387,24 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _syncJournal(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await ref
+          .read(journalSyncControllerProvider.notifier)
+          .syncJournal();
+      if (!context.mounted) return;
+      final entity = result.resultFor(SyncEntityType.journal);
+      _showMessage(
+        context,
+        entity?.message ?? result.failure?.message ?? 'Journal 同步完成',
+      );
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, 'Journal 同步失败，本地数据未受影响');
+      }
+    }
+  }
+
   Future<void> _verifyOwnership(BuildContext context, WidgetRef ref) async {
     try {
       final result = await ref
@@ -498,9 +521,11 @@ class _SettingsContent extends StatelessWidget {
     required this.onPullProfile,
     required this.planSyncState,
     required this.todaySyncState,
+    required this.journalSyncState,
     required this.activeConflictCount,
     required this.onSyncPlan,
     required this.onSyncToday,
+    required this.onSyncJournal,
     required this.onVerifyOwnership,
     required this.onWeChatLogin,
     required this.onSyncSettings,
@@ -530,9 +555,11 @@ class _SettingsContent extends StatelessWidget {
   final VoidCallback onPullProfile;
   final PlanSyncViewState planSyncState;
   final TodaySyncViewState todaySyncState;
+  final JournalSyncViewState journalSyncState;
   final int activeConflictCount;
   final VoidCallback onSyncPlan;
   final VoidCallback onSyncToday;
+  final VoidCallback onSyncJournal;
   final VoidCallback onVerifyOwnership;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
@@ -596,6 +623,8 @@ class _SettingsContent extends StatelessWidget {
                     onSyncPlan: onSyncPlan,
                     todaySyncState: todaySyncState,
                     onSyncToday: onSyncToday,
+                    journalSyncState: journalSyncState,
+                    onSyncJournal: onSyncJournal,
                     onVerifyOwnership: onVerifyOwnership,
                     onWeChatLogin: onWeChatLogin,
                     onSyncSettings: onSyncSettings,

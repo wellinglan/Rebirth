@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
+import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
@@ -138,6 +139,8 @@ class SyncConflictDetailPage extends ConsumerWidget {
         context,
         record.entityType == SyncEntityType.today
             ? '操作未完成，本地 Today 内容已保留'
+            : record.entityType == SyncEntityType.journal
+            ? '操作未完成，本地 Journal 内容已保留'
             : '操作未完成，本地 Plan 内容已保留',
       );
     }
@@ -156,6 +159,13 @@ class SyncConflictDetailPage extends ConsumerWidget {
                 '云端已删除时本地 Today 将软删除。同日 Health 不会删除，操作失败或取消时本地内容保持不变。'
           : '当前本地 Today 将覆盖服务器当前版本，其他设备随后同步时会看到该版本。'
                 '云端如果再次变化可能重新产生冲突。同日 Health 不参与上传，操作失败或取消时本地内容保持不变。';
+    }
+    if (entityType == SyncEntityType.journal) {
+      return adopt
+          ? '当前本地 Journal 冲突修改尚未上传。采用云端后，本地 Journal 内容将被服务器当前版本替换；'
+                '云端已删除时本地 Journal 将软删除。操作失败或取消时本地内容保持不变。'
+          : '当前本地 Journal 将覆盖服务器当前版本，其他设备随后同步时会看到该版本。'
+                '服务器如果再次变化可能重新产生冲突。操作失败或取消时本地内容保持不变。';
     }
     return adopt
         ? '本地冲突修改尚未上传。采用服务器当前版本后，本地该目标将被替换；'
@@ -328,6 +338,7 @@ class _VersionSummary extends StatelessWidget {
     final payload = snapshot.payload;
     final plan = payload is PlanSyncPayload ? payload : null;
     final today = payload is TodaySyncPayload ? payload : null;
+    final journal = payload is JournalSyncPayload ? payload : null;
     final awaiting = operation == SyncConflictOperation.unknownPendingPull;
     return Card(
       child: Padding(
@@ -350,7 +361,21 @@ class _VersionSummary extends StatelessWidget {
             if (awaiting)
               const Text('需要重新同步以获取服务器当前版本。')
             else ...[
-              if (today != null) ...[
+              if (journal != null) ...[
+                _Line(label: '日期', value: journal.entryDate),
+                _Line(
+                  label: '状态',
+                  value: journal.status.name == 'completed' ? '已完成' : '草稿',
+                ),
+                _Line(
+                  label: '最重要的完成',
+                  value: journal.mostImportantAccomplishment ?? '-',
+                ),
+                _Line(label: '最消耗的事情', value: journal.mostDrainingEvent ?? '-'),
+                _Line(label: '情绪来源', value: journal.emotionSource ?? '-'),
+                _Line(label: '学习', value: journal.learning ?? '-'),
+                _Line(label: '明日调整', value: journal.tomorrowAdjustment ?? '-'),
+              ] else if (today != null) ...[
                 _Line(label: '日期', value: today.recordDate),
                 _Line(
                   label: '状态',
@@ -468,11 +493,16 @@ String _displayTitle(SyncConflictRecord record) {
   final local = record.localSnapshot.payload;
   if (local is PlanSyncPayload) return local.title;
   if (local is TodaySyncPayload) return '${local.recordDate} Today';
+  if (local is JournalSyncPayload) return '${local.entryDate} Journal';
   final remote = record.remoteSnapshot.payload;
   if (remote is PlanSyncPayload) return remote.title;
   if (remote is TodaySyncPayload) return '${remote.recordDate} Today';
+  if (remote is JournalSyncPayload) return '${remote.entryDate} Journal';
   if (record.entityType == SyncEntityType.today) {
     return '已删除的 Today 记录';
+  }
+  if (record.entityType == SyncEntityType.journal) {
+    return '已删除的 Journal 记录';
   }
   return '已删除的 Plan 目标';
 }

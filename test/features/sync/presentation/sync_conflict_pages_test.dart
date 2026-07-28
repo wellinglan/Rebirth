@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
+import 'package:rebirth/features/journal/domain/journal_entry.dart';
+import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
@@ -149,6 +151,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(handler.calls, ['adopt']);
+  });
+
+  testWidgets('Journal conflict uses the generic comparison and handler UI', (
+    tester,
+  ) async {
+    final handler = _RecordingConflictHandler(SyncEntityType.journal);
+    await _pumpDetails(
+      tester,
+      details: _journalDetails(),
+      handlerRegistry: SyncConflictResolutionHandlerRegistry([handler]),
+    );
+
+    expect(find.text('2026-07-28 Journal'), findsOneWidget);
+    expect(find.text('日期：2026-07-28'), findsNWidgets(2));
+    expect(find.text('学习：Local Journal'), findsOneWidget);
+    expect(find.text('学习：Remote Journal'), findsOneWidget);
+    expect(find.byKey(const ValueKey('adoptRemoteButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('keepLocalButton')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('keepLocalButton')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('本地 Journal 将覆盖服务器'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('confirmKeepLocalButton')));
+    await tester.pumpAndSettle();
+    expect(handler.calls, ['keep']);
   });
 
   testWidgets('adopt confirmation can cancel without invoking controller', (
@@ -496,6 +523,58 @@ SyncConflictDetails _todayDetails() {
       ),
       remoteSnapshot: SyncConflictSnapshot(
         payload: _todayPayload(mood: 5, note: 'Cloud'),
+        updatedAt: 800,
+        deletedAt: null,
+        serverVersion: 6,
+        originDeviceId: null,
+      ),
+      remoteOperation: SyncConflictOperation.upsert,
+      detectedAt: 900,
+      lastSeenAt: 900,
+      resolutionStatus: SyncConflictResolutionStatus.unresolved,
+      resolvedAt: null,
+    ),
+    currentLocalSnapshot: null,
+    localSnapshotChanged: false,
+  );
+}
+
+SyncConflictDetails _journalDetails() {
+  return SyncConflictDetails(
+    record: SyncConflictRecord(
+      id: _conflictId,
+      scope: _scope,
+      entityType: SyncEntityType.journal,
+      recordId: _recordId,
+      localSnapshot: const SyncConflictSnapshot(
+        payload: JournalSyncPayload(
+          entryDate: '2026-07-28',
+          timezoneOffsetMinutes: 480,
+          mostImportantAccomplishment: 'Local accomplishment',
+          mostDrainingEvent: null,
+          emotionSource: null,
+          learning: 'Local Journal',
+          tomorrowAdjustment: null,
+          status: JournalEntryStatus.draft,
+          createdAt: 100,
+        ),
+        updatedAt: 700,
+        deletedAt: null,
+        serverVersion: 5,
+        originDeviceId: null,
+      ),
+      remoteSnapshot: const SyncConflictSnapshot(
+        payload: JournalSyncPayload(
+          entryDate: '2026-07-28',
+          timezoneOffsetMinutes: 480,
+          mostImportantAccomplishment: 'Remote accomplishment',
+          mostDrainingEvent: null,
+          emotionSource: null,
+          learning: 'Remote Journal',
+          tomorrowAdjustment: null,
+          status: JournalEntryStatus.completed,
+          createdAt: 100,
+        ),
         updatedAt: 800,
         deletedAt: null,
         serverVersion: 6,

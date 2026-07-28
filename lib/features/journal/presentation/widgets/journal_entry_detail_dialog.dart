@@ -7,11 +7,13 @@ class JournalEntryDetailDialog extends StatelessWidget {
   const JournalEntryDetailDialog({
     required this.entry,
     required this.today,
+    this.onDelete,
     super.key,
   });
 
   final JournalEntry entry;
   final String today;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +52,16 @@ class JournalEntryDetailDialog extends StatelessWidget {
         ),
       ),
       actions: [
+        if (onDelete != null)
+          TextButton.icon(
+            key: const ValueKey('deleteJournalFromHistoryButton'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              onDelete!();
+            },
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('删除'),
+          ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('关闭'),

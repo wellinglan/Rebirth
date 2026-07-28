@@ -18,6 +18,16 @@ final class JournalEntryNotFoundException implements Exception {
   String toString() => 'No active journal entry exists with ID $id.';
 }
 
+final class JournalConflictPendingException implements Exception {
+  const JournalConflictPendingException(this.id);
+
+  final String id;
+
+  @override
+  String toString() =>
+      'Journal entry $id has an unresolved synchronization conflict.';
+}
+
 abstract interface class JournalRepository {
   Future<JournalEntry> createEntry(JournalSaveData data);
 

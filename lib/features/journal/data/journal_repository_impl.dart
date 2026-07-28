@@ -72,6 +72,7 @@ final class JournalRepositoryImpl implements JournalRepository {
         userId: bootstrap.activeUserId,
         id: entries.single.id,
         timestamp: snapshot.utcMilliseconds,
+        originDeviceId: bootstrap.localInstallationId,
         content: content,
         status: data.status,
       );
@@ -154,6 +155,7 @@ final class JournalRepositoryImpl implements JournalRepository {
       userId: bootstrap.activeUserId,
       id: id,
       timestamp: snapshot.utcMilliseconds,
+      originDeviceId: bootstrap.localInstallationId,
       content: content,
       status: data.status,
     );
@@ -167,10 +169,12 @@ final class JournalRepositoryImpl implements JournalRepository {
   Future<void> softDelete(String id) async {
     final snapshot = dateTimeService.currentSnapshot();
     final bootstrap = await _database.bootstrapDao.bootstrap();
+    await _ensureNotConflicted(userId: bootstrap.activeUserId, id: id);
     final deleted = await _localDataSource.softDeleteById(
       userId: bootstrap.activeUserId,
       id: id,
       timestamp: snapshot.utcMilliseconds,
+      originDeviceId: bootstrap.localInstallationId,
     );
     if (!deleted) {
       throw JournalEntryNotFoundException(id);
@@ -206,9 +210,11 @@ final class JournalRepositoryImpl implements JournalRepository {
     required String userId,
     required String id,
     required int timestamp,
+    required String originDeviceId,
     required _NormalizedJournalContent content,
     required JournalEntryStatus status,
   }) async {
+    await _ensureNotConflicted(userId: userId, id: id);
     final entry = await _localDataSource.updateById(
       userId: userId,
       id: id,
@@ -220,9 +226,24 @@ final class JournalRepositoryImpl implements JournalRepository {
         tomorrowAdjustment: Value(content.tomorrowAdjustment),
         entryStatus: Value(status.name),
         updatedAt: Value(timestamp),
+        syncStatus: const Value('pending'),
+        originDeviceId: Value(originDeviceId),
       ),
     );
     return entry == null ? null : _toDomain(entry);
+  }
+
+  Future<void> _ensureNotConflicted({
+    required String userId,
+    required String id,
+  }) async {
+    final current = await _localDataSource.selectByIdIncludingDeleted(
+      userId: userId,
+      id: id,
+    );
+    if (current?.syncStatus == 'conflict') {
+      throw JournalConflictPendingException(id);
+    }
   }
 
   JournalEntry _toDomain(db.JournalEntry entry) {

@@ -40,7 +40,8 @@ class _JournalPageState extends ConsumerState<JournalPage> {
     final today = dateTimeService.currentLocalDateString();
     final targetDate = widget.targetDate;
     final targetDateIsValid =
-        targetDate == null || dateTimeService.isValidLocalDateString(targetDate);
+        targetDate == null ||
+        dateTimeService.isValidLocalDateString(targetDate);
     final targetEntry = targetDate != null && targetDateIsValid
         ? ref.watch(journalEntryForDateProvider(targetDate))
         : null;
@@ -84,6 +85,9 @@ class _JournalPageState extends ConsumerState<JournalPage> {
               entry: entry,
               recordDate: entry?.entryDate ?? today,
               onSave: (data) => _saveTodayEntry(ref, data),
+              onDelete: entry == null
+                  ? null
+                  : () => _confirmDelete(context, entry),
               onOpenDailyInsight: (recordDate, hasUnsavedChanges) =>
                   _openDailyInsight(
                     context,
@@ -164,9 +168,51 @@ class _JournalPageState extends ConsumerState<JournalPage> {
   ) {
     return showDialog<void>(
       context: context,
-      builder: (context) =>
-          JournalEntryDetailDialog(entry: entry, today: today),
+      builder: (context) => JournalEntryDetailDialog(
+        entry: entry,
+        today: today,
+        onDelete: () => _confirmDelete(this.context, entry),
+      ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, JournalEntry entry) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            key: const ValueKey('confirmDeleteJournalDialog'),
+            title: const Text('删除这篇 Journal？'),
+            content: const Text('记录会在本地隐藏，并在下次手动同步时把删除状态同步到其他设备。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmDeleteJournalButton'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+    try {
+      await ref.read(journalControllerProvider.notifier).deleteEntry(entry.id);
+      await ref.read(journalTodayControllerProvider.notifier).reload();
+      ref.invalidate(journalEntryForDateProvider(entry.entryDate));
+      if (!mounted) return;
+      ScaffoldMessenger.of(this.context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Journal 已删除，等待手动同步')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(this.context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('删除失败，本地记录未改变')));
+    }
   }
 
   void _scheduleTargetDialog(JournalEntry entry, String today) {
@@ -196,8 +242,7 @@ class _JournalTargetNotice extends StatelessWidget {
         ? '日期参数无效，无法定位 Journal 记录。'
         : state?.when(
                 loading: () => '正在查找 $targetDate 的 Journal 记录...',
-                error: (error, stackTrace) =>
-                    '$targetDate 的 Journal 记录暂时无法读取。',
+                error: (error, stackTrace) => '$targetDate 的 Journal 记录暂时无法读取。',
                 data: (entry) => entry?.entryDate == targetDate
                     ? '已定位 $targetDate 的 Journal 记录。'
                     : '未找到 $targetDate 的 Journal 记录。',

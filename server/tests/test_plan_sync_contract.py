@@ -74,7 +74,7 @@ def test_stale_client_cannot_win_with_a_newer_client_timestamp(
     registered_device: str,
 ) -> None:
     first = _item(
-        "journal_entries",
+        "health_records",
         "strict-record",
         {"daily_note": "cloud"},
     )
@@ -83,7 +83,7 @@ def test_stale_client_cannot_win_with_a_newer_client_timestamp(
     version = created.json()["accepted"][0]["server_version"]
 
     stale = _item(
-        "journal_entries",
+        "health_records",
         "strict-record",
         {"daily_note": "stale but newer clock"},
         updated_at=first["updated_at"] + 999_999,
@@ -101,7 +101,7 @@ def test_stale_client_cannot_win_with_a_newer_client_timestamp(
         json={
             "device_id": registered_device,
             "since_server_version": 0,
-            "tables": ["journal_entries"],
+            "tables": ["health_records"],
         },
     )
     assert pulled.json()["items"][0]["payload"]["daily_note"] == "cloud"
@@ -122,7 +122,7 @@ def test_stale_client_conflicts_regardless_of_client_timestamp(
         registered_device,
         [
             _item(
-                "journal_entries",
+                "health_records",
                 "timestamp-record",
                 {"value": "cloud"},
                 updated_at=timestamp,
@@ -137,7 +137,7 @@ def test_stale_client_conflicts_regardless_of_client_timestamp(
         registered_device,
         [
             _item(
-                "journal_entries",
+                "health_records",
                 "timestamp-record",
                 {"value": "stale"},
                 updated_at=timestamp + timestamp_delta,
@@ -159,7 +159,7 @@ def test_matching_client_version_updates_an_existing_record(
         client,
         auth_headers,
         registered_device,
-        [_item("journal_entries", "matching-version", {"value": "first"})],
+        [_item("health_records", "matching-version", {"value": "first"})],
     )
     first_version = created.json()["accepted"][0]["server_version"]
 
@@ -169,7 +169,7 @@ def test_matching_client_version_updates_an_existing_record(
         registered_device,
         [
             _item(
-                "journal_entries",
+                "health_records",
                 "matching-version",
                 {"value": "second"},
                 client_version=first_version,
@@ -193,7 +193,7 @@ def test_new_record_with_nonzero_client_version_is_a_conflict(
         registered_device,
         [
             _item(
-                "journal_entries",
+                "health_records",
                 "invalid-new-baseline",
                 {"value": "new"},
                 client_version=9,
@@ -213,7 +213,7 @@ def test_exact_retry_is_idempotent_and_does_not_touch_server_clock_or_timestamp(
     auth_headers: dict[str, str],
     registered_device: str,
 ) -> None:
-    item = _item("journal_entries", "idempotent-record", {"daily_note": "same"})
+    item = _item("health_records", "idempotent-record", {"daily_note": "same"})
     first = _push(client, auth_headers, registered_device, [item])
     version = first.json()["accepted"][0]["server_version"]
     database = client.app.state.database
@@ -243,16 +243,16 @@ def test_conflicting_push_batch_is_atomic_and_does_not_advance_clock(
     auth_headers: dict[str, str],
     registered_device: str,
 ) -> None:
-    first = _item("journal_entries", "existing-record", {"value": "cloud"})
+    first = _item("health_records", "existing-record", {"value": "cloud"})
     created = _push(client, auth_headers, registered_device, [first])
     version = created.json()["accepted"][0]["server_version"]
     stale = _item(
-        "journal_entries",
+        "health_records",
         "existing-record",
         {"value": "stale"},
         client_version=0,
     )
-    new_item = _item("journal_entries", "must-not-write", {"value": "new"})
+    new_item = _item("health_records", "must-not-write", {"value": "new"})
 
     response = _push(
         client,
@@ -282,7 +282,7 @@ def test_duplicate_normalized_record_in_one_request_is_rejected(
     auth_headers: dict[str, str],
     registered_device: str,
 ) -> None:
-    item = _item("journal_entries", "duplicate-record", {"value": 1})
+    item = _item("health_records", "duplicate-record", {"value": 1})
 
     response = _push(client, auth_headers, registered_device, [item, item])
 

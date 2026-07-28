@@ -45,6 +45,7 @@ final class JournalLocalDataSource {
             entryStatus: Value(entryStatus),
             createdAt: Value(timestamp),
             updatedAt: Value(timestamp),
+            syncStatus: const Value('pending'),
             originDeviceId: Value(originDeviceId),
           ),
         );
@@ -63,6 +64,21 @@ final class JournalLocalDataSource {
               row.deletedAt.isNull(),
         ))
         .getSingleOrNull();
+  }
+
+  Future<JournalEntry?> selectByIdIncludingDeleted({
+    required String userId,
+    required String id,
+  }) {
+    return (database.select(database.journalEntries)
+          ..where((row) => row.userId.equals(userId) & row.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<List<JournalEntry>> selectAllForUser({required String userId}) {
+    return (database.select(
+      database.journalEntries,
+    )..where((row) => row.userId.equals(userId))).get();
   }
 
   Future<List<JournalEntry>> selectRecent({
@@ -127,6 +143,7 @@ final class JournalLocalDataSource {
     required String userId,
     required String id,
     required int timestamp,
+    required String originDeviceId,
   }) async {
     final affectedRows =
         await (database.update(database.journalEntries)..where(
@@ -139,6 +156,8 @@ final class JournalLocalDataSource {
               JournalEntriesCompanion(
                 deletedAt: Value(timestamp),
                 updatedAt: Value(timestamp),
+                syncStatus: const Value('pending'),
+                originDeviceId: Value(originDeviceId),
               ),
             );
     return affectedRows > 0;

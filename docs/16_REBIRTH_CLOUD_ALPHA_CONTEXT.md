@@ -661,3 +661,22 @@ passed `51 / 51` checks with no failure or Today product release blocker, so
 the Today Sync Product Gate is `CLOSED / ACCEPTED`. Account Boundary isolation
 remains conditionally accepted while a second independent Endpoint is
 unavailable.
+
+## 27. Sprint 11B Journal Cross-device Synchronization
+
+Journal joins the existing manual SyncCoordinator pipeline with a typed
+payload, transactional push acknowledgement and pull apply, tombstone
+propagation, per-entity cursor protection, and explicit Keep Local / Adopt
+Remote conflict recovery. Settings exposes status, recent sync time, manual
+sync, and the shared conflict entry.
+
+Flutter schema remains 8 because Journal already had the required sync
+metadata. API remains 1 and Sync Protocol remains 2. The Server runtime adds
+typed Journal validation, immutable natural date enforcement, same-date
+conflict identity, OCC, tombstone, and JWT-isolation checks without changing
+PostgreSQL or Alembic.
+
+The API runtime change requires a new GHCR Alpha image and API-container-only
+deployment. Product acceptance remains `NOT EXECUTED` in
+`docs/manual_tests/34_journal_cross_device_sync.md`; automated evidence must
+not close the Journal product gate.
