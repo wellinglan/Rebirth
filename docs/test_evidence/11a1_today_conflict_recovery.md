@@ -2,8 +2,9 @@
 
 > Evidence type: automated; not manual acceptance
 > Baseline: `86f0f3ce35e44582374ae1b4863bd2c5f965e7e6`
-> Commit: recorded after the implementation commit is created
-> GitHub Quality Run: NOT EXECUTED
+> Commit: `f4fccc725f12af831f098c3aa8e1defbd104e0ad`
+> GitHub Quality Run: PASS,
+> [`30345489973`](https://github.com/wellinglan/Rebirth/actions/runs/30345489973)
 
 No test connects to the Alpha business PostgreSQL database. No User Key,
 token, complete Endpoint, Today note body, raw payload, or database copy is
@@ -28,7 +29,7 @@ recorded.
 | malformed Goal reference rolls back Today apply | `today_sync_adapter_test.dart` | AUTOMATED PASS |
 | scope and eligibility guards stop before cursor/network | `sync_coordinator_test.dart` | AUTOMATED PASS |
 | failed apply does not advance cursor and page replays | `sync_coordinator_test.dart` | AUTOMATED PASS |
-| PostgreSQL marker, Alembic, and multi-worker | GitHub Quality | NOT VERIFIED |
+| PostgreSQL marker, Alembic, and multi-worker | GitHub Quality | AUTOMATED PASS |
 
 ## Local Verification
 
@@ -46,5 +47,7 @@ Executed on 2026-07-28:
 | PostgreSQL schema / Alembic | unchanged |
 
 The Android build retains the existing non-blocking CupertinoIcons asset
-warning. Commit SHA and GitHub Quality Run are updated after push.
+warning. GitHub Quality passed Flutter, Android Debug, Server SQLite, and
+Server PostgreSQL/Alembic/multi-worker jobs. The Actions Node.js 20 deprecation
+annotation is non-blocking.
 `AUTOMATED PASS` does not change the manual 33 matrix.
