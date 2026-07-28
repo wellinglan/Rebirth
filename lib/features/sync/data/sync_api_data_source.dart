@@ -24,6 +24,7 @@ final class SyncApiDataSource implements SyncRemoteDataSource {
     'today_records',
     'journal_entries',
     'goals',
+    'health_records',
   };
 
   final ApiClient apiClient;

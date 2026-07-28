@@ -33,6 +33,7 @@ PlanGoalStatus = Literal[
 ]
 TodayRecordStatus = Literal["draft", "completed"]
 JournalEntryStatus = Literal["draft", "completed"]
+HealthDataSource = Literal["manual", "health_connect", "apple_health"]
 
 
 class PlanSyncPayload(BaseModel):
@@ -209,6 +210,41 @@ class JournalSyncPayload(BaseModel):
         ):
             raise ValueError("Journal requires at least one content field")
         return self
+
+
+class HealthSyncPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    record_date: str
+    timezone_offset_minutes: int = Field(ge=-840, le=840)
+    sleep_duration_minutes: int | None = Field(default=None, ge=0)
+    weight_kg: float | None = Field(default=None, gt=0)
+    water_intake_ml: int | None = Field(default=None, ge=0)
+    exercise_type: str | None
+    exercise_duration_minutes: int | None = Field(default=None, ge=0)
+    physical_state_score: int | None = Field(default=None, ge=1, le=5)
+    note: str | None
+    data_source: HealthDataSource
+    source_record_id: str | None
+    created_at: int = Field(ge=0)
+
+    @field_validator("record_date")
+    @classmethod
+    def validate_record_date(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("record_date must use YYYY-MM-DD")
+        date.fromisoformat(value)
+        return value
+
+    @field_validator("exercise_type", "note", "source_record_id")
+    @classmethod
+    def validate_optional_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("Health text must not be blank")
+        return trimmed
 
 
 class HealthResponse(BaseModel):

@@ -35,6 +35,7 @@ final class HealthRepositoryImpl implements HealthRepository {
       timezoneOffsetMinutes: snapshot.timezoneOffsetMinutes,
       timestamp: snapshot.utcMilliseconds,
       originDeviceId: bootstrap.localInstallationId,
+      markPending: false,
     );
     return _toDomain(created);
   }
@@ -88,6 +89,13 @@ final class HealthRepositoryImpl implements HealthRepository {
   Future<HealthEntry> saveForDate(HealthSaveData data) async {
     final snapshot = dateTimeService.currentSnapshot();
     final bootstrap = await _database.bootstrapDao.bootstrap();
+    final existing = await _localDataSource.selectByDate(
+      userId: bootstrap.activeUserId,
+      recordDate: data.recordDate,
+    );
+    if (existing?.syncStatus == 'conflict') {
+      throw HealthConflictPendingException(existing!.id);
+    }
     final record = await _localDataSource.upsertByDate(
       userId: bootstrap.activeUserId,
       data: data,
@@ -96,6 +104,26 @@ final class HealthRepositoryImpl implements HealthRepository {
       originDeviceId: bootstrap.localInstallationId,
     );
     return _toDomain(record);
+  }
+
+  @override
+  Future<void> softDelete(String id) async {
+    final snapshot = dateTimeService.currentSnapshot();
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    final existing = await _localDataSource.selectByIdIncludingDeleted(
+      userId: bootstrap.activeUserId,
+      id: id,
+    );
+    if (existing?.syncStatus == 'conflict') {
+      throw HealthConflictPendingException(id);
+    }
+    final deleted = await _localDataSource.softDeleteById(
+      userId: bootstrap.activeUserId,
+      id: id,
+      timestamp: snapshot.utcMilliseconds,
+      originDeviceId: bootstrap.localInstallationId,
+    );
+    if (!deleted) throw HealthRecordNotFoundException(id);
   }
 
   @override

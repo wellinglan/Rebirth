@@ -64,8 +64,7 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('预览 AI 将使用的数据，并查看本地报告'), findsOneWidget);
     final aiCoachTile = find.byKey(const ValueKey('aiCoachSettingsTile'));
-    final settingsScroll = find.byKey(const ValueKey('settingsDataState'));
-    await tester.fling(settingsScroll, const Offset(0, -1200), 1200);
+    await tester.ensureVisible(aiCoachTile);
     await tester.pumpAndSettle();
     await tester.tap(aiCoachTile);
     await tester.pumpAndSettle();

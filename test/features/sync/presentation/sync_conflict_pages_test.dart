@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
+import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
@@ -177,6 +178,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(handler.calls, ['keep']);
   });
+
+  testWidgets(
+    'Health conflict hides sensitive values and uses generic actions',
+    (tester) async {
+      final handler = _RecordingConflictHandler(SyncEntityType.health);
+      await _pumpDetails(
+        tester,
+        details: _healthDetails(),
+        handlerRegistry: SyncConflictResolutionHandlerRegistry([handler]),
+      );
+
+      expect(find.text('2026-07-28 Health'), findsOneWidget);
+      expect(find.text('日期：2026-07-28'), findsNWidgets(2));
+      expect(find.text('记录类型：手动记录'), findsNWidgets(2));
+      expect(find.text('内容：健康详情已隐藏'), findsNWidgets(2));
+      expect(find.textContaining('Private local note'), findsNothing);
+      expect(find.textContaining('Private remote note'), findsNothing);
+      expect(find.textContaining('450'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('adoptRemoteButton')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('本地 Health 记录将被服务器当前版本替换'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('confirmAdoptRemoteButton')));
+      await tester.pumpAndSettle();
+      expect(handler.calls, ['adopt']);
+    },
+  );
 
   testWidgets('adopt confirmation can cancel without invoking controller', (
     tester,
@@ -573,6 +601,64 @@ SyncConflictDetails _journalDetails() {
           learning: 'Remote Journal',
           tomorrowAdjustment: null,
           status: JournalEntryStatus.completed,
+          createdAt: 100,
+        ),
+        updatedAt: 800,
+        deletedAt: null,
+        serverVersion: 6,
+        originDeviceId: null,
+      ),
+      remoteOperation: SyncConflictOperation.upsert,
+      detectedAt: 900,
+      lastSeenAt: 900,
+      resolutionStatus: SyncConflictResolutionStatus.unresolved,
+      resolvedAt: null,
+    ),
+    currentLocalSnapshot: null,
+    localSnapshotChanged: false,
+  );
+}
+
+SyncConflictDetails _healthDetails() {
+  return SyncConflictDetails(
+    record: SyncConflictRecord(
+      id: _conflictId,
+      scope: _scope,
+      entityType: SyncEntityType.health,
+      recordId: _recordId,
+      localSnapshot: const SyncConflictSnapshot(
+        payload: HealthSyncPayload(
+          recordDate: '2026-07-28',
+          timezoneOffsetMinutes: 480,
+          sleepDurationMinutes: 420,
+          weightKg: 65,
+          waterIntakeMl: 1200,
+          exerciseType: 'walk',
+          exerciseDurationMinutes: 30,
+          physicalStateScore: 3,
+          note: 'Private local note',
+          dataSource: 'manual',
+          sourceRecordId: null,
+          createdAt: 100,
+        ),
+        updatedAt: 700,
+        deletedAt: null,
+        serverVersion: 5,
+        originDeviceId: null,
+      ),
+      remoteSnapshot: const SyncConflictSnapshot(
+        payload: HealthSyncPayload(
+          recordDate: '2026-07-28',
+          timezoneOffsetMinutes: 480,
+          sleepDurationMinutes: 450,
+          weightKg: 66,
+          waterIntakeMl: 1500,
+          exerciseType: 'run',
+          exerciseDurationMinutes: 45,
+          physicalStateScore: 4,
+          note: 'Private remote note',
+          dataSource: 'manual',
+          sourceRecordId: null,
           createdAt: 100,
         ),
         updatedAt: 800,

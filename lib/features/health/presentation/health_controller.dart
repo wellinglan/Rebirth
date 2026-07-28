@@ -70,6 +70,20 @@ class HealthController extends AsyncNotifier<HealthViewState> {
     }
   }
 
+  Future<void> deleteEntry(String id) async {
+    final current = state.asData?.value;
+    if (current == null || current.isSaving) return;
+    state = AsyncData(current.copyWith(isSaving: true));
+    try {
+      await ref.read(healthRepositoryProvider).softDelete(id);
+      state = AsyncData(await _loadState());
+      ref.read(healthRecordRevisionProvider.notifier).bump();
+    } catch (error, stackTrace) {
+      state = AsyncData(current.copyWith(isSaving: false));
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
   Future<HealthViewState> _loadState() async {
     final repository = ref.read(healthRepositoryProvider);
     final today = await repository.getToday();

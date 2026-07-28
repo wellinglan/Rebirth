@@ -5,6 +5,7 @@ import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'plan_sync_controller.dart';
 import 'journal_sync_controller.dart';
 import 'today_sync_controller.dart';
+import 'health_sync_controller.dart';
 
 abstract interface class SyncConflictResolutionHandler {
   SyncEntityType get entityType;
@@ -39,6 +40,7 @@ final syncConflictResolutionHandlerRegistryProvider =
       final planState = ref.watch(planSyncControllerProvider);
       final todayState = ref.watch(todaySyncControllerProvider);
       final journalState = ref.watch(journalSyncControllerProvider);
+      final healthState = ref.watch(healthSyncControllerProvider);
       return SyncConflictResolutionHandlerRegistry([
         _CallbackConflictResolutionHandler(
           entityType: SyncEntityType.plan,
@@ -83,6 +85,21 @@ final syncConflictResolutionHandlerRegistryProvider =
           keepLocal: ref.read(journalSyncControllerProvider.notifier).keepLocal,
           retryRequestedResolution: ref
               .read(journalSyncControllerProvider.notifier)
+              .retryRequestedResolution,
+        ),
+        _CallbackConflictResolutionHandler(
+          entityType: SyncEntityType.health,
+          isBusy: healthState.isBusy,
+          resolvingConflictId: healthState.resolvingConflictId,
+          retryHydration: ref
+              .read(healthSyncControllerProvider.notifier)
+              .retryConflictHydration,
+          adoptRemote: ref
+              .read(healthSyncControllerProvider.notifier)
+              .adoptRemote,
+          keepLocal: ref.read(healthSyncControllerProvider.notifier).keepLocal,
+          retryRequestedResolution: ref
+              .read(healthSyncControllerProvider.notifier)
               .retryRequestedResolution,
         ),
       ]);

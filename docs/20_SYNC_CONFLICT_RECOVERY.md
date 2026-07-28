@@ -295,3 +295,21 @@ metadata remain local and unchanged.
 See `docs/32_TODAY_CONFLICT_RECOVERY.md` and
 `docs/manual_tests/33_today_conflict_recovery.md`. Journal and Health conflict
 handlers are not implemented in this Sprint.
+
+## Sprint 11C Health Conflict Recovery
+
+Health is registered in the generic conflict handler registry. Adopt Remote
+persists an explicit request and then uses conflict-mode pull to validate and
+apply the current remote upsert or tombstone. Keep Local rereads the current
+Health row, adopts the remote OCC baseline, marks it pending, and continues
+through the normal push path.
+
+Same-date different UUID records keep local and remote identities until the
+user chooses. Requested operations survive restart and remain retryable.
+There is no automatic merge, last-write-wins, cursor reset, hard delete, or
+silent resolution.
+
+Conflict list and detail presentation deliberately omit Health metrics and
+notes. They show only date, source/type, operation and synchronization state.
+Today rows and Today conflicts are outside every Health resolution
+transaction.

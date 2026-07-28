@@ -7,7 +7,7 @@ import 'package:rebirth/features/sync/data/sync_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 
 void main() {
-  test('provider composition registers Profile, Today, Journal, and Plan', () {
+  test('provider composition registers all five synchronized domains', () {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(database)],
@@ -23,6 +23,7 @@ void main() {
       SyncEntityType.profile,
       SyncEntityType.today,
       SyncEntityType.journal,
+      SyncEntityType.health,
       SyncEntityType.plan,
     ]);
     expect(
@@ -38,15 +39,12 @@ void main() {
       SyncEntityType.journal,
     );
     expect(
+      registry.adapterFor(SyncEntityType.health).entityType,
+      SyncEntityType.health,
+    );
+    expect(
       registry.adapterFor(SyncEntityType.plan).entityType,
       SyncEntityType.plan,
     );
-    for (final type in const [SyncEntityType.health]) {
-      expect(
-        () => registry.adapterFor(type),
-        throwsA(isA<SyncUnsupportedEntityException>()),
-        reason: '${type.wireName} must not be registered in Sprint 11B',
-      );
-    }
   });
 }

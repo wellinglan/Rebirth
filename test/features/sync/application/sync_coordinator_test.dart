@@ -340,6 +340,98 @@ void main() {
     },
   );
 
+  test(
+    'Health uses an independent cursor and advances only after apply',
+    () async {
+      final healthAdapter = _FakeAdapter(entityType: SyncEntityType.health)
+        ..applyResult = const SyncEntityResult(
+          entityType: SyncEntityType.health,
+          status: SyncEntityStatus.succeeded,
+          message: 'Health pulled',
+          pulledCount: 1,
+          serverVersion: 9,
+        );
+      cursorStore.value = 7;
+      remote.pullResponse = SyncPullResponseDto(
+        serverVersion: 9,
+        items: [
+          PulledSyncItemDto(
+            tableName: 'health_records',
+            recordId: '41111111-1111-4111-8111-111111111111',
+            payload: {'value': 'health-cloud'},
+            updatedAt: 200,
+            deletedAt: null,
+            originDeviceId: '43333333-3333-4333-8333-333333333333',
+            serverVersion: 9,
+          ),
+        ],
+      );
+      final healthCoordinator = SyncCoordinator(
+        endpoint: _endpoint,
+        sessionStore: sessionStore,
+        remoteDataSource: remote,
+        cursorStore: cursorStore,
+        adapterRegistry: SyncEntityAdapterRegistry([healthAdapter]),
+        endpointProbe: (_) async {},
+        dateTimeService: DateTimeService(
+          now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
+        ),
+        accountScopeGuard: ({required endpoint, required cloudUserId}) async {},
+      );
+
+      final result = await healthCoordinator.run(
+        direction: SyncRunDirection.pull,
+        entityTypes: const [SyncEntityType.health],
+      );
+
+      expect(result.isSuccessful, isTrue);
+      expect(remote.lastPullRequest?.tables, ['health_records']);
+      expect(healthAdapter.applyCalls, 1);
+      expect(cursorStore.value, 9);
+    },
+  );
+
+  test('Health apply failure leaves its cursor unchanged', () async {
+    final healthAdapter = _FakeAdapter(entityType: SyncEntityType.health)
+      ..applyError = StateError('Health transaction rolled back');
+    cursorStore.value = 7;
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 9,
+      items: [
+        PulledSyncItemDto(
+          tableName: 'health_records',
+          recordId: '41111111-1111-4111-8111-111111111111',
+          payload: {'value': 'health-cloud'},
+          updatedAt: 200,
+          deletedAt: null,
+          originDeviceId: '43333333-3333-4333-8333-333333333333',
+          serverVersion: 9,
+        ),
+      ],
+    );
+    final healthCoordinator = SyncCoordinator(
+      endpoint: _endpoint,
+      sessionStore: sessionStore,
+      remoteDataSource: remote,
+      cursorStore: cursorStore,
+      adapterRegistry: SyncEntityAdapterRegistry([healthAdapter]),
+      endpointProbe: (_) async {},
+      dateTimeService: DateTimeService(
+        now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
+      ),
+      accountScopeGuard: ({required endpoint, required cloudUserId}) async {},
+    );
+
+    final result = await healthCoordinator.run(
+      direction: SyncRunDirection.pull,
+      entityTypes: const [SyncEntityType.health],
+    );
+
+    expect(result.failure?.reason, SyncFailureReason.applyFailed);
+    expect(cursorStore.value, 7);
+    expect(cursorStore.writeCalls, 0);
+  });
+
   test('conflict resolution full-pulls without clearing the cursor', () async {
     cursorStore.value = 12;
     remote.pullResponse = SyncPullResponseDto(

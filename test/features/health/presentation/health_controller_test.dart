@@ -179,6 +179,11 @@ final class _FakeHealthRepository implements HealthRepository {
   Future<HealthSummary> getSummary({int days = 7}) async {
     return HealthSummary.fromEntries(days: days, entries: await listRecent());
   }
+
+  @override
+  Future<void> softDelete(String id) async {
+    savedByDate.removeWhere((_, entry) => entry.id == id);
+  }
 }
 
 HealthEntry _entry({required String date, int? water}) {

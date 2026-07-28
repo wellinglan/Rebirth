@@ -8,12 +8,14 @@ class HealthForm extends StatefulWidget {
     required this.entry,
     required this.isSaving,
     required this.onSave,
+    this.onDelete,
     super.key,
   });
 
   final HealthEntry entry;
   final bool isSaving;
   final Future<void> Function(HealthSaveData data) onSave;
+  final VoidCallback? onDelete;
 
   @override
   State<HealthForm> createState() => _HealthFormState();
@@ -162,21 +164,34 @@ class _HealthFormState extends State<HealthForm> {
             ),
           ),
           const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              key: const ValueKey('saveHealthButton'),
-              onPressed: widget.isSaving || _isSubmitting ? null : _submit,
-              icon: widget.isSaving || _isSubmitting
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.save_outlined),
-              label: Text(
-                widget.isSaving || _isSubmitting ? '保存中...' : '保存健康记录',
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (widget.onDelete != null)
+                TextButton.icon(
+                  key: const ValueKey('deleteTodayHealthButton'),
+                  onPressed: widget.isSaving || _isSubmitting
+                      ? null
+                      : widget.onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('删除'),
+                ),
+              FilledButton.icon(
+                key: const ValueKey('saveHealthButton'),
+                onPressed: widget.isSaving || _isSubmitting ? null : _submit,
+                icon: widget.isSaving || _isSubmitting
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_outlined),
+                label: Text(
+                  widget.isSaving || _isSubmitting ? '保存中...' : '保存健康记录',
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

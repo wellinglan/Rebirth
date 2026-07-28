@@ -618,3 +618,20 @@ Journal action; no automatic sync was added.
 Server validation is additive under API 1 and Sync Protocol 2. PostgreSQL and
 Alembic remain unchanged. Health remains disabled. See
 `docs/33_JOURNAL_CROSS_DEVICE_SYNC.md`.
+
+## Sprint 11C Health Adapter Boundary
+
+Health registers an independent `HealthSyncAdapter` and uses its local UUID as
+the cloud identity. Its strict payload excludes local `today_record_id`.
+Pull may rederive that weak association by account and date, but does not
+require Today to exist.
+
+Create, edit, soft delete, push acknowledgement, pull apply, conflict
+persistence, and adopt/keep transitions preserve the existing local-first
+metadata model. The Coordinator advances only the Health cursor after a fully
+validated successful apply. Validation failure, rollback, or conflict leaves
+that cursor unchanged and does not mutate Today or another entity cursor.
+
+Settings exposes a separate manual Health action. No automatic sync, Growth
+sync, AI sync, PostgreSQL migration, or Alembic revision was added. See
+`docs/33_HEALTH_CROSS_DEVICE_SYNC.md`.

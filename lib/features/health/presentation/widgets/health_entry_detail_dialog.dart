@@ -4,9 +4,14 @@ import 'package:rebirth/features/health/domain/health_entry.dart';
 import 'health_formatters.dart';
 
 class HealthEntryDetailDialog extends StatelessWidget {
-  const HealthEntryDetailDialog({required this.entry, super.key});
+  const HealthEntryDetailDialog({
+    required this.entry,
+    this.onDelete,
+    super.key,
+  });
 
   final HealthEntry entry;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +70,16 @@ class HealthEntryDetailDialog extends StatelessWidget {
         ),
       ),
       actions: [
+        if (onDelete != null)
+          TextButton.icon(
+            key: const ValueKey('deleteHealthFromHistoryButton'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              onDelete!();
+            },
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('删除'),
+          ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('关闭'),

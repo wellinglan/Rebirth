@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
+import 'package:rebirth/features/health/domain/health_entry.dart';
 import 'package:rebirth/features/health/domain/health_save_data.dart';
 
 import 'health_controller.dart';
@@ -42,16 +43,63 @@ class HealthPage extends ConsumerWidget {
         state: value,
         onSave: (data) =>
             ref.read(healthControllerProvider.notifier).saveToday(data),
+        onDelete: (entry) => _confirmDelete(context, ref, entry),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    HealthEntry entry,
+  ) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            key: const ValueKey('confirmDeleteHealthDialog'),
+            title: const Text('删除这条 Health 记录？'),
+            content: const Text('记录会在本地隐藏，并在下次手动同步时把删除状态同步到其他设备。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmDeleteHealthButton'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !context.mounted) return;
+    try {
+      await ref.read(healthControllerProvider.notifier).deleteEntry(entry.id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Health 已删除，等待手动同步')));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('删除失败，本地记录未改变')));
+    }
   }
 }
 
 class _HealthContent extends StatelessWidget {
-  const _HealthContent({required this.state, required this.onSave});
+  const _HealthContent({
+    required this.state,
+    required this.onSave,
+    required this.onDelete,
+  });
 
   final HealthViewState state;
   final Future<void> Function(HealthSaveData data) onSave;
+  final ValueChanged<HealthEntry> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +131,9 @@ class _HealthContent extends StatelessWidget {
                   entry: state.today,
                   isSaving: state.isSaving,
                   onSave: onSave,
+                  onDelete: state.today.hasMetrics
+                      ? () => onDelete(state.today)
+                      : null,
                 ),
                 const SizedBox(height: AppLayout.sectionGap),
                 Text('近 7 日摘要', style: Theme.of(context).textTheme.titleLarge),
@@ -91,7 +142,10 @@ class _HealthContent extends StatelessWidget {
                 const SizedBox(height: AppLayout.sectionGap),
                 Text('近 30 日历史', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
-                HealthHistoryList(entries: state.recentEntries),
+                HealthHistoryList(
+                  entries: state.recentEntries,
+                  onDelete: onDelete,
+                ),
               ],
             ),
           ),

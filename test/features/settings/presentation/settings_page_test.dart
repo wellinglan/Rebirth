@@ -45,6 +45,8 @@ import 'package:rebirth/features/sync/presentation/journal_sync_controller.dart'
 import 'package:rebirth/features/sync/presentation/journal_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/health_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/health_sync_view_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -93,7 +95,10 @@ void main() {
     expect(find.text('云账号'), findsOneWidget);
     expect(find.text('尚未连接'), findsOneWidget);
     expect(find.text('同步范围'), findsOneWidget);
-    expect(find.text('Profile、Plan、Today 与 Journal 手动同步'), findsOneWidget);
+    expect(
+      find.text('Profile、Plan、Today、Journal 与 Health 手动同步'),
+      findsOneWidget,
+    );
     expect(find.text('设备注册'), findsOneWidget);
     expect(find.text('未注册'), findsOneWidget);
     expect(find.text('Profile 同步'), findsOneWidget);
@@ -166,7 +171,10 @@ void main() {
     expect(find.text('开发账号已连接'), findsOneWidget);
     expect(find.text('Dev research-user'), findsOneWidget);
     expect(find.text('开发登录成功'), findsOneWidget);
-    expect(find.text('Profile、Plan、Today 与 Journal 手动同步'), findsOneWidget);
+    expect(
+      find.text('Profile、Plan、Today、Journal 与 Health 手动同步'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('registering a device while signed out asks for login', (
@@ -251,11 +259,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('可手动同步'), findsNWidgets(4));
+    expect(find.text('可手动同步'), findsNWidgets(5));
     expect(find.byKey(const ValueKey('pushProfileButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('pullProfileButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('syncPlanButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('syncTodayButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('syncHealthButton')), findsOneWidget);
     final planButton = tester.widget<OutlinedButton>(
       find.byKey(const ValueKey('syncPlanButton')),
     );
@@ -264,6 +273,10 @@ void main() {
       find.byKey(const ValueKey('syncTodayButton')),
     );
     expect(todayButton.onPressed, isNotNull);
+    final healthButton = tester.widget<OutlinedButton>(
+      find.byKey(const ValueKey('syncHealthButton')),
+    );
+    expect(healthButton.onPressed, isNotNull);
   });
 
   testWidgets('legacy review disables Profile, Plan, and Today sync actions', (
@@ -279,7 +292,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('等待验证，同步保持关闭'), findsOneWidget);
-    expect(find.text('旧数据待验证，暂不可同步'), findsNWidgets(4));
+    expect(find.text('旧数据待验证，暂不可同步'), findsNWidgets(5));
     expect(
       find.byKey(const ValueKey('verifySyncEligibilityButton')),
       findsOneWidget,
@@ -547,6 +560,50 @@ void main() {
     expect(find.text('Journal 最近同步'), findsOneWidget);
   });
 
+  testWidgets('manual Health sync disables repeat taps and shows status', (
+    tester,
+  ) async {
+    final completer = Completer<SyncRunResult>();
+    var calls = 0;
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      healthSyncRunner: () {
+        calls += 1;
+        return completer.future;
+      },
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'syncHealthButton');
+    await tester.tap(find.byKey(const ValueKey('syncHealthButton')));
+    await tester.pump();
+
+    expect(calls, 1);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.byKey(const ValueKey('syncHealthButton')),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    completer.complete(_healthSuccessResult());
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsPage)),
+    );
+    final state = container.read(healthSyncControllerProvider);
+    expect(state.status, HealthSyncStatus.succeeded);
+    expect(state.pushedCount, 1);
+    expect(state.pulledCount, 2);
+    expect(state.deletedCount, 1);
+    expect(find.text('Health 最近同步'), findsOneWidget);
+  });
+
   testWidgets('successful Profile upload shows an honest result', (
     tester,
   ) async {
@@ -798,7 +855,7 @@ void main() {
     expect(find.textContaining('微信开放平台配置'), findsOneWidget);
   });
 
-  testWidgets('sync settings explains Profile, Today, and Plan manual scope', (
+  testWidgets('sync settings explains all five manual sync domains', (
     tester,
   ) async {
     await _pumpSettings(
@@ -813,10 +870,9 @@ void main() {
     expect(find.byKey(const ValueKey('syncSettingsDialog')), findsOneWidget);
     expect(find.text('同步范围'), findsWidgets);
     expect(
-      find.textContaining('Profile、Plan、Today 与 Journal 已支持手动同步'),
+      find.textContaining('Profile、Plan、Today、Journal 与 Health 已支持手动同步'),
       findsOneWidget,
     );
-    expect(find.textContaining('Health 尚未同步'), findsOneWidget);
     expect(find.textContaining('没有后台自动同步'), findsOneWidget);
   });
 
@@ -1001,6 +1057,7 @@ Future<void> _pumpSettings(
   PlanSyncRunner? planSyncRunner,
   TodaySyncRunner? todaySyncRunner,
   JournalSyncRunner? journalSyncRunner,
+  HealthSyncRunner? healthSyncRunner,
   int activeConflictCount = 0,
   Size surfaceSize = const Size(900, 1250),
   TextScaler textScaler = TextScaler.noScaling,
@@ -1059,6 +1116,16 @@ Future<void> _pumpSettings(
           () async => _journalSuccessResult(direction: SyncRunDirection.push),
         ),
         journalViewRefresherProvider.overrideWithValue(() async {}),
+        healthSyncRunnerProvider.overrideWithValue(
+          healthSyncRunner ?? () async => _healthSuccessResult(),
+        ),
+        healthConflictPullRunnerProvider.overrideWithValue(
+          () async => _healthSuccessResult(direction: SyncRunDirection.pull),
+        ),
+        healthPushRunnerProvider.overrideWithValue(
+          () async => _healthSuccessResult(direction: SyncRunDirection.push),
+        ),
+        healthViewRefresherProvider.overrideWithValue(() async {}),
         syncConflictScopeProvider.overrideWith((ref) async => null),
         activeSyncConflictCountProvider.overrideWith(
           (ref) => Stream.value(activeConflictCount),
@@ -1130,6 +1197,27 @@ SyncRunResult _journalSuccessResult({
         entityType: SyncEntityType.journal,
         status: SyncEntityStatus.succeeded,
         message: 'Journal 已更新',
+        pushedCount: 1,
+        pulledCount: 2,
+        deletedCount: 1,
+      ),
+    ],
+    startedAt: 1,
+    completedAt: 2,
+  );
+}
+
+SyncRunResult _healthSuccessResult({
+  SyncRunDirection direction = SyncRunDirection.twoWay,
+}) {
+  return SyncRunResult(
+    direction: direction,
+    phases: const [SyncRunPhase.completed],
+    entityResults: const [
+      SyncEntityResult(
+        entityType: SyncEntityType.health,
+        status: SyncEntityStatus.succeeded,
+        message: 'Health 已更新',
         pushedCount: 1,
         pulledCount: 2,
         deletedCount: 1,

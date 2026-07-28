@@ -22,6 +22,8 @@ import 'package:rebirth/features/sync/presentation/journal_sync_controller.dart'
 import 'package:rebirth/features/sync/presentation/journal_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/health_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/health_sync_view_state.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 
@@ -53,6 +55,7 @@ class SettingsPage extends ConsumerWidget {
     final planSyncState = ref.watch(planSyncControllerProvider);
     final todaySyncState = ref.watch(todaySyncControllerProvider);
     final journalSyncState = ref.watch(journalSyncControllerProvider);
+    final healthSyncState = ref.watch(healthSyncControllerProvider);
     final activeConflictCount =
         ref.watch(activeSyncConflictCountProvider).value ?? 0;
     final config = ref.watch(appConfigProvider);
@@ -107,10 +110,12 @@ class SettingsPage extends ConsumerWidget {
               planSyncState: planSyncState,
               todaySyncState: todaySyncState,
               journalSyncState: journalSyncState,
+              healthSyncState: healthSyncState,
               activeConflictCount: activeConflictCount,
               onSyncPlan: () => _syncPlan(context, ref),
               onSyncToday: () => _syncToday(context, ref),
               onSyncJournal: () => _syncJournal(context, ref),
+              onSyncHealth: () => _syncHealth(context, ref),
               onWeChatLogin: () => _showUnavailableDialog(
                 context,
                 key: 'wechatLoginDialog',
@@ -122,8 +127,8 @@ class SettingsPage extends ConsumerWidget {
                 key: 'syncSettingsDialog',
                 title: '同步范围',
                 message:
-                    'Profile、Plan、Today 与 Journal 已支持手动同步。Health '
-                    '尚未同步；当前没有后台自动同步。',
+                    'Profile、Plan、Today、Journal 与 Health 已支持手动同步；'
+                    '当前没有后台自动同步。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
               onOpenSyncConflicts:
@@ -405,6 +410,24 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _syncHealth(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await ref
+          .read(healthSyncControllerProvider.notifier)
+          .syncHealth();
+      if (!context.mounted) return;
+      final entity = result.resultFor(SyncEntityType.health);
+      _showMessage(
+        context,
+        entity?.message ?? result.failure?.message ?? 'Health 同步完成',
+      );
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, 'Health 同步失败，本地数据未受影响');
+      }
+    }
+  }
+
   Future<void> _verifyOwnership(BuildContext context, WidgetRef ref) async {
     try {
       final result = await ref
@@ -522,10 +545,12 @@ class _SettingsContent extends StatelessWidget {
     required this.planSyncState,
     required this.todaySyncState,
     required this.journalSyncState,
+    required this.healthSyncState,
     required this.activeConflictCount,
     required this.onSyncPlan,
     required this.onSyncToday,
     required this.onSyncJournal,
+    required this.onSyncHealth,
     required this.onVerifyOwnership,
     required this.onWeChatLogin,
     required this.onSyncSettings,
@@ -556,10 +581,12 @@ class _SettingsContent extends StatelessWidget {
   final PlanSyncViewState planSyncState;
   final TodaySyncViewState todaySyncState;
   final JournalSyncViewState journalSyncState;
+  final HealthSyncViewState healthSyncState;
   final int activeConflictCount;
   final VoidCallback onSyncPlan;
   final VoidCallback onSyncToday;
   final VoidCallback onSyncJournal;
+  final VoidCallback onSyncHealth;
   final VoidCallback onVerifyOwnership;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
@@ -625,6 +652,8 @@ class _SettingsContent extends StatelessWidget {
                     onSyncToday: onSyncToday,
                     journalSyncState: journalSyncState,
                     onSyncJournal: onSyncJournal,
+                    healthSyncState: healthSyncState,
+                    onSyncHealth: onSyncHealth,
                     onVerifyOwnership: onVerifyOwnership,
                     onWeChatLogin: onWeChatLogin,
                     onSyncSettings: onSyncSettings,

@@ -7,6 +7,7 @@ import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart'
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/journal_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/health_sync_view_state.dart';
 
 class AccountStatusCard extends StatelessWidget {
   const AccountStatusCard({
@@ -30,6 +31,8 @@ class AccountStatusCard extends StatelessWidget {
     required this.onSyncToday,
     required this.journalSyncState,
     required this.onSyncJournal,
+    required this.healthSyncState,
+    required this.onSyncHealth,
     required this.onVerifyOwnership,
     required this.onWeChatLogin,
     required this.onSyncSettings,
@@ -56,6 +59,8 @@ class AccountStatusCard extends StatelessWidget {
   final VoidCallback onSyncToday;
   final JournalSyncViewState journalSyncState;
   final VoidCallback onSyncJournal;
+  final HealthSyncViewState healthSyncState;
+  final VoidCallback onSyncHealth;
   final VoidCallback onVerifyOwnership;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
@@ -92,7 +97,7 @@ class AccountStatusCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Profile、Plan、Today 与 Journal 可手动同步；其他业务数据仍保存在本地。',
+              'Profile、Plan、Today、Journal 与 Health 可手动同步；其他业务数据仍保存在本地。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -109,7 +114,7 @@ class AccountStatusCard extends StatelessWidget {
             ),
             const _StatusRow(
               label: '同步范围',
-              value: 'Profile、Plan、Today 与 Journal 手动同步',
+              value: 'Profile、Plan、Today、Journal 与 Health 手动同步',
             ),
             _StatusRow(
               label: '本地数据归属',
@@ -160,6 +165,16 @@ class AccountStatusCard extends StatelessWidget {
             _StatusRow(
               label: 'Journal 最近同步',
               value: journalSyncState.lastSyncLabel,
+            ),
+            _StatusRow(
+              label: 'Health 同步',
+              value: syncReviewRequired
+                  ? '旧数据待验证，暂不可同步'
+                  : healthSyncState.statusLabel,
+            ),
+            _StatusRow(
+              label: 'Health 最近同步',
+              value: healthSyncState.lastSyncLabel,
             ),
             if (isSignedIn)
               _StatusRow(
@@ -264,6 +279,7 @@ class AccountStatusCard extends StatelessWidget {
                               planSyncState.isBusy ||
                               todaySyncState.isBusy ||
                               journalSyncState.isBusy ||
+                              healthSyncState.isBusy ||
                               !isSignedIn ||
                               syncReviewRequired ||
                               !accountStatus.deviceRegistered
@@ -287,6 +303,7 @@ class AccountStatusCard extends StatelessWidget {
                               planSyncState.isBusy ||
                               todaySyncState.isBusy ||
                               journalSyncState.isBusy ||
+                              healthSyncState.isBusy ||
                               !syncAllowed ||
                               !accountStatus.deviceRegistered
                           ? null
@@ -311,6 +328,7 @@ class AccountStatusCard extends StatelessWidget {
                               planSyncState.isBusy ||
                               todaySyncState.isBusy ||
                               journalSyncState.isBusy ||
+                              healthSyncState.isBusy ||
                               !syncAllowed ||
                               !accountStatus.deviceRegistered
                           ? null
@@ -318,6 +336,31 @@ class AccountStatusCard extends StatelessWidget {
                       icon: const Icon(Icons.menu_book_outlined),
                       label: Text(
                         journalSyncState.isBusy ? '同步中...' : '同步 Journal',
+                      ),
+                    ),
+                  ),
+                ),
+                Tooltip(
+                  message: '双向同步 Health',
+                  child: Semantics(
+                    button: true,
+                    label: '同步 Health',
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('syncHealthButton'),
+                      onPressed:
+                          state.isBusy ||
+                              profileSyncState.isBusy ||
+                              planSyncState.isBusy ||
+                              todaySyncState.isBusy ||
+                              journalSyncState.isBusy ||
+                              healthSyncState.isBusy ||
+                              !syncAllowed ||
+                              !accountStatus.deviceRegistered
+                          ? null
+                          : onSyncHealth,
+                      icon: const Icon(Icons.monitor_heart_outlined),
+                      label: Text(
+                        healthSyncState.isBusy ? '同步中...' : '同步 Health',
                       ),
                     ),
                   ),

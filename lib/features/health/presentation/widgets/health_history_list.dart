@@ -5,9 +5,10 @@ import 'health_entry_detail_dialog.dart';
 import 'health_history_card.dart';
 
 class HealthHistoryList extends StatelessWidget {
-  const HealthHistoryList({required this.entries, super.key});
+  const HealthHistoryList({required this.entries, this.onDelete, super.key});
 
   final List<HealthEntry> entries;
+  final ValueChanged<HealthEntry>? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +28,10 @@ class HealthHistoryList extends StatelessWidget {
             entry: entry,
             onTap: () => showDialog<void>(
               context: context,
-              builder: (context) => HealthEntryDetailDialog(entry: entry),
+              builder: (context) => HealthEntryDetailDialog(
+                entry: entry,
+                onDelete: onDelete == null ? null : () => onDelete!(entry),
+              ),
             ),
           ),
       ],

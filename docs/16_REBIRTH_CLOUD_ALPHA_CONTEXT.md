@@ -680,3 +680,24 @@ The API runtime change requires a new GHCR Alpha image and API-container-only
 deployment. Product acceptance remains `NOT EXECUTED` in
 `docs/manual_tests/34_journal_cross_device_sync.md`; automated evidence must
 not close the Journal product gate.
+
+## 28. Sprint 11C Health Cross-device Synchronization
+
+Health joins the same manual SyncCoordinator pipeline with a strict typed
+payload, transactional push acknowledgement and pull apply, independent cursor
+protection, payload-free tombstones, and explicit Keep Local / Adopt Remote
+conflict recovery.
+
+Health remains independent from Today. The local `today_record_id` weak
+association is never uploaded, and Health can synchronize without an active
+Today row. Deleting Today does not delete Health.
+
+Flutter schema remains 8. API remains 1 and Sync Protocol remains 2. Server
+runtime validation changes require a new GHCR API image, but PostgreSQL schema,
+Alembic, and the database volume remain unchanged. Conflict UI and operational
+evidence expose no Health metrics or notes. AI and Growth do not consume or
+synchronize Health in this Sprint.
+
+Product acceptance starts as `NOT EXECUTED` in
+`docs/manual_tests/35_health_cross_device_sync.md`; automated evidence cannot
+close the Health product gate.

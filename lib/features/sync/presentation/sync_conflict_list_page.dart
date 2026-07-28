@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
+import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
@@ -117,11 +118,20 @@ String _displayTitle(SyncConflictRecord conflict) {
   if (remote is JournalSyncPayload) {
     return '${remote.entryDate} Journal';
   }
+  if (local is HealthSyncPayload) {
+    return '${local.recordDate} Health';
+  }
+  if (remote is HealthSyncPayload) {
+    return '${remote.recordDate} Health';
+  }
   if (conflict.entityType == SyncEntityType.today) {
     return '已删除的 Today 记录';
   }
   if (conflict.entityType == SyncEntityType.journal) {
     return '已删除的 Journal 记录';
+  }
+  if (conflict.entityType == SyncEntityType.health) {
+    return '已删除的 Health 记录';
   }
   return '已删除的 Plan 目标';
 }

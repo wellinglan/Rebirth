@@ -10,6 +10,10 @@ import 'package:rebirth/features/journal/data/journal_sync_payload_codec.dart';
 import 'package:rebirth/features/journal/domain/journal_conflict_resolution_service.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
+import 'package:rebirth/features/health/data/health_conflict_resolution_service_impl.dart';
+import 'package:rebirth/features/health/data/health_sync_payload_codec.dart';
+import 'package:rebirth/features/health/domain/health_conflict_resolution_service.dart';
+import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/plan/data/plan_conflict_resolution_service_impl.dart';
 import 'package:rebirth/features/plan/data/plan_sync_payload_codec.dart';
 import 'package:rebirth/features/plan/domain/plan_conflict_resolution_service.dart';
@@ -32,6 +36,7 @@ final syncConflictRepositoryProvider = Provider<SyncConflictRepository>((ref) {
     payloadCodecs: const [
       TodaySyncPayloadCodec(),
       JournalSyncPayloadCodec(),
+      HealthSyncPayloadCodec(),
       PlanSyncPayloadCodec(),
     ],
   );
@@ -137,6 +142,14 @@ final journalConflictResolutionServiceProvider =
       );
     });
 
+final healthConflictResolutionServiceProvider =
+    Provider<HealthConflictResolutionService>((ref) {
+      return HealthConflictResolutionServiceImpl(
+        ref.watch(appDatabaseProvider),
+        ref.watch(syncConflictRepositoryProvider),
+      );
+    });
+
 Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
   AppDatabase database,
   SyncConflictRecord record,
@@ -158,8 +171,48 @@ Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
       localUserId,
       record.recordId,
     ),
+    SyncEntityType.health => _loadHealthSnapshot(
+      database,
+      localUserId,
+      record.recordId,
+    ),
     _ => null,
   };
+}
+
+Future<SyncConflictSnapshot?> _loadHealthSnapshot(
+  AppDatabase database,
+  String localUserId,
+  String recordId,
+) async {
+  final health =
+      await (database.select(database.healthRecords)..where(
+            (row) => row.userId.equals(localUserId) & row.id.equals(recordId),
+          ))
+          .getSingleOrNull();
+  if (health == null) return null;
+  return SyncConflictSnapshot(
+    payload: health.deletedAt == null
+        ? HealthSyncPayload(
+            recordDate: health.recordDate,
+            timezoneOffsetMinutes: health.timezoneOffsetMinutes,
+            sleepDurationMinutes: health.sleepDurationMinutes,
+            weightKg: health.weightKg,
+            waterIntakeMl: health.waterIntakeMl,
+            exerciseType: health.exerciseType,
+            exerciseDurationMinutes: health.exerciseDurationMinutes,
+            physicalStateScore: health.physicalStateScore,
+            note: health.note,
+            dataSource: health.dataSource,
+            sourceRecordId: health.sourceRecordId,
+            createdAt: health.createdAt,
+          )
+        : null,
+    updatedAt: health.updatedAt,
+    deletedAt: health.deletedAt,
+    serverVersion: health.serverVersion,
+    originDeviceId: health.originDeviceId,
+  );
 }
 
 Future<SyncConflictSnapshot?> _loadJournalSnapshot(
@@ -285,6 +338,10 @@ bool _samePayload(Object? left, Object? right) {
   if (left is TodaySyncPayload && right is TodaySyncPayload) {
     return const TodaySyncPayloadCodec().canonicalJson(left) ==
         const TodaySyncPayloadCodec().canonicalJson(right);
+  }
+  if (left is HealthSyncPayload && right is HealthSyncPayload) {
+    return const HealthSyncPayloadCodec().canonicalJson(left) ==
+        const HealthSyncPayloadCodec().canonicalJson(right);
   }
   if (left is! PlanSyncPayload || right is! PlanSyncPayload) {
     return left == null && right == null;

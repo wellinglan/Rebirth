@@ -128,112 +128,124 @@ void main() {
     );
   });
 
-  test(
-    'Profile, Today, Journal, and Plan are accepted while Health is rejected',
-    () async {
-      final dataSource = SyncApiDataSource(
+  test('Profile, Today, Journal, Plan, and Health are accepted', () async {
+    final dataSource = SyncApiDataSource(
+      _FakeApiClient(
+        response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+      ),
+    );
+    final journalItem = SyncPushItemDto(
+      tableName: 'journal_entries',
+      recordId: 'journal-1',
+      payload: const {},
+      updatedAt: 1,
+      deletedAt: null,
+      originDeviceId: 'installation-1',
+      clientVersion: 0,
+    );
+
+    await expectLater(
+      dataSource.push(
+        SyncPushRequestDto(deviceId: 'device-1', items: [journalItem]),
+        accessToken: 'test-access-token',
+      ),
+      completes,
+    );
+    await expectLater(
+      SyncApiDataSource(
         _FakeApiClient(
-          response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+          response: const {'server_version': 0, 'items': <Object?>[]},
         ),
-      );
-      final journalItem = SyncPushItemDto(
-        tableName: 'journal_entries',
-        recordId: 'journal-1',
-        payload: const {},
-        updatedAt: 1,
-        deletedAt: null,
-        originDeviceId: 'installation-1',
-        clientVersion: 0,
-      );
+      ).pull(
+        SyncPullRequestDto(
+          deviceId: 'device-1',
+          sinceServerVersion: 0,
+          tables: const ['journal_entries'],
+        ),
+        accessToken: 'test-access-token',
+      ),
+      completes,
+    );
 
-      await expectLater(
-        dataSource.push(
-          SyncPushRequestDto(deviceId: 'device-1', items: [journalItem]),
-          accessToken: 'test-access-token',
-        ),
-        completes,
-      );
-      await expectLater(
-        SyncApiDataSource(
-          _FakeApiClient(
-            response: const {'server_version': 0, 'items': <Object?>[]},
-          ),
-        ).pull(
-          SyncPullRequestDto(
-            deviceId: 'device-1',
-            sinceServerVersion: 0,
-            tables: const ['journal_entries'],
-          ),
-          accessToken: 'test-access-token',
-        ),
-        completes,
-      );
-
-      expect(
-        SyncApiDataSource(_FakeApiClient()).pull(
-          SyncPullRequestDto(
-            deviceId: 'device-1',
-            sinceServerVersion: 0,
-            tables: const ['health_records'],
-          ),
-          accessToken: 'test-access-token',
-        ),
-        throwsA(isA<SyncUnsupportedTableException>()),
-      );
-
-      final planDataSource = SyncApiDataSource(
+    expect(
+      SyncApiDataSource(
         _FakeApiClient(
-          response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+          response: const {'server_version': 0, 'items': <Object?>[]},
         ),
-      );
-      await expectLater(
-        planDataSource.push(
-          SyncPushRequestDto(
-            deviceId: 'device-1',
-            items: [
-              SyncPushItemDto(
-                tableName: 'goals',
-                recordId: 'goal-1',
-                payload: const {},
-                updatedAt: 1,
-                deletedAt: 1,
-                originDeviceId: 'installation-1',
-                clientVersion: 0,
-              ),
-            ],
-          ),
-          accessToken: 'test-access-token',
+      ).pull(
+        SyncPullRequestDto(
+          deviceId: 'device-1',
+          sinceServerVersion: 0,
+          tables: const ['health_records'],
         ),
-        completes,
-      );
+        accessToken: 'test-access-token',
+      ),
+      completes,
+    );
+    expect(
+      SyncApiDataSource(_FakeApiClient()).pull(
+        SyncPullRequestDto(
+          deviceId: 'device-1',
+          sinceServerVersion: 0,
+          tables: const ['ai_reports'],
+        ),
+        accessToken: 'test-access-token',
+      ),
+      throwsA(isA<SyncUnsupportedTableException>()),
+    );
 
-      final todayDataSource = SyncApiDataSource(
-        _FakeApiClient(
-          response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+    final planDataSource = SyncApiDataSource(
+      _FakeApiClient(
+        response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+      ),
+    );
+    await expectLater(
+      planDataSource.push(
+        SyncPushRequestDto(
+          deviceId: 'device-1',
+          items: [
+            SyncPushItemDto(
+              tableName: 'goals',
+              recordId: 'goal-1',
+              payload: const {},
+              updatedAt: 1,
+              deletedAt: 1,
+              originDeviceId: 'installation-1',
+              clientVersion: 0,
+            ),
+          ],
         ),
-      );
-      await expectLater(
-        todayDataSource.push(
-          SyncPushRequestDto(
-            deviceId: 'device-1',
-            items: [
-              SyncPushItemDto(
-                tableName: 'today_records',
-                recordId: '11111111-1111-4111-8111-111111111111',
-                payload: const {},
-                updatedAt: 1,
-                deletedAt: 1,
-                originDeviceId: '22222222-2222-4222-8222-222222222222',
-                clientVersion: 0,
-              ),
-            ],
-          ),
-          accessToken: 'test-access-token',
+        accessToken: 'test-access-token',
+      ),
+      completes,
+    );
+
+    final todayDataSource = SyncApiDataSource(
+      _FakeApiClient(
+        response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+      ),
+    );
+    await expectLater(
+      todayDataSource.push(
+        SyncPushRequestDto(
+          deviceId: 'device-1',
+          items: [
+            SyncPushItemDto(
+              tableName: 'today_records',
+              recordId: '11111111-1111-4111-8111-111111111111',
+              payload: const {},
+              updatedAt: 1,
+              deletedAt: 1,
+              originDeviceId: '22222222-2222-4222-8222-222222222222',
+              clientVersion: 0,
+            ),
+          ],
         ),
-        completes,
-      );
-    },
-  );
+        accessToken: 'test-access-token',
+      ),
+      completes,
+    );
+  });
 
   test('push conflict DTO is converted with its server version', () async {
     final dataSource = SyncApiDataSource(

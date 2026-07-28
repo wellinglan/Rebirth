@@ -19,6 +19,7 @@ from app.schemas import (
     SyncConflictResponse,
     PlanSyncPayload,
     JournalSyncPayload,
+    HealthSyncPayload,
     TodaySyncPayload,
     SyncPullItem,
     SyncPullRequest,
@@ -33,6 +34,7 @@ from app.schemas import (
 PROFILE_TABLE = "user_profiles"
 TODAY_TABLE = "today_records"
 JOURNAL_TABLE = "journal_entries"
+HEALTH_TABLE = "health_records"
 GOALS_TABLE = "goals"
 CANONICAL_PROFILE_RECORD_ID = "profile"
 SYNC_CLOCK_ID = 1
@@ -306,6 +308,8 @@ def _preflight_push(
             _validate_today_item(incoming, record_id)
         elif incoming.table_name == JOURNAL_TABLE:
             _validate_journal_item(incoming, record_id)
+        elif incoming.table_name == HEALTH_TABLE:
+            _validate_health_item(incoming, record_id)
 
     _ensure_sync_clock(session)
     session.scalar(
@@ -360,6 +364,7 @@ def _preflight_push(
     _validate_projected_goal_hierarchy(session, user_id, preflight)
     _validate_projected_today_dates(session, user_id, preflight)
     _validate_projected_journal_dates(session, user_id, preflight)
+    _validate_projected_health_dates(session, user_id, preflight)
     return preflight
 
 
@@ -419,6 +424,26 @@ def _validate_journal_item(incoming: object, record_id: str) -> None:
         JournalSyncPayload.model_validate(incoming.payload)
     except (ValidationError, ValueError) as error:
         raise SyncRequestValidationError("Invalid Journal payload.") from error
+
+
+def _validate_health_item(incoming: object, record_id: str) -> None:
+    try:
+        uuid.UUID(record_id)
+        uuid.UUID(incoming.origin_device_id)
+    except ValueError as error:
+        raise SyncRequestValidationError(
+            "Health record and origin device IDs must be UUIDs."
+        ) from error
+    if incoming.deleted_at is not None:
+        if incoming.payload:
+            raise SyncRequestValidationError(
+                "Health tombstone payload must be empty."
+            )
+        return
+    try:
+        HealthSyncPayload.model_validate(incoming.payload)
+    except (ValidationError, ValueError) as error:
+        raise SyncRequestValidationError("Invalid Health payload.") from error
 
 
 def _validate_projected_today_dates(
@@ -545,6 +570,71 @@ def _validate_projected_journal_dates(
             owners.pop(previous.entry_date, None)
         payload_by_id[item.record_id] = payload
         owners[payload.entry_date] = item.record_id
+
+
+def _validate_projected_health_dates(
+    session: Session,
+    user_id: str,
+    preflight: list[_PreflightItem],
+) -> None:
+    if not any(item.incoming.table_name == HEALTH_TABLE for item in preflight):
+        return
+    current = session.scalars(
+        select(SyncItem)
+        .where(
+            SyncItem.user_id == user_id,
+            SyncItem.table_name == HEALTH_TABLE,
+        )
+        .with_for_update()
+    ).all()
+    payload_by_id: dict[str, HealthSyncPayload] = {}
+    current_by_id: dict[str, SyncItem] = {}
+    for item in current:
+        if item.deleted_at is not None:
+            continue
+        try:
+            payload_by_id[item.record_id] = HealthSyncPayload.model_validate(
+                json.loads(item.payload_json)
+            )
+            current_by_id[item.record_id] = item
+        except (json.JSONDecodeError, ValidationError, ValueError) as error:
+            raise SyncRequestValidationError(
+                f"Stored Health {item.record_id} has invalid date data."
+            ) from error
+
+    owners = {
+        payload.record_date: record_id
+        for record_id, payload in payload_by_id.items()
+    }
+    for item in preflight:
+        incoming = item.incoming
+        if incoming.table_name != HEALTH_TABLE or item.outcome == "conflict":
+            continue
+        if incoming.deleted_at is not None:
+            previous = payload_by_id.pop(item.record_id, None)
+            if previous is not None:
+                owners.pop(previous.record_date, None)
+            continue
+        payload = HealthSyncPayload.model_validate(incoming.payload)
+        previous = payload_by_id.get(item.record_id)
+        if previous is not None and previous.record_date != payload.record_date:
+            raise SyncRequestValidationError(
+                "Health record_date cannot change after creation."
+            )
+        owner = owners.get(payload.record_date)
+        if owner is not None and owner != item.record_id:
+            remote = current_by_id.get(owner)
+            item.outcome = "conflict"
+            item.conflict_reason = "health_record_date_conflict"
+            item.remote_record_id = owner
+            item.conflict_server_version = (
+                remote.server_version if remote is not None else 0
+            )
+            continue
+        if previous is not None:
+            owners.pop(previous.record_date, None)
+        payload_by_id[item.record_id] = payload
+        owners[payload.record_date] = item.record_id
 
 
 def _validate_projected_goal_hierarchy(

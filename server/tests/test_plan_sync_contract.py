@@ -11,6 +11,8 @@ from app.models import SyncClock, SyncItem
 
 PARENT_ID = "11111111-1111-4111-8111-111111111111"
 CHILD_ID = "22222222-2222-4222-8222-222222222222"
+HEALTH_ID = "41111111-1111-4111-8111-111111111111"
+SECOND_HEALTH_ID = "42222222-2222-4222-8222-222222222222"
 
 
 def _goal_payload(
@@ -31,6 +33,27 @@ def _goal_payload(
         "completed_at": completed_at,
         "archived_at": None,
         "sort_order": 0,
+        "created_at": 1_784_160_000_000,
+    }
+
+
+def _health_payload(
+    note: str,
+    *,
+    record_date: str = "2026-07-28",
+) -> dict[str, object]:
+    return {
+        "record_date": record_date,
+        "timezone_offset_minutes": 480,
+        "sleep_duration_minutes": 450,
+        "weight_kg": None,
+        "water_intake_ml": None,
+        "exercise_type": None,
+        "exercise_duration_minutes": None,
+        "physical_state_score": None,
+        "note": note,
+        "data_source": "manual",
+        "source_record_id": None,
         "created_at": 1_784_160_000_000,
     }
 
@@ -75,8 +98,8 @@ def test_stale_client_cannot_win_with_a_newer_client_timestamp(
 ) -> None:
     first = _item(
         "health_records",
-        "strict-record",
-        {"daily_note": "cloud"},
+        HEALTH_ID,
+        _health_payload("cloud"),
     )
     created = _push(client, auth_headers, registered_device, [first])
     assert created.status_code == 200
@@ -84,8 +107,8 @@ def test_stale_client_cannot_win_with_a_newer_client_timestamp(
 
     stale = _item(
         "health_records",
-        "strict-record",
-        {"daily_note": "stale but newer clock"},
+        HEALTH_ID,
+        _health_payload("stale but newer clock"),
         updated_at=first["updated_at"] + 999_999,
         client_version=0,
     )
@@ -104,7 +127,7 @@ def test_stale_client_cannot_win_with_a_newer_client_timestamp(
             "tables": ["health_records"],
         },
     )
-    assert pulled.json()["items"][0]["payload"]["daily_note"] == "cloud"
+    assert pulled.json()["items"][0]["payload"]["note"] == "cloud"
     assert pulled.json()["server_version"] == version
 
 
@@ -123,8 +146,8 @@ def test_stale_client_conflicts_regardless_of_client_timestamp(
         [
             _item(
                 "health_records",
-                "timestamp-record",
-                {"value": "cloud"},
+                HEALTH_ID,
+                _health_payload("cloud"),
                 updated_at=timestamp,
             )
         ],
@@ -138,8 +161,8 @@ def test_stale_client_conflicts_regardless_of_client_timestamp(
         [
             _item(
                 "health_records",
-                "timestamp-record",
-                {"value": "stale"},
+                HEALTH_ID,
+                _health_payload("stale"),
                 updated_at=timestamp + timestamp_delta,
                 client_version=0,
             )
@@ -159,7 +182,7 @@ def test_matching_client_version_updates_an_existing_record(
         client,
         auth_headers,
         registered_device,
-        [_item("health_records", "matching-version", {"value": "first"})],
+        [_item("health_records", HEALTH_ID, _health_payload("first"))],
     )
     first_version = created.json()["accepted"][0]["server_version"]
 
@@ -170,8 +193,8 @@ def test_matching_client_version_updates_an_existing_record(
         [
             _item(
                 "health_records",
-                "matching-version",
-                {"value": "second"},
+                HEALTH_ID,
+                _health_payload("second"),
                 client_version=first_version,
                 updated_at=1_784_160_001_000,
             )
@@ -194,8 +217,8 @@ def test_new_record_with_nonzero_client_version_is_a_conflict(
         [
             _item(
                 "health_records",
-                "invalid-new-baseline",
-                {"value": "new"},
+                HEALTH_ID,
+                _health_payload("new"),
                 client_version=9,
             )
         ],
@@ -213,13 +236,13 @@ def test_exact_retry_is_idempotent_and_does_not_touch_server_clock_or_timestamp(
     auth_headers: dict[str, str],
     registered_device: str,
 ) -> None:
-    item = _item("health_records", "idempotent-record", {"daily_note": "same"})
+    item = _item("health_records", HEALTH_ID, _health_payload("same"))
     first = _push(client, auth_headers, registered_device, [item])
     version = first.json()["accepted"][0]["server_version"]
     database = client.app.state.database
     with database.session_factory() as session:
         before = session.scalar(
-            select(SyncItem).where(SyncItem.record_id == "idempotent-record")
+            select(SyncItem).where(SyncItem.record_id == HEALTH_ID)
         )
         assert before is not None
         server_updated_at = before.server_updated_at
@@ -231,7 +254,7 @@ def test_exact_retry_is_idempotent_and_does_not_touch_server_clock_or_timestamp(
     assert retry.json()["conflicts"] == []
     with database.session_factory() as session:
         after = session.scalar(
-            select(SyncItem).where(SyncItem.record_id == "idempotent-record")
+            select(SyncItem).where(SyncItem.record_id == HEALTH_ID)
         )
         assert after is not None
         assert after.server_updated_at == server_updated_at
@@ -243,16 +266,20 @@ def test_conflicting_push_batch_is_atomic_and_does_not_advance_clock(
     auth_headers: dict[str, str],
     registered_device: str,
 ) -> None:
-    first = _item("health_records", "existing-record", {"value": "cloud"})
+    first = _item("health_records", HEALTH_ID, _health_payload("cloud"))
     created = _push(client, auth_headers, registered_device, [first])
     version = created.json()["accepted"][0]["server_version"]
     stale = _item(
         "health_records",
-        "existing-record",
-        {"value": "stale"},
+        HEALTH_ID,
+        _health_payload("stale"),
         client_version=0,
     )
-    new_item = _item("health_records", "must-not-write", {"value": "new"})
+    new_item = _item(
+        "health_records",
+        SECOND_HEALTH_ID,
+        _health_payload("new", record_date="2026-07-29"),
+    )
 
     response = _push(
         client,
@@ -270,7 +297,7 @@ def test_conflicting_push_batch_is_atomic_and_does_not_advance_clock(
     with client.app.state.database.session_factory() as session:
         assert (
             session.scalar(
-                select(SyncItem).where(SyncItem.record_id == "must-not-write")
+                select(SyncItem).where(SyncItem.record_id == SECOND_HEALTH_ID)
             )
             is None
         )
@@ -282,7 +309,7 @@ def test_duplicate_normalized_record_in_one_request_is_rejected(
     auth_headers: dict[str, str],
     registered_device: str,
 ) -> None:
-    item = _item("health_records", "duplicate-record", {"value": 1})
+    item = _item("health_records", HEALTH_ID, _health_payload("duplicate"))
 
     response = _push(client, auth_headers, registered_device, [item, item])
 

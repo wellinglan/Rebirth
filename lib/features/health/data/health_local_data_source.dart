@@ -14,8 +14,17 @@ final class HealthLocalDataSource {
     required String userId,
     required String recordDate,
   }) {
-    return (_activeRecords(userId)
-          ..where((row) => row.recordDate.equals(recordDate)))
+    return (_activeRecords(
+      userId,
+    )..where((row) => row.recordDate.equals(recordDate))).getSingleOrNull();
+  }
+
+  Future<HealthRecord?> selectByIdIncludingDeleted({
+    required String userId,
+    required String id,
+  }) {
+    return (database.select(database.healthRecords)
+          ..where((row) => row.userId.equals(userId) & row.id.equals(id)))
         .getSingleOrNull();
   }
 
@@ -40,6 +49,7 @@ final class HealthLocalDataSource {
     required int timezoneOffsetMinutes,
     required int timestamp,
     required String originDeviceId,
+    bool markPending = true,
   }) {
     return database.transaction(() async {
       final existing = await selectByDate(
@@ -70,6 +80,7 @@ final class HealthLocalDataSource {
                 note: Value(data.note),
                 createdAt: Value(timestamp),
                 updatedAt: Value(timestamp),
+                syncStatus: Value(markPending ? 'pending' : 'local_only'),
                 originDeviceId: Value(originDeviceId),
               ),
             );
@@ -88,15 +99,40 @@ final class HealthLocalDataSource {
             physicalStateScore: Value(data.physicalStateScore),
             note: Value(data.note),
             updatedAt: Value(timestamp),
+            syncStatus: markPending
+                ? const Value('pending')
+                : const Value.absent(),
+            originDeviceId: Value(originDeviceId),
           ),
         );
       }
 
-      return (await selectByDate(
-        userId: userId,
-        recordDate: data.recordDate,
-      ))!;
+      return (await selectByDate(userId: userId, recordDate: data.recordDate))!;
     });
+  }
+
+  Future<bool> softDeleteById({
+    required String userId,
+    required String id,
+    required int timestamp,
+    required String originDeviceId,
+  }) async {
+    final affected =
+        await (database.update(database.healthRecords)..where(
+              (row) =>
+                  row.userId.equals(userId) &
+                  row.id.equals(id) &
+                  row.deletedAt.isNull(),
+            ))
+            .write(
+              HealthRecordsCompanion(
+                deletedAt: Value(timestamp),
+                updatedAt: Value(timestamp),
+                syncStatus: const Value('pending'),
+                originDeviceId: Value(originDeviceId),
+              ),
+            );
+    return affected == 1;
   }
 
   Future<String?> findTodayRecordId({

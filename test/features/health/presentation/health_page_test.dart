@@ -47,7 +47,10 @@ void main() {
     expect(find.text('近 7 日摘要'), findsOneWidget);
     expect(find.text('近 30 日历史'), findsOneWidget);
     expect(find.byKey(const ValueKey('saveHealthButton')), findsOneWidget);
-    await _ensureVisible(tester, find.byKey(const ValueKey('healthHistoryEmpty')));
+    await _ensureVisible(
+      tester,
+      find.byKey(const ValueKey('healthHistoryEmpty')),
+    );
     expect(find.text('还没有健康记录'), findsOneWidget);
   });
 
@@ -62,10 +65,7 @@ void main() {
       hours: '0',
       minutes: '0',
     );
-    await tester.enterText(
-      find.byKey(const ValueKey('healthWaterField')),
-      '0',
-    );
+    await tester.enterText(find.byKey(const ValueKey('healthWaterField')), '0');
     await _tapSave(tester);
 
     expect(repository.lastSaved?.sleepDurationMinutes, 0);
@@ -171,8 +171,14 @@ void main() {
       find.descendant(of: dialog, matching: find.text('健康记录详情')),
       findsOneWidget,
     );
-    expect(find.descendant(of: dialog, matching: find.text('65.5 kg')), findsOneWidget);
-    expect(find.descendant(of: dialog, matching: find.text('关闭')), findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('65.5 kg')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('关闭')),
+      findsOneWidget,
+    );
     expect(
       find.descendant(of: dialog, matching: find.byType(TextFormField)),
       findsNothing,
@@ -242,7 +248,10 @@ Future<void> _enterDuration(
   required String minutes,
 }) async {
   final container = find.byKey(key);
-  final fields = find.descendant(of: container, matching: find.byType(TextFormField));
+  final fields = find.descendant(
+    of: container,
+    matching: find.byType(TextFormField),
+  );
   await _ensureVisible(tester, container);
   await tester.enterText(fields.at(0), hours);
   await tester.enterText(fields.at(1), minutes);
@@ -322,6 +331,11 @@ final class _FakeHealthRepository implements HealthRepository {
   @override
   Future<HealthSummary> getSummary({int days = 7}) async =>
       HealthSummary.fromEntries(days: days, entries: history);
+
+  @override
+  Future<void> softDelete(String id) async {
+    history = history.where((entry) => entry.id != id).toList(growable: false);
+  }
 }
 
 HealthEntry _entry({
