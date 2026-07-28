@@ -127,9 +127,10 @@ existing PostgreSQL container and volume. Do not rebuild PostgreSQL, delete
 the volume, or clear cursors.
 
 Automated checks do not replace the Windows and Android matrix in
-`docs/manual_tests/32_today_cross_device_sync.md`. That matrix starts entirely
-as `NOT EXECUTED`; the Sprint release gate stays open until manual evidence is
-recorded.
+`docs/manual_tests/32_today_cross_device_sync.md`. The exercised matrix now
+records `44 PASS / 0 FAIL / 8 NOT EXECUTED`. The gate remains open with partial
+acceptance because the remaining rows require unsupported operations or
+fixtures that were not available.
 
 ## Local Verification
 
@@ -145,6 +146,6 @@ Executed on 2026-07-28:
 | Flutter schemaVersion | unchanged at `7` |
 | PostgreSQL schema and Alembic | unchanged |
 | API / Sync Protocol | unchanged at `1 / 2` |
-| Manual Today matrix | OPEN, `0 PASS / 0 FAIL / 52 NOT EXECUTED` |
+| Manual Today matrix | PARTIAL, `44 PASS / 0 FAIL / 8 NOT EXECUTED` |
 
 Android build retains the existing non-blocking CupertinoIcons asset warning.
