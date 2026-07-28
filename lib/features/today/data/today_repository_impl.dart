@@ -121,6 +121,7 @@ final class TodayRepositoryImpl implements TodayRepository {
         dailyNote: Value(data.dailyNote),
         recordStatus: Value(data.status.name),
         updatedAt: Value(snapshot.utcMilliseconds),
+        syncStatus: const Value('pending'),
       ),
       health: data.health,
     );
@@ -153,6 +154,7 @@ final class TodayRepositoryImpl implements TodayRepository {
           priority3Completed: Value(normalized[2].completed),
           priority3GoalId: Value(normalized[2].goalId),
           updatedAt: Value(snapshot.utcMilliseconds),
+          syncStatus: const Value('pending'),
         ),
       ),
     );
@@ -173,6 +175,7 @@ final class TodayRepositoryImpl implements TodayRepository {
         moodScore: Value(moodScore),
         energyScore: Value(energyScore),
         updatedAt: Value(timestamp),
+        syncStatus: const Value('pending'),
       ),
     );
   }
@@ -192,6 +195,7 @@ final class TodayRepositoryImpl implements TodayRepository {
         researchMinutes: Value(researchMinutes),
         learningMinutes: Value(learningMinutes),
         updatedAt: Value(timestamp),
+        syncStatus: const Value('pending'),
       ),
     );
   }
@@ -207,6 +211,7 @@ final class TodayRepositoryImpl implements TodayRepository {
       changesForTimestamp: (timestamp) => TodayRecordsCompanion(
         dailyNote: Value(dailyNote),
         updatedAt: Value(timestamp),
+        syncStatus: const Value('pending'),
       ),
     );
   }
@@ -226,6 +231,7 @@ final class TodayRepositoryImpl implements TodayRepository {
               : TodayRecordStatus.draft.name,
         ),
         updatedAt: Value(timestamp),
+        syncStatus: const Value('pending'),
       ),
     );
   }
@@ -314,8 +320,11 @@ final class TodayRepositoryImpl implements TodayRepository {
 
       final priority = priorities[index];
       final text = priority.text?.trim();
+      if (text == null || text.isEmpty) {
+        return const TodayPriority();
+      }
       return TodayPriority(
-        text: text == null || text.isEmpty ? null : text,
+        text: text,
         completed: priority.completed,
         goalId: priority.goalId,
       );

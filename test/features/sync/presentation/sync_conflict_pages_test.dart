@@ -16,6 +16,8 @@ import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/sync_conflict_detail_page.dart';
 import 'package:rebirth/features/sync/presentation/sync_conflict_list_page.dart';
+import 'package:rebirth/features/today/domain/today_entry.dart';
+import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
 void main() {
   testWidgets('conflict list renders loading, empty, error, and Plan title', (
@@ -110,6 +112,23 @@ void main() {
     expect(find.text('标题：已删除的 Plan 目标'), findsOneWidget);
     expect(find.text('删除：是'), findsOneWidget);
     expect(find.text('云端版本：6'), findsOneWidget);
+  });
+
+  testWidgets('Today conflict is readable and remains locally protected', (
+    tester,
+  ) async {
+    await _pumpDetails(tester, details: _todayDetails());
+
+    expect(find.text('2026-07-28 Today'), findsOneWidget);
+    expect(find.text('日期：2026-07-28'), findsNWidgets(2));
+    expect(find.text('心情：4'), findsOneWidget);
+    expect(find.text('心情：5'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('todayConflictProtectedNotice')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('adoptRemoteButton')), findsNothing);
+    expect(find.byKey(const ValueKey('keepLocalButton')), findsNothing);
   });
 
   testWidgets('adopt confirmation can cancel without invoking controller', (
@@ -381,6 +400,38 @@ SyncConflictDetails _details({
   );
 }
 
+SyncConflictDetails _todayDetails() {
+  return SyncConflictDetails(
+    record: SyncConflictRecord(
+      id: _conflictId,
+      scope: _scope,
+      entityType: SyncEntityType.today,
+      recordId: _recordId,
+      localSnapshot: SyncConflictSnapshot(
+        payload: _todayPayload(mood: 4, note: 'Local'),
+        updatedAt: 700,
+        deletedAt: null,
+        serverVersion: 5,
+        originDeviceId: null,
+      ),
+      remoteSnapshot: SyncConflictSnapshot(
+        payload: _todayPayload(mood: 5, note: 'Cloud'),
+        updatedAt: 800,
+        deletedAt: null,
+        serverVersion: 6,
+        originDeviceId: null,
+      ),
+      remoteOperation: SyncConflictOperation.upsert,
+      detectedAt: 900,
+      lastSeenAt: 900,
+      resolutionStatus: SyncConflictResolutionStatus.unresolved,
+      resolvedAt: null,
+    ),
+    currentLocalSnapshot: null,
+    localSnapshotChanged: false,
+  );
+}
+
 SyncConflictRecord _record({
   SyncConflictResolutionStatus status = SyncConflictResolutionStatus.unresolved,
   SyncConflictOperation operation = SyncConflictOperation.upsert,
@@ -440,6 +491,29 @@ PlanSyncPayload _payload(String title) {
     completedAt: null,
     archivedAt: null,
     sortOrder: 0,
+    createdAt: 100,
+  );
+}
+
+TodaySyncPayload _todayPayload({required int mood, required String note}) {
+  return TodaySyncPayload(
+    recordDate: '2026-07-28',
+    timezoneOffsetMinutes: 480,
+    priority1: 'Protect local',
+    priority1Completed: false,
+    priority1GoalId: null,
+    priority2: null,
+    priority2Completed: false,
+    priority2GoalId: null,
+    priority3: null,
+    priority3Completed: false,
+    priority3GoalId: null,
+    moodScore: mood,
+    energyScore: 3,
+    researchMinutes: 90,
+    learningMinutes: 0,
+    dailyNote: note,
+    status: TodayRecordStatus.draft,
     createdAt: 100,
   );
 }

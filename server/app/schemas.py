@@ -31,6 +31,7 @@ PlanGoalStatus = Literal[
     "paused",
     "cancelled",
 ]
+TodayRecordStatus = Literal["draft", "completed"]
 
 
 class PlanSyncPayload(BaseModel):
@@ -85,6 +86,75 @@ class PlanSyncPayload(BaseModel):
             raise ValueError("completed goals require completed_at")
         if self.status != "completed" and self.completed_at is not None:
             raise ValueError("non-completed goals must not have completed_at")
+        return self
+
+
+class TodaySyncPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    record_date: str
+    timezone_offset_minutes: int = Field(ge=-840, le=840)
+    priority_1: str | None
+    priority_1_completed: bool
+    priority_1_goal_id: str | None
+    priority_2: str | None
+    priority_2_completed: bool
+    priority_2_goal_id: str | None
+    priority_3: str | None
+    priority_3_completed: bool
+    priority_3_goal_id: str | None
+    mood_score: int | None = Field(default=None, ge=1, le=5)
+    energy_score: int | None = Field(default=None, ge=1, le=5)
+    research_minutes: int | None = Field(default=None, ge=0)
+    learning_minutes: int | None = Field(default=None, ge=0)
+    daily_note: str | None
+    record_status: TodayRecordStatus
+    created_at: int = Field(ge=0)
+
+    @field_validator("record_date")
+    @classmethod
+    def validate_record_date(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("record_date must use YYYY-MM-DD")
+        date.fromisoformat(value)
+        return value
+
+    @field_validator(
+        "priority_1_goal_id",
+        "priority_2_goal_id",
+        "priority_3_goal_id",
+    )
+    @classmethod
+    def validate_goal_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        UUID(value)
+        return value
+
+    @field_validator("priority_1", "priority_2", "priority_3")
+    @classmethod
+    def validate_priority_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("priority text must not be blank")
+        return trimmed
+
+    @model_validator(mode="after")
+    def validate_priority_consistency(self) -> "TodaySyncPayload":
+        priorities = (
+            (self.priority_1, self.priority_1_completed, self.priority_1_goal_id),
+            (self.priority_2, self.priority_2_completed, self.priority_2_goal_id),
+            (self.priority_3, self.priority_3_completed, self.priority_3_goal_id),
+        )
+        if any(
+            text is None and (completed or goal_id is not None)
+            for text, completed, goal_id in priorities
+        ):
+            raise ValueError(
+                "empty priorities cannot be completed or linked to goals"
+            )
         return self
 
 

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/config/server_endpoint_provider.dart';
+import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
@@ -11,13 +12,17 @@ import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_repository.dart';
+import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/today/data/today_sync_payload_codec.dart';
+import 'package:rebirth/features/today/domain/today_entry.dart';
+import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
 import 'sync_conflict_repository_impl.dart';
 
 final syncConflictRepositoryProvider = Provider<SyncConflictRepository>((ref) {
   return SyncConflictRepositoryImpl(
     ref.watch(appDatabaseProvider),
-    payloadCodecs: const [PlanSyncPayloadCodec()],
+    payloadCodecs: const [TodaySyncPayloadCodec(), PlanSyncPayloadCodec()],
   );
 });
 
@@ -82,43 +87,18 @@ final syncConflictDetailsProvider =
           .watch(syncConflictRepositoryProvider)
           .getConflict(scope, id);
       final database = ref.watch(appDatabaseProvider);
-      final goal =
-          await (database.select(database.goals)..where(
-                (row) =>
-                    row.userId.equals(scope.localUserId) &
-                    row.id.equals(record.recordId),
-              ))
-              .getSingleOrNull();
-      final current = goal == null
-          ? null
-          : SyncConflictSnapshot(
-              payload: goal.deletedAt == null
-                  ? PlanSyncPayload(
-                      parentGoalId: goal.parentGoalId,
-                      title: goal.title,
-                      description: goal.description,
-                      goalLevel: planGoalLevelFromDatabase(goal.goalLevel),
-                      status: planGoalStatusFromDatabase(goal.status),
-                      startDate: goal.startDate,
-                      targetDate: goal.targetDate,
-                      completedAt: goal.completedAt,
-                      archivedAt: goal.archivedAt,
-                      sortOrder: goal.sortOrder,
-                      createdAt: goal.createdAt,
-                    )
-                  : null,
-              updatedAt: goal.updatedAt,
-              deletedAt: goal.deletedAt,
-              serverVersion: goal.serverVersion,
-              originDeviceId: goal.originDeviceId,
-            );
+      final current = await _loadCurrentSnapshot(
+        database,
+        record,
+        scope.localUserId,
+      );
       return SyncConflictDetails(
         record: record,
         currentLocalSnapshot: current,
         localSnapshotChanged:
             current == null ||
             current.updatedAt != record.localSnapshot.updatedAt ||
-            !_samePlanPayload(current.payload, record.localSnapshot.payload),
+            !_samePayload(current.payload, record.localSnapshot.payload),
       );
     });
 
@@ -130,7 +110,110 @@ final planConflictResolutionServiceProvider =
       );
     });
 
-bool _samePlanPayload(Object? left, Object? right) {
+Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
+  AppDatabase database,
+  SyncConflictRecord record,
+  String localUserId,
+) async {
+  return switch (record.entityType) {
+    SyncEntityType.plan => _loadPlanSnapshot(
+      database,
+      localUserId,
+      record.recordId,
+    ),
+    SyncEntityType.today => _loadTodaySnapshot(
+      database,
+      localUserId,
+      record.recordId,
+    ),
+    _ => null,
+  };
+}
+
+Future<SyncConflictSnapshot?> _loadPlanSnapshot(
+  AppDatabase database,
+  String localUserId,
+  String recordId,
+) async {
+  final goal =
+      await (database.select(database.goals)..where(
+            (row) => row.userId.equals(localUserId) & row.id.equals(recordId),
+          ))
+          .getSingleOrNull();
+  if (goal == null) return null;
+  return SyncConflictSnapshot(
+    payload: goal.deletedAt == null
+        ? PlanSyncPayload(
+            parentGoalId: goal.parentGoalId,
+            title: goal.title,
+            description: goal.description,
+            goalLevel: planGoalLevelFromDatabase(goal.goalLevel),
+            status: planGoalStatusFromDatabase(goal.status),
+            startDate: goal.startDate,
+            targetDate: goal.targetDate,
+            completedAt: goal.completedAt,
+            archivedAt: goal.archivedAt,
+            sortOrder: goal.sortOrder,
+            createdAt: goal.createdAt,
+          )
+        : null,
+    updatedAt: goal.updatedAt,
+    deletedAt: goal.deletedAt,
+    serverVersion: goal.serverVersion,
+    originDeviceId: goal.originDeviceId,
+  );
+}
+
+Future<SyncConflictSnapshot?> _loadTodaySnapshot(
+  AppDatabase database,
+  String localUserId,
+  String recordId,
+) async {
+  final today =
+      await (database.select(database.todayRecords)..where(
+            (row) => row.userId.equals(localUserId) & row.id.equals(recordId),
+          ))
+          .getSingleOrNull();
+  if (today == null) return null;
+  return SyncConflictSnapshot(
+    payload: today.deletedAt == null
+        ? TodaySyncPayload(
+            recordDate: today.recordDate,
+            timezoneOffsetMinutes: today.timezoneOffsetMinutes,
+            priority1: today.priority1,
+            priority1Completed: today.priority1Completed,
+            priority1GoalId: today.priority1GoalId,
+            priority2: today.priority2,
+            priority2Completed: today.priority2Completed,
+            priority2GoalId: today.priority2GoalId,
+            priority3: today.priority3,
+            priority3Completed: today.priority3Completed,
+            priority3GoalId: today.priority3GoalId,
+            moodScore: today.moodScore,
+            energyScore: today.energyScore,
+            researchMinutes: today.researchMinutes,
+            learningMinutes: today.learningMinutes,
+            dailyNote: today.dailyNote,
+            status: switch (today.recordStatus) {
+              'draft' => TodayRecordStatus.draft,
+              'completed' => TodayRecordStatus.completed,
+              _ => throw StateError('Unknown Today status.'),
+            },
+            createdAt: today.createdAt,
+          )
+        : null,
+    updatedAt: today.updatedAt,
+    deletedAt: today.deletedAt,
+    serverVersion: today.serverVersion,
+    originDeviceId: today.originDeviceId,
+  );
+}
+
+bool _samePayload(Object? left, Object? right) {
+  if (left is TodaySyncPayload && right is TodaySyncPayload) {
+    return const TodaySyncPayloadCodec().canonicalJson(left) ==
+        const TodaySyncPayloadCodec().canonicalJson(right);
+  }
   if (left is! PlanSyncPayload || right is! PlanSyncPayload) {
     return left == null && right == null;
   }

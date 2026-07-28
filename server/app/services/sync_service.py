@@ -18,6 +18,7 @@ from app.schemas import (
     SyncAcceptedItem,
     SyncConflictResponse,
     PlanSyncPayload,
+    TodaySyncPayload,
     SyncPullItem,
     SyncPullRequest,
     SyncPullResponse,
@@ -29,6 +30,7 @@ from app.schemas import (
 
 
 PROFILE_TABLE = "user_profiles"
+TODAY_TABLE = "today_records"
 GOALS_TABLE = "goals"
 CANONICAL_PROFILE_RECORD_ID = "profile"
 SYNC_CLOCK_ID = 1
@@ -296,6 +298,8 @@ def _preflight_push(
         normalized_keys.add(key)
         if incoming.table_name == GOALS_TABLE:
             _validate_goal_item(incoming, record_id)
+        elif incoming.table_name == TODAY_TABLE:
+            _validate_today_item(incoming, record_id)
 
     _ensure_sync_clock(session)
     session.scalar(
@@ -348,6 +352,7 @@ def _preflight_push(
         )
 
     _validate_projected_goal_hierarchy(session, user_id, preflight)
+    _validate_projected_today_dates(session, user_id, preflight)
     return preflight
 
 
@@ -369,6 +374,77 @@ def _validate_goal_item(incoming: object, record_id: str) -> None:
         raise SyncRequestValidationError("Invalid Goal payload.") from error
     if payload.parent_goal_id == record_id:
         raise SyncRequestValidationError("Goal cannot be its own parent.")
+
+
+def _validate_today_item(incoming: object, record_id: str) -> None:
+    try:
+        uuid.UUID(record_id)
+        uuid.UUID(incoming.origin_device_id)
+    except ValueError as error:
+        raise SyncRequestValidationError(
+            "Today record and origin device IDs must be UUIDs."
+        ) from error
+    if incoming.deleted_at is not None:
+        if incoming.payload:
+            raise SyncRequestValidationError("Today tombstone payload must be empty.")
+        return
+    try:
+        TodaySyncPayload.model_validate(incoming.payload)
+    except (ValidationError, ValueError) as error:
+        raise SyncRequestValidationError("Invalid Today payload.") from error
+
+
+def _validate_projected_today_dates(
+    session: Session,
+    user_id: str,
+    preflight: list[_PreflightItem],
+) -> None:
+    if not any(item.incoming.table_name == TODAY_TABLE for item in preflight):
+        return
+    current = session.scalars(
+        select(SyncItem)
+        .where(
+            SyncItem.user_id == user_id,
+            SyncItem.table_name == TODAY_TABLE,
+        )
+        .with_for_update()
+    ).all()
+    payload_by_id: dict[str, TodaySyncPayload] = {}
+    for item in current:
+        if item.deleted_at is not None:
+            continue
+        try:
+            payload_by_id[item.record_id] = TodaySyncPayload.model_validate(
+                json.loads(item.payload_json)
+            )
+        except (json.JSONDecodeError, ValidationError, ValueError) as error:
+            raise SyncRequestValidationError(
+                f"Stored Today {item.record_id} has invalid date data."
+            ) from error
+
+    for item in preflight:
+        incoming = item.incoming
+        if incoming.table_name != TODAY_TABLE or item.outcome == "conflict":
+            continue
+        if incoming.deleted_at is not None:
+            payload_by_id.pop(item.record_id, None)
+            continue
+        payload = TodaySyncPayload.model_validate(incoming.payload)
+        previous = payload_by_id.get(item.record_id)
+        if previous is not None and previous.record_date != payload.record_date:
+            raise SyncRequestValidationError(
+                "Today record_date cannot change after creation."
+            )
+        payload_by_id[item.record_id] = payload
+
+    owners: dict[str, str] = {}
+    for record_id, payload in payload_by_id.items():
+        owner = owners.get(payload.record_date)
+        if owner is not None and owner != record_id:
+            raise SyncRequestValidationError(
+                "Only one active Today record is allowed per date."
+            )
+        owners[payload.record_date] = record_id
 
 
 def _validate_projected_goal_hierarchy(

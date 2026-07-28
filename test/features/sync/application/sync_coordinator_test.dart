@@ -217,6 +217,83 @@ void main() {
     );
   });
 
+  test(
+    'Today uses the shared push, pull, and independent cursor flow',
+    () async {
+      final todayAdapter = _FakeAdapter(entityType: SyncEntityType.today)
+        ..applyResult = const SyncEntityResult(
+          entityType: SyncEntityType.today,
+          status: SyncEntityStatus.succeeded,
+          message: 'Today pulled',
+          pulledCount: 1,
+          serverVersion: 6,
+        )
+        ..pending = const [
+          SyncPushItem(
+            entityType: SyncEntityType.today,
+            operation: SyncOperation.upsert,
+            recordId: '11111111-1111-4111-8111-111111111111',
+            payload: _TestPayload('today-local'),
+            updatedAt: 100,
+            deletedAt: null,
+            originDeviceId: '22222222-2222-4222-8222-222222222222',
+            clientVersion: 0,
+          ),
+        ];
+      remote.pushResponse = SyncPushResponseDto(
+        accepted: const [
+          SyncedRecord(
+            tableName: 'today_records',
+            recordId: '11111111-1111-4111-8111-111111111111',
+            serverVersion: 4,
+          ),
+        ],
+        conflicts: const [],
+      );
+      remote.pullResponse = SyncPullResponseDto(
+        serverVersion: 6,
+        items: [
+          PulledSyncItemDto(
+            tableName: 'today_records',
+            recordId: '11111111-1111-4111-8111-111111111111',
+            payload: {'value': 'today-cloud'},
+            updatedAt: 200,
+            deletedAt: null,
+            originDeviceId: '33333333-3333-4333-8333-333333333333',
+            serverVersion: 6,
+          ),
+        ],
+      );
+      final todayCoordinator = SyncCoordinator(
+        endpoint: _endpoint,
+        sessionStore: sessionStore,
+        remoteDataSource: remote,
+        cursorStore: cursorStore,
+        adapterRegistry: SyncEntityAdapterRegistry([todayAdapter]),
+        endpointProbe: (_) async {},
+        dateTimeService: DateTimeService(
+          now: () => DateTime.utc(2030, 1, 2, 3, 4, 5),
+        ),
+        accountScopeGuard: ({required endpoint, required cloudUserId}) async {
+          accountScopeChecks += 1;
+        },
+      );
+
+      final result = await todayCoordinator.run(
+        direction: SyncRunDirection.twoWay,
+        entityTypes: const [SyncEntityType.today],
+      );
+
+      expect(result.isSuccessful, isTrue);
+      expect(accountScopeChecks, 1);
+      expect(remote.lastPushRequest?.items.single.tableName, 'today_records');
+      expect(remote.lastPullRequest?.tables, ['today_records']);
+      expect(todayAdapter.acknowledgeCalls, 1);
+      expect(todayAdapter.applyCalls, 1);
+      expect(cursorStore.value, 6);
+    },
+  );
+
   test('conflict resolution full-pulls without clearing the cursor', () async {
     cursorStore.value = 12;
     remote.pullResponse = SyncPullResponseDto(
@@ -731,6 +808,7 @@ final class _FakeRemoteDataSource implements SyncRemoteDataSource {
   Completer<SyncPullResponseDto>? pullCompleter;
   int pushCalls = 0;
   int pullCalls = 0;
+  SyncPushRequestDto? lastPushRequest;
   SyncPullRequestDto? lastPullRequest;
 
   @override
@@ -739,6 +817,7 @@ final class _FakeRemoteDataSource implements SyncRemoteDataSource {
     required String accessToken,
   }) async {
     pushCalls += 1;
+    lastPushRequest = request;
     if (pushError case final error?) throw error;
     final completer = pushCompleter;
     return completer == null ? pushResponse : completer.future;

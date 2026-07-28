@@ -6,6 +6,8 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
+import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
 class SyncConflictListPage extends ConsumerWidget {
   const SyncConflictListPage({super.key});
@@ -48,7 +50,8 @@ class SyncConflictListPage extends ConsumerWidget {
                     leading: const Icon(Icons.alt_route_outlined),
                     title: Text(_displayTitle(conflict)),
                     subtitle: Text(
-                      'Plan · ${_conflictType(conflict)}\n'
+                      '${_entityLabel(conflict.entityType)} · '
+                      '${_conflictType(conflict)}\n'
                       '${_statusLabel(conflict.resolutionStatus)} · '
                       '${_formatTimestamp(conflict.detectedAt)}',
                     ),
@@ -101,8 +104,25 @@ String _displayTitle(SyncConflictRecord conflict) {
   if (remote is PlanSyncPayload && remote.title.trim().isNotEmpty) {
     return remote.title;
   }
+  if (local is TodaySyncPayload) {
+    return '${local.recordDate} Today';
+  }
+  if (remote is TodaySyncPayload) {
+    return '${remote.recordDate} Today';
+  }
+  if (conflict.entityType == SyncEntityType.today) {
+    return '已删除的 Today 记录';
+  }
   return '已删除的 Plan 目标';
 }
+
+String _entityLabel(SyncEntityType type) => switch (type) {
+  SyncEntityType.profile => 'Profile',
+  SyncEntityType.today => 'Today',
+  SyncEntityType.journal => 'Journal',
+  SyncEntityType.plan => 'Plan',
+  SyncEntityType.health => 'Health',
+};
 
 String _conflictType(SyncConflictRecord conflict) {
   final localDeleted = conflict.localSnapshot.deletedAt != null;

@@ -5,6 +5,7 @@ import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
 
 class AccountStatusCard extends StatelessWidget {
   const AccountStatusCard({
@@ -24,6 +25,8 @@ class AccountStatusCard extends StatelessWidget {
     required this.onPullProfile,
     required this.planSyncState,
     required this.onSyncPlan,
+    required this.todaySyncState,
+    required this.onSyncToday,
     required this.onVerifyOwnership,
     required this.onWeChatLogin,
     required this.onSyncSettings,
@@ -46,6 +49,8 @@ class AccountStatusCard extends StatelessWidget {
   final VoidCallback onPullProfile;
   final PlanSyncViewState planSyncState;
   final VoidCallback onSyncPlan;
+  final TodaySyncViewState todaySyncState;
+  final VoidCallback onSyncToday;
   final VoidCallback onVerifyOwnership;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
@@ -82,7 +87,7 @@ class AccountStatusCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Profile 与 Plan 可手动同步；其他业务数据仍保存在本地。',
+              'Profile、Plan 与 Today 可手动同步；其他业务数据仍保存在本地。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -97,7 +102,7 @@ class AccountStatusCard extends StatelessWidget {
                   ? '开发服务已连接'
                   : '未连接',
             ),
-            const _StatusRow(label: '同步范围', value: 'Profile 与 Plan 手动同步'),
+            const _StatusRow(label: '同步范围', value: 'Profile、Plan 与 Today 手动同步'),
             _StatusRow(
               label: '本地数据归属',
               value: isSignedIn ? '已归属当前登录账号' : '登录后确认',
@@ -131,6 +136,12 @@ class AccountStatusCard extends StatelessWidget {
                   syncEligibility == AccountSyncEligibility.legacyReviewRequired
                   ? '旧数据待验证，暂不可同步'
                   : planSyncState.statusLabel,
+            ),
+            _StatusRow(
+              label: 'Today 同步',
+              value: syncReviewRequired
+                  ? '旧数据待验证，暂不可同步'
+                  : todaySyncState.statusLabel,
             ),
             if (isSignedIn)
               _StatusRow(
@@ -240,6 +251,29 @@ class AccountStatusCard extends StatelessWidget {
                           : onSyncPlan,
                       icon: const Icon(Icons.sync_outlined),
                       label: Text(planSyncState.isBusy ? '同步中...' : '同步 Plan'),
+                    ),
+                  ),
+                ),
+                Tooltip(
+                  message: '双向同步 Today',
+                  child: Semantics(
+                    button: true,
+                    label: '同步 Today',
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('syncTodayButton'),
+                      onPressed:
+                          state.isBusy ||
+                              profileSyncState.isBusy ||
+                              planSyncState.isBusy ||
+                              todaySyncState.isBusy ||
+                              !syncAllowed ||
+                              !accountStatus.deviceRegistered
+                          ? null
+                          : onSyncToday,
+                      icon: const Icon(Icons.today_outlined),
+                      label: Text(
+                        todaySyncState.isBusy ? '同步中...' : '同步 Today',
+                      ),
                     ),
                   ),
                 ),

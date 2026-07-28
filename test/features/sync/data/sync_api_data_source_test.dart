@@ -128,52 +128,81 @@ void main() {
     );
   });
 
-  test('only registered Profile and Plan tables are accepted', () async {
-    final dataSource = SyncApiDataSource(_FakeApiClient());
-    final todayItem = SyncPushItemDto(
-      tableName: 'today_records',
-      recordId: 'today-1',
-      payload: const {},
-      updatedAt: 1,
-      deletedAt: null,
-      originDeviceId: 'installation-1',
-      clientVersion: 0,
-    );
+  test(
+    'only registered Profile, Today, and Plan tables are accepted',
+    () async {
+      final dataSource = SyncApiDataSource(_FakeApiClient());
+      final journalItem = SyncPushItemDto(
+        tableName: 'journal_entries',
+        recordId: 'journal-1',
+        payload: const {},
+        updatedAt: 1,
+        deletedAt: null,
+        originDeviceId: 'installation-1',
+        clientVersion: 0,
+      );
 
-    expect(
-      dataSource.push(
-        SyncPushRequestDto(deviceId: 'device-1', items: [todayItem]),
-        accessToken: 'test-access-token',
-      ),
-      throwsA(isA<SyncUnsupportedTableException>()),
-    );
-
-    final planDataSource = SyncApiDataSource(
-      _FakeApiClient(
-        response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
-      ),
-    );
-    await expectLater(
-      planDataSource.push(
-        SyncPushRequestDto(
-          deviceId: 'device-1',
-          items: [
-            SyncPushItemDto(
-              tableName: 'goals',
-              recordId: 'goal-1',
-              payload: const {},
-              updatedAt: 1,
-              deletedAt: 1,
-              originDeviceId: 'installation-1',
-              clientVersion: 0,
-            ),
-          ],
+      expect(
+        dataSource.push(
+          SyncPushRequestDto(deviceId: 'device-1', items: [journalItem]),
+          accessToken: 'test-access-token',
         ),
-        accessToken: 'test-access-token',
-      ),
-      completes,
-    );
-  });
+        throwsA(isA<SyncUnsupportedTableException>()),
+      );
+
+      final planDataSource = SyncApiDataSource(
+        _FakeApiClient(
+          response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+        ),
+      );
+      await expectLater(
+        planDataSource.push(
+          SyncPushRequestDto(
+            deviceId: 'device-1',
+            items: [
+              SyncPushItemDto(
+                tableName: 'goals',
+                recordId: 'goal-1',
+                payload: const {},
+                updatedAt: 1,
+                deletedAt: 1,
+                originDeviceId: 'installation-1',
+                clientVersion: 0,
+              ),
+            ],
+          ),
+          accessToken: 'test-access-token',
+        ),
+        completes,
+      );
+
+      final todayDataSource = SyncApiDataSource(
+        _FakeApiClient(
+          response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+        ),
+      );
+      await expectLater(
+        todayDataSource.push(
+          SyncPushRequestDto(
+            deviceId: 'device-1',
+            items: [
+              SyncPushItemDto(
+                tableName: 'today_records',
+                recordId: '11111111-1111-4111-8111-111111111111',
+                payload: const {},
+                updatedAt: 1,
+                deletedAt: 1,
+                originDeviceId: '22222222-2222-4222-8222-222222222222',
+                clientVersion: 0,
+              ),
+            ],
+          ),
+          accessToken: 'test-access-token',
+        ),
+        completes,
+      );
+    },
+  );
 
   test('push conflict DTO is converted with its server version', () async {
     final dataSource = SyncApiDataSource(

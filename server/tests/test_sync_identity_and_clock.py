@@ -22,16 +22,40 @@ def _profile_pull(device_id: str) -> dict[str, object]:
 
 
 def _today_push(device_id: str, record_id: str) -> dict[str, object]:
+    stable_record_id = str(uuid.uuid5(uuid.NAMESPACE_URL, record_id))
     return {
         "device_id": device_id,
         "items": [
             {
                 "table": "today_records",
-                "id": record_id,
-                "payload": {"record_date": "2026-07-16"},
+                "id": stable_record_id,
+                "payload": {
+                    "record_date": (
+                        "2026-07-16"
+                        if record_id != "second-user-record"
+                        else "2026-07-17"
+                    ),
+                    "timezone_offset_minutes": 480,
+                    "priority_1": None,
+                    "priority_1_completed": False,
+                    "priority_1_goal_id": None,
+                    "priority_2": None,
+                    "priority_2_completed": False,
+                    "priority_2_goal_id": None,
+                    "priority_3": None,
+                    "priority_3_completed": False,
+                    "priority_3_goal_id": None,
+                    "mood_score": None,
+                    "energy_score": None,
+                    "research_minutes": None,
+                    "learning_minutes": None,
+                    "daily_note": record_id,
+                    "record_status": "draft",
+                    "created_at": 1_784_159_000_000,
+                },
                 "updated_at": 1_784_160_000_000,
                 "deleted_at": None,
-                "origin_device_id": "clock-test-installation",
+                "origin_device_id": "33333333-3333-4333-8333-333333333333",
                 "client_version": 0,
             }
         ],

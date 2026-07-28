@@ -15,6 +15,7 @@ import 'package:rebirth/features/sync/data/sync_providers.dart';
 import 'package:rebirth/features/sync/data/sync_repository_provider.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/today_sync_controller.dart';
 import 'package:rebirth/features/today/presentation/today_controller.dart';
 import 'package:rebirth/features/today/presentation/today_history_controller.dart';
 
@@ -32,6 +33,7 @@ void invalidateAccountScopedProviders(Ref ref) {
   ref.invalidate(settingsControllerProvider);
   ref.invalidate(profileSyncControllerProvider);
   ref.invalidate(planSyncControllerProvider);
+  ref.invalidate(todaySyncControllerProvider);
   ref.invalidate(syncCoordinatorProvider);
   ref.invalidate(syncCursorStoreProvider);
   ref.invalidate(syncConflictScopeProvider);

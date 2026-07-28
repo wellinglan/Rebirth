@@ -5,6 +5,8 @@ import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
+import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
 import 'plan_sync_controller.dart';
 
@@ -19,7 +21,7 @@ class SyncConflictDetailPage extends ConsumerWidget {
     final syncState = ref.watch(planSyncControllerProvider);
     return Scaffold(
       key: const ValueKey('syncConflictDetailPage'),
-      appBar: AppBar(title: const Text('Plan 冲突详情')),
+      appBar: AppBar(title: const Text('同步冲突详情')),
       body: SafeArea(
         child: conflict.when(
           loading: () => const Center(
@@ -224,53 +226,63 @@ class _ConflictDetails extends StatelessWidget {
           ),
         const SizedBox(height: AppSpacing.md),
         if (record.isActive)
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              if (!record.remoteSnapshotReady)
-                _ActionButton(
-                  key: const ValueKey('retryConflictHydrationButton'),
-                  tooltip: '重新同步获取云端版本',
-                  label: isBusy ? '获取中...' : '重新获取云端版本',
-                  icon: Icons.cloud_download_outlined,
-                  onPressed: isBusy ? null : onRetryHydration,
+          record.entityType == SyncEntityType.plan
+              ? Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    if (!record.remoteSnapshotReady)
+                      _ActionButton(
+                        key: const ValueKey('retryConflictHydrationButton'),
+                        tooltip: '重新同步获取云端版本',
+                        label: isBusy ? '获取中...' : '重新获取云端版本',
+                        icon: Icons.cloud_download_outlined,
+                        onPressed: isBusy ? null : onRetryHydration,
+                      ),
+                    if (record.resolutionStatus ==
+                        SyncConflictResolutionStatus.unresolved) ...[
+                      _ActionButton(
+                        key: const ValueKey('adoptRemoteButton'),
+                        tooltip: '采用服务器当前版本',
+                        label: isBusy ? '处理中...' : '采用云端版本',
+                        icon: Icons.cloud_done_outlined,
+                        onPressed: isBusy || !record.remoteSnapshotReady
+                            ? null
+                            : onAdoptRemote,
+                      ),
+                      _ActionButton(
+                        key: const ValueKey('keepLocalButton'),
+                        tooltip: '保留本地版本并上传',
+                        label: isBusy ? '处理中...' : '保留本地并上传',
+                        icon: Icons.upload_outlined,
+                        onPressed:
+                            isBusy ||
+                                record.remoteSnapshot.serverVersion == null
+                            ? null
+                            : onKeepLocal,
+                      ),
+                    ],
+                    if (record.resolutionStatus ==
+                            SyncConflictResolutionStatus.adoptRemoteRequested ||
+                        record.resolutionStatus ==
+                            SyncConflictResolutionStatus.keepLocalRequested)
+                      _ActionButton(
+                        key: const ValueKey('retryConflictResolutionButton'),
+                        tooltip: '继续上次冲突处理',
+                        label: isBusy ? '处理中...' : '继续处理',
+                        icon: Icons.refresh,
+                        onPressed: isBusy ? null : onRetryRequested,
+                      ),
+                  ],
+                )
+              : const Card(
+                  key: ValueKey('todayConflictProtectedNotice'),
+                  child: ListTile(
+                    leading: Icon(Icons.shield_outlined),
+                    title: Text('本地 Today 内容已保留'),
+                    subtitle: Text('本版本不会自动覆盖或合并 Today 冲突，请保留该状态等待后续处理。'),
+                  ),
                 ),
-              if (record.resolutionStatus ==
-                  SyncConflictResolutionStatus.unresolved) ...[
-                _ActionButton(
-                  key: const ValueKey('adoptRemoteButton'),
-                  tooltip: '采用服务器当前版本',
-                  label: isBusy ? '处理中...' : '采用云端版本',
-                  icon: Icons.cloud_done_outlined,
-                  onPressed: isBusy || !record.remoteSnapshotReady
-                      ? null
-                      : onAdoptRemote,
-                ),
-                _ActionButton(
-                  key: const ValueKey('keepLocalButton'),
-                  tooltip: '保留本地版本并上传',
-                  label: isBusy ? '处理中...' : '保留本地并上传',
-                  icon: Icons.upload_outlined,
-                  onPressed:
-                      isBusy || record.remoteSnapshot.serverVersion == null
-                      ? null
-                      : onKeepLocal,
-                ),
-              ],
-              if (record.resolutionStatus ==
-                      SyncConflictResolutionStatus.adoptRemoteRequested ||
-                  record.resolutionStatus ==
-                      SyncConflictResolutionStatus.keepLocalRequested)
-                _ActionButton(
-                  key: const ValueKey('retryConflictResolutionButton'),
-                  tooltip: '继续上次冲突处理',
-                  label: isBusy ? '处理中...' : '继续处理',
-                  icon: Icons.refresh,
-                  onPressed: isBusy ? null : onRetryRequested,
-                ),
-            ],
-          ),
       ],
     );
   }
@@ -293,6 +305,7 @@ class _VersionSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final payload = snapshot.payload;
     final plan = payload is PlanSyncPayload ? payload : null;
+    final today = payload is TodaySyncPayload ? payload : null;
     final awaiting = operation == SyncConflictOperation.unknownPendingPull;
     return Card(
       child: Padding(
@@ -315,18 +328,36 @@ class _VersionSummary extends StatelessWidget {
             if (awaiting)
               const Text('需要重新同步以获取服务器当前版本。')
             else ...[
-              _Line(label: '标题', value: plan?.title ?? '已删除的 Plan 目标'),
-              _Line(
-                label: '状态',
-                value: plan == null ? '已删除' : _goalStatus(plan.status),
-              ),
-              _Line(
-                label: '层级',
-                value: plan == null ? '-' : _goalLevel(plan.goalLevel),
-              ),
-              _Line(label: '开始日期', value: plan?.startDate ?? '-'),
-              _Line(label: '目标日期', value: plan?.targetDate ?? '-'),
-              _Line(label: '归档', value: plan?.archivedAt == null ? '否' : '是'),
+              if (today != null) ...[
+                _Line(label: '日期', value: today.recordDate),
+                _Line(
+                  label: '状态',
+                  value: today.status.name == 'completed' ? '已完成' : '草稿',
+                ),
+                _Line(label: '心情', value: today.moodScore?.toString() ?? '-'),
+                _Line(label: '精力', value: today.energyScore?.toString() ?? '-'),
+                _Line(
+                  label: '科研时间',
+                  value: today.researchMinutes?.toString() ?? '-',
+                ),
+                _Line(
+                  label: '学习时间',
+                  value: today.learningMinutes?.toString() ?? '-',
+                ),
+              ] else ...[
+                _Line(label: '标题', value: plan?.title ?? '已删除的 Plan 目标'),
+                _Line(
+                  label: '状态',
+                  value: plan == null ? '已删除' : _goalStatus(plan.status),
+                ),
+                _Line(
+                  label: '层级',
+                  value: plan == null ? '-' : _goalLevel(plan.goalLevel),
+                ),
+                _Line(label: '开始日期', value: plan?.startDate ?? '-'),
+                _Line(label: '目标日期', value: plan?.targetDate ?? '-'),
+                _Line(label: '归档', value: plan?.archivedAt == null ? '否' : '是'),
+              ],
               _Line(label: '删除', value: snapshot.deletedAt == null ? '否' : '是'),
               if (title == '云端版本')
                 _Line(
@@ -414,8 +445,13 @@ String _goalLevel(PlanGoalLevel value) => switch (value) {
 String _displayTitle(SyncConflictRecord record) {
   final local = record.localSnapshot.payload;
   if (local is PlanSyncPayload) return local.title;
+  if (local is TodaySyncPayload) return '${local.recordDate} Today';
   final remote = record.remoteSnapshot.payload;
   if (remote is PlanSyncPayload) return remote.title;
+  if (remote is TodaySyncPayload) return '${remote.recordDate} Today';
+  if (record.entityType == SyncEntityType.today) {
+    return '已删除的 Today 记录';
+  }
   return '已删除的 Plan 目标';
 }
 

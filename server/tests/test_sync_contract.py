@@ -1,5 +1,8 @@
 from fastapi.testclient import TestClient
 
+TODAY_ID = "11111111-1111-4111-8111-111111111111"
+ORIGIN_ID = "22222222-2222-4222-8222-222222222222"
+
 
 def _push_body(
     device_id: str,
@@ -13,14 +16,34 @@ def _push_body(
         "items": [
             {
                 "table": "today_records",
-                "id": "today-record-1",
-                "payload": {
-                    "record_date": "2026-07-15",
-                    "daily_note": "Foundation test",
-                },
+                "id": TODAY_ID,
+                "payload": (
+                    {}
+                    if deleted_at is not None
+                    else {
+                        "record_date": "2026-07-15",
+                        "timezone_offset_minutes": 480,
+                        "priority_1": "Foundation",
+                        "priority_1_completed": False,
+                        "priority_1_goal_id": None,
+                        "priority_2": None,
+                        "priority_2_completed": False,
+                        "priority_2_goal_id": None,
+                        "priority_3": None,
+                        "priority_3_completed": False,
+                        "priority_3_goal_id": None,
+                        "mood_score": 4,
+                        "energy_score": 3,
+                        "research_minutes": 0,
+                        "learning_minutes": None,
+                        "daily_note": "Foundation test",
+                        "record_status": "draft",
+                        "created_at": 1_784_073_500_000,
+                    }
+                ),
                 "updated_at": updated_at,
                 "deleted_at": deleted_at,
-                "origin_device_id": "pytest-installation",
+                "origin_device_id": ORIGIN_ID,
                 "client_version": client_version,
             }
         ],
@@ -121,7 +144,7 @@ def test_sync_pull_returns_pushed_item(
 
     assert response.status_code == 200
     assert response.json()["server_version"] == 1
-    assert response.json()["items"][0]["id"] == "today-record-1"
+    assert response.json()["items"][0]["id"] == TODAY_ID
     assert response.json()["items"][0]["payload"]["daily_note"] == "Foundation test"
 
 

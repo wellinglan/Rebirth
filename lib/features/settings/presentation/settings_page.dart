@@ -18,6 +18,8 @@ import 'package:rebirth/features/sync/presentation/profile_sync_error_message.da
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/plan_sync_view_state.dart';
+import 'package:rebirth/features/sync/presentation/today_sync_controller.dart';
+import 'package:rebirth/features/sync/presentation/today_sync_view_state.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 
@@ -47,6 +49,7 @@ class SettingsPage extends ConsumerWidget {
     final profileHasConflict =
         ref.watch(profileSyncConflictProvider).value ?? false;
     final planSyncState = ref.watch(planSyncControllerProvider);
+    final todaySyncState = ref.watch(todaySyncControllerProvider);
     final activeConflictCount =
         ref.watch(activeSyncConflictCountProvider).value ?? 0;
     final config = ref.watch(appConfigProvider);
@@ -99,8 +102,10 @@ class SettingsPage extends ConsumerWidget {
               onPushProfile: () => _pushProfile(context, ref),
               onPullProfile: () => _pullProfile(context, ref),
               planSyncState: planSyncState,
+              todaySyncState: todaySyncState,
               activeConflictCount: activeConflictCount,
               onSyncPlan: () => _syncPlan(context, ref),
+              onSyncToday: () => _syncToday(context, ref),
               onWeChatLogin: () => _showUnavailableDialog(
                 context,
                 key: 'wechatLoginDialog',
@@ -112,7 +117,7 @@ class SettingsPage extends ConsumerWidget {
                 key: 'syncSettingsDialog',
                 title: '同步范围',
                 message:
-                    'Profile 与 Plan 已支持手动同步。Today、Journal 和 Health '
+                    'Profile、Plan 与 Today 已支持手动同步。Journal 和 Health '
                     '尚未同步；当前没有后台自动同步。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
@@ -359,6 +364,24 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _syncToday(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await ref
+          .read(todaySyncControllerProvider.notifier)
+          .syncToday();
+      if (!context.mounted) return;
+      final entity = result.resultFor(SyncEntityType.today);
+      _showMessage(
+        context,
+        entity?.message ?? result.failure?.message ?? 'Today 同步完成',
+      );
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, 'Today 同步失败，本地数据未受影响');
+      }
+    }
+  }
+
   Future<void> _verifyOwnership(BuildContext context, WidgetRef ref) async {
     try {
       final result = await ref
@@ -474,8 +497,10 @@ class _SettingsContent extends StatelessWidget {
     required this.onPushProfile,
     required this.onPullProfile,
     required this.planSyncState,
+    required this.todaySyncState,
     required this.activeConflictCount,
     required this.onSyncPlan,
+    required this.onSyncToday,
     required this.onVerifyOwnership,
     required this.onWeChatLogin,
     required this.onSyncSettings,
@@ -504,8 +529,10 @@ class _SettingsContent extends StatelessWidget {
   final VoidCallback onPushProfile;
   final VoidCallback onPullProfile;
   final PlanSyncViewState planSyncState;
+  final TodaySyncViewState todaySyncState;
   final int activeConflictCount;
   final VoidCallback onSyncPlan;
+  final VoidCallback onSyncToday;
   final VoidCallback onVerifyOwnership;
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
@@ -567,6 +594,8 @@ class _SettingsContent extends StatelessWidget {
                     onPullProfile: onPullProfile,
                     planSyncState: planSyncState,
                     onSyncPlan: onSyncPlan,
+                    todaySyncState: todaySyncState,
+                    onSyncToday: onSyncToday,
                     onVerifyOwnership: onVerifyOwnership,
                     onWeChatLogin: onWeChatLogin,
                     onSyncSettings: onSyncSettings,
