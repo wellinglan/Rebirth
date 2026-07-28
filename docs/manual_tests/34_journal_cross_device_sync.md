@@ -1,7 +1,7 @@
 # Manual Test: Journal Cross-device Synchronization
 
 > Sprint: 11B
-> Status: NOT EXECUTED
+> Status: FAIL - transport allowlist fix pending manual retest
 > Baseline: `3be1632b75a42928d20eb54b804a729c02742936`
 > Flutter schema: 8
 > API: 1
@@ -25,7 +25,7 @@ Endpoint, Journal answer text, raw payload, database copy, or private UUID.
 | # | Check | Result | Evidence |
 |---|---|---|---|
 | 1 | Create a Journal with at least one answer | NOT EXECUTED | |
-| 2 | Manual Journal sync uploads one record | NOT EXECUTED | |
+| 2 | Manual Journal sync uploads one record | FAIL | Pre-fix client rejected `journal_entries` before the request; allowlist fix pending retest |
 | 3 | Repeat sync creates no duplicate | NOT EXECUTED | |
 | 4 | Edit long Journal content and sync | NOT EXECUTED | |
 | 5 | Delete requires explicit confirmation | NOT EXECUTED | |
@@ -88,11 +88,11 @@ Endpoint, Journal answer text, raw payload, database copy, or private UUID.
 
 | Area | PASS | FAIL | NOT EXECUTED |
 |---|---:|---:|---:|
-| Windows create/edit/delete | 0 | 0 | 7 |
+| Windows create/edit/delete | 0 | 1 | 6 |
 | Android round trip | 0 | 0 | 7 |
 | Conflict recovery | 0 | 0 | 10 |
 | Failure/cursor/isolation | 0 | 0 | 7 |
 | UI/accessibility | 0 | 0 | 8 |
-| **Total** | **0** | **0** | **39** |
+| **Total** | **0** | **1** | **38** |
 
 Journal Sync Product Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`.

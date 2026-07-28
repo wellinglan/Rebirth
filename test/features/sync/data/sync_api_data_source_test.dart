@@ -129,9 +129,13 @@ void main() {
   });
 
   test(
-    'only registered Profile, Today, and Plan tables are accepted',
+    'Profile, Today, Journal, and Plan are accepted while Health is rejected',
     () async {
-      final dataSource = SyncApiDataSource(_FakeApiClient());
+      final dataSource = SyncApiDataSource(
+        _FakeApiClient(
+          response: const {'accepted': <Object?>[], 'conflicts': <Object?>[]},
+        ),
+      );
       final journalItem = SyncPushItemDto(
         tableName: 'journal_entries',
         recordId: 'journal-1',
@@ -142,9 +146,36 @@ void main() {
         clientVersion: 0,
       );
 
-      expect(
+      await expectLater(
         dataSource.push(
           SyncPushRequestDto(deviceId: 'device-1', items: [journalItem]),
+          accessToken: 'test-access-token',
+        ),
+        completes,
+      );
+      await expectLater(
+        SyncApiDataSource(
+          _FakeApiClient(
+            response: const {'server_version': 0, 'items': <Object?>[]},
+          ),
+        ).pull(
+          SyncPullRequestDto(
+            deviceId: 'device-1',
+            sinceServerVersion: 0,
+            tables: const ['journal_entries'],
+          ),
+          accessToken: 'test-access-token',
+        ),
+        completes,
+      );
+
+      expect(
+        SyncApiDataSource(_FakeApiClient()).pull(
+          SyncPullRequestDto(
+            deviceId: 'device-1',
+            sinceServerVersion: 0,
+            tables: const ['health_records'],
+          ),
           accessToken: 'test-access-token',
         ),
         throwsA(isA<SyncUnsupportedTableException>()),

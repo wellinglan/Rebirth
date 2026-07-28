@@ -19,7 +19,12 @@ abstract interface class SyncRemoteDataSource {
 final class SyncApiDataSource implements SyncRemoteDataSource {
   const SyncApiDataSource(this.apiClient);
 
-  static const _supportedTables = {'user_profiles', 'today_records', 'goals'};
+  static const _supportedTables = {
+    'user_profiles',
+    'today_records',
+    'journal_entries',
+    'goals',
+  };
 
   final ApiClient apiClient;
 
