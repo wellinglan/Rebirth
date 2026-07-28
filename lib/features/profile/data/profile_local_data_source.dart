@@ -66,10 +66,15 @@ final class ProfileLocalDataSource {
     );
   }
 
-  Future<db.UserProfile> markSyncConflict(String userId) {
+  Future<db.UserProfile> markSyncConflict(String userId, {int? serverVersion}) {
     return _updateActive(
       userId,
-      const db.UserProfilesCompanion(syncStatus: Value('conflict')),
+      db.UserProfilesCompanion(
+        syncStatus: const Value('conflict'),
+        serverVersion: serverVersion == null
+            ? const Value.absent()
+            : Value(serverVersion),
+      ),
     );
   }
 

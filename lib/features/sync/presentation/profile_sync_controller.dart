@@ -28,6 +28,21 @@ class ProfileSyncController extends Notifier<ProfileSyncViewState> {
     );
   }
 
+  Future<ProfileSyncResult> resolveConflictUsingCloud() {
+    return _run(
+      ProfileSyncAction.resolvingWithCloud,
+      () => ref.read(profileSyncRepositoryProvider).resolveConflictUsingCloud(),
+    );
+  }
+
+  Future<ProfileSyncResult> resolveConflictKeepingLocal() {
+    return _run(
+      ProfileSyncAction.resolvingWithLocal,
+      () =>
+          ref.read(profileSyncRepositoryProvider).resolveConflictKeepingLocal(),
+    );
+  }
+
   Future<ProfileSyncResult> _run(
     ProfileSyncAction action,
     Future<ProfileSyncResult> Function() operation,
@@ -42,9 +57,11 @@ class ProfileSyncController extends Notifier<ProfileSyncViewState> {
       if (result.pulled) {
         ref.read(profileRevisionProvider.notifier).bump();
       }
+      ref.invalidate(profileSyncConflictProvider);
       return result;
     } catch (_) {
       state = state.copyWith(action: ProfileSyncAction.idle);
+      ref.invalidate(profileSyncConflictProvider);
       rethrow;
     }
   }

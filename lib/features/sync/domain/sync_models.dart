@@ -88,6 +88,12 @@ final class SyncAcknowledgement {
 
 enum SyncRunDirection { push, pull, twoWay }
 
+enum SyncPullMode {
+  incremental,
+  preferRemoteConflictResolution,
+  preserveLocalConflictResolution,
+}
+
 enum SyncRunPhase {
   endpointCheck,
   sessionCheck,

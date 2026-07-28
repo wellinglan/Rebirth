@@ -150,9 +150,152 @@ void main() {
       expect(result.pushed, isFalse);
       expect(result.serverVersion, 6);
       expect(stored.syncStatus, 'conflict');
-      expect(stored.serverVersion, isNull);
+      expect(stored.serverVersion, 6);
     },
   );
+
+  test(
+    'resolveConflictUsingCloud full-pulls and explicitly replaces local data',
+    () async {
+      await _setLocalProfileSyncState(
+        database,
+        displayName: 'Local conflict',
+        growthFocus: 'Local focus',
+        syncStatus: 'conflict',
+        updatedAt: 500,
+        lastSyncedAt: 100,
+        serverVersion: 6,
+      );
+      cursorStore.value = 20;
+      remote.pullResponse = SyncPullResponseDto(
+        serverVersion: 20,
+        items: [_pulledProfile(serverVersion: 6, displayName: 'Cloud winner')],
+      );
+
+      final result = await repository.resolveConflictUsingCloud();
+      final stored = await database.select(database.userProfiles).getSingle();
+
+      expect(remote.lastPullRequest?.sinceServerVersion, 0);
+      expect(result.success, isTrue);
+      expect(result.message, '已采用云端 Profile');
+      expect(stored.displayName, 'Cloud winner');
+      expect(stored.growthFocus, 'Cloud focus');
+      expect(stored.syncStatus, 'synced');
+      expect(stored.serverVersion, 6);
+      expect(cursorStore.value, 20);
+    },
+  );
+
+  test(
+    'resolveConflictKeepingLocal refreshes version then uploads local data',
+    () async {
+      await _setLocalProfileSyncState(
+        database,
+        displayName: 'Local winner',
+        growthFocus: 'Keep this focus',
+        syncStatus: 'conflict',
+        updatedAt: 500,
+        lastSyncedAt: 100,
+        serverVersion: null,
+      );
+      cursorStore.value = 20;
+      remote.pullResponse = SyncPullResponseDto(
+        serverVersion: 20,
+        items: [_pulledProfile(serverVersion: 6, displayName: 'Cloud loser')],
+      );
+      remote.pushResponse = SyncPushResponseDto(
+        accepted: [
+          SyncedRecord(
+            tableName: 'user_profiles',
+            recordId: 'profile',
+            serverVersion: 21,
+          ),
+        ],
+        conflicts: const [],
+      );
+
+      final result = await repository.resolveConflictKeepingLocal();
+      final stored = await database.select(database.userProfiles).getSingle();
+
+      expect(remote.lastPullRequest?.sinceServerVersion, 0);
+      expect(remote.lastPushRequest?.items.single.clientVersion, 6);
+      expect(
+        remote.lastPushRequest?.items.single.payload['display_name'],
+        'Local winner',
+      );
+      expect(result.success, isTrue);
+      expect(result.message, '已保留并上传本地 Profile');
+      expect(stored.displayName, 'Local winner');
+      expect(stored.growthFocus, 'Keep this focus');
+      expect(stored.syncStatus, 'synced');
+      expect(stored.serverVersion, 21);
+      expect(cursorStore.value, 20);
+    },
+  );
+
+  test('missing cloud Profile never reports a resolved conflict', () async {
+    await _setLocalProfileSyncState(
+      database,
+      displayName: 'Protected local',
+      growthFocus: 'Protected focus',
+      syncStatus: 'conflict',
+      updatedAt: 500,
+      lastSyncedAt: 100,
+      serverVersion: 6,
+    );
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 20,
+      items: const [],
+    );
+
+    final result = await repository.resolveConflictUsingCloud();
+    final stored = await database.select(database.userProfiles).getSingle();
+
+    expect(result.success, isFalse);
+    expect(result.conflict, isTrue);
+    expect(result.message, '未找到可采用的云端 Profile，冲突保持不变');
+    expect(stored.displayName, 'Protected local');
+    expect(stored.syncStatus, 'conflict');
+    expect(cursorStore.writeCalls, 0);
+  });
+
+  test(
+    'failed conflict resolution keeps local data and conflict state',
+    () async {
+      await _setLocalProfileSyncState(
+        database,
+        displayName: 'Protected local',
+        growthFocus: 'Protected focus',
+        syncStatus: 'conflict',
+        updatedAt: 500,
+        lastSyncedAt: 100,
+        serverVersion: 6,
+      );
+      remote.error = const ApiException(
+        message: 'network unavailable',
+        isNetworkError: true,
+      );
+
+      await expectLater(
+        repository.resolveConflictUsingCloud(),
+        throwsA(isA<SyncException>()),
+      );
+      final stored = await database.select(database.userProfiles).getSingle();
+
+      expect(stored.displayName, 'Protected local');
+      expect(stored.growthFocus, 'Protected focus');
+      expect(stored.syncStatus, 'conflict');
+      expect(stored.serverVersion, 6);
+      expect(cursorStore.writeCalls, 0);
+    },
+  );
+
+  test('conflict resolution is unavailable without a persisted conflict', () {
+    expect(
+      repository.resolveConflictUsingCloud(),
+      throwsA(isA<SyncException>()),
+    );
+  });
 
   test('pushProfile without login does not change the local Profile', () async {
     sessionStore.session = null;
@@ -651,6 +794,7 @@ Future<void> _setLocalProfileSyncState(
   required String syncStatus,
   required int updatedAt,
   required int lastSyncedAt,
+  int? serverVersion = 1,
 }) async {
   final bootstrap = await database.bootstrapDao.bootstrap(
     createUnboundProfile: true,
@@ -663,7 +807,7 @@ Future<void> _setLocalProfileSyncState(
       growthFocus: Value(growthFocus),
       updatedAt: Value(updatedAt),
       syncStatus: Value(syncStatus),
-      serverVersion: const Value(1),
+      serverVersion: Value(serverVersion),
       lastSyncedAt: Value(lastSyncedAt),
       originDeviceId: Value(bootstrap.localInstallationId),
     ),

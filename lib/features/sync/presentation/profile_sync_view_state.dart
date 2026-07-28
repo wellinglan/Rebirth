@@ -1,6 +1,12 @@
 import 'package:rebirth/features/sync/domain/profile_sync_result.dart';
 
-enum ProfileSyncAction { idle, pushing, pulling }
+enum ProfileSyncAction {
+  idle,
+  pushing,
+  pulling,
+  resolvingWithCloud,
+  resolvingWithLocal,
+}
 
 final class ProfileSyncViewState {
   const ProfileSyncViewState({
@@ -14,6 +20,10 @@ final class ProfileSyncViewState {
   bool get isBusy => action != ProfileSyncAction.idle;
   bool get isPushing => action == ProfileSyncAction.pushing;
   bool get isPulling => action == ProfileSyncAction.pulling;
+  bool get isResolvingWithCloud =>
+      action == ProfileSyncAction.resolvingWithCloud;
+  bool get isResolvingWithLocal =>
+      action == ProfileSyncAction.resolvingWithLocal;
 
   ProfileSyncViewState copyWith({
     ProfileSyncAction? action,

@@ -122,21 +122,7 @@ final class LegacyOwnershipVerificationRepositoryImpl
     final installation = await _database
         .select(_database.installationInfo)
         .getSingle();
-    final result = <LegacyOwnershipEvidence>[];
-    final profileVersion = context.profile.serverVersion;
-    if (profileVersion != null && profileVersion > 0) {
-      result.add(
-        _evidence(
-          tableName: 'user_profiles',
-          recordId: SyncRecordKeys.profile,
-          serverVersion: profileVersion,
-          updatedAt: context.profile.updatedAt,
-          deletedAt: context.profile.deletedAt,
-          originDeviceId:
-              context.profile.originDeviceId ?? installation.installationId,
-        ),
-      );
-    }
+    final goalEvidence = <LegacyOwnershipEvidence>[];
     final goals =
         await (_database.select(_database.goals)
               ..where((row) => row.userId.equals(context.profile.id))
@@ -145,7 +131,7 @@ final class LegacyOwnershipVerificationRepositoryImpl
     for (final goal in goals) {
       final version = goal.serverVersion;
       if (version == null || version <= 0) continue;
-      result.add(
+      goalEvidence.add(
         _evidence(
           tableName: 'goals',
           recordId: goal.id,
@@ -156,7 +142,21 @@ final class LegacyOwnershipVerificationRepositoryImpl
         ),
       );
     }
-    return result;
+    if (goalEvidence.isNotEmpty) return goalEvidence;
+
+    final profileVersion = context.profile.serverVersion;
+    if (profileVersion == null || profileVersion <= 0) return const [];
+    return [
+      _evidence(
+        tableName: 'user_profiles',
+        recordId: SyncRecordKeys.profile,
+        serverVersion: profileVersion,
+        updatedAt: context.profile.updatedAt,
+        deletedAt: context.profile.deletedAt,
+        originDeviceId:
+            context.profile.originDeviceId ?? installation.installationId,
+      ),
+    ];
   }
 
   LegacyOwnershipEvidence _evidence({

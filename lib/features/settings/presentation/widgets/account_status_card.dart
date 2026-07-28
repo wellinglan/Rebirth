@@ -19,6 +19,7 @@ class AccountStatusCard extends StatelessWidget {
     required this.onRegisterDevice,
     required this.onLogout,
     required this.profileSyncState,
+    required this.profileHasConflict,
     required this.onPushProfile,
     required this.onPullProfile,
     required this.planSyncState,
@@ -40,6 +41,7 @@ class AccountStatusCard extends StatelessWidget {
   final VoidCallback onRegisterDevice;
   final VoidCallback onLogout;
   final ProfileSyncViewState profileSyncState;
+  final bool profileHasConflict;
   final VoidCallback onPushProfile;
   final VoidCallback onPullProfile;
   final PlanSyncViewState planSyncState;
@@ -117,7 +119,11 @@ class AccountStatusCard extends StatelessWidget {
             ),
             _StatusRow(
               label: 'Profile 同步',
-              value: _profileSyncLabel(accountStatus, profileSyncState),
+              value: _profileSyncLabel(
+                accountStatus,
+                profileSyncState,
+                profileHasConflict,
+              ),
             ),
             _StatusRow(
               label: 'Plan 同步',
@@ -207,7 +213,13 @@ class AccountStatusCard extends StatelessWidget {
                       : onPushProfile,
                   icon: const Icon(Icons.cloud_upload_outlined),
                   label: Text(
-                    profileSyncState.isPushing ? '上传中...' : '上传 Profile',
+                    profileSyncState.isResolvingWithLocal
+                        ? '处理中...'
+                        : profileHasConflict
+                        ? '保留本地 Profile'
+                        : profileSyncState.isPushing
+                        ? '上传中...'
+                        : '上传 Profile',
                   ),
                 ),
                 Tooltip(
@@ -241,7 +253,13 @@ class AccountStatusCard extends StatelessWidget {
                       : onPullProfile,
                   icon: const Icon(Icons.cloud_download_outlined),
                   label: Text(
-                    profileSyncState.isPulling ? '拉取中...' : '拉取 Profile',
+                    profileSyncState.isResolvingWithCloud
+                        ? '处理中...'
+                        : profileHasConflict
+                        ? '采用云端 Profile'
+                        : profileSyncState.isPulling
+                        ? '拉取中...'
+                        : '拉取 Profile',
                   ),
                 ),
                 OutlinedButton.icon(
@@ -275,12 +293,14 @@ class AccountStatusCard extends StatelessWidget {
   String _profileSyncLabel(
     AccountStatus accountStatus,
     ProfileSyncViewState syncState,
+    bool hasConflict,
   ) {
     if (!accountStatus.isAuthenticated) return '需要先登录';
     if (syncEligibility == AccountSyncEligibility.legacyReviewRequired) {
       return '旧数据待验证，暂不可同步';
     }
     if (!accountStatus.deviceRegistered) return '需要先注册设备';
+    if (hasConflict) return '检测到待处理 Profile 冲突';
     if (syncState.lastResult?.conflict ?? false) return '检测到冲突';
     if (syncState.lastResult?.pushed ?? false) return '最近已上传';
     if (syncState.lastResult?.pulled ?? false) return '最近已更新';

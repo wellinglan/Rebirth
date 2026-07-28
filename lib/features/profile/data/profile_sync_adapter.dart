@@ -111,7 +111,10 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
           )
           .firstOrNull;
       if (conflict != null) {
-        await _localDataSource.markSyncConflict(context.profile.id);
+        await _localDataSource.markSyncConflict(
+          context.profile.id,
+          serverVersion: conflict.serverVersion,
+        );
         return SyncEntityResult(
           entityType: entityType,
           status: SyncEntityStatus.conflict,
@@ -152,12 +155,14 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
   Future<SyncEntityResult> applyRemoteChanges({
     required List<SyncChange> changes,
     required int syncedAt,
+    SyncPullMode pullMode = SyncPullMode.incremental,
   }) {
     return _database.transaction(() async {
       final context = await _loadLocalContext();
       var profile = context.profile;
       var applied = 0;
       var ignored = 0;
+      var preparedLocalOverwrite = 0;
       final ordered = changes.toList(growable: false)
         ..sort(
           (left, right) => left.serverVersion.compareTo(right.serverVersion),
@@ -168,11 +173,24 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
           throw SyncUnsupportedEntityException(change.entityType.wireName);
         }
         final localVersion = profile.serverVersion ?? 0;
-        if (change.serverVersion <= localVersion) {
+        final isIncremental = pullMode == SyncPullMode.incremental;
+        if ((isIncremental && change.serverVersion <= localVersion) ||
+            (!isIncremental && change.serverVersion < localVersion)) {
           ignored += 1;
           continue;
         }
-        if (_hasUnsyncedLocalChanges(profile)) {
+
+        if (pullMode == SyncPullMode.preserveLocalConflictResolution) {
+          profile = await _localDataSource.markSyncConflict(
+            profile.id,
+            serverVersion: change.serverVersion,
+          );
+          preparedLocalOverwrite += 1;
+          continue;
+        }
+
+        if (_hasUnsyncedLocalChanges(profile) &&
+            pullMode != SyncPullMode.preferRemoteConflictResolution) {
           await _localDataSource.markSyncConflict(profile.id);
           return SyncEntityResult(
             entityType: entityType,
@@ -214,6 +232,32 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
         applied += 1;
       }
 
+      if (pullMode == SyncPullMode.preserveLocalConflictResolution) {
+        return SyncEntityResult(
+          entityType: entityType,
+          status: preparedLocalOverwrite == 0
+              ? SyncEntityStatus.conflict
+              : SyncEntityStatus.succeeded,
+          message: preparedLocalOverwrite == 0
+              ? '未找到可确认的云端 Profile，冲突保持不变'
+              : '已获取云端版本，等待保留本地 Profile',
+          ignoredCount: ignored,
+          conflictCount: preparedLocalOverwrite == 0 ? 1 : 0,
+          serverVersion: profile.serverVersion,
+        );
+      }
+      if (pullMode == SyncPullMode.preferRemoteConflictResolution &&
+          applied == 0) {
+        return SyncEntityResult(
+          entityType: entityType,
+          status: SyncEntityStatus.conflict,
+          message: '未找到可采用的云端 Profile，冲突保持不变',
+          ignoredCount: ignored,
+          conflictCount: 1,
+          serverVersion: profile.serverVersion,
+        );
+      }
+
       return SyncEntityResult(
         entityType: entityType,
         status: applied == 0
@@ -237,6 +281,11 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
     );
+  }
+
+  Future<bool> hasConflict() async {
+    final profile = (await _loadLocalContext()).profile;
+    return profile.syncStatus == 'conflict';
   }
 
   Future<_ProfileLocalContext> _loadLocalContext() async {

@@ -49,12 +49,18 @@ final class SyncCoordinator {
   Future<SyncRunResult> run({
     required SyncRunDirection direction,
     Iterable<SyncEntityType>? entityTypes,
+    SyncPullMode pullMode = SyncPullMode.incremental,
   }) {
+    if (pullMode != SyncPullMode.incremental &&
+        direction != SyncRunDirection.pull) {
+      throw ArgumentError('Conflict resolution requires a pull-only run.');
+    }
     final request = _SyncRunRequest(
       direction: direction,
       entityTypes: _normalizeEntityTypes(
         entityTypes ?? adapterRegistry.registeredTypes,
       ),
+      pullMode: pullMode,
     );
     final activeRun = _activeRun;
     if (activeRun != null) {
@@ -65,6 +71,7 @@ final class SyncCoordinator {
     final future = _run(
       direction: request.direction,
       entityTypes: request.entityTypes,
+      pullMode: request.pullMode,
     );
     _activeRun = _ActiveSyncRun(request: request, future: future);
     future.then<void>(
@@ -116,6 +123,7 @@ final class SyncCoordinator {
   Future<SyncRunResult> _run({
     required SyncRunDirection direction,
     required List<SyncEntityType> entityTypes,
+    required SyncPullMode pullMode,
   }) async {
     final startedAt = dateTimeService.currentSnapshot().utcMilliseconds;
     final phases = <SyncRunPhase>[];
@@ -256,6 +264,7 @@ final class SyncCoordinator {
           session: session,
           deviceId: registration.deviceId,
           phases: phases,
+          pullMode: pullMode,
           onProgress: (result) => progress = result,
         );
         entityResults.add(result);
@@ -316,6 +325,7 @@ final class SyncCoordinator {
     required AuthSession session,
     required String deviceId,
     required List<SyncRunPhase> phases,
+    required SyncPullMode pullMode,
     required void Function(SyncEntityResult result) onProgress,
   }) async {
     var aggregate = SyncEntityResult(
@@ -395,7 +405,9 @@ final class SyncCoordinator {
       final response = await remoteDataSource.pull(
         SyncPullRequestDto(
           deviceId: deviceId,
-          sinceServerVersion: cursor.serverVersion,
+          sinceServerVersion: pullMode == SyncPullMode.incremental
+              ? cursor.serverVersion
+              : 0,
           tables: [adapter.entityType.wireName],
         ),
         accessToken: session.accessToken,
@@ -438,6 +450,7 @@ final class SyncCoordinator {
       final applied = await adapter.applyRemoteChanges(
         changes: page.changes,
         syncedAt: dateTimeService.currentSnapshot().utcMilliseconds,
+        pullMode: pullMode,
       );
       aggregate = aggregate.merge(applied);
       onProgress(aggregate);
@@ -532,13 +545,19 @@ final class SyncCoordinator {
 }
 
 final class _SyncRunRequest {
-  const _SyncRunRequest({required this.direction, required this.entityTypes});
+  const _SyncRunRequest({
+    required this.direction,
+    required this.entityTypes,
+    required this.pullMode,
+  });
 
   final SyncRunDirection direction;
   final List<SyncEntityType> entityTypes;
+  final SyncPullMode pullMode;
 
   bool matches(_SyncRunRequest other) {
     if (direction != other.direction ||
+        pullMode != other.pullMode ||
         entityTypes.length != other.entityTypes.length) {
       return false;
     }

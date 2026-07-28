@@ -12,6 +12,7 @@ import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
 import 'package:rebirth/features/account/presentation/legacy_ownership_verification_controller.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/legacy_ownership_verification.dart';
+import 'package:rebirth/features/profile/data/profile_sync_repository_provider.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_error_message.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_view_state.dart';
@@ -43,6 +44,8 @@ class SettingsPage extends ConsumerWidget {
       legacyOwnershipVerificationControllerProvider,
     );
     final profileSyncState = ref.watch(profileSyncControllerProvider);
+    final profileHasConflict =
+        ref.watch(profileSyncConflictProvider).value ?? false;
     final planSyncState = ref.watch(planSyncControllerProvider);
     final activeConflictCount =
         ref.watch(activeSyncConflictCountProvider).value ?? 0;
@@ -92,6 +95,7 @@ class SettingsPage extends ConsumerWidget {
               onRegisterDevice: () => _registerDevice(context, ref),
               onLogout: () => _logout(context, ref),
               profileSyncState: profileSyncState,
+              profileHasConflict: profileHasConflict,
               onPushProfile: () => _pushProfile(context, ref),
               onPullProfile: () => _pullProfile(context, ref),
               planSyncState: planSyncState,
@@ -258,15 +262,25 @@ class SettingsPage extends ConsumerWidget {
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     await ref.read(appAuthControllerProvider.notifier).logout();
+    _refreshConflictScope(ref);
     if (!context.mounted) return;
     _showMessage(context, '已退出开发账号，本地数据保持不变');
   }
 
   Future<void> _pushProfile(BuildContext context, WidgetRef ref) async {
+    final hasConflict = ref.read(profileSyncConflictProvider).value ?? false;
+    if (hasConflict) {
+      final confirmed = await _confirmProfileConflictResolution(
+        context,
+        useCloud: false,
+      );
+      if (!confirmed || !context.mounted) return;
+    }
     try {
-      final result = await ref
-          .read(profileSyncControllerProvider.notifier)
-          .pushProfile();
+      final controller = ref.read(profileSyncControllerProvider.notifier);
+      final result = await (hasConflict
+          ? controller.resolveConflictKeepingLocal()
+          : controller.pushProfile());
       if (!context.mounted) return;
       _showMessage(context, result.message);
     } catch (error) {
@@ -276,16 +290,55 @@ class SettingsPage extends ConsumerWidget {
   }
 
   Future<void> _pullProfile(BuildContext context, WidgetRef ref) async {
+    final hasConflict = ref.read(profileSyncConflictProvider).value ?? false;
+    if (hasConflict) {
+      final confirmed = await _confirmProfileConflictResolution(
+        context,
+        useCloud: true,
+      );
+      if (!confirmed || !context.mounted) return;
+    }
     try {
-      final result = await ref
-          .read(profileSyncControllerProvider.notifier)
-          .pullProfile();
+      final controller = ref.read(profileSyncControllerProvider.notifier);
+      final result = await (hasConflict
+          ? controller.resolveConflictUsingCloud()
+          : controller.pullProfile());
       if (!context.mounted) return;
       _showMessage(context, result.message);
     } catch (error) {
       if (!context.mounted) return;
       _showMessage(context, profileSyncErrorMessage(error));
     }
+  }
+
+  Future<bool> _confirmProfileConflictResolution(
+    BuildContext context, {
+    required bool useCloud,
+  }) async {
+    final title = useCloud ? '采用云端 Profile？' : '保留本地 Profile？';
+    final message = useCloud
+        ? '云端 Profile 将覆盖本地昵称、成长方向和时区。本操作不会自动合并内容。'
+        : '本地 Profile 将覆盖云端昵称、成长方向和时区。本操作不会自动合并内容。';
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            key: const ValueKey('profileConflictResolutionDialog'),
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmProfileConflictResolutionButton'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(useCloud ? '采用云端' : '保留本地'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Future<void> _syncPlan(BuildContext context, WidgetRef ref) async {
@@ -327,6 +380,7 @@ class SettingsPage extends ConsumerWidget {
   }
 
   void _refreshConflictScope(WidgetRef ref) {
+    ref.invalidate(profileSyncConflictProvider);
     ref.invalidate(syncConflictScopeProvider);
     ref.invalidate(activeSyncConflictCountProvider);
     ref.invalidate(activeSyncConflictListProvider);
@@ -416,6 +470,7 @@ class _SettingsContent extends StatelessWidget {
     required this.onRegisterDevice,
     required this.onLogout,
     required this.profileSyncState,
+    required this.profileHasConflict,
     required this.onPushProfile,
     required this.onPullProfile,
     required this.planSyncState,
@@ -445,6 +500,7 @@ class _SettingsContent extends StatelessWidget {
   final VoidCallback onRegisterDevice;
   final VoidCallback onLogout;
   final ProfileSyncViewState profileSyncState;
+  final bool profileHasConflict;
   final VoidCallback onPushProfile;
   final VoidCallback onPullProfile;
   final PlanSyncViewState planSyncState;
@@ -506,6 +562,7 @@ class _SettingsContent extends StatelessWidget {
                     onRegisterDevice: onRegisterDevice,
                     onLogout: onLogout,
                     profileSyncState: profileSyncState,
+                    profileHasConflict: profileHasConflict,
                     onPushProfile: onPushProfile,
                     onPullProfile: onPullProfile,
                     planSyncState: planSyncState,

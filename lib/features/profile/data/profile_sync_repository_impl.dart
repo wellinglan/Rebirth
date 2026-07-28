@@ -33,13 +33,53 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
     );
   }
 
+  @override
+  Future<bool> hasConflict() => adapter.hasConflict();
+
+  @override
+  Future<ProfileSyncResult> resolveConflictUsingCloud() async {
+    await _requireConflict();
+    return _run(
+      direction: SyncRunDirection.pull,
+      profileDirection: ProfileSyncDirection.pull,
+      pullMode: SyncPullMode.preferRemoteConflictResolution,
+      successMessage: '已采用云端 Profile',
+    );
+  }
+
+  @override
+  Future<ProfileSyncResult> resolveConflictKeepingLocal() async {
+    await _requireConflict();
+    final prepared = await _run(
+      direction: SyncRunDirection.pull,
+      profileDirection: ProfileSyncDirection.pull,
+      pullMode: SyncPullMode.preserveLocalConflictResolution,
+    );
+    if (!prepared.success) return prepared;
+
+    return _run(
+      direction: SyncRunDirection.push,
+      profileDirection: ProfileSyncDirection.push,
+      successMessage: '已保留并上传本地 Profile',
+    );
+  }
+
+  Future<void> _requireConflict() async {
+    if (!await adapter.hasConflict()) {
+      throw const SyncException('当前没有待处理的 Profile 冲突。');
+    }
+  }
+
   Future<ProfileSyncResult> _run({
     required SyncRunDirection direction,
     required ProfileSyncDirection profileDirection,
+    SyncPullMode pullMode = SyncPullMode.incremental,
+    String? successMessage,
   }) async {
     final run = await coordinator.run(
       direction: direction,
       entityTypes: const [SyncEntityType.profile],
+      pullMode: pullMode,
     );
     final entity = run.resultFor(SyncEntityType.profile);
     final failure = run.failure;
@@ -80,6 +120,7 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
     final pulled = entity.pulledCount > 0;
     final message = switch ((profileDirection, pushed, pulled, isConflict)) {
       (_, _, _, true) => entity.message,
+      _ when successMessage != null => successMessage,
       (ProfileSyncDirection.push, false, _, false) => '没有待上传的 Profile 更新',
       (ProfileSyncDirection.pull, _, false, false) => '没有新的 Profile 更新',
       _ => entity.message,

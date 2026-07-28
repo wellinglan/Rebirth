@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 def _login(client: TestClient, key: str) -> dict[str, str]:
     response = client.post("/auth/dev-login", json={"dev_user_key": key})
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
@@ -34,6 +34,9 @@ def _push_profile(
     headers: dict[str, str],
     device_id: str,
     origin_device_id: str,
+    *,
+    client_version: int = 0,
+    updated_at: int = 100,
 ) -> dict[str, object]:
     response = client.post(
         "/sync/push",
@@ -48,17 +51,17 @@ def _push_profile(
                         "display_name": "Private profile",
                         "growth_focus": "Private focus",
                         "timezone_id": "Asia/Shanghai",
-                        "updated_at": 100,
+                        "updated_at": updated_at,
                     },
-                    "updated_at": 100,
+                    "updated_at": updated_at,
                     "deleted_at": None,
                     "origin_device_id": origin_device_id,
-                    "client_version": 0,
+                    "client_version": client_version,
                 }
             ],
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     version = response.json()["accepted"][0]["server_version"]
     return {
         "table": "user_profiles",
@@ -68,7 +71,64 @@ def _push_profile(
             table="user_profiles",
             record_id="profile",
             server_version=version,
-            updated_at=100,
+            updated_at=updated_at,
+            deleted_at=None,
+            origin_device_id=origin_device_id,
+        ),
+    }
+
+
+def _push_goal(
+    client: TestClient,
+    headers: dict[str, str],
+    device_id: str,
+    origin_device_id: str,
+    *,
+    goal_id: str,
+    client_version: int = 0,
+    updated_at: int = 100,
+) -> dict[str, object]:
+    response = client.post(
+        "/sync/push",
+        headers=headers,
+        json={
+            "device_id": device_id,
+            "items": [
+                {
+                    "table": "goals",
+                    "id": goal_id,
+                    "payload": {
+                        "parent_goal_id": None,
+                        "title": "Private goal",
+                        "description": None,
+                        "goal_level": "month",
+                        "status": "not_started",
+                        "start_date": "2026-07-01",
+                        "target_date": "2026-07-31",
+                        "completed_at": None,
+                        "archived_at": None,
+                        "sort_order": 0,
+                        "created_at": 90,
+                    },
+                    "updated_at": updated_at,
+                    "deleted_at": None,
+                    "origin_device_id": origin_device_id,
+                    "client_version": client_version,
+                }
+            ],
+        },
+    )
+    assert response.status_code == 200, response.text
+    version = response.json()["accepted"][0]["server_version"]
+    return {
+        "table": "goals",
+        "id": goal_id,
+        "server_version": version,
+        "metadata_fingerprint": _fingerprint(
+            table="goals",
+            record_id=goal_id,
+            server_version=version,
+            updated_at=updated_at,
             deleted_at=None,
             origin_device_id=origin_device_id,
         ),
@@ -151,6 +211,105 @@ def test_unknown_record_keeps_ownership_unverified(
                 }
             ]
         },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "unknown"
+    assert response.json()["reason"] == "remote_record_missing"
+
+
+def test_stale_goal_metadata_for_current_user_is_verified(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    goal_id = "10000000-0000-4000-8000-000000000002"
+    stale_evidence = _push_goal(
+        client,
+        auth_headers,
+        registered_device,
+        registered_device,
+        goal_id=goal_id,
+    )
+    _push_goal(
+        client,
+        auth_headers,
+        registered_device,
+        registered_device,
+        goal_id=goal_id,
+        client_version=int(stale_evidence["server_version"]),
+        updated_at=200,
+    )
+
+    response = client.post(
+        "/sync/verify-ownership",
+        headers=auth_headers,
+        json={"evidence": [stale_evidence]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "verified"
+    assert response.json()["verified_count"] == 1
+
+
+def test_stale_goal_owned_by_other_user_is_rejected(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    goal_id = "10000000-0000-4000-8000-000000000003"
+    stale_evidence = _push_goal(
+        client,
+        auth_headers,
+        registered_device,
+        registered_device,
+        goal_id=goal_id,
+    )
+    _push_goal(
+        client,
+        auth_headers,
+        registered_device,
+        registered_device,
+        goal_id=goal_id,
+        client_version=int(stale_evidence["server_version"]),
+        updated_at=200,
+    )
+    other_headers = _login(client, "ownership-stale-other-user")
+
+    response = client.post(
+        "/sync/verify-ownership",
+        headers=other_headers,
+        json={"evidence": [stale_evidence]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "rejected"
+
+
+def test_stale_profile_only_evidence_is_unknown(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    stale_evidence = _push_profile(
+        client,
+        auth_headers,
+        registered_device,
+        "pytest-installation",
+    )
+    _push_profile(
+        client,
+        auth_headers,
+        registered_device,
+        "pytest-installation",
+        client_version=int(stale_evidence["server_version"]),
+        updated_at=200,
+    )
+
+    response = client.post(
+        "/sync/verify-ownership",
+        headers=auth_headers,
+        json={"evidence": [stale_evidence]},
     )
 
     assert response.status_code == 200

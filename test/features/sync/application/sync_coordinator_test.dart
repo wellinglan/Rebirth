@@ -217,6 +217,44 @@ void main() {
     );
   });
 
+  test('conflict resolution full-pulls without clearing the cursor', () async {
+    cursorStore.value = 12;
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 12,
+      items: [_pulledItem(serverVersion: 7)],
+    );
+
+    final result = await coordinator.run(
+      direction: SyncRunDirection.pull,
+      pullMode: SyncPullMode.preferRemoteConflictResolution,
+    );
+
+    expect(result.failure, isNull);
+    expect(remote.lastPullRequest?.sinceServerVersion, 0);
+    expect(adapter.lastPullMode, SyncPullMode.preferRemoteConflictResolution);
+    expect(cursorStore.value, 12);
+    expect(cursorStore.writeCalls, 1);
+  });
+
+  test('conflict resolution mode rejects push and two-way runs', () {
+    expect(
+      () => coordinator.run(
+        direction: SyncRunDirection.push,
+        pullMode: SyncPullMode.preserveLocalConflictResolution,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => coordinator.run(
+        direction: SyncRunDirection.twoWay,
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      ),
+      throwsArgumentError,
+    );
+    expect(remote.pushCalls, 0);
+    expect(remote.pullCalls, 0);
+  });
+
   test('two-way run acknowledges push before pull', () async {
     adapter.pending = [_pushItem()];
     remote.pushResponse = SyncPushResponseDto(
@@ -609,6 +647,7 @@ final class _FakeAdapter implements SyncEntityAdapter {
   int collectCalls = 0;
   int acknowledgeCalls = 0;
   int applyCalls = 0;
+  SyncPullMode? lastPullMode;
 
   @override
   final SyncEntityType entityType;
@@ -668,8 +707,10 @@ final class _FakeAdapter implements SyncEntityAdapter {
   Future<SyncEntityResult> applyRemoteChanges({
     required List<SyncChange> changes,
     required int syncedAt,
+    SyncPullMode pullMode = SyncPullMode.incremental,
   }) async {
     applyCalls += 1;
+    lastPullMode = pullMode;
     if (applyError case final error?) throw error;
     return applyResult;
   }
@@ -690,6 +731,7 @@ final class _FakeRemoteDataSource implements SyncRemoteDataSource {
   Completer<SyncPullResponseDto>? pullCompleter;
   int pushCalls = 0;
   int pullCalls = 0;
+  SyncPullRequestDto? lastPullRequest;
 
   @override
   Future<SyncPushResponseDto> push(
@@ -708,6 +750,7 @@ final class _FakeRemoteDataSource implements SyncRemoteDataSource {
     required String accessToken,
   }) async {
     pullCalls += 1;
+    lastPullRequest = request;
     if (pullError case final error?) throw error;
     final completer = pullCompleter;
     return completer == null ? pullResponse : completer.future;

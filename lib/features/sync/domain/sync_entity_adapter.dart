@@ -28,6 +28,7 @@ abstract interface class SyncEntityAdapter {
   Future<SyncEntityResult> applyRemoteChanges({
     required List<SyncChange> changes,
     required int syncedAt,
+    SyncPullMode pullMode = SyncPullMode.incremental,
   });
 }
 

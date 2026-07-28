@@ -243,6 +243,7 @@ final class PlanSyncAdapter implements SyncEntityAdapter {
   Future<SyncEntityResult> applyRemoteChanges({
     required List<SyncChange> changes,
     required int syncedAt,
+    SyncPullMode pullMode = SyncPullMode.incremental,
   }) {
     return _database.transaction(() async {
       final context = await _loadContext();

@@ -203,8 +203,10 @@ row. The next manual Plan pull can create and hydrate a real row.
 
 ## Current Limits
 
-- Only Plan uses explicit conflict resolution.
-- Profile keeps its existing conservative conflict behavior.
+- Plan uses the generic persistent conflict store and details page.
+- Profile uses its local sync status plus explicit `保留本地 Profile` and
+  `采用云端 Profile` recovery actions added by Sprint 10B.3.1; it does not
+  create generic Plan conflict rows.
 - Today, Journal, Health, Growth, and AI Report do not sync.
 - There is no field-level merge, last-write-wins, background retry, realtime
   push, or conflict-history cleanup.
@@ -272,3 +274,6 @@ row scoping should be weakened. The complete evaluation is in
 `docs/21_CLOUD_ACCOUNT_LOCAL_DATA_ISOLATION.md`; recorded device evidence and
 matrix status are in `docs/manual_tests/25_plan_cross_device_sync.md` and
 `docs/manual_tests/26_sync_conflict_recovery.md`.
+
+Profile re-entry remediation is documented separately in
+`docs/24_LEGACY_SYNC_REENTRY_REMEDIATION.md`.

@@ -64,21 +64,27 @@ claims. The Server derives the owner exclusively from the JWT.
 The response contains `status`, verified/rejected/unknown counts, and a
 whitelisted reason. Outcomes are:
 
-- `verified`: every submitted row exactly matches current-JWT remote metadata;
+- `verified`: every submitted row exactly matches current-JWT remote metadata,
+  or a stable Goal UUID is now at a newer version under that same account;
 - `unknown`: evidence is absent on this Server or there is no verifiable row;
 - `rejected`: metadata mismatches the current user's row or exact evidence is
   owned by another user.
 
 The response never identifies another user or returns stored payload.
 
-## Conservative Limitation
+## Stable And Conservative Evidence
 
 The current Server stores each sync item's latest state, not version history.
-If another device changed a remote row after the legacy client's last sync,
-the old fingerprint cannot be reconstructed. Verification returns unknown
-instead of assuming ownership. A personal data space with more than 500
-verifiable Profile/Plan rows also remains blocked pending a future bounded
-proof design.
+Goal UUID is stable identity, so a newer version under the same authenticated
+account verifies legitimate stale evidence. The same Goal UUID under another
+account is rejected.
+
+The canonical Profile record ID is shared by all accounts and cannot provide
+that proof. Stale Profile-only evidence therefore returns unknown unless an
+exact row under another account proves rejection. The client prefers synced
+Goal evidence and falls back to Profile only when no synced Goal exists.
+A personal data space with more than 500 verifiable rows remains blocked
+pending a future bounded proof design.
 
 ## Flutter State Machine
 
@@ -153,7 +159,8 @@ session and must never trust a client-provided user ID.
 ## Release Gate
 
 Automated tests cannot prove the deployed Alpha account and Endpoint history.
-Windows, Android, and cross-device execution must follow
-`docs/manual_tests/29_legacy_cloud_ownership_verification.md`. All rows remain
-`NOT EXECUTED` until a human performs them with the new API image and matching
-release clients.
+Windows, Android, and cross-device execution first followed
+`docs/manual_tests/29_legacy_cloud_ownership_verification.md` and found two
+blockers. Sprint 10B.3.1 remediation is defined in
+`docs/24_LEGACY_SYNC_REENTRY_REMEDIATION.md`; clean release evidence must be
+recorded in `docs/manual_tests/30_legacy_sync_reentry_remediation.md`.

@@ -78,31 +78,71 @@ def verify_ownership(
             )
         )
         if current_user_item is not None:
-            if (
+            exact_current_match = (
                 current_user_item.server_version == evidence.server_version
                 and ownership_metadata_fingerprint(current_user_item)
                 == evidence.metadata_fingerprint
-            ):
+            )
+            if exact_current_match:
                 verified_count += 1
+            elif (
+                evidence.table_name == "goals"
+                and current_user_item.server_version > evidence.server_version
+            ):
+                # Goal UUIDs are stable record identities. A newer version under
+                # the same JWT user is valid evidence that another owned device
+                # advanced the record after this local snapshot.
+                verified_count += 1
+            elif (
+                evidence.table_name == "user_profiles"
+                and current_user_item.server_version > evidence.server_version
+            ):
+                other_profiles = session.scalars(
+                    select(SyncItem).where(
+                        SyncItem.user_id != user_id,
+                        SyncItem.table_name == evidence.table_name,
+                        SyncItem.record_id == evidence.record_id,
+                        SyncItem.server_version == evidence.server_version,
+                    )
+                ).all()
+                if any(
+                    ownership_metadata_fingerprint(item)
+                    == evidence.metadata_fingerprint
+                    for item in other_profiles
+                ):
+                    rejected_count += 1
+                else:
+                    unknown_count += 1
             else:
                 rejected_count += 1
             continue
 
-        exact_item = session.scalar(
+        same_record_other_user = session.scalar(
             select(SyncItem).where(
+                SyncItem.user_id != user_id,
                 SyncItem.table_name == evidence.table_name,
                 SyncItem.record_id == evidence.record_id,
-                SyncItem.server_version == evidence.server_version,
             )
         )
-        if (
-            exact_item is not None
-            and ownership_metadata_fingerprint(exact_item)
-            == evidence.metadata_fingerprint
-        ):
+        if evidence.table_name == "goals" and same_record_other_user is not None:
             rejected_count += 1
         else:
-            unknown_count += 1
+            exact_items = session.scalars(
+                select(SyncItem).where(
+                    SyncItem.user_id != user_id,
+                    SyncItem.table_name == evidence.table_name,
+                    SyncItem.record_id == evidence.record_id,
+                    SyncItem.server_version == evidence.server_version,
+                )
+            ).all()
+            if any(
+                ownership_metadata_fingerprint(item)
+                == evidence.metadata_fingerprint
+                for item in exact_items
+            ):
+                rejected_count += 1
+            else:
+                unknown_count += 1
 
     if rejected_count > 0:
         return OwnershipVerificationResponse(

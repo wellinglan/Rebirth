@@ -4,4 +4,10 @@ abstract interface class ProfileSyncRepository {
   Future<ProfileSyncResult> pushProfile();
 
   Future<ProfileSyncResult> pullProfile();
+
+  Future<ProfileSyncResult> resolveConflictUsingCloud();
+
+  Future<ProfileSyncResult> resolveConflictKeepingLocal();
+
+  Future<bool> hasConflict();
 }

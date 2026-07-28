@@ -540,6 +540,108 @@ void main() {
     expect(find.text('Profile 已更新'), findsNothing);
   });
 
+  testWidgets('persisted Profile conflict exposes explicit recovery actions', (
+    tester,
+  ) async {
+    final syncRepository = _FakeProfileSyncRepository(hasConflictValue: true);
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('检测到待处理 Profile 冲突'), findsOneWidget);
+    expect(find.text('保留本地 Profile'), findsOneWidget);
+    expect(find.text('采用云端 Profile'), findsOneWidget);
+  });
+
+  testWidgets('keeping local Profile requires confirmation', (tester) async {
+    final syncRepository = _FakeProfileSyncRepository(hasConflictValue: true);
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pushProfileButton');
+    expect(
+      find.byKey(const ValueKey('profileConflictResolutionDialog')),
+      findsOneWidget,
+    );
+    expect(syncRepository.resolveKeepingLocalCalls, 0);
+
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(syncRepository.resolveKeepingLocalCalls, 0);
+
+    await _tapByKey(tester, 'pushProfileButton');
+    await tester.tap(
+      find.byKey(const ValueKey('confirmProfileConflictResolutionButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(syncRepository.resolveKeepingLocalCalls, 1);
+    expect(find.text('已保留并上传本地 Profile'), findsOneWidget);
+  });
+
+  testWidgets('using cloud Profile requires confirmation', (tester) async {
+    final syncRepository = _FakeProfileSyncRepository(hasConflictValue: true);
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pullProfileButton');
+    expect(find.text('采用云端 Profile？'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('confirmProfileConflictResolutionButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(syncRepository.resolveUsingCloudCalls, 1);
+    expect(find.text('已采用云端 Profile'), findsOneWidget);
+  });
+
+  testWidgets('failed Profile recovery remains retryable', (tester) async {
+    final syncRepository = _FakeProfileSyncRepository(
+      hasConflictValue: true,
+      pullError: const ApiException(message: '无法连接开发后端', isNetworkError: true),
+    );
+    await _pumpSettings(
+      tester,
+      _FakeProfileRepository(),
+      _registeredAuthRepository(),
+      syncRepository: syncRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await _tapByKey(tester, 'pullProfileButton');
+    await tester.tap(
+      find.byKey(const ValueKey('confirmProfileConflictResolutionButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('无法连接开发后端，本地资料未受影响'), findsOneWidget);
+    expect(find.text('采用云端 Profile'), findsOneWidget);
+
+    syncRepository.pullError = null;
+    await _tapByKey(tester, 'pullProfileButton');
+    await tester.tap(
+      find.byKey(const ValueKey('confirmProfileConflictResolutionButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(syncRepository.resolveUsingCloudCalls, 2);
+    expect(find.text('已采用云端 Profile'), findsOneWidget);
+  });
+
   testWidgets('Profile network failure keeps local Profile available', (
     tester,
   ) async {
@@ -967,6 +1069,7 @@ final class _FakeProfileSyncRepository implements ProfileSyncRepository {
   _FakeProfileSyncRepository({
     this.pushError,
     this.pullError,
+    this.hasConflictValue = false,
     this.pullResult = const ProfileSyncResult(
       success: true,
       direction: ProfileSyncDirection.pull,
@@ -978,11 +1081,17 @@ final class _FakeProfileSyncRepository implements ProfileSyncRepository {
     ),
   });
 
-  final Object? pushError;
-  final Object? pullError;
+  Object? pushError;
+  Object? pullError;
+  bool hasConflictValue;
   final ProfileSyncResult pullResult;
   int pushCalls = 0;
   int pullCalls = 0;
+  int resolveKeepingLocalCalls = 0;
+  int resolveUsingCloudCalls = 0;
+
+  @override
+  Future<bool> hasConflict() async => hasConflictValue;
 
   @override
   Future<ProfileSyncResult> pushProfile() async {
@@ -1004,6 +1113,38 @@ final class _FakeProfileSyncRepository implements ProfileSyncRepository {
     pullCalls += 1;
     if (pullError case final error?) throw error;
     return pullResult;
+  }
+
+  @override
+  Future<ProfileSyncResult> resolveConflictKeepingLocal() async {
+    resolveKeepingLocalCalls += 1;
+    if (pushError case final error?) throw error;
+    hasConflictValue = false;
+    return const ProfileSyncResult(
+      success: true,
+      direction: ProfileSyncDirection.push,
+      message: '已保留并上传本地 Profile',
+      pushed: true,
+      pulled: false,
+      conflict: false,
+      serverVersion: 3,
+    );
+  }
+
+  @override
+  Future<ProfileSyncResult> resolveConflictUsingCloud() async {
+    resolveUsingCloudCalls += 1;
+    if (pullError case final error?) throw error;
+    hasConflictValue = false;
+    return const ProfileSyncResult(
+      success: true,
+      direction: ProfileSyncDirection.pull,
+      message: '已采用云端 Profile',
+      pushed: false,
+      pulled: true,
+      conflict: false,
+      serverVersion: 3,
+    );
   }
 }
 

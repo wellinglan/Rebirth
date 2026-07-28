@@ -44,11 +44,8 @@ void main() {
     expect(result.isVerified, isTrue);
     expect(remote.calls, 1);
     expect(remote.lastToken, 'token-account-a');
-    expect(remote.lastEvidence, hasLength(2));
-    expect(
-      remote.lastEvidence.map((item) => item.tableName),
-      containsAll(['user_profiles', 'goals']),
-    );
+    expect(remote.lastEvidence, hasLength(1));
+    expect(remote.lastEvidence.single.tableName, 'goals');
     for (final evidence in remote.lastEvidence) {
       expect(evidence.metadataFingerprint, matches(RegExp(r'^[0-9a-f]{64}$')));
     }
@@ -68,6 +65,16 @@ void main() {
       ).requireActiveScope(endpoint: _endpoint, cloudUserId: 'account-a'),
       binding.localUserId,
     );
+  });
+
+  test('profile metadata is used only when no synced Goal exists', () async {
+    await database.delete(database.goals).go();
+    remote.result = _result(LegacyOwnershipVerificationOutcome.verified);
+
+    await repository.verifyCurrentDataSpace();
+
+    expect(remote.lastEvidence, hasLength(1));
+    expect(remote.lastEvidence.single.tableName, 'user_profiles');
   });
 
   test('unknown response records the attempt and remains blocked', () async {
