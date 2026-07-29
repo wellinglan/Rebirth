@@ -62,5 +62,8 @@ No Alpha server deployment is part of Sprint 12C.
 
 ## Manual Status
 
-All items in `docs/manual_tests/38_journal_prompt_system.md` remain
-`NOT EXECUTED`. The three Journal Prompt gates remain open.
+Manual acceptance remains distinct from the automated evidence above. On
+2026-07-30, user acceptance passed all 93 checks in
+`docs/manual_tests/38_journal_prompt_system.md` with no reported failure or
+anomaly. The Journal Prompt System Product, Journal Migration, and Journal
+Prompt Sync gates are `CLOSED / ACCEPTED`.

@@ -762,6 +762,9 @@ explicit conflict recovery.
 
 Flutter schema is 9. API Version remains 1, Sync Protocol remains 2, and the
 PostgreSQL/Alembic schema is unchanged because sync payloads remain JSON.
-Publishing a new API image is required after CI, but Sprint 12C must not
-automatically deploy it to the Beijing Alpha server. Manual gates remain open;
-see `docs/manual_tests/38_journal_prompt_system.md`.
+Publishing a new API image was required after CI, but Sprint 12C did not
+automatically deploy it to the Beijing Alpha server. On 2026-07-30, user
+acceptance passed all 93 manual checks with no reported failure or anomaly.
+The Journal Prompt System Product, Journal Migration, and Journal Prompt Sync
+gates are `CLOSED / ACCEPTED`; see
+`docs/manual_tests/38_journal_prompt_system.md`.

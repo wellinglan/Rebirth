@@ -155,9 +155,11 @@ automatically, or implement a reusable Prompt Template aggregate.
 
 ## 9. Gates
 
-- Journal Prompt System Product Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
-- Journal Migration Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
-- Journal Prompt Sync Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
+- Journal Prompt System Product Gate: `CLOSED / ACCEPTED`
+- Journal Migration Gate: `CLOSED / ACCEPTED`
+- Journal Prompt Sync Gate: `CLOSED / ACCEPTED`
 - Account Boundary Isolation Gate: `CLOSED / ACCEPTED`
 
-The manual matrix is `docs/manual_tests/38_journal_prompt_system.md`.
+User acceptance on 2026-07-30 passed all 93 manual checks with no reported
+failure or anomaly. The manual matrix is
+`docs/manual_tests/38_journal_prompt_system.md`.
