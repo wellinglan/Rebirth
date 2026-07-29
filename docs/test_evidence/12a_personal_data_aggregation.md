@@ -56,5 +56,8 @@ Multiprocess/Multiworker all completed successfully. The workflow emitted only
 the existing non-blocking Node.js 20 deprecation notice. Publish Alpha Images
 was `NOT RUN` because no Server or image-workflow path changed.
 
-`AUTOMATED PASS` does not change the 54-row manual matrix in
+This automated evidence remains distinct from manual acceptance. On
+2026-07-29, the user reported 49 manual checks as `PASS`; the five provider
+failure checks remain honestly recorded as `NOT EXECUTED` because no safe
+product-level fault injection is available. See
 `docs/manual_tests/36_personal_data_aggregation.md`.

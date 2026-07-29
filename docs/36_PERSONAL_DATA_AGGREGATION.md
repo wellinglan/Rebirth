@@ -263,7 +263,9 @@ rendering.
 ## 19. Manual Gate
 
 Manual acceptance is tracked in
-`docs/manual_tests/36_personal_data_aggregation.md`. Every row begins as
-`NOT EXECUTED`. Automated evidence cannot close the Personal Data Aggregation
-Product Gate. Account Boundary remains under its existing conditional gate
-when no independent isolation environment is available.
+`docs/manual_tests/36_personal_data_aggregation.md`. On 2026-07-29, all 49
+safely executable checks passed on Windows and Android. The five provider
+failure checks remain `NOT EXECUTED` because no safe product operation can
+force a local provider failure; automated fault-injection evidence covers
+those internal invariants. The Personal Data Aggregation Product Gate and
+Account Boundary Isolation Gate are `CLOSED / ACCEPTED`.

@@ -717,6 +717,11 @@ Endpoint, refreshes JWT, or modifies account binding.
 
 Flutter schema remains 8, API remains 1, Sync Protocol remains 2, and
 PostgreSQL/Alembic/Server runtime are unchanged. No Alpha API deployment is
-required. Design is in `docs/36_PERSONAL_DATA_AGGREGATION.md`; manual product
-acceptance begins as `NOT EXECUTED` in
-`docs/manual_tests/36_personal_data_aggregation.md`.
+required. Design is in `docs/36_PERSONAL_DATA_AGGREGATION.md`.
+
+On 2026-07-29, Windows and Android product acceptance passed all 49 safely
+executable checks. Five provider-failure rows remain `NOT EXECUTED` because
+there is no safe product operation for fault injection; the corresponding
+internal invariants have automated coverage. Independent-account checks all
+passed. The Personal Data Aggregation Product Gate and Account Boundary
+Isolation Gate are `CLOSED / ACCEPTED`.
