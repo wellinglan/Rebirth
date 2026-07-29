@@ -1,7 +1,7 @@
 # Rebirth Growth System Foundation
 
 > Sprint: 12B
-> Status: implemented; manual product gates remain open
+> Status: implemented; manual product gates closed and accepted
 > Flutter schema: 8
 > API: 1
 > Sync Protocol: 2
@@ -215,6 +215,13 @@ Do not modify `GrowthProjectionEngine` for a new contributor.
 Manual acceptance is tracked in
 `docs/manual_tests/37_growth_system_foundation.md`.
 
-- Growth System Product Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
-- Journal State Semantics Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
+- Growth System Product Gate: `CLOSED / ACCEPTED`
+- Journal State Semantics Gate: `CLOSED / ACCEPTED`
 - Account Boundary Isolation Gate: `CLOSED / ACCEPTED`
+
+On 2026-07-29, Windows and Android acceptance passed all 71 safely executable
+checks, including Journal lifecycle, cross-device conflict recovery, Growth
+source accuracy, privacy, independent-account isolation, 320px layout, maximum
+font size, and keyboard operation. Six partial-availability rows remain
+`NOT EXECUTED` because no safe product-level Provider or Contributor failure
+injection is available; automated tests cover those internal invariants.

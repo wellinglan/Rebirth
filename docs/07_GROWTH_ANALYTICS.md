@@ -2,7 +2,7 @@
 
 > Status: Sprint 12B extensible foundation implemented
 > Scope: local read-only 7-day and 30-day projections
-> Product gates: manual acceptance required
+> Product gates: CLOSED / ACCEPTED on 2026-07-29
 
 ## Product Positioning
 

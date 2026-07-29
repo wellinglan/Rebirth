@@ -742,5 +742,12 @@ automatic sync is introduced.
 Flutter schema remains 8, API remains 1, Sync Protocol remains 2, and
 PostgreSQL schema, Alembic, and Server runtime are unchanged. No Alpha API image
 or deployment is required. Design is in
-`docs/37_GROWTH_SYSTEM_FOUNDATION.md`; both new product gates remain open until
-the `docs/manual_tests/37_growth_system_foundation.md` matrix is executed.
+`docs/37_GROWTH_SYSTEM_FOUNDATION.md`.
+
+On 2026-07-29, Windows and Android acceptance passed all 71 safely executable
+checks with no reported anomaly. Six partial-availability rows remain
+`NOT EXECUTED` because no safe product-level fault injection is available.
+Journal draft, complete, reopen, cross-device conflict recovery, Growth source
+accuracy, privacy, independent-account isolation, 320px layout, maximum font
+size, and keyboard operation passed. The Growth System Product Gate and
+Journal State Semantics Gate are `CLOSED / ACCEPTED`.

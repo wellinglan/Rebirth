@@ -1,7 +1,7 @@
 # Manual Test: Growth System Foundation And Journal State Semantics
 
 > Sprint: 12B
-> Status: NOT EXECUTED
+> Status: ACCEPTED (71 PASS / 6 NOT EXECUTED)
 > Baseline: `5b832d492b00be5508e080f134ad79cf94300411`
 > Flutter schema: 8
 > API: 1
@@ -24,68 +24,68 @@ token, complete Endpoint, raw payload, database copy, or private UUID.
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Create a new Journal | NOT EXECUTED | |
-| 2 | Enter one answer | NOT EXECUTED | |
-| 3 | Select Save Draft | NOT EXECUTED | |
-| 4 | Page displays Draft | NOT EXECUTED | |
-| 5 | Exit and reopen; status remains Draft | NOT EXECUTED | |
-| 6 | Growth displays Draft for that date | NOT EXECUTED | |
-| 7 | Personal Data Overview displays the correct stable status | NOT EXECUTED | |
-| 8 | Manual sync preserves Draft on the other device | NOT EXECUTED | |
+| 1 | Create a new Journal | PASS | User acceptance, 2026-07-29 |
+| 2 | Enter one answer | PASS | User acceptance, 2026-07-29 |
+| 3 | Select Save Draft | PASS | User acceptance, 2026-07-29 |
+| 4 | Page displays Draft | PASS | User acceptance, 2026-07-29 |
+| 5 | Exit and reopen; status remains Draft | PASS | User acceptance, 2026-07-29 |
+| 6 | Growth displays Draft for that date | PASS | User acceptance, 2026-07-29 |
+| 7 | Personal Data Overview displays the correct stable status | PASS | User acceptance, 2026-07-29 |
+| 8 | Manual sync preserves Draft on the other device | PASS | Cross-device acceptance, 2026-07-29 |
 
 ## B. Journal Complete
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | A new Journal can be completed directly | NOT EXECUTED | |
-| 2 | A Draft Journal can be completed | NOT EXECUTED | |
-| 3 | Complete saves current unsaved edits | NOT EXECUTED | |
-| 4 | Page displays Completed | NOT EXECUTED | |
-| 5 | Growth displays Completed | NOT EXECUTED | |
-| 6 | Restart preserves Completed | NOT EXECUTED | |
-| 7 | Manual sync preserves Completed on the other device | NOT EXECUTED | |
-| 8 | Completing does not start automatic sync | NOT EXECUTED | |
+| 1 | A new Journal can be completed directly | PASS | User acceptance, 2026-07-29 |
+| 2 | A Draft Journal can be completed | PASS | User acceptance, 2026-07-29 |
+| 3 | Complete saves current unsaved edits | PASS | User acceptance, 2026-07-29 |
+| 4 | Page displays Completed | PASS | User acceptance, 2026-07-29 |
+| 5 | Growth displays Completed | PASS | User acceptance, 2026-07-29 |
+| 6 | Restart preserves Completed | PASS | Persistence acceptance, 2026-07-29 |
+| 7 | Manual sync preserves Completed on the other device | PASS | Cross-device acceptance, 2026-07-29 |
+| 8 | Completing does not start automatic sync | PASS | User acceptance, 2026-07-29 |
 
 ## C. Journal Reopen
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Completed Journal displays Reopen/Edit | NOT EXECUTED | |
-| 2 | Reopen requires confirmation | NOT EXECUTED | |
-| 3 | Confirming changes status to Draft | NOT EXECUTED | |
-| 4 | Existing content remains intact | NOT EXECUTED | |
-| 5 | Growth refresh displays Draft | NOT EXECUTED | |
-| 6 | Manual sync changes the other device to Draft | NOT EXECUTED | |
-| 7 | Cancelling confirmation changes nothing | NOT EXECUTED | |
+| 1 | Completed Journal displays Reopen/Edit | PASS | User acceptance, 2026-07-29 |
+| 2 | Reopen requires confirmation | PASS | User acceptance, 2026-07-29 |
+| 3 | Confirming changes status to Draft | PASS | User acceptance, 2026-07-29 |
+| 4 | Existing content remains intact | PASS | User acceptance, 2026-07-29 |
+| 5 | Growth refresh displays Draft | PASS | User acceptance, 2026-07-29 |
+| 6 | Manual sync changes the other device to Draft | PASS | Cross-device acceptance, 2026-07-29 |
+| 7 | Cancelling confirmation changes nothing | PASS | User acceptance, 2026-07-29 |
 
 ## D. Status Conflict
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Both devices start from the same Completed entry and go offline | NOT EXECUTED | |
-| 2 | One device keeps and edits Completed state | NOT EXECUTED | |
-| 3 | The other device reopens it as Draft | NOT EXECUTED | |
-| 4 | The first device synchronizes successfully | NOT EXECUTED | |
-| 5 | The second device receives an explicit conflict | NOT EXECUTED | |
-| 6 | The app does not automatically prefer Completed | NOT EXECUTED | |
-| 7 | Adopt Remote converges state and content | NOT EXECUTED | |
-| 8 | Repeat scenario; Keep Local converges state and content | NOT EXECUTED | |
-| 9 | Final status and body stay internally consistent | NOT EXECUTED | |
+| 1 | Both devices start from the same Completed entry and go offline | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 2 | One device keeps and edits Completed state | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 3 | The other device reopens it as Draft | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 4 | The first device synchronizes successfully | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 5 | The second device receives an explicit conflict | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 6 | The app does not automatically prefer Completed | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 7 | Adopt Remote converges state and content | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 8 | Repeat scenario; Keep Local converges state and content | PASS | Cross-device conflict acceptance, 2026-07-29 |
+| 9 | Final status and body stay internally consistent | PASS | Cross-device conflict acceptance, 2026-07-29 |
 
 ## E. Growth Source
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Growth reads the local Personal Data aggregation result | NOT EXECUTED | |
-| 2 | Focus values match saved research and learning minutes | NOT EXECUTED | |
-| 3 | Recovery values match saved sleep and exercise minutes | NOT EXECUTED | |
-| 4 | Subjective State matches saved Mood and Energy | NOT EXECUTED | |
-| 5 | Reflection matches missing, Draft, and Completed dates | NOT EXECUTED | |
-| 6 | Source labels are understandable | NOT EXECUTED | |
-| 7 | Observed-day coverage is correct | NOT EXECUTED | |
-| 8 | Missing-day coverage is correct | NOT EXECUTED | |
-| 9 | Missing values are not displayed or calculated as zero | NOT EXECUTED | |
-| 10 | No value judgment or fabricated comparison appears | NOT EXECUTED | |
+| 1 | Growth reads the local Personal Data aggregation result | PASS | User acceptance, 2026-07-29 |
+| 2 | Focus values match saved research and learning minutes | PASS | User acceptance, 2026-07-29 |
+| 3 | Recovery values match saved sleep and exercise minutes | PASS | User acceptance, 2026-07-29 |
+| 4 | Subjective State matches saved Mood and Energy | PASS | User acceptance, 2026-07-29 |
+| 5 | Reflection matches missing, Draft, and Completed dates | PASS | User acceptance, 2026-07-29 |
+| 6 | Source labels are understandable | PASS | User acceptance, 2026-07-29 |
+| 7 | Observed-day coverage is correct | PASS | User acceptance, 2026-07-29 |
+| 8 | Missing-day coverage is correct | PASS | User acceptance, 2026-07-29 |
+| 9 | Missing values are not displayed or calculated as zero | PASS | User acceptance, 2026-07-29 |
+| 10 | No value judgment or fabricated comparison appears | PASS | User acceptance, 2026-07-29 |
 
 ## F. Partial Availability
 
@@ -100,61 +100,63 @@ token, complete Endpoint, raw payload, database copy, or private UUID.
 
 Keep these rows `NOT EXECUTED` when a real provider or contributor cannot be
 made to fail safely. Automated fault injection is not manual acceptance.
+No safe product-level fault injection was available during acceptance on
+2026-07-29, so all six rows remain `NOT EXECUTED`.
 
 ## G. Privacy
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Growth displays no Journal body | NOT EXECUTED | |
-| 2 | Growth displays no Health note | NOT EXECUTED | |
-| 3 | Growth displays no complete UUID | NOT EXECUTED | |
-| 4 | Growth displays no User Key | NOT EXECUTED | |
-| 5 | Growth displays no token | NOT EXECUTED | |
-| 6 | Growth displays no Endpoint | NOT EXECUTED | |
-| 7 | Opening or refreshing Growth triggers no AI request | NOT EXECUTED | |
-| 8 | Growth Evidence is not uploaded | NOT EXECUTED | |
-| 9 | Recovery is visibly marked highly sensitive | NOT EXECUTED | |
-| 10 | No medical or psychological judgment appears | NOT EXECUTED | |
+| 1 | Growth displays no Journal body | PASS | Privacy acceptance, 2026-07-29 |
+| 2 | Growth displays no Health note | PASS | Privacy acceptance, 2026-07-29 |
+| 3 | Growth displays no complete UUID | PASS | Privacy acceptance, 2026-07-29 |
+| 4 | Growth displays no User Key | PASS | Privacy acceptance, 2026-07-29 |
+| 5 | Growth displays no token | PASS | Privacy acceptance, 2026-07-29 |
+| 6 | Growth displays no Endpoint | PASS | Privacy acceptance, 2026-07-29 |
+| 7 | Opening or refreshing Growth triggers no AI request | PASS | Privacy acceptance, 2026-07-29 |
+| 8 | Growth Evidence is not uploaded | PASS | Privacy acceptance, 2026-07-29 |
+| 9 | Recovery is visibly marked highly sensitive | PASS | Privacy acceptance, 2026-07-29 |
+| 10 | No medical or psychological judgment appears | PASS | Privacy acceptance, 2026-07-29 |
 
 ## H. Account Boundary
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Account A displays only Account A Growth | NOT EXECUTED | |
-| 2 | Logout removes Account A Growth from view | NOT EXECUTED | |
-| 3 | Account B does not display Account A Growth | NOT EXECUTED | |
-| 4 | Re-login to Account A restores Account A Growth | NOT EXECUTED | |
-| 5 | Authenticated-offline mode can use Growth | NOT EXECUTED | |
-| 6 | Binding-required state cannot enter Growth | NOT EXECUTED | |
+| 1 | Account A displays only Account A Growth | PASS | Independent account acceptance, 2026-07-29 |
+| 2 | Logout removes Account A Growth from view | PASS | Independent account acceptance, 2026-07-29 |
+| 3 | Account B does not display Account A Growth | PASS | Independent account acceptance, 2026-07-29 |
+| 4 | Re-login to Account A restores Account A Growth | PASS | Independent account acceptance, 2026-07-29 |
+| 5 | Authenticated-offline mode can use Growth | PASS | Independent account acceptance, 2026-07-29 |
+| 6 | Binding-required state cannot enter Growth | PASS | Independent account acceptance, 2026-07-29 |
 
 ## I. UI And Accessibility
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Windows release opens Journal and Growth | NOT EXECUTED | |
-| 2 | Android arm64 release opens Journal and Growth | NOT EXECUTED | |
-| 3 | Android portrait remains usable | NOT EXECUTED | |
-| 4 | Narrow Windows layout remains usable | NOT EXECUTED | |
-| 5 | 320px width has no horizontal overflow | NOT EXECUTED | |
-| 6 | Maximum font size keeps states and actions readable | NOT EXECUTED | |
-| 7 | Complete pages remain scrollable | NOT EXECUTED | |
-| 8 | Charts and coverage labels remain understandable | NOT EXECUTED | |
-| 9 | Status and quality do not rely on color alone | NOT EXECUTED | |
-| 10 | Keyboard navigation reaches primary actions | NOT EXECUTED | |
-| 11 | Back navigation changes no state silently | NOT EXECUTED | |
-| 12 | No RenderFlex or horizontal overflow occurs | NOT EXECUTED | |
-| 13 | No crash occurs | NOT EXECUTED | |
+| 1 | Windows release opens Journal and Growth | PASS | Windows release acceptance, 2026-07-29 |
+| 2 | Android arm64 release opens Journal and Growth | PASS | Android release acceptance, 2026-07-29 |
+| 3 | Android portrait remains usable | PASS | Android release acceptance, 2026-07-29 |
+| 4 | Narrow Windows layout remains usable | PASS | Windows release acceptance, 2026-07-29 |
+| 5 | 320px width has no horizontal overflow | PASS | Narrow-layout acceptance, 2026-07-29 |
+| 6 | Maximum font size keeps states and actions readable | PASS | Accessibility acceptance, 2026-07-29 |
+| 7 | Complete pages remain scrollable | PASS | Windows and Android acceptance, 2026-07-29 |
+| 8 | Charts and coverage labels remain understandable | PASS | Windows and Android acceptance, 2026-07-29 |
+| 9 | Status and quality do not rely on color alone | PASS | Windows and Android acceptance, 2026-07-29 |
+| 10 | Keyboard navigation reaches primary actions | PASS | Windows keyboard acceptance, 2026-07-29 |
+| 11 | Back navigation changes no state silently | PASS | Windows and Android acceptance, 2026-07-29 |
+| 12 | No RenderFlex or horizontal overflow occurs | PASS | Windows and Android acceptance, 2026-07-29 |
+| 13 | No crash occurs | PASS | Windows and Android acceptance, 2026-07-29 |
 
 ## Final Gates
 
 | Gate | Status | Notes |
 |---|---|---|
-| Growth System Product Gate | OPEN / MANUAL ACCEPTANCE REQUIRED | All rows start NOT EXECUTED |
-| Journal State Semantics Gate | OPEN / MANUAL ACCEPTANCE REQUIRED | All rows start NOT EXECUTED |
+| Growth System Product Gate | CLOSED / ACCEPTED | 71 executable product checks passed; six safe fault-injection rows remain not executed |
+| Journal State Semantics Gate | CLOSED / ACCEPTED | Draft, complete, reopen, persistence, sync, and conflict checks passed |
 | Account Boundary Isolation Gate | CLOSED / ACCEPTED | Retains Sprint 12A acceptance |
 
 ## Totals
 
 | PASS | FAIL | NOT EXECUTED |
 |---:|---:|---:|
-| 0 | 0 | 77 |
+| 71 | 0 | 6 |

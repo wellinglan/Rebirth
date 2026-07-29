@@ -73,8 +73,13 @@ uses an explicit UTC fixture. No production date, Growth, or aggregation
 semantics changed.
 
 Publish Alpha Images is `NOT RUN` because Sprint 12B changes no Server runtime
-or image workflow. Manual acceptance remains separate and all 77 rows in
-`docs/manual_tests/37_growth_system_foundation.md` remain `NOT EXECUTED`.
+or image workflow.
+
+This automated evidence remains distinct from manual acceptance. On
+2026-07-29, the user reported 71 manual checks as `PASS` with no anomaly. The
+six partial-availability checks remain honestly recorded as `NOT EXECUTED`
+because no safe product-level Provider or Contributor fault injection is
+available. See `docs/manual_tests/37_growth_system_foundation.md`.
 
 The Android release build retains the existing non-blocking CupertinoIcons
 asset warning.
