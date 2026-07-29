@@ -84,7 +84,10 @@ class _JournalPageState extends ConsumerState<JournalPage> {
             JournalForm(
               entry: entry,
               recordDate: entry?.entryDate ?? today,
-              onSave: (data) => _saveTodayEntry(ref, data),
+              onSaveDraft: (data) =>
+                  _saveTodayEntry(ref, data, complete: false),
+              onComplete: (data) => _saveTodayEntry(ref, data, complete: true),
+              onReopen: entry == null ? null : () => _reopenTodayEntry(ref),
               onDelete: entry == null
                   ? null
                   : () => _confirmDelete(context, entry),
@@ -150,10 +153,26 @@ class _JournalPageState extends ConsumerState<JournalPage> {
     await context.push(RoutePaths.aiCoachDaily(recordDate));
   }
 
-  Future<void> _saveTodayEntry(WidgetRef ref, JournalSaveData data) async {
-    await ref
-        .read(journalTodayControllerProvider.notifier)
-        .saveTodayEntry(data);
+  Future<void> _saveTodayEntry(
+    WidgetRef ref,
+    JournalSaveData data, {
+    required bool complete,
+  }) async {
+    final controller = ref.read(journalTodayControllerProvider.notifier);
+    if (complete) {
+      await controller.completeReflection(data);
+    } else {
+      await controller.saveDraft(data);
+    }
+    await _reloadJournalHistory(ref);
+  }
+
+  Future<void> _reopenTodayEntry(WidgetRef ref) async {
+    await ref.read(journalTodayControllerProvider.notifier).reopen();
+    await _reloadJournalHistory(ref);
+  }
+
+  Future<void> _reloadJournalHistory(WidgetRef ref) async {
     try {
       await ref.read(journalControllerProvider.notifier).reload();
     } catch (_) {

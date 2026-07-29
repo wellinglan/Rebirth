@@ -9,7 +9,9 @@ class JournalForm extends StatefulWidget {
   const JournalForm({
     required this.entry,
     required this.recordDate,
-    required this.onSave,
+    required this.onSaveDraft,
+    required this.onComplete,
+    this.onReopen,
     this.onOpenDailyInsight,
     this.onDelete,
     super.key,
@@ -17,7 +19,9 @@ class JournalForm extends StatefulWidget {
 
   final JournalEntry? entry;
   final String recordDate;
-  final Future<void> Function(JournalSaveData data) onSave;
+  final Future<void> Function(JournalSaveData data) onSaveDraft;
+  final Future<void> Function(JournalSaveData data) onComplete;
+  final Future<void> Function()? onReopen;
   final void Function(String recordDate, bool hasUnsavedChanges)?
   onOpenDailyInsight;
   final VoidCallback? onDelete;
@@ -35,6 +39,8 @@ class _JournalFormState extends State<JournalForm> {
 
   bool _isSaving = false;
   String? _contentError;
+
+  bool get _isCompleted => widget.entry?.status == JournalEntryStatus.completed;
 
   List<TextEditingController> get _controllers => [
     _accomplishmentController,
@@ -74,6 +80,7 @@ class _JournalFormState extends State<JournalForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final status = widget.entry?.status;
 
     return Padding(
       padding: AppLayout.pagePadding,
@@ -117,12 +124,25 @@ class _JournalFormState extends State<JournalForm> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (status != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Semantics(
+                  label: '记录状态：${status.displayLabel}',
+                  container: true,
+                  child: Text(
+                    '记录状态：${status.displayLabel}',
+                    key: const ValueKey('journalStatusLabel'),
+                    style: theme.textTheme.labelLarge,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               JournalQuestionField(
                 question: '今天最重要的完成是什么？',
                 controller: _accomplishmentController,
                 fieldKey: const ValueKey('journalAccomplishmentField'),
                 onChanged: _handleChanged,
+                readOnly: _isCompleted,
               ),
               const SizedBox(height: 16),
               JournalQuestionField(
@@ -130,6 +150,7 @@ class _JournalFormState extends State<JournalForm> {
                 controller: _drainingController,
                 fieldKey: const ValueKey('journalDrainingField'),
                 onChanged: _handleChanged,
+                readOnly: _isCompleted,
               ),
               const SizedBox(height: 16),
               JournalQuestionField(
@@ -137,6 +158,7 @@ class _JournalFormState extends State<JournalForm> {
                 controller: _emotionController,
                 fieldKey: const ValueKey('journalEmotionField'),
                 onChanged: _handleChanged,
+                readOnly: _isCompleted,
               ),
               const SizedBox(height: 16),
               JournalQuestionField(
@@ -144,6 +166,7 @@ class _JournalFormState extends State<JournalForm> {
                 controller: _learningController,
                 fieldKey: const ValueKey('journalLearningField'),
                 onChanged: _handleChanged,
+                readOnly: _isCompleted,
               ),
               const SizedBox(height: 16),
               JournalQuestionField(
@@ -151,6 +174,7 @@ class _JournalFormState extends State<JournalForm> {
                 controller: _adjustmentController,
                 fieldKey: const ValueKey('journalAdjustmentField'),
                 onChanged: _handleChanged,
+                readOnly: _isCompleted,
               ),
               if (_contentError != null) ...[
                 const SizedBox(height: 10),
@@ -165,20 +189,54 @@ class _JournalFormState extends State<JournalForm> {
               const SizedBox(height: 24),
               Align(
                 alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  key: const ValueKey('saveJournalButton'),
-                  onPressed: _isSaving ? null : _submit,
-                  icon: _isSaving
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(
-                            key: ValueKey('journalSaveProgressIndicator'),
-                            strokeWidth: 2,
+                child: _isCompleted
+                    ? OutlinedButton.icon(
+                        key: const ValueKey('reopenJournalButton'),
+                        onPressed: _isSaving || widget.onReopen == null
+                            ? null
+                            : _confirmReopen,
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('重新编辑'),
+                      )
+                    : Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        alignment: WrapAlignment.end,
+                        children: [
+                          OutlinedButton.icon(
+                            key: const ValueKey('saveJournalButton'),
+                            onPressed: _isSaving
+                                ? null
+                                : () => _submit(
+                                    status: JournalEntryStatus.draft,
+                                    operation: widget.onSaveDraft,
+                                  ),
+                            icon: const Icon(Icons.save_outlined),
+                            label: const Text('保存草稿'),
                           ),
-                        )
-                      : const Icon(Icons.save_outlined),
-                  label: Text(_isSaving ? '保存中...' : '保存复盘'),
-                ),
+                          FilledButton.icon(
+                            key: const ValueKey('completeJournalButton'),
+                            onPressed: _isSaving
+                                ? null
+                                : () => _submit(
+                                    status: JournalEntryStatus.completed,
+                                    operation: widget.onComplete,
+                                  ),
+                            icon: _isSaving
+                                ? const SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      key: ValueKey(
+                                        'journalSaveProgressIndicator',
+                                      ),
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.check_circle_outline),
+                            label: Text(_isSaving ? '处理中...' : '完成复盘'),
+                          ),
+                        ],
+                      ),
               ),
             ],
           ),
@@ -187,56 +245,97 @@ class _JournalFormState extends State<JournalForm> {
     );
   }
 
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-
-    final values = _controllers
-        .map((controller) => _nullableText(controller.text))
-        .toList(growable: false);
-    if (values.every((value) => value == null)) {
-      setState(() => _contentError = '至少填写一项复盘内容');
-      return;
-    }
-
-    final data = JournalSaveData(
-      mostImportantAccomplishment: values[0],
-      mostDrainingEvent: values[1],
-      emotionSource: values[2],
-      learning: values[3],
-      tomorrowAdjustment: values[4],
-      status: widget.entry?.status ?? JournalEntryStatus.draft,
-    );
+  Future<void> _submit({
+    required JournalEntryStatus status,
+    required Future<void> Function(JournalSaveData data) operation,
+  }) async {
+    if (_isSaving) return;
+    final data = _buildData(status);
+    if (data == null) return;
 
     setState(() {
       _contentError = null;
       _isSaving = true;
     });
     try {
-      await widget.onSave(data);
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('今日复盘已保存')));
-      }
+      await operation(data);
+      if (!mounted) return;
+      final message = status == JournalEntryStatus.completed
+          ? '今日复盘已完成'
+          : '复盘草稿已保存';
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('保存失败，请重试')));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('操作失败，内容已保留，请重试')));
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  void _handleChanged(String value) {
-    if (_contentError != null) {
-      setState(() => _contentError = null);
+  Future<void> _confirmReopen() async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            key: const ValueKey('confirmReopenJournalDialog'),
+            title: const Text('重新编辑这篇复盘？'),
+            content: const Text('确认后记录会变为草稿，已有内容不会丢失。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmReopenJournalButton'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('重新编辑'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted || _isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      await widget.onReopen!();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('记录已重新变为草稿')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('重新编辑失败，请稍后重试')));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  JournalSaveData? _buildData(JournalEntryStatus status) {
+    final values = _controllers
+        .map((controller) => _nullableText(controller.text))
+        .toList(growable: false);
+    if (values.every((value) => value == null)) {
+      setState(() => _contentError = '至少填写一项复盘内容');
+      return null;
+    }
+    return JournalSaveData(
+      mostImportantAccomplishment: values[0],
+      mostDrainingEvent: values[1],
+      emotionSource: values[2],
+      learning: values[3],
+      tomorrowAdjustment: values[4],
+      status: status,
+    );
+  }
+
+  void _handleChanged(String value) {
+    if (_contentError != null) setState(() => _contentError = null);
   }
 
   void _syncFromEntry(JournalEntry? entry) {

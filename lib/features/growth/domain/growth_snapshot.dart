@@ -1,6 +1,7 @@
 import 'growth_day_snapshot.dart';
 import 'growth_metric_summary.dart';
 import 'growth_period.dart';
+import 'growth_projection.dart';
 
 final class GrowthSnapshot {
   GrowthSnapshot({
@@ -16,6 +17,7 @@ final class GrowthSnapshot {
     required this.energySummary,
     required this.journalRecordedDays,
     required this.journalCompletedDays,
+    this.projection,
   }) : days = List<GrowthDaySnapshot>.unmodifiable(days) {
     if (days.length != period.days) {
       throw ArgumentError.value(
@@ -48,4 +50,5 @@ final class GrowthSnapshot {
   final GrowthMetricSummary energySummary;
   final int journalRecordedDays;
   final int journalCompletedDays;
+  final GrowthProjection? projection;
 }

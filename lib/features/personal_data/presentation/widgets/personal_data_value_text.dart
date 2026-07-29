@@ -15,7 +15,7 @@ String formatPersonalDataValue(PersonalDataValue value, {String? unit}) {
     PersonalDataDateValue(:final value) => value,
     PersonalDataDateTimeValue(:final value) => _formatDateTime(value),
     PersonalDataPercentageValue(:final value) => '${_formatNumber(value)}%',
-    PersonalDataCategoricalValue(:final value) => value,
+    PersonalDataCategoricalValue(:final value) => _formatCategory(value),
     PersonalDataPresenceValue(:final isPresent) => isPresent ? '是' : '否',
   };
   return unit == null || unit.trim().isEmpty ? formatted : '$formatted $unit';
@@ -47,6 +47,13 @@ class PersonalDataValueText extends StatelessWidget {
 String _formatNumber(num value) {
   return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
 }
+
+String _formatCategory(String value) => switch (value) {
+  'draft' => '草稿',
+  'completed' => '已完成',
+  'missing' => '未记录',
+  _ => value,
+};
 
 String _formatDuration(int minutes) {
   final hours = minutes ~/ 60;

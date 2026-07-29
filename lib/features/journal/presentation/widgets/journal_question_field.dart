@@ -6,6 +6,7 @@ class JournalQuestionField extends StatelessWidget {
     required this.controller,
     required this.fieldKey,
     required this.onChanged,
+    this.readOnly = false,
     super.key,
   });
 
@@ -13,6 +14,7 @@ class JournalQuestionField extends StatelessWidget {
   final TextEditingController controller;
   final Key fieldKey;
   final ValueChanged<String> onChanged;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -23,12 +25,13 @@ class JournalQuestionField extends StatelessWidget {
       maxLines: 6,
       keyboardType: TextInputType.multiline,
       textInputAction: TextInputAction.newline,
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: question,
         alignLabelWithHint: true,
         border: const OutlineInputBorder(),
       ),
-      onChanged: onChanged,
+      onChanged: readOnly ? null : onChanged,
     );
   }
 }

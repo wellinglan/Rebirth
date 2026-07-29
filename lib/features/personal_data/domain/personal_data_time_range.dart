@@ -56,6 +56,29 @@ final class PersonalDataTimeRange {
     );
   }
 
+  factory PersonalDataTimeRange.forSystemLocalDateRange({
+    required String startLocalDate,
+    required String endLocalDateInclusive,
+  }) {
+    final startParts = _parseLocalDate(startLocalDate);
+    final endParts = _parseLocalDate(endLocalDateInclusive);
+    if (startLocalDate.compareTo(endLocalDateInclusive) > 0) {
+      throw ArgumentError('Local date range must be increasing.');
+    }
+    final startLocal = DateTime(startParts.$1, startParts.$2, startParts.$3);
+    final endExclusiveLocal = DateTime(
+      endParts.$1,
+      endParts.$2,
+      endParts.$3 + 1,
+    );
+    return PersonalDataTimeRange(
+      startInclusiveUtc: startLocal.toUtc(),
+      endExclusiveUtc: endExclusiveLocal.toUtc(),
+      startLocalDate: startLocalDate,
+      endLocalDateInclusive: endLocalDateInclusive,
+    );
+  }
+
   final DateTime startInclusiveUtc;
   final DateTime endExclusiveUtc;
   final String startLocalDate;

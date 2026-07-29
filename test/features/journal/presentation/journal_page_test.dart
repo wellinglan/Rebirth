@@ -122,8 +122,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('完成关键实验'), findsWidgets);
-    expect(find.text('已复盘'), findsOneWidget);
-    expect(find.text('草稿'), findsNothing);
+    expect(find.text('记录状态：草稿'), findsOneWidget);
+    expect(find.text('历史复盘 · 草稿'), findsOneWidget);
   });
 
   testWidgets('Daily Insight entry warns before ignoring unsaved edits', (
@@ -197,12 +197,8 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: dialog, matching: find.text('已复盘')),
+      find.descendant(of: dialog, matching: find.text('历史复盘 · 草稿')),
       findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('草稿')),
-      findsNothing,
     );
 
     final question = tester.widget<Text>(
@@ -240,11 +236,7 @@ void main() {
       entry: savedEntry,
       historyEntries: [savedEntry],
     );
-    await _pumpJournalPage(
-      tester,
-      repository,
-      targetDate: '2026-07-13',
-    );
+    await _pumpJournalPage(tester, repository, targetDate: '2026-07-13');
     await tester.pumpAndSettle();
 
     final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
@@ -275,61 +267,56 @@ void main() {
     tester,
   ) async {
     final repository = _FakeJournalRepository(entry: _sampleEntry());
-    await _pumpJournalPage(
-      tester,
-      repository,
-      targetDate: '2026-07-10',
-    );
+    await _pumpJournalPage(tester, repository, targetDate: '2026-07-10');
     await tester.pumpAndSettle();
 
     expect(find.text('未找到 2026-07-10 的 Journal 记录。'), findsOneWidget);
-    expect(find.byKey(const ValueKey('journalEntryDetailDialog')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('journalEntryDetailDialog')),
+      findsNothing,
+    );
   });
 
   testWidgets('invalid Journal date is safe and skips repository lookup', (
     tester,
   ) async {
     final repository = _FakeJournalRepository(entry: _sampleEntry());
-    await _pumpJournalPage(
-      tester,
-      repository,
-      targetDate: '2026-02-30',
-    );
+    await _pumpJournalPage(tester, repository, targetDate: '2026-02-30');
     await tester.pumpAndSettle();
 
     expect(find.text('日期参数无效，无法定位 Journal 记录。'), findsOneWidget);
     expect(repository.listByDateCalls, 0);
-    expect(find.byKey(const ValueKey('journalEntryDetailDialog')), findsNothing);
-  });
-
-  testWidgets('exact-date detail reads saved data instead of unsaved form text', (
-    tester,
-  ) async {
-    final repository = _FakeJournalRepository(entry: _sampleEntry());
-    await _pumpJournalPage(tester, repository);
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('journalLearningField')),
-      '尚未保存且不得读取',
-    );
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-    await _pumpJournalPage(
-      tester,
-      repository,
-      targetDate: '2026-07-13',
-    );
-    await tester.pumpAndSettle();
-
-    final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
-    expect(dialog, findsOneWidget);
     expect(
-      find.descendant(of: dialog, matching: find.text('先验证最小假设')),
-      findsOneWidget,
+      find.byKey(const ValueKey('journalEntryDetailDialog')),
+      findsNothing,
     );
-    expect(find.text('尚未保存且不得读取'), findsNothing);
   });
+
+  testWidgets(
+    'exact-date detail reads saved data instead of unsaved form text',
+    (tester) async {
+      final repository = _FakeJournalRepository(entry: _sampleEntry());
+      await _pumpJournalPage(tester, repository);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('journalLearningField')),
+        '尚未保存且不得读取',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await _pumpJournalPage(tester, repository, targetDate: '2026-07-13');
+      await tester.pumpAndSettle();
+
+      final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
+      expect(dialog, findsOneWidget);
+      expect(
+        find.descendant(of: dialog, matching: find.text('先验证最小假设')),
+        findsOneWidget,
+      );
+      expect(find.text('尚未保存且不得读取'), findsNothing);
+    },
+  );
 
   testWidgets('all-empty form shows validation and does not save', (
     tester,
@@ -357,7 +344,7 @@ void main() {
 
     expect(repository.lastSaved?.learning, '学会拆分问题');
     expect(repository.lastSaved?.mostImportantAccomplishment, isNull);
-    expect(find.text('今日复盘已保存'), findsOneWidget);
+    expect(find.text('复盘草稿已保存'), findsOneWidget);
     expect(repository.listRecentCalls, 2);
     expect(
       find.byKey(const ValueKey('journalHistoryItem_journal-id')),
@@ -380,8 +367,8 @@ void main() {
     await tester.tap(saveButton);
     await tester.pump();
 
-    expect(tester.widget<FilledButton>(saveButton).onPressed, isNull);
-    expect(find.text('保存中...'), findsOneWidget);
+    expect(tester.widget<OutlinedButton>(saveButton).onPressed, isNull);
+    expect(find.text('处理中...'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('journalSaveProgressIndicator')),
       findsOneWidget,
@@ -406,7 +393,7 @@ void main() {
 
     await _tapSave(tester);
 
-    expect(find.text('保存失败，请重试'), findsOneWidget);
+    expect(find.text('操作失败，内容已保留，请重试'), findsOneWidget);
     expect(_fieldText(tester, 'journalEmotionField'), '失败后仍然保留');
     expect(find.byKey(const ValueKey('journalErrorState')), findsNothing);
     expect(repository.saveAttempts, 1);
@@ -415,8 +402,81 @@ void main() {
     await _tapSave(tester);
     expect(repository.saveAttempts, 2);
     expect(repository.lastSaved?.emotionSource, '失败后仍然保留');
-    expect(find.text('今日复盘已保存'), findsOneWidget);
+    expect(find.text('复盘草稿已保存'), findsOneWidget);
     expect(repository.listRecentCalls, 2);
+  });
+
+  testWidgets('completing a draft saves current content and locks editing', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(entry: _sampleEntry());
+    await _pumpJournalPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('journalLearningField')),
+      '完成前补充的内容',
+    );
+    final completeButton = find.byKey(const ValueKey('completeJournalButton'));
+    await Scrollable.ensureVisible(
+      tester.element(completeButton),
+      alignment: 0.5,
+    );
+    await tester.tap(completeButton);
+    await tester.pumpAndSettle();
+
+    expect(repository.lastSaved?.status, JournalEntryStatus.completed);
+    expect(repository.lastSaved?.learning, '完成前补充的内容');
+    expect(find.text('记录状态：已完成'), findsOneWidget);
+    expect(find.text('今日复盘已完成'), findsOneWidget);
+    expect(find.byKey(const ValueKey('reopenJournalButton')), findsOneWidget);
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const ValueKey('journalLearningField')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .readOnly,
+      isTrue,
+    );
+  });
+
+  testWidgets('reopening a completed reflection requires confirmation', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(entry: _completedEntry());
+    await _pumpJournalPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('reopenJournalButton')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('confirmReopenJournalDialog')),
+      findsOneWidget,
+    );
+    expect(repository.saveAttempts, 0);
+
+    await tester.tap(find.byKey(const ValueKey('confirmReopenJournalButton')));
+    await tester.pumpAndSettle();
+
+    expect(repository.entry?.status, JournalEntryStatus.draft);
+    expect(find.text('记录状态：草稿'), findsOneWidget);
+    expect(find.text('记录已重新变为草稿'), findsOneWidget);
+    expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const ValueKey('journalLearningField')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .readOnly,
+      isFalse,
+    );
   });
 
   testWidgets('saved content is filled when the page is opened again', (
@@ -538,6 +598,25 @@ JournalEntry _emptyEntry() {
   );
 }
 
+JournalEntry _completedEntry() {
+  final entry = _sampleEntry();
+  return JournalEntry(
+    id: entry.id,
+    userId: entry.userId,
+    todayRecordId: entry.todayRecordId,
+    entryDate: entry.entryDate,
+    timezoneOffsetMinutes: entry.timezoneOffsetMinutes,
+    mostImportantAccomplishment: entry.mostImportantAccomplishment,
+    mostDrainingEvent: entry.mostDrainingEvent,
+    emotionSource: entry.emotionSource,
+    learning: entry.learning,
+    tomorrowAdjustment: entry.tomorrowAdjustment,
+    status: JournalEntryStatus.completed,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+  );
+}
+
 final class _FakeJournalRepository implements JournalRepository {
   _FakeJournalRepository({
     this.entry,
@@ -597,6 +676,32 @@ final class _FakeJournalRepository implements JournalRepository {
       updatedAt: (previous?.updatedAt ?? 0) + 1,
     );
     return entry!;
+  }
+
+  @override
+  Future<JournalEntry> saveDraft(JournalSaveData data) =>
+      saveTodayEntry(data.withStatus(JournalEntryStatus.draft));
+
+  @override
+  Future<JournalEntry> complete(JournalSaveData data) =>
+      saveTodayEntry(data.withStatus(JournalEntryStatus.completed));
+
+  @override
+  Future<JournalEntry> reopen(String id) {
+    final current = entry;
+    if (current == null || current.id != id) {
+      throw JournalEntryNotFoundException(id);
+    }
+    return saveTodayEntry(
+      JournalSaveData(
+        mostImportantAccomplishment: current.mostImportantAccomplishment,
+        mostDrainingEvent: current.mostDrainingEvent,
+        emotionSource: current.emotionSource,
+        learning: current.learning,
+        tomorrowAdjustment: current.tomorrowAdjustment,
+        status: JournalEntryStatus.draft,
+      ),
+    );
   }
 
   @override

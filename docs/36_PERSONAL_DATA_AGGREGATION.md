@@ -260,7 +260,21 @@ rendering.
   forcing a real local database provider failure is not a product operation.
 - Aggregation results are intentionally not cached or persisted.
 
-## 19. Manual Gate
+## 19. Growth Consumer
+
+Sprint 12B establishes Growth as the first formal upper-layer consumer of this
+framework. Growth creates a bounded multi-day query, requests daily-state,
+reflection, and wellbeing capabilities, and passes the unchanged aggregation
+result to an independent contributor registry and projection engine.
+
+Growth does not copy provider extraction logic, read business repositories, or
+add persistence. Provider failures remain structured partial input and are
+isolated again at the contributor boundary. The Personal Data Engine and
+generic overview require no provider-specific change.
+
+See `docs/37_GROWTH_SYSTEM_FOUNDATION.md`.
+
+## 20. Manual Gate
 
 Manual acceptance is tracked in
 `docs/manual_tests/36_personal_data_aggregation.md`. On 2026-07-29, all 49

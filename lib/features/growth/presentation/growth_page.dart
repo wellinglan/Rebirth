@@ -13,6 +13,7 @@ import 'widgets/growth_daily_details.dart';
 import 'widgets/growth_empty_state.dart';
 import 'widgets/growth_error_state.dart';
 import 'widgets/growth_period_selector.dart';
+import 'widgets/growth_projection_overview.dart';
 import 'widgets/growth_summary_grid.dart';
 import 'widgets/journal_coverage_grid.dart';
 import 'widgets/mood_energy_chart.dart';
@@ -163,6 +164,12 @@ class _GrowthContent extends StatelessWidget {
                     Text('周期概览', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: AppLayout.cardGap),
                     GrowthSummaryGrid(snapshot: snapshot),
+                  ],
+                  if (snapshot.projection case final projection?) ...[
+                    const SizedBox(height: AppLayout.sectionGap),
+                    GrowthProjectionOverview(projection: projection),
+                  ],
+                  if (!state.isCompletelyEmpty) ...[
                     const SizedBox(height: AppLayout.sectionGap),
                     FocusTrendChart(
                       research: presentation.research,

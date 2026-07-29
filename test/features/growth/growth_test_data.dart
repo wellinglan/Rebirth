@@ -1,6 +1,7 @@
 import 'package:rebirth/features/growth/domain/growth_day_snapshot.dart';
 import 'package:rebirth/features/growth/domain/growth_metric_summary.dart';
 import 'package:rebirth/features/growth/domain/growth_period.dart';
+import 'package:rebirth/features/growth/domain/growth_projection.dart';
 import 'package:rebirth/features/growth/domain/growth_snapshot.dart';
 
 final class GrowthDayTestData {
@@ -29,6 +30,7 @@ GrowthSnapshot growthTestSnapshot({
   GrowthPeriod period = GrowthPeriod.sevenDays,
   DateTime? endDate,
   GrowthDayTestData Function(int index, String date)? dataForDay,
+  GrowthProjection? projection,
 }) {
   final end = endDate ?? DateTime(2026, 7, 16);
   final start = DateTime(end.year, end.month, end.day - period.days + 1);
@@ -75,6 +77,7 @@ GrowthSnapshot growthTestSnapshot({
     ),
     journalRecordedDays: days.where((day) => day.journalRecorded).length,
     journalCompletedDays: days.where((day) => day.journalCompleted).length,
+    projection: projection,
   );
 }
 

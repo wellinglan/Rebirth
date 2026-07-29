@@ -102,4 +102,35 @@ void main() {
       '重新加载内容',
     );
   });
+
+  test(
+    'draft, complete, and reopen lifecycle updates controller state',
+    () async {
+      await container.read(journalTodayControllerProvider.future);
+      final notifier = container.read(journalTodayControllerProvider.notifier);
+
+      await notifier.saveDraft(const JournalSaveData(learning: '生命周期内容'));
+      expect(
+        container.read(journalTodayControllerProvider).requireValue?.status,
+        JournalEntryStatus.draft,
+      );
+
+      await notifier.completeReflection(
+        const JournalSaveData(learning: '完成时内容'),
+      );
+      final completed = container
+          .read(journalTodayControllerProvider)
+          .requireValue!;
+      expect(completed.status, JournalEntryStatus.completed);
+      expect(completed.learning, '完成时内容');
+
+      await notifier.reopen();
+      final reopened = container
+          .read(journalTodayControllerProvider)
+          .requireValue!;
+      expect(reopened.id, completed.id);
+      expect(reopened.status, JournalEntryStatus.draft);
+      expect(reopened.learning, '完成时内容');
+    },
+  );
 }

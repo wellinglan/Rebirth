@@ -77,7 +77,7 @@ void main() {
     expect(find.text('Mood：3 / 5'), findsOneWidget);
     expect(find.text('Energy：4 / 5'), findsOneWidget);
     expect(find.text('Journal：未记录'), findsWidgets);
-    expect(find.text('Journal：已记录，未完成'), findsOneWidget);
+    expect(find.text('Journal：草稿'), findsOneWidget);
     expect(find.text('Journal：已完成'), findsOneWidget);
   });
 
@@ -114,7 +114,7 @@ void main() {
     expect(
       find.bySemanticsLabel(
         '2026年7月10日；科研：0 分钟；学习：1 小时 5 分钟；睡眠：7 小时；'
-        '运动：未记录；Mood：3 / 5；Energy：4 / 5；Journal：已记录，未完成',
+        '运动：未记录；Mood：3 / 5；Energy：4 / 5；Journal：草稿',
       ),
       findsOneWidget,
     );

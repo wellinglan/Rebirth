@@ -725,3 +725,22 @@ there is no safe product operation for fault injection; the corresponding
 internal invariants have automated coverage. Independent-account checks all
 passed. The Personal Data Aggregation Product Gate and Account Boundary
 Isolation Gate are `CLOSED / ACCEPTED`.
+
+## 30. Sprint 12B Growth System Foundation
+
+Sprint 12B makes Growth the first formal upper-layer consumer of the local
+Personal Data Aggregation Engine. A pure-Dart contributor registry and
+fault-isolated projection engine produce traceable Focus, Recovery, Subjective
+State, and Reflection dimensions. Growth no longer imports Today, Health,
+Journal, or Plan repositories and performs no Drift query.
+
+Journal now exposes explicit Save Draft, Complete Reflection, and confirmed
+Reopen actions. Status remains part of the existing Journal payload and reuses
+manual SyncCoordinator, OCC, tombstone, and conflict-recovery semantics. No
+automatic sync is introduced.
+
+Flutter schema remains 8, API remains 1, Sync Protocol remains 2, and
+PostgreSQL schema, Alembic, and Server runtime are unchanged. No Alpha API image
+or deployment is required. Design is in
+`docs/37_GROWTH_SYSTEM_FOUNDATION.md`; both new product gates remain open until
+the `docs/manual_tests/37_growth_system_foundation.md` matrix is executed.

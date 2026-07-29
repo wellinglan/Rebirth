@@ -103,9 +103,7 @@ final class JournalPersonalDataProvider implements PersonalDataProvider {
               fact(
                 key: 'journal.entry_status',
                 label: '记录状态',
-                value: PersonalDataCategoricalValue(
-                  record.entryStatus == 'completed' ? '已完成' : '草稿',
-                ),
+                value: PersonalDataCategoricalValue(record.entryStatus),
                 sensitivity: sensitivity,
                 priority: 10,
               ),

@@ -1,5 +1,12 @@
 enum JournalEntryStatus { draft, completed }
 
+extension JournalEntryStatusPresentation on JournalEntryStatus {
+  String get displayLabel => switch (this) {
+    JournalEntryStatus.draft => '草稿',
+    JournalEntryStatus.completed => '已完成',
+  };
+}
+
 final class JournalEntry {
   const JournalEntry({
     required this.id,

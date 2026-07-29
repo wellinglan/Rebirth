@@ -16,4 +16,15 @@ final class JournalSaveData {
   final String? learning;
   final String? tomorrowAdjustment;
   final JournalEntryStatus status;
+
+  JournalSaveData withStatus(JournalEntryStatus status) {
+    return JournalSaveData(
+      mostImportantAccomplishment: mostImportantAccomplishment,
+      mostDrainingEvent: mostDrainingEvent,
+      emotionSource: emotionSource,
+      learning: learning,
+      tomorrowAdjustment: tomorrowAdjustment,
+      status: status,
+    );
+  }
 }

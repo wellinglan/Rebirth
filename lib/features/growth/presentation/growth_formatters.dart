@@ -50,7 +50,7 @@ abstract final class GrowthFormatters {
     if (completed) {
       return '已完成';
     }
-    return recorded ? '已记录，未完成' : notRecorded;
+    return recorded ? '草稿' : notRecorded;
   }
 
   static String fullDate(String date) {

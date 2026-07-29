@@ -26,7 +26,7 @@ class JournalCoverageGrid extends StatelessWidget {
       title: '记录覆盖',
       subtitle: 'Journal 内容记录状态',
       footer: Text(
-        '已记录 $recordedDays / ${days.length} 天 · '
+        '草稿 ${recordedDays - completedDays} / ${days.length} 天 · '
         '已完成 $completedDays / ${days.length} 天',
         key: const ValueKey('growthJournalCounts'),
         style: Theme.of(context).textTheme.bodySmall,
@@ -48,10 +48,7 @@ class JournalCoverageGrid extends StatelessWidget {
                 status: GrowthJournalDayStatus.missing,
                 label: '未记录',
               ),
-              _JournalLegend(
-                status: GrowthJournalDayStatus.recordedDraft,
-                label: '已记录',
-              ),
+              _JournalLegend(status: GrowthJournalDayStatus.draft, label: '草稿'),
               _JournalLegend(
                 status: GrowthJournalDayStatus.completed,
                 label: '已完成',
@@ -152,7 +149,7 @@ class _JournalLegend extends StatelessWidget {
       foreground: colors.onSurfaceVariant,
       icon: Icons.remove,
     ),
-    GrowthJournalDayStatus.recordedDraft => (
+    GrowthJournalDayStatus.draft => (
       background: colors.tertiaryContainer,
       border: colors.tertiary,
       foreground: colors.onTertiaryContainer,
@@ -170,7 +167,7 @@ class _JournalLegend extends StatelessWidget {
 String _labelFor(GrowthJournalDayStatus status) {
   return switch (status) {
     GrowthJournalDayStatus.missing => '未记录',
-    GrowthJournalDayStatus.recordedDraft => '有内容，尚未完成',
-    GrowthJournalDayStatus.completed => '有内容，已完成',
+    GrowthJournalDayStatus.draft => '草稿',
+    GrowthJournalDayStatus.completed => '已完成',
   };
 }

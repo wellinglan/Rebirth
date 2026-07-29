@@ -49,7 +49,7 @@ final class GrowthPresentationMapper {
             final status = day.journalCompleted
                 ? GrowthJournalDayStatus.completed
                 : day.journalRecorded
-                ? GrowthJournalDayStatus.recordedDraft
+                ? GrowthJournalDayStatus.draft
                 : GrowthJournalDayStatus.missing;
             return GrowthJournalDay(date: day.date, status: status);
           })

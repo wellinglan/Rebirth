@@ -31,7 +31,7 @@ final class GrowthChartSeries {
       recordedPointCount == 0 ? null : total / recordedPointCount;
 }
 
-enum GrowthJournalDayStatus { missing, recordedDraft, completed }
+enum GrowthJournalDayStatus { missing, draft, completed }
 
 final class GrowthJournalDay {
   const GrowthJournalDay({required this.date, required this.status});

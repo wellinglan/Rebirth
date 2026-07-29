@@ -198,6 +198,58 @@ void main() {
     },
   );
 
+  test('saveDraft and complete atomically persist content and status', () async {
+    final draft = await repository.saveDraft(
+      const JournalSaveData(learning: 'draft content'),
+    );
+    expect(draft.status, domain.JournalEntryStatus.draft);
+
+    currentTime = currentTime.add(const Duration(minutes: 5));
+    final completed = await repository.complete(
+      const JournalSaveData(
+        learning: 'current unsaved content',
+        tomorrowAdjustment: 'next step',
+      ),
+    );
+    final raw = await database.select(database.journalEntries).getSingle();
+
+    expect(completed.id, draft.id);
+    expect(completed.status, domain.JournalEntryStatus.completed);
+    expect(completed.learning, 'current unsaved content');
+    expect(completed.tomorrowAdjustment, 'next step');
+    expect(raw.entryStatus, 'completed');
+    expect(raw.syncStatus, 'pending');
+  });
+
+  test('reopen preserves content and serverVersion while marking pending', () async {
+    final completed = await repository.complete(
+      const JournalSaveData(learning: 'keep this content'),
+    );
+    await (database.update(
+      database.journalEntries,
+    )..where((row) => row.id.equals(completed.id))).write(
+      const JournalEntriesCompanion(
+        syncStatus: Value('synced'),
+        serverVersion: Value(7),
+        lastSyncedAt: Value(1234),
+      ),
+    );
+    currentTime = currentTime.add(const Duration(minutes: 10));
+
+    final reopened = await repository.reopen(completed.id);
+    final raw = await database.select(database.journalEntries).getSingle();
+    final settings = await database.select(database.appSettings).getSingle();
+
+    expect(reopened.status, domain.JournalEntryStatus.draft);
+    expect(reopened.learning, 'keep this content');
+    expect(raw.entryStatus, 'draft');
+    expect(raw.syncStatus, 'pending');
+    expect(raw.serverVersion, 7);
+    expect(raw.lastSyncedAt, 1234);
+    expect(raw.originDeviceId, settings.localInstallationId);
+    expect(raw.updatedAt, currentTime.toUtc().millisecondsSinceEpoch);
+  });
+
   test('softDelete hides but does not physically remove the row', () async {
     final created = await repository.createEntry(
       const JournalSaveData(learning: '即将软删除'),

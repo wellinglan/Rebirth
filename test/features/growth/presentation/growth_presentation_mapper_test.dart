@@ -79,7 +79,7 @@ void main() {
     final days = const GrowthPresentationMapper().map(snapshot).journalDays;
 
     expect(days[0].status, GrowthJournalDayStatus.missing);
-    expect(days[1].status, GrowthJournalDayStatus.recordedDraft);
+    expect(days[1].status, GrowthJournalDayStatus.draft);
     expect(days[2].status, GrowthJournalDayStatus.completed);
     expect(
       days.map((day) => day.date),

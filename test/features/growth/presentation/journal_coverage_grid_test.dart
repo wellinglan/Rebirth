@@ -31,10 +31,10 @@ void main() {
           findsOneWidget,
         );
       }
-      expect(find.text('已记录 2 / 7 天 · 已完成 1 / 7 天'), findsOneWidget);
+      expect(find.text('草稿 1 / 7 天 · 已完成 1 / 7 天'), findsOneWidget);
       expect(find.bySemanticsLabel('7月10日，未记录'), findsOneWidget);
-      expect(find.bySemanticsLabel('7月11日，有内容，尚未完成'), findsOneWidget);
-      expect(find.bySemanticsLabel('7月12日，有内容，已完成'), findsOneWidget);
+      expect(find.bySemanticsLabel('7月11日，草稿'), findsOneWidget);
+      expect(find.bySemanticsLabel('7月12日，已完成'), findsOneWidget);
       semantics.dispose();
     },
   );

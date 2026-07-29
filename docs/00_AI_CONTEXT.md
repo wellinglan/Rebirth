@@ -520,3 +520,20 @@ AI Consent。Journal 正文和 Health 备注不进入默认聚合结果；Health
 不得要求 Engine 或通用页面增加模块 switch。
 
 详细约束见 `docs/36_PERSONAL_DATA_AGGREGATION.md`。
+
+# 十九、Growth Projection 与 Journal 状态边界
+
+Growth 是 Personal Data Aggregation Framework 的只读上层消费者。它通过纯
+Dart `GrowthDimensionContributor`、不可变 Registry 与故障隔离 Projection
+Engine 生成可追溯的本地投影，不得直接读取 Today、Health、Journal、Plan
+Repository 或 Drift。
+
+首批维度为 Focus、Recovery、Subjective State 与 Reflection。指标必须保留
+null 与 0、覆盖率、质量、敏感度和安全来源引用，不生成评价、诊断或 AI 建议。
+Journal 正文与 Health 备注不进入 Growth；Evidence 不上传、不持久化。
+
+Journal 产品状态统一为未记录（派生）、草稿和已完成。用户可显式保存草稿、
+完成复盘，并在确认后把已完成记录重新编辑为草稿。状态变化复用现有 Journal
+同步、OCC 和冲突恢复语义，不自动同步。
+
+详细约束见 `docs/37_GROWTH_SYSTEM_FOUNDATION.md`。

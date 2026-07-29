@@ -1,51 +1,53 @@
-import 'package:rebirth/core/utils/date_time_service.dart';
-import 'package:rebirth/features/health/domain/health_entry.dart';
-import 'package:rebirth/features/journal/domain/journal_entry.dart';
-import 'package:rebirth/features/today/domain/today_entry.dart';
+import 'package:rebirth/features/personal_data/domain/personal_data_value.dart';
 
+import 'growth_builtin_ids.dart';
 import 'growth_data_integrity_exception.dart';
 import 'growth_day_snapshot.dart';
+import 'growth_metric_projection.dart';
 import 'growth_metric_summary.dart';
 import 'growth_period.dart';
+import 'growth_projection.dart';
 import 'growth_snapshot.dart';
 
+/// Compatibility mapper that keeps the established chart model while Growth
+/// now derives all values from the generic projection framework.
 final class GrowthAggregator {
   const GrowthAggregator();
 
   GrowthSnapshot aggregate({
     required GrowthPeriod period,
     required List<String> dateRange,
-    required List<TodayEntry> todayEntries,
-    required List<HealthEntry> healthEntries,
-    required List<JournalEntry> journalEntries,
+    required GrowthProjection projection,
   }) {
-    _validateDateRange(period, dateRange);
-    final includedDates = dateRange.toSet();
-    final todayByDate = _indexToday(todayEntries, includedDates);
-    final healthByDate = _indexHealth(healthEntries, includedDates);
-    final journalByDate = _indexJournals(journalEntries, includedDates);
+    if (dateRange.length != period.days) {
+      throw GrowthDataIntegrityException(
+        '${period.name} requires ${period.days} dates, received '
+        '${dateRange.length}.',
+      );
+    }
 
-    final days = dateRange
-        .map((date) {
-          final today = todayByDate[date];
-          final health = healthByDate[date];
-          final journal = journalByDate[date];
+    final research = _metric(projection, GrowthMetrics.researchDuration);
+    final learning = _metric(projection, GrowthMetrics.learningDuration);
+    final exercise = _metric(projection, GrowthMetrics.exerciseDuration);
+    final sleep = _metric(projection, GrowthMetrics.sleepDuration);
+    final mood = _metric(projection, GrowthMetrics.moodScore);
+    final energy = _metric(projection, GrowthMetrics.energyScore);
+    final reflection = _metric(projection, GrowthMetrics.reflectionStatus);
 
-          return GrowthDaySnapshot(
-            date: date,
-            researchMinutes: today?.researchMinutes,
-            learningMinutes: today?.learningMinutes,
-            exerciseMinutes: health?.exerciseDurationMinutes,
-            sleepMinutes: health?.sleepDurationMinutes,
-            moodScore: today?.moodScore,
-            energyScore: today?.energyScore,
-            journalRecorded: journal != null,
-            journalCompleted:
-                journal != null &&
-                journal.status == JournalEntryStatus.completed,
-          );
-        })
-        .toList(growable: false);
+    final days = [
+      for (final date in dateRange)
+        GrowthDaySnapshot(
+          date: date,
+          researchMinutes: _minutes(research, date),
+          learningMinutes: _minutes(learning, date),
+          exerciseMinutes: _minutes(exercise, date),
+          sleepMinutes: _minutes(sleep, date),
+          moodScore: _score(mood, date),
+          energyScore: _score(energy, date),
+          journalRecorded: _journalStatus(reflection, date) != 'missing',
+          journalCompleted: _journalStatus(reflection, date) == 'completed',
+        ),
+    ];
 
     return GrowthSnapshot(
       period: period,
@@ -72,92 +74,42 @@ final class GrowthAggregator {
       ),
       journalRecordedDays: days.where((day) => day.journalRecorded).length,
       journalCompletedDays: days.where((day) => day.journalCompleted).length,
+      projection: projection,
     );
   }
 
-  void _validateDateRange(GrowthPeriod period, List<String> dateRange) {
-    if (dateRange.length != period.days) {
-      throw GrowthDataIntegrityException(
-        '${period.name} requires ${period.days} dates, received '
-        '${dateRange.length}.',
-      );
-    }
-
-    for (var index = 0; index < dateRange.length; index += 1) {
-      _validateDate(dateRange[index], 'date range');
-      if (index > 0 && dateRange[index - 1].compareTo(dateRange[index]) >= 0) {
-        throw const GrowthDataIntegrityException(
-          'Growth date range must be strictly ascending.',
-        );
-      }
-    }
-  }
-
-  Map<String, TodayEntry> _indexToday(
-    List<TodayEntry> entries,
-    Set<String> includedDates,
+  GrowthMetricProjection? _metric(
+    GrowthProjection projection,
+    Object metricId,
   ) {
-    final byDate = <String, TodayEntry>{};
-    for (final entry in entries) {
-      _validateDate(entry.recordDate, 'Today record');
-      if (!includedDates.contains(entry.recordDate)) {
-        continue;
+    for (final dimension in projection.dimensions) {
+      for (final metric in dimension.metrics) {
+        if (metric.metricId == metricId) return metric;
       }
-      if (byDate.containsKey(entry.recordDate)) {
-        throw GrowthDataIntegrityException(
-          'Duplicate Today records for ${entry.recordDate}.',
-        );
-      }
-      byDate[entry.recordDate] = entry;
     }
-    return byDate;
+    return null;
   }
 
-  Map<String, HealthEntry> _indexHealth(
-    List<HealthEntry> entries,
-    Set<String> includedDates,
-  ) {
-    final byDate = <String, HealthEntry>{};
-    for (final entry in entries) {
-      _validateDate(entry.recordDate, 'Health record');
-      if (!includedDates.contains(entry.recordDate)) {
-        continue;
-      }
-      if (byDate.containsKey(entry.recordDate)) {
-        throw GrowthDataIntegrityException(
-          'Duplicate Health records for ${entry.recordDate}.',
-        );
-      }
-      byDate[entry.recordDate] = entry;
-    }
-    return byDate;
+  int? _minutes(GrowthMetricProjection? metric, String date) {
+    final value = _valueFor(metric, date);
+    return value is PersonalDataDurationValue ? value.minutes : null;
   }
 
-  Map<String, JournalEntry> _indexJournals(
-    List<JournalEntry> entries,
-    Set<String> includedDates,
-  ) {
-    final byDate = <String, JournalEntry>{};
-    for (final entry in entries) {
-      _validateDate(entry.entryDate, 'Journal entry');
-      if (!includedDates.contains(entry.entryDate) || !entry.hasContent) {
-        continue;
-      }
-      if (byDate.containsKey(entry.entryDate)) {
-        throw GrowthDataIntegrityException(
-          'Duplicate Journal entries with content for ${entry.entryDate}.',
-        );
-      }
-      byDate[entry.entryDate] = entry;
-    }
-    return byDate;
+  int? _score(GrowthMetricProjection? metric, String date) {
+    final value = _valueFor(metric, date);
+    return value is PersonalDataScoreValue ? value.value.round() : null;
   }
 
-  void _validateDate(String date, String source) {
-    if (!const DateTimeService().isValidLocalDateString(date)) {
-      throw GrowthDataIntegrityException(
-        '$source contains invalid date "$date".',
-      );
+  String _journalStatus(GrowthMetricProjection? metric, String date) {
+    final value = _valueFor(metric, date);
+    return value is PersonalDataCategoricalValue ? value.value : 'missing';
+  }
+
+  PersonalDataValue? _valueFor(GrowthMetricProjection? metric, String date) {
+    if (metric == null) return null;
+    for (final point in metric.series) {
+      if (point.localDate == date) return point.value;
     }
+    return null;
   }
 }

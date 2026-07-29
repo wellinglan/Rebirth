@@ -715,3 +715,22 @@ Plan、Today、Journal 与 Health 的结构化本地摘要。页面支持前一�
 未来个人数据模块通过统一 Provider 注册后自动进入通用页面，无需修改 Engine
 或页面级模块 switch。技术边界见
 `docs/36_PERSONAL_DATA_AGGREGATION.md`。
+
+---
+
+## 17. Extensible Growth Projection
+
+Growth 通过 Personal Data Aggregation Engine 读取当前账号的结构化本地事实，
+并由可扩展 Contributor 生成 Focus、Recovery、Subjective State 与 Reflection
+投影。页面保留原始趋势，同时显示覆盖率、质量、敏感度和来源，不把缺失值当作
+0，不评价投入好坏，也不进行医疗或心理判断。
+
+Journal 生命周期明确为：
+
+- 未记录：当日不存在 active Journal，仅为派生状态；
+- 草稿：用户保存了尚可继续编辑的复盘；
+- 已完成：用户明确完成复盘；
+- 已完成记录只有在确认“重新编辑”后才回到草稿。
+
+Growth 与 Journal 状态变化均保持本地优先，不自动同步，不调用 AI，不持久化
+Growth 派生结果。详细设计见 `docs/37_GROWTH_SYSTEM_FOUNDATION.md`。

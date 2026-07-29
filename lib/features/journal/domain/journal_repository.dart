@@ -35,6 +35,12 @@ abstract interface class JournalRepository {
 
   Future<JournalEntry> saveTodayEntry(JournalSaveData data);
 
+  Future<JournalEntry> saveDraft(JournalSaveData data);
+
+  Future<JournalEntry> complete(JournalSaveData data);
+
+  Future<JournalEntry> reopen(String id);
+
   Future<JournalEntry?> getById(String id);
 
   Future<List<JournalEntry>> listRecent({int limit = 20});

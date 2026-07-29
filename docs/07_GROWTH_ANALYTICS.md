@@ -1,179 +1,124 @@
 # Rebirth Growth Analytics
 
-> Status: Sprint 7C Growth MVP feature frozen
-> Scope: local read-only aggregation and visualization for 7-day and 30-day snapshots
+> Status: Sprint 12B extensible foundation implemented
+> Scope: local read-only 7-day and 30-day projections
+> Product gates: manual acceptance required
 
 ## Product Positioning
 
-Growth is Rebirth's trend analysis module. It helps the user inspect research,
-learning, health, mood, energy, and reflection patterns without judging the
-result. The page uses neutral, factual summaries and does not calculate a
-growth score, streak, reward, previous-period comparison, or AI conclusion.
+Growth helps the user inspect factual patterns in focus, recovery, subjective
+state, and reflection without judging the result. It does not calculate a
+growth score, streak, reward, causal conclusion, diagnosis, action advice, or
+fabricated previous-period comparison.
 
-Sprint 7A established the Domain/Data foundation. Sprint 7B added the read-only
-controller and Material 3 presentation layer. Sprint 7C closes the MVP with a
-manual refresh action, accessible daily details, keyboard navigation, and
-responsive hardening while retaining the same data semantics.
+Sprint 12B replaces the fixed business-repository aggregation introduced by the
+Growth MVP with a contributor-based projection layer above the Personal Data
+Aggregation Framework.
 
-## Architecture Boundary
+## Current Architecture
 
 ```text
 GrowthPage
   -> GrowthController
   -> GrowthRepository
-  -> TodayRepository.listByDateRange
-  -> HealthRepository.listByDateRange
-  -> JournalRepository.listByDateRange
-  -> GrowthAggregator
-  -> GrowthSnapshot
+  -> PersonalDataAggregationEngine
+  -> GrowthProjectionEngine
+  -> GrowthDimensionContributorRegistry
+  -> GrowthProjection
+  -> GrowthSnapshot compatibility mapper
 ```
 
-Growth remains a derived-data module. The page never accesses a Repository,
-Drift, or `AppDatabase` directly. The controller has only the read operation
-defined by `GrowthRepository`. Presentation mappers convert domain days into
-plain chart models; `fl_chart` types are confined to presentation widgets.
+Growth no longer imports or reads Today, Health, Journal, or Plan repositories,
+and it does not query Drift. The compatibility mapper preserves the existing
+summary, chart, and daily-detail surfaces while `GrowthSnapshot` also carries
+the traceable projection.
 
-No Growth table, cache, migration, write action, API request, or sync item is
-introduced. Flutter `schemaVersion` remains 3.
+The pure-Dart contributor contract, immutable registry, projection validation,
+safe evidence, coverage, quality, sensitivity, initial dimensions, partial
+failure behavior, privacy rules, and future contributor checklist are defined
+in `docs/37_GROWTH_SYSTEM_FOUNDATION.md`.
 
 ## Period And Controller Semantics
 
-The only supported periods are:
+The only supported periods remain:
 
-- `GrowthPeriod.sevenDays`: 7 local calendar days, selected by default.
-- `GrowthPeriod.thirtyDays`: 30 local calendar days.
+- `GrowthPeriod.sevenDays`: seven local calendar days, selected by default.
+- `GrowthPeriod.thirtyDays`: thirty local calendar days.
 
-Each inclusive range ends on the current local calendar day and is generated
-by `DateTimeService.recentLocalDateRange`. Saved historical local dates are not
-rewritten for the current timezone.
+Each inclusive range ends on the current local calendar date. Range endpoints
+are constructed as local calendar boundaries rather than by adding 24-hour
+durations, avoiding daylight-saving drift.
 
-`GrowthController` provides initial loading, period switching, reload, and
-error states. A request sequence guards every refresh. If the user switches
-periods rapidly, only the newest request may replace the state. Existing data
-stays visible during refresh. A refresh failure retains the last successful
-snapshot and displays a non-blocking message; an initial failure uses the full
-error state and retry action. Equivalent reloads are suppressed while a
-refresh is active. Refresh failures retain the error and stack trace in
-controller state for diagnostics without logging user content.
+`GrowthController` retains initial loading, period switching, manual refresh,
+non-blocking refresh error, request sequencing, and duplicate suppression.
+Growth stays available in authenticated-offline mode and is rebuilt for account
+changes or logout through the existing account-scoped providers.
 
-## Complete Date Skeleton
+## Dimensions And Sources
 
-Aggregation always starts with every date in the requested period. A 7-day
-snapshot has exactly 7 ascending `GrowthDaySnapshot` values and a 30-day
-snapshot has exactly 30. Missing Today, Health, or Journal records do not remove
-a date.
+| Dimension | Typed source facts | Sensitivity |
+|---|---|---|
+| Focus | Today research and learning duration | private |
+| Recovery | Health sleep and exercise duration | highly sensitive |
+| Subjective State | Today mood and energy | private |
+| Reflection | Journal existence and draft/completed status | private |
 
-The Sprint 7A aggregator remains the single owner of aggregation. It indexes
-Repository results by saved local date and merges them into the skeleton in
-approximately O(N) time. Invalid dates, negative durations, invalid scores, or
-ambiguous duplicate records raise `GrowthDataIntegrityException`.
+Plan Execution is deferred until the product has stable, reliable typed
+execution facts. Growth does not infer an execution rate from plan counts.
 
-## Metric Sources
+## Missing Values, Zero, And Status
 
-| Growth metric | Source |
-|---|---|
-| `researchMinutes` | `TodayEntry.researchMinutes` |
-| `learningMinutes` | `TodayEntry.learningMinutes` |
-| `moodScore` | `TodayEntry.moodScore` |
-| `energyScore` | `TodayEntry.energyScore` |
-| `sleepMinutes` | `HealthEntry.sleepDurationMinutes` |
-| `exerciseMinutes` | `HealthEntry.exerciseDurationMinutes` |
-| `journalRecorded` | `JournalEntry.hasContent` |
-| `journalCompleted` | `hasContent && status == completed` |
+`null` means not recorded; explicit `0` remains a real observation. Missing
+values do not enter totals or averages and remain gaps in charts. Each metric
+reports observed, expected, and missing counts.
 
-Health metrics are read only from `HealthRepository`; the embedded Today health
-summary is not a second Growth source.
+Reflection uses exactly:
 
-## Missing Values And Zero
+- `未记录`
+- `草稿`
+- `已完成`
 
-`null` means the metric was not recorded. `0` means the user explicitly recorded
-zero. Growth preserves the distinction end to end:
+The ambiguous old `已记录` status is no longer used. Journal text itself never
+enters Growth.
 
-- Presentation models retain nullable integer values.
-- A line-series `null` becomes an `FlSpot.nullSpot`, producing a gap.
-- A missing exercise value has no bar rod.
-- An explicit zero remains a point or bar at the baseline.
-- Tooltips and summaries do not invent values for missing data.
-- Daily details display `null` as `未记录` and explicit zero as `0 分钟`.
+## Projection Overview And Existing Charts
 
-A completely missing series displays a local empty message rather than a fake
-all-zero chart.
+The page retains:
 
-## Summary Rules
+1. header, period selector, refresh action, and local date range;
+2. objective summary metrics;
+3. focus, recovery, and subjective-state charts;
+4. Journal status coverage;
+5. collapsed read-only daily details.
 
-Only non-null values participate in summaries. Explicit zero counts as a
-recorded day and is included in the denominator. The UI presents:
+It also renders a generic projection overview containing dimension metadata,
+coverage, quality, sensitivity, and source labels. The widget iterates unknown
+future dimensions without a provider-ID switch. A provider or contributor
+failure affects only its dimension; healthy dimensions remain visible.
 
-- Research total duration.
-- Learning total duration.
-- Exercise total duration.
-- Average sleep duration.
-- Average Mood score.
-- Average Energy score.
-- Journal recorded days out of the selected period.
+Charts show observations only. Text legends, semantics, and daily details keep
+the content understandable without relying on color. Existing responsive
+coverage spans 320-1200px and TextScaler 2.0.
 
-Durations are formatted without unnecessary decimals. Score averages use one
-decimal place on the original 1-5 scale. Missing summaries display `暂无数据`.
+## Evidence And Privacy
 
-## Growth Page
+Growth Evidence retains a safe provider reference, hashed item reference, fact
+key, local date, quality, and sensitivity. It exposes no complete database UUID,
+raw JSON, account identifier, credential, Endpoint, Journal body, or Health
+note.
 
-The Material 3 page is a constrained `ListView` using `AppLayout.pagePadding`
-and `AppLayout.wideContentWidth`. It contains:
-
-1. Header, 7/30-day segmented selector, refresh action, and formatted date range.
-2. Responsive seven-metric summary grid.
-3. Research and Learning dual line chart.
-4. Independent Sleep line chart and Exercise bar chart.
-5. Mood and Energy dual line chart on the 1-5 scale.
-6. Journal coverage cells for missing, recorded draft, and completed days.
-7. A collapsed, read-only Daily Details section built directly from
-   `GrowthSnapshot.days`.
-
-On narrow screens summary cards wrap to one or two columns and recovery charts
-stack vertically. On wider Windows content they use three or four summary
-columns and the recovery charts may sit side by side. Thirty-day charts retain
-all 30 points but label only the first, last, and representative intermediate
-dates.
-
-Series are differentiated by text legends and line styles in addition to
-color. Period controls expose selected semantics, summary cards expose their
-label and value, charts expose objective aggregate descriptions, and each
-Journal cell exposes its date and state. The Daily Details rows provide the
-exact date, six numeric metrics, and Journal state as a non-visual alternative
-to chart tooltips. The section shows all 7 or 30 dates in ascending order and
-does not issue another Repository query.
-
-Keyboard traversal follows the visible controls: 7 days, 30 days, refresh,
-then Daily Details. Enter and Space activate Material controls. Responsive
-tests cover text scales 1.0, 1.3, 1.5, and 2.0 at widths from 320 to 1200 pixels.
-
-## Empty And Partial States
-
-A snapshot is completely empty only when all six numeric summaries have
-`recordedDayCount == 0` and `journalRecordedDays == 0`. The page then keeps the
-header, period selector, date range, and a calm empty-state card.
-
-If any metric is recorded, the full page structure remains available. Populated
-sections render normally and each wholly missing chart uses its own local empty
-message. Missing Journal data does not hide other trends, and missing Health
-data does not hide Today trends.
+Recovery is highly sensitive and has no medical interpretation. Subjective
+State has no psychological interpretation. Evidence remains local and is not
+uploaded or given to AI.
 
 ## Persistence, Sync, Network, And AI
 
-`GrowthSnapshot` is reproducible local derived data. It is not persisted,
-cached, uploaded, or synchronized. Loading Growth requires no server, Docker,
-FastAPI, login, or network connection. Profile sync behavior is unchanged.
+Growth remains reproducible derived data. There is no Growth table, cache,
+migration, write action, API request, cursor, sync entity, automatic sync, or
+AI call.
 
-Sprint 7C has no previous-period comparison, streak, growth score, medical
-interpretation, AI explanation, or cloud synchronization. A future AI Coach
-may consume a snapshot only after explicit authorization and data-sharing
-design; it must not mutate source facts.
+Flutter schemaVersion remains 8. API Version remains 1, Sync Protocol remains
+2, and PostgreSQL schema, Alembic, and Server runtime are unchanged.
 
-## Feature Freeze
-
-Growth MVP enters feature freeze after Sprint 7C. Daily details remain read
-only, and Growth remains local derived data with no comparison, scoring, AI,
-network, or synchronization behavior. Follow-up work should fix a concrete
-defect or accessibility regression rather than add unbounded metrics or
-analytics. Any future AI Coach foundation must remain outside Growth
-aggregation, require explicit user action, and preserve nullable source facts.
+Future AI Context Builder and real AI Coach work must use separate consent,
+minimization, and safety design. Sprint 12B does not implement either.

@@ -84,6 +84,47 @@ final class JournalRepositoryImpl implements JournalRepository {
   }
 
   @override
+  Future<JournalEntry> saveDraft(JournalSaveData data) {
+    return saveTodayEntry(data.withStatus(JournalEntryStatus.draft));
+  }
+
+  @override
+  Future<JournalEntry> complete(JournalSaveData data) {
+    return saveTodayEntry(data.withStatus(JournalEntryStatus.completed));
+  }
+
+  @override
+  Future<JournalEntry> reopen(String id) async {
+    final snapshot = dateTimeService.currentSnapshot();
+    final bootstrap = await _database.bootstrapDao.bootstrap();
+    await _ensureNotConflicted(userId: bootstrap.activeUserId, id: id);
+    final current = await _localDataSource.selectById(
+      userId: bootstrap.activeUserId,
+      id: id,
+    );
+    if (current == null) {
+      throw JournalEntryNotFoundException(id);
+    }
+    if (current.entryStatus == JournalEntryStatus.draft.name) {
+      return _toDomain(current);
+    }
+    final updated = await _localDataSource.updateById(
+      userId: bootstrap.activeUserId,
+      id: id,
+      changes: db.JournalEntriesCompanion(
+        entryStatus: Value(JournalEntryStatus.draft.name),
+        updatedAt: Value(snapshot.utcMilliseconds),
+        syncStatus: const Value('pending'),
+        originDeviceId: Value(bootstrap.localInstallationId),
+      ),
+    );
+    if (updated == null) {
+      throw JournalEntryNotFoundException(id);
+    }
+    return _toDomain(updated);
+  }
+
+  @override
   Future<JournalEntry?> getById(String id) async {
     final bootstrap = await _database.bootstrapDao.bootstrap();
     final entry = await _localDataSource.selectById(

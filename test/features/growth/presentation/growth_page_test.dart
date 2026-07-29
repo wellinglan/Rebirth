@@ -6,10 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/growth/data/growth_repository_provider.dart';
 import 'package:rebirth/features/growth/domain/growth_period.dart';
+import 'package:rebirth/features/growth/domain/growth_projection.dart';
+import 'package:rebirth/features/growth/domain/growth_projection_context.dart';
 import 'package:rebirth/features/growth/domain/growth_repository.dart';
 import 'package:rebirth/features/growth/domain/growth_snapshot.dart';
 import 'package:rebirth/features/growth/presentation/growth_page.dart';
 import 'package:rebirth/features/growth/presentation/widgets/growth_period_selector.dart';
+import 'package:rebirth/features/personal_data/domain/personal_data_aggregation_result.dart';
+import 'package:rebirth/features/personal_data/domain/personal_data_query.dart';
+import 'package:rebirth/features/personal_data/domain/personal_data_time_range.dart';
 
 import '../growth_test_data.dart';
 
@@ -70,6 +75,26 @@ void main() {
       semantics.dispose();
     },
   );
+
+  testWidgets('empty data still exposes projection availability context', (
+    tester,
+  ) async {
+    final repository = _FakeGrowthRepository(
+      snapshots: {
+        GrowthPeriod.sevenDays: growthTestSnapshot(
+          projection: _emptyProjection(),
+        ),
+      },
+    );
+    await _pumpGrowthPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('growthEmptyState')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('growthProjectionOverview')),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('partial data shows real sections and local empty states', (
     tester,
@@ -453,6 +478,46 @@ GrowthSnapshot _completeSnapshot({
       journalRecorded: index % 3 != 0,
       journalCompleted: index % 3 == 2,
     ),
+  );
+}
+
+GrowthProjection _emptyProjection() {
+  final generatedAt = DateTime.utc(2026, 7, 16, 1);
+  final dates = [
+    '2026-07-10',
+    '2026-07-11',
+    '2026-07-12',
+    '2026-07-13',
+    '2026-07-14',
+    '2026-07-15',
+    '2026-07-16',
+  ];
+  final timeRange = PersonalDataTimeRange.forSystemLocalDateRange(
+    startLocalDate: dates.first,
+    endLocalDateInclusive: dates.last,
+  );
+  final query = PersonalDataQuery(
+    timeRange: timeRange,
+    localTimeContext: const PersonalDataLocalTimeContext(
+      timezoneOffsetMinutes: 480,
+    ),
+    requestedAtUtc: generatedAt,
+  );
+  return GrowthProjection(
+    context: GrowthProjectionContext(
+      period: GrowthPeriod.sevenDays,
+      timeRange: timeRange,
+      expectedLocalDates: dates,
+      generatedAtUtc: generatedAt,
+    ),
+    aggregationResult: PersonalDataAggregationResult(
+      query: query,
+      contributions: const [],
+      failures: const [],
+      generatedAtUtc: generatedAt,
+    ),
+    dimensions: const [],
+    failures: const [],
   );
 }
 
