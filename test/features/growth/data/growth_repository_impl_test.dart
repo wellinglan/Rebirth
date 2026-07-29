@@ -216,7 +216,9 @@ GrowthRepositoryImpl _repository(
         ReflectionGrowthContributor(),
       ]),
     ),
-    dateTimeService: DateTimeService(now: () => DateTime(2026, 7, 16, 9)),
+    dateTimeService: DateTimeService(
+      now: () => DateTime.utc(2026, 7, 16, 1),
+    ),
   );
 }
 
