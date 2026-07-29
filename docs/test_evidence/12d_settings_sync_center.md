@@ -44,14 +44,26 @@ Targeted coverage includes:
 - Profile two-way sync
 - Profile generic conflict registration
 - conflict module filters
-- 320–1200px layouts and text scale 2.0
+- 320-1200px layouts and text scale 2.0
 - presentation import privacy boundaries
 
 ## GitHub Evidence
 
-Implementation SHA and Quality run are pending the implementation push.
-`Publish Alpha Images` is expected to be `NOT RUN` because neither
-`server/**` nor its publish workflow changes.
+| Check | Result |
+|---|---|
+| Implementation SHA | `7bbb9979c2dd0f416a1c7b5c2cf6f528df734a8d` |
+| Quality run | [30475825477](https://github.com/wellinglan/Rebirth/actions/runs/30475825477), PASS |
+| Flutter Analyze And Test | PASS |
+| Android Debug Build | PASS |
+| Server SQLite | PASS |
+| Server PostgreSQL Multiprocess And Multiworker | PASS |
+| Alembic upgrade | PASS |
+| PostgreSQL marker | PASS |
+| Multi-worker verification | PASS |
+| Publish Alpha Images | NOT RUN |
+
+`Publish Alpha Images` did not run because Sprint 12D changed neither
+`server/**` nor the image publishing workflow.
 
 The Android release build emitted the existing non-blocking CupertinoIcons
 font-asset warning. All three APKs were produced successfully; Sprint 12D did
