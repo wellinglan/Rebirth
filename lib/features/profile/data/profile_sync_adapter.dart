@@ -2,6 +2,8 @@ import 'package:rebirth/core/database/app_database.dart' as db;
 import 'package:rebirth/features/profile/domain/profile_sync_payload.dart';
 import 'package:rebirth/features/profile/domain/user_profile.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_repository.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_adapter.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
@@ -11,12 +13,17 @@ import 'package:rebirth/features/sync/domain/sync_record_keys.dart';
 import 'profile_local_data_source.dart';
 
 final class ProfileSyncAdapter implements SyncEntityAdapter {
-  ProfileSyncAdapter(db.AppDatabase database)
-    : _database = database,
-      _localDataSource = ProfileLocalDataSource(database);
+  ProfileSyncAdapter(
+    db.AppDatabase database, [
+    this._conflictRepository,
+    this._conflictScopeLoader,
+  ]) : _database = database,
+       _localDataSource = ProfileLocalDataSource(database);
 
   final db.AppDatabase _database;
   final ProfileLocalDataSource _localDataSource;
+  final SyncConflictRepository? _conflictRepository;
+  final Future<SyncConflictScope?> Function()? _conflictScopeLoader;
 
   @override
   SyncEntityType get entityType => SyncEntityType.profile;
@@ -111,10 +118,33 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
           )
           .firstOrNull;
       if (conflict != null) {
-        await _localDataSource.markSyncConflict(
+        final profile = await _localDataSource.markSyncConflict(
           context.profile.id,
           serverVersion: conflict.serverVersion,
         );
+        final scope = await _tryLoadConflictScope();
+        if (scope != null && _conflictRepository != null) {
+          await _conflictRepository.upsertDetectedConflict(
+            SyncConflictDetection(
+              scope: scope,
+              entityType: entityType,
+              recordId: profile.id,
+              remoteRecordId: conflict.remoteRecordId ?? SyncRecordKeys.profile,
+              localSnapshot: _localSnapshot(profile),
+              remoteSnapshot: SyncConflictSnapshot(
+                payload: null,
+                updatedAt: null,
+                deletedAt: null,
+                serverVersion: conflict.serverVersion,
+                originDeviceId: null,
+              ),
+              remoteOperation: SyncConflictOperation.unknownPendingPull,
+              resolutionStatus:
+                  SyncConflictResolutionStatus.awaitingRemoteSnapshot,
+              detectedAt: syncedAt,
+            ),
+          );
+        }
         return SyncEntityResult(
           entityType: entityType,
           status: SyncEntityStatus.conflict,
@@ -141,6 +171,27 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
         lastSyncedAt: syncedAt,
         originDeviceId: context.localInstallationId,
       );
+      final scope = await _tryLoadConflictScope();
+      if (scope != null && _conflictRepository != null) {
+        final active =
+            await _conflictRepository.findActiveConflict(
+              scope: scope,
+              entityType: entityType,
+              recordId: context.profile.id,
+            ) ??
+            await _conflictRepository.findActiveConflictByRemoteRecordId(
+              scope: scope,
+              entityType: entityType,
+              remoteRecordId: SyncRecordKeys.profile,
+            );
+        if (active != null) {
+          await _conflictRepository.markResolvedKeepLocal(
+            scope,
+            active.id,
+            resolvedAt: syncedAt,
+          );
+        }
+      }
       return SyncEntityResult(
         entityType: entityType,
         status: SyncEntityStatus.succeeded,
@@ -167,12 +218,60 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
         ..sort(
           (left, right) => left.serverVersion.compareTo(right.serverVersion),
         );
+      final conflictScope = changes.isEmpty
+          ? null
+          : await _tryLoadConflictScope();
 
       for (final change in ordered) {
         if (change.entityType != entityType) {
           throw SyncUnsupportedEntityException(change.entityType.wireName);
         }
         final localVersion = profile.serverVersion ?? 0;
+        SyncConflictRecord? activeConflict;
+        if (conflictScope != null && _conflictRepository != null) {
+          activeConflict =
+              await _conflictRepository.findActiveConflict(
+                scope: conflictScope,
+                entityType: entityType,
+                recordId: profile.id,
+              ) ??
+              await _conflictRepository.findActiveConflictByRemoteRecordId(
+                scope: conflictScope,
+                entityType: entityType,
+                remoteRecordId: change.recordId,
+              );
+          if (activeConflict != null &&
+              change.serverVersion >=
+                  (activeConflict.remoteSnapshot.serverVersion ?? 0)) {
+            activeConflict = await _conflictRepository.hydrateRemoteSnapshot(
+              scope: conflictScope,
+              entityType: entityType,
+              recordId: activeConflict.recordId,
+              remoteRecordId: change.recordId,
+              operation: change.operation == SyncOperation.delete
+                  ? SyncConflictOperation.delete
+                  : SyncConflictOperation.upsert,
+              remoteSnapshot: SyncConflictSnapshot(
+                payload: change.payload,
+                updatedAt: change.updatedAt,
+                deletedAt: change.deletedAt,
+                serverVersion: change.serverVersion,
+                originDeviceId: change.originDeviceId,
+              ),
+              seenAt: syncedAt,
+            );
+          }
+          if (activeConflict != null && pullMode == SyncPullMode.incremental) {
+            return SyncEntityResult(
+              entityType: entityType,
+              status: SyncEntityStatus.conflict,
+              message: 'Profile 冲突已记录，请在待处理问题中选择版本',
+              ignoredCount: ignored,
+              conflictCount: 1,
+              serverVersion: change.serverVersion,
+            );
+          }
+        }
         final isIncremental = pullMode == SyncPullMode.incremental;
         if ((isIncremental && change.serverVersion <= localVersion) ||
             (!isIncremental && change.serverVersion < localVersion)) {
@@ -191,7 +290,30 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
 
         if (_hasUnsyncedLocalChanges(profile) &&
             pullMode != SyncPullMode.preferRemoteConflictResolution) {
-          await _localDataSource.markSyncConflict(profile.id);
+          profile = await _localDataSource.markSyncConflict(profile.id);
+          if (conflictScope != null && _conflictRepository != null) {
+            await _conflictRepository.upsertDetectedConflict(
+              SyncConflictDetection(
+                scope: conflictScope,
+                entityType: entityType,
+                recordId: profile.id,
+                remoteRecordId: change.recordId,
+                localSnapshot: _localSnapshot(profile),
+                remoteSnapshot: SyncConflictSnapshot(
+                  payload: change.payload,
+                  updatedAt: change.updatedAt,
+                  deletedAt: change.deletedAt,
+                  serverVersion: change.serverVersion,
+                  originDeviceId: change.originDeviceId,
+                ),
+                remoteOperation: change.operation == SyncOperation.delete
+                    ? SyncConflictOperation.delete
+                    : SyncConflictOperation.upsert,
+                resolutionStatus: SyncConflictResolutionStatus.unresolved,
+                detectedAt: syncedAt,
+              ),
+            );
+          }
           return SyncEntityResult(
             entityType: entityType,
             status: SyncEntityStatus.conflict,
@@ -229,6 +351,16 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
           lastSyncedAt: syncedAt,
           originDeviceId: originDeviceId,
         );
+        if (activeConflict != null &&
+            conflictScope != null &&
+            _conflictRepository != null &&
+            pullMode == SyncPullMode.preferRemoteConflictResolution) {
+          await _conflictRepository.markResolvedAdoptRemote(
+            conflictScope,
+            activeConflict.id,
+            resolvedAt: syncedAt,
+          );
+        }
         applied += 1;
       }
 
@@ -335,6 +467,26 @@ final class ProfileSyncAdapter implements SyncEntityAdapter {
     }
     return profile.syncStatus == 'local_only' &&
         (profile.displayName != null || profile.growthFocus != null);
+  }
+
+  SyncConflictSnapshot _localSnapshot(db.UserProfile profile) {
+    return SyncConflictSnapshot(
+      payload: ProfileSyncPayload(
+        displayName: profile.displayName,
+        growthFocus: profile.growthFocus,
+        timezoneId: profile.timezoneId,
+        updatedAt: profile.updatedAt,
+      ),
+      updatedAt: profile.updatedAt,
+      deletedAt: profile.deletedAt,
+      serverVersion: profile.serverVersion,
+      originDeviceId: profile.originDeviceId,
+    );
+  }
+
+  Future<SyncConflictScope?> _tryLoadConflictScope() {
+    return _conflictScopeLoader?.call() ??
+        Future<SyncConflictScope?>.value(null);
   }
 
   String? _nullableString(Map<String, Object?> payload, String key) {

@@ -745,3 +745,18 @@ Journal 默认保留原五个复盘问题，同时允许用户新增、编辑、
 问题配置与动态回答支持现有手动跨端同步和显式冲突恢复，不触发自动同步。
 `futureAi` 仅为未来来源预留；任何 AI 问题都必须先由用户查看、接受并启用，
 Sprint 12C 不包含真实 AI。详见 `docs/38_JOURNAL_PROMPT_SYSTEM.md`。
+
+# 二十一、Settings 与同步中心体验
+
+普通用户通过 Settings 进入账号、同步中心、个人数据与隐私、Journal 问题和
+关于。Alpha 开发账号、Endpoint 和设备诊断只存在于受构建配置控制的开发者
+选项，不再与普通设置混排。
+
+同步中心提供 Profile、Plan、Today、Journal、Health 五个手动同步入口和一个
+“同步全部”入口。用户无需理解 Push/Pull、cursor、serverVersion 或 Journal
+Prompt Configuration。同步全部固定顺序执行并允许模块级失败或冲突后继续；
+账号、连接、所有权或设备前置条件失败时停止后续模块。所有失败都保留本地数据，
+冲突必须由用户选择版本。
+
+Sprint 12D 不包含生产认证、微信登录、自动同步、AI 或 Growth Sync。生产认证
+基础属于 Sprint 13A。

@@ -6,12 +6,14 @@ import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
+import 'package:rebirth/features/profile/domain/profile_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
 import 'sync_conflict_resolution_handlers.dart';
+import 'sync_center_controller.dart';
 
 class SyncConflictDetailPage extends ConsumerWidget {
   const SyncConflictDetailPage({required this.conflictId, super.key});
@@ -133,13 +135,16 @@ class SyncConflictDetailPage extends ConsumerWidget {
       await action();
       ref.invalidate(syncConflictDetailsProvider(conflictId));
       ref.invalidate(activeSyncConflictListProvider);
+      await ref.read(syncCenterControllerProvider.notifier).refresh();
       if (!context.mounted) return;
       _message(context, '冲突操作已完成');
     } catch (_) {
       if (!context.mounted) return;
       _message(
         context,
-        record.entityType == SyncEntityType.today
+        record.entityType == SyncEntityType.profile
+            ? '操作未完成，本地 Profile 已保留'
+            : record.entityType == SyncEntityType.today
             ? '操作未完成，本地 Today 内容已保留'
             : record.entityType == SyncEntityType.journal
             ? '操作未完成，本地 Journal 内容已保留'
@@ -159,6 +164,13 @@ class SyncConflictDetailPage extends ConsumerWidget {
   }
 
   String _confirmationMessage(SyncEntityType entityType, bool adopt) {
+    if (entityType == SyncEntityType.profile) {
+      return adopt
+          ? '采用云端后，本地 Profile 的昵称、成长方向与时区将被服务器当前版本替换。'
+                '操作失败或取消时本地资料保持不变。'
+          : '当前本地 Profile 将覆盖服务器版本，其他设备随后同步时会看到该版本。'
+                '服务器再次变化时可能重新产生冲突。';
+    }
     if (entityType == SyncEntityType.today) {
       return adopt
           ? '当前本地 Today 冲突修改尚未上传。采用云端后，本地 Today 内容将被服务器当前版本替换；'
@@ -356,6 +368,7 @@ class _VersionSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final payload = snapshot.payload;
+    final profile = payload is ProfileSyncPayload ? payload : null;
     final plan = payload is PlanSyncPayload ? payload : null;
     final today = payload is TodaySyncPayload ? payload : null;
     final journal = payload is JournalSyncPayload ? payload : null;
@@ -385,7 +398,10 @@ class _VersionSummary extends StatelessWidget {
             if (awaiting)
               const Text('需要重新同步以获取服务器当前版本。')
             else ...[
-              if (promptConfiguration != null) ...[
+              if (profile != null) ...[
+                const _Line(label: '资料', value: '个人资料内容已隐藏'),
+                _Line(label: '时区', value: profile.timezoneId),
+              ] else if (promptConfiguration != null) ...[
                 const _Line(label: '配置', value: '默认 Journal 问题'),
                 _Line(
                   label: '启用问题',
@@ -536,6 +552,7 @@ String _goalLevel(PlanGoalLevel value) => switch (value) {
 
 String _displayTitle(SyncConflictRecord record) {
   final local = record.localSnapshot.payload;
+  if (local is ProfileSyncPayload) return 'Profile';
   if (local is PlanSyncPayload) return local.title;
   if (local is TodaySyncPayload) return '${local.recordDate} Today';
   if (local is JournalSyncPayload) return '${local.entryDate} Journal';
@@ -544,6 +561,7 @@ String _displayTitle(SyncConflictRecord record) {
   }
   if (local is HealthSyncPayload) return '${local.recordDate} Health';
   final remote = record.remoteSnapshot.payload;
+  if (remote is ProfileSyncPayload) return 'Profile';
   if (remote is PlanSyncPayload) return remote.title;
   if (remote is TodaySyncPayload) return '${remote.recordDate} Today';
   if (remote is JournalSyncPayload) return '${remote.entryDate} Journal';
@@ -562,6 +580,9 @@ String _displayTitle(SyncConflictRecord record) {
   }
   if (record.entityType == SyncEntityType.health) {
     return '已删除的 Health 记录';
+  }
+  if (record.entityType == SyncEntityType.profile) {
+    return '已删除的 Profile';
   }
   return '已删除的 Plan 目标';
 }

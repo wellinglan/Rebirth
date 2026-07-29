@@ -4,20 +4,31 @@ import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/presentation/sync_conflict_resolution_handlers.dart';
 
 void main() {
-  test('registry resolves Plan, Today, and Journal without a fallback', () {
+  test('registry resolves all supported user modules without a fallback', () {
+    final profile = _FakeHandler(SyncEntityType.profile);
     final plan = _FakeHandler(SyncEntityType.plan);
     final today = _FakeHandler(SyncEntityType.today);
     final journal = _FakeHandler(SyncEntityType.journal);
+    final prompt = _FakeHandler(SyncEntityType.journalPromptConfiguration);
+    final health = _FakeHandler(SyncEntityType.health);
     final registry = SyncConflictResolutionHandlerRegistry([
+      profile,
       plan,
       today,
       journal,
+      prompt,
+      health,
     ]);
 
+    expect(registry.handlerFor(SyncEntityType.profile), same(profile));
     expect(registry.handlerFor(SyncEntityType.plan), same(plan));
     expect(registry.handlerFor(SyncEntityType.today), same(today));
     expect(registry.handlerFor(SyncEntityType.journal), same(journal));
-    expect(registry.handlerFor(SyncEntityType.health), isNull);
+    expect(
+      registry.handlerFor(SyncEntityType.journalPromptConfiguration),
+      same(prompt),
+    );
+    expect(registry.handlerFor(SyncEntityType.health), same(health));
   });
 
   test('handler operations remain explicitly entity-scoped', () async {

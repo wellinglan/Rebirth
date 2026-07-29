@@ -768,3 +768,21 @@ acceptance passed all 93 manual checks with no reported failure or anomaly.
 The Journal Prompt System Product, Journal Migration, and Journal Prompt Sync
 gates are `CLOSED / ACCEPTED`; see
 `docs/manual_tests/38_journal_prompt_system.md`.
+
+## Sprint 12D Settings And Unified Manual Sync
+
+The Alpha client now presents five user modules in one Sync Center:
+Profile, Plan, Today, Journal, and Health. Sync All is sequential and explicit;
+Journal still runs prompt configuration before entries. Profile normal sync is
+one two-way action, while conflict recovery remains Keep Local, Adopt Remote,
+or Retry through the generic conflict center.
+
+Development User Key, Endpoint controls, backend checks, and device
+diagnostics moved to Developer Options. Opening Settings or Developer Options
+does not contact the Server or start synchronization.
+
+This is a Flutter-only information architecture change. API remains 1, Sync
+Protocol remains 2, Flutter schemaVersion remains 9, and PostgreSQL, Alembic,
+Server runtime, GHCR images, and Beijing Alpha deployment are unchanged.
+Manual acceptance is tracked in
+`docs/manual_tests/39_settings_information_architecture_and_sync_center.md`.

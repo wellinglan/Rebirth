@@ -9,6 +9,7 @@ product gates.
 | 12A Personal Data Aggregation | `12a_personal_data_aggregation.md` |
 | 12B Growth System Foundation | `12b_growth_system_foundation.md` |
 | 12C Journal Prompt System | `12c_journal_prompt_system.md` |
+| 12D Settings and Sync Center | `12d_settings_sync_center.md` |
 
 Sprint evidence files are completed only with real local and GitHub
 Quality results. Queued or in-progress work is never recorded as PASS.

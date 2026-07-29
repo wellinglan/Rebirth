@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/journal/data/journal_conflict_resolution_service_impl.dart';
@@ -24,6 +25,10 @@ import 'package:rebirth/features/plan/data/plan_sync_payload_codec.dart';
 import 'package:rebirth/features/plan/domain/plan_conflict_resolution_service.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
+import 'package:rebirth/features/profile/data/profile_conflict_resolution_service_impl.dart';
+import 'package:rebirth/features/profile/data/profile_sync_payload_codec.dart';
+import 'package:rebirth/features/profile/domain/profile_conflict_resolution_service.dart';
+import 'package:rebirth/features/profile/domain/profile_sync_payload.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_repository.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
@@ -39,6 +44,7 @@ final syncConflictRepositoryProvider = Provider<SyncConflictRepository>((ref) {
   return SyncConflictRepositoryImpl(
     ref.watch(appDatabaseProvider),
     payloadCodecs: const [
+      ProfileSyncPayloadCodec(),
       TodaySyncPayloadCodec(),
       JournalPromptSyncPayloadCodec(),
       JournalSyncPayloadCodec(),
@@ -132,6 +138,15 @@ final planConflictResolutionServiceProvider =
       );
     });
 
+final profileConflictResolutionServiceProvider =
+    Provider<ProfileConflictResolutionService>((ref) {
+      return ProfileConflictResolutionServiceImpl(
+        ref.watch(appDatabaseProvider),
+        ref.watch(syncConflictRepositoryProvider),
+        ref.watch(dateTimeServiceProvider),
+      );
+    });
+
 final todayConflictResolutionServiceProvider =
     Provider<TodayConflictResolutionService>((ref) {
       return TodayConflictResolutionServiceImpl(
@@ -170,6 +185,11 @@ Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
   String localUserId,
 ) async {
   return switch (record.entityType) {
+    SyncEntityType.profile => _loadProfileSnapshot(
+      database,
+      localUserId,
+      record.recordId,
+    ),
     SyncEntityType.plan => _loadPlanSnapshot(
       database,
       localUserId,
@@ -196,8 +216,35 @@ Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
       localUserId,
       record.recordId,
     ),
-    _ => null,
   };
+}
+
+Future<SyncConflictSnapshot?> _loadProfileSnapshot(
+  AppDatabase database,
+  String localUserId,
+  String _,
+) async {
+  final profile =
+      await (database.select(database.userProfiles)..where(
+            (row) =>
+                row.id.equals(localUserId) &
+                row.isActive.equals(true) &
+                row.deletedAt.isNull(),
+          ))
+          .getSingleOrNull();
+  if (profile == null) return null;
+  return SyncConflictSnapshot(
+    payload: ProfileSyncPayload(
+      displayName: profile.displayName,
+      growthFocus: profile.growthFocus,
+      timezoneId: profile.timezoneId,
+      updatedAt: profile.updatedAt,
+    ),
+    updatedAt: profile.updatedAt,
+    deletedAt: profile.deletedAt,
+    serverVersion: profile.serverVersion,
+    originDeviceId: profile.originDeviceId,
+  );
 }
 
 Future<SyncConflictSnapshot?> _loadJournalPromptConfigurationSnapshot(
@@ -434,6 +481,12 @@ Future<SyncConflictSnapshot?> _loadTodaySnapshot(
 }
 
 bool _samePayload(Object? left, Object? right) {
+  if (left is ProfileSyncPayload && right is ProfileSyncPayload) {
+    return left.displayName == right.displayName &&
+        left.growthFocus == right.growthFocus &&
+        left.timezoneId == right.timezoneId &&
+        left.updatedAt == right.updatedAt;
+  }
   if (left is JournalPromptConfigurationSyncPayload &&
       right is JournalPromptConfigurationSyncPayload) {
     return const JournalPromptSyncPayloadCodec().canonicalJson(left) ==

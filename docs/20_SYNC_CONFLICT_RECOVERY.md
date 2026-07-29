@@ -326,3 +326,18 @@ Local preserves the complete local aggregate, adopts the current remote
 server-version baseline, and returns it to pending for a normal push. Neither
 action rewrites historical Journal snapshots, resets cursors, performs field
 merge, or silently selects a winner.
+
+## Sprint 12D Pending-Issue Grouping
+
+The generic conflict store and resolution schema are unchanged. The user
+surface now calls conflicts “Pending Issues” and filters them by Profile,
+Plan, Today, Journal, or Health. Journal filtering includes both
+`journal_prompt_configurations` and `journal_entries` without exposing those
+wire names.
+
+Profile now registers the same generic hydration, Adopt Remote, Keep Local,
+and requested-operation retry boundary as the other user modules. Its typed
+summary hides private fields and identifiers. Filtering never starts sync or
+changes a conflict row. Resolution refreshes the Sync Center count. No
+automatic winner, field merge, conflict deletion, or last-write-wins behavior
+was added.

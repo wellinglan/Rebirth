@@ -18,6 +18,9 @@ import '../../features/plan/presentation/plan_page.dart';
 import '../../features/personal_data/presentation/personal_data_overview_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
+import '../../features/settings/presentation/account_details_page.dart';
+import '../../features/settings/presentation/developer_options_page.dart';
+import '../../features/sync/presentation/sync_center_page.dart';
 import '../../features/sync/presentation/sync_conflict_detail_page.dart';
 import '../../features/sync/presentation/sync_conflict_list_page.dart';
 import '../../features/today/presentation/today_page.dart';
@@ -177,6 +180,21 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
         builder: (context, state) => const SettingsPage(),
         routes: [
           GoRoute(
+            path: 'account',
+            name: RouteNames.settingsAccount,
+            builder: (context, state) => const AccountDetailsPage(),
+          ),
+          GoRoute(
+            path: 'developer-options',
+            name: RouteNames.settingsDeveloperOptions,
+            builder: (context, state) => const DeveloperOptionsPage(),
+          ),
+          GoRoute(
+            path: 'sync-center',
+            name: RouteNames.syncCenter,
+            builder: (context, state) => const SyncCenterPage(),
+          ),
+          GoRoute(
             path: 'profile',
             name: RouteNames.settingsProfile,
             builder: (context, state) => const ProfilePage(),
@@ -184,7 +202,9 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
           GoRoute(
             path: 'sync-conflicts',
             name: RouteNames.syncConflicts,
-            builder: (context, state) => const SyncConflictListPage(),
+            builder: (context, state) => SyncConflictListPage(
+              initialModuleId: state.uri.queryParameters['module'],
+            ),
             routes: [
               GoRoute(
                 path: ':conflictId',

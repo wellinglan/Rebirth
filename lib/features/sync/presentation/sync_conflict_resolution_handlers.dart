@@ -6,6 +6,7 @@ import 'plan_sync_controller.dart';
 import 'journal_sync_controller.dart';
 import 'today_sync_controller.dart';
 import 'health_sync_controller.dart';
+import 'profile_sync_controller.dart';
 
 abstract interface class SyncConflictResolutionHandler {
   SyncEntityType get entityType;
@@ -41,7 +42,23 @@ final syncConflictResolutionHandlerRegistryProvider =
       final todayState = ref.watch(todaySyncControllerProvider);
       final journalState = ref.watch(journalSyncControllerProvider);
       final healthState = ref.watch(healthSyncControllerProvider);
+      final profileState = ref.watch(profileSyncControllerProvider);
       return SyncConflictResolutionHandlerRegistry([
+        _CallbackConflictResolutionHandler(
+          entityType: SyncEntityType.profile,
+          isBusy: profileState.isBusy,
+          resolvingConflictId: profileState.resolvingConflictId,
+          retryHydration: ref
+              .read(profileSyncControllerProvider.notifier)
+              .retryConflictHydration,
+          adoptRemote: ref
+              .read(profileSyncControllerProvider.notifier)
+              .adoptRemote,
+          keepLocal: ref.read(profileSyncControllerProvider.notifier).keepLocal,
+          retryRequestedResolution: ref
+              .read(profileSyncControllerProvider.notifier)
+              .retryRequestedResolution,
+        ),
         _CallbackConflictResolutionHandler(
           entityType: SyncEntityType.plan,
           isBusy: planState.isBusy,

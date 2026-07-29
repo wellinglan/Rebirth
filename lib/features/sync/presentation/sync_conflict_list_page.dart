@@ -7,20 +7,37 @@ import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart';
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
+import 'package:rebirth/features/profile/domain/profile_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
-class SyncConflictListPage extends ConsumerWidget {
-  const SyncConflictListPage({super.key});
+class SyncConflictListPage extends ConsumerStatefulWidget {
+  const SyncConflictListPage({this.initialModuleId, super.key});
+
+  final String? initialModuleId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SyncConflictListPage> createState() =>
+      _SyncConflictListPageState();
+}
+
+class _SyncConflictListPageState extends ConsumerState<SyncConflictListPage> {
+  late SyncConflictModuleFilter _filter;
+
+  @override
+  void initState() {
+    super.initState();
+    _filter = SyncConflictModuleFilter.fromStableId(widget.initialModuleId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final conflicts = ref.watch(activeSyncConflictListProvider);
     return Scaffold(
       key: const ValueKey('syncConflictListPage'),
-      appBar: AppBar(title: const Text('同步冲突')),
+      appBar: AppBar(title: const Text('待处理问题')),
       body: SafeArea(
         child: conflicts.when(
           loading: () => const Center(
@@ -33,38 +50,74 @@ class SyncConflictListPage extends ConsumerWidget {
             onRetry: () => ref.invalidate(activeSyncConflictListProvider),
           ),
           data: (items) {
-            if (items.isEmpty) {
-              return const Center(
-                key: ValueKey('syncConflictListEmpty'),
-                child: Text('无待处理冲突'),
-              );
-            }
-            return ListView.separated(
-              key: const ValueKey('syncConflictList'),
-              padding: AppLayout.pagePadding,
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (context, index) {
-                final conflict = items[index];
-                return Card(
-                  child: ListTile(
-                    key: ValueKey('syncConflict-${conflict.id}'),
-                    isThreeLine: true,
-                    leading: const Icon(Icons.alt_route_outlined),
-                    title: Text(_displayTitle(conflict)),
-                    subtitle: Text(
-                      '${_entityLabel(conflict.entityType)} · '
-                      '${_conflictType(conflict)}\n'
-                      '${_statusLabel(conflict.resolutionStatus)} · '
-                      '${_formatTimestamp(conflict.detectedAt)}',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push(
-                      RoutePaths.syncConflictDetails(conflict.id),
-                    ),
+            final filtered = items
+                .where((item) => _filter.includes(item.entityType))
+                .toList(growable: false);
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    0,
                   ),
-                );
-              },
+                  child: DropdownButtonFormField<SyncConflictModuleFilter>(
+                    key: const ValueKey('syncConflictModuleFilter'),
+                    initialValue: _filter,
+                    decoration: const InputDecoration(
+                      labelText: '筛选模块',
+                      prefixIcon: Icon(Icons.filter_list),
+                    ),
+                    items: [
+                      for (final value in SyncConflictModuleFilter.values)
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text(value.label),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _filter = value);
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Center(
+                          key: const ValueKey('syncConflictListEmpty'),
+                          child: Text(items.isEmpty ? '无待处理问题' : '该模块没有待处理问题'),
+                        )
+                      : ListView.separated(
+                          key: const ValueKey('syncConflictList'),
+                          padding: AppLayout.pagePadding,
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final conflict = filtered[index];
+                            return Card(
+                              child: ListTile(
+                                key: ValueKey('syncConflict-${conflict.id}'),
+                                isThreeLine: true,
+                                leading: const Icon(Icons.alt_route_outlined),
+                                title: Text(_displayTitle(conflict)),
+                                subtitle: Text(
+                                  '${_entityLabel(conflict.entityType)} · '
+                                  '${_conflictType(conflict)}\n'
+                                  '${_statusLabel(conflict.resolutionStatus)} · '
+                                  '${_formatTimestamp(conflict.detectedAt)}',
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => context.push(
+                                  RoutePaths.syncConflictDetails(conflict.id),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
             );
           },
         ),
@@ -100,10 +153,12 @@ class _ConflictListError extends StatelessWidget {
 
 String _displayTitle(SyncConflictRecord conflict) {
   final local = conflict.localSnapshot.payload;
+  if (local is ProfileSyncPayload) return 'Profile';
   if (local is PlanSyncPayload && local.title.trim().isNotEmpty) {
     return local.title;
   }
   final remote = conflict.remoteSnapshot.payload;
+  if (remote is ProfileSyncPayload) return 'Profile';
   if (remote is PlanSyncPayload && remote.title.trim().isNotEmpty) {
     return remote.title;
   }
@@ -132,6 +187,9 @@ String _displayTitle(SyncConflictRecord conflict) {
   if (conflict.entityType == SyncEntityType.today) {
     return '已删除的 Today 记录';
   }
+  if (conflict.entityType == SyncEntityType.profile) {
+    return 'Profile';
+  }
   if (conflict.entityType == SyncEntityType.journal) {
     return '已删除的 Journal 记录';
   }
@@ -147,11 +205,48 @@ String _displayTitle(SyncConflictRecord conflict) {
 String _entityLabel(SyncEntityType type) => switch (type) {
   SyncEntityType.profile => 'Profile',
   SyncEntityType.today => 'Today',
-  SyncEntityType.journalPromptConfiguration => 'Journal 问题配置',
+  SyncEntityType.journalPromptConfiguration => 'Journal',
   SyncEntityType.journal => 'Journal',
   SyncEntityType.plan => 'Plan',
   SyncEntityType.health => 'Health',
 };
+
+enum SyncConflictModuleFilter {
+  all('全部'),
+  profile('Profile'),
+  plan('Plan'),
+  today('Today'),
+  journal('Journal'),
+  health('Health');
+
+  const SyncConflictModuleFilter(this.label);
+
+  final String label;
+
+  static SyncConflictModuleFilter fromStableId(String? value) {
+    return switch (value) {
+      'module.profile' => profile,
+      'module.plan' => plan,
+      'module.today' => today,
+      'module.journal' => journal,
+      'module.health' => health,
+      _ => all,
+    };
+  }
+
+  bool includes(SyncEntityType entityType) {
+    return switch (this) {
+      SyncConflictModuleFilter.all => true,
+      SyncConflictModuleFilter.profile => entityType == SyncEntityType.profile,
+      SyncConflictModuleFilter.plan => entityType == SyncEntityType.plan,
+      SyncConflictModuleFilter.today => entityType == SyncEntityType.today,
+      SyncConflictModuleFilter.journal =>
+        entityType == SyncEntityType.journal ||
+            entityType == SyncEntityType.journalPromptConfiguration,
+      SyncConflictModuleFilter.health => entityType == SyncEntityType.health,
+    };
+  }
+}
 
 String _conflictType(SyncConflictRecord conflict) {
   final localDeleted = conflict.localSnapshot.deletedAt != null;

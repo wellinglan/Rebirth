@@ -800,3 +800,23 @@ Rebirth 的架构目标不是炫技，而是长期稳定。
 本项目不追求一开始就完美，但必须从第一天开始保持方向正确。
 
 > 架构的意义，不是让代码看起来复杂，而是让五年后的维护仍然清晰。
+
+---
+
+## 21. Sync Module Application Layer
+
+Settings presentation no longer coordinates entity synchronization directly.
+The application layer defines stable `SyncModuleId` values, immutable module
+descriptors, a registry, runners, unified module results, and a sequential
+Sync All orchestrator.
+
+The product order is explicitly Profile, Plan, Today, Journal, Health and is
+independent of entity enum order. Journal maps prompt configuration and entry
+entities into one module. Runners reuse existing feature controllers and the
+global single-flight `SyncCoordinator`; they do not duplicate API, OCC,
+cursor, transaction, or account-scope logic.
+
+`SyncCenterController` owns transient current-session state. Canonical pending
+metadata, cursors, conflict rows, server versions, and per-record sync metadata
+remain in existing storage. No module history table or restart queue exists.
+See `docs/39_SETTINGS_INFORMATION_ARCHITECTURE_AND_SYNC_CENTER.md`.

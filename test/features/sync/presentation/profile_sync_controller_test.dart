@@ -4,6 +4,7 @@ import 'package:rebirth/features/profile/data/profile_sync_repository_provider.d
 import 'package:rebirth/features/sync/domain/profile_sync_direction.dart';
 import 'package:rebirth/features/sync/domain/profile_sync_repository.dart';
 import 'package:rebirth/features/sync/domain/profile_sync_result.dart';
+import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/presentation/profile_sync_controller.dart';
 import 'package:rebirth/shared/state/profile_revision_provider.dart';
 
@@ -89,6 +90,17 @@ final class _FakeProfileSyncRepository implements ProfileSyncRepository {
   final ProfileSyncResult? pullResult;
   final Object? error;
   int resolveUsingCloudCalls = 0;
+
+  @override
+  Future<SyncRunResult> syncProfile() async {
+    return SyncRunResult(
+      direction: SyncRunDirection.twoWay,
+      phases: const [],
+      entityResults: const [],
+      startedAt: 1,
+      completedAt: 2,
+    );
+  }
 
   @override
   Future<bool> hasConflict() async => false;

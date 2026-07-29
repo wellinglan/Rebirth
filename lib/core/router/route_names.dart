@@ -13,6 +13,9 @@ abstract final class RouteNames {
   static const growth = 'growth';
   static const health = 'health';
   static const settings = 'settings';
+  static const settingsAccount = 'settingsAccount';
+  static const settingsDeveloperOptions = 'settingsDeveloperOptions';
+  static const syncCenter = 'syncCenter';
   static const settingsProfile = 'settingsProfile';
   static const personalDataOverview = 'personalDataOverview';
   static const syncConflicts = 'syncConflicts';
@@ -37,6 +40,9 @@ abstract final class RoutePaths {
   static const growth = '/growth';
   static const health = '/health';
   static const settings = '/settings';
+  static const settingsAccount = '/settings/account';
+  static const settingsDeveloperOptions = '/settings/developer-options';
+  static const syncCenter = '/settings/sync-center';
   static const settingsProfile = '/settings/profile';
   static const personalDataOverview = '/personal-data';
   static const syncConflicts = '/settings/sync-conflicts';
@@ -69,5 +75,12 @@ abstract final class RoutePaths {
 
   static String syncConflictDetails(String conflictId) {
     return '$syncConflicts/${Uri.encodeComponent(conflictId)}';
+  }
+
+  static String syncConflictsForModule(String moduleId) {
+    return Uri(
+      path: syncConflicts,
+      queryParameters: {'module': moduleId},
+    ).toString();
   }
 }

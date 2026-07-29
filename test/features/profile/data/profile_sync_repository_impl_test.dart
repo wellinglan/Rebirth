@@ -22,6 +22,7 @@ import 'package:rebirth/features/sync/domain/sync_conflict.dart';
 import 'package:rebirth/features/sync/domain/sync_cursor_store.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_adapter.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
+import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/domain/sync_result.dart';
 
 void main() {
@@ -59,6 +60,32 @@ void main() {
   });
 
   tearDown(() => database.close());
+
+  test('syncProfile performs one two-way Profile-only run', () async {
+    remote.pushResponse = SyncPushResponseDto(
+      accepted: [
+        SyncedRecord(
+          tableName: 'user_profiles',
+          recordId: 'profile',
+          serverVersion: 1,
+        ),
+      ],
+      conflicts: const [],
+    );
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 1,
+      items: const [],
+    );
+
+    final result = await repository.syncProfile();
+
+    expect(result.direction, SyncRunDirection.twoWay);
+    expect(result.entityResults.map((item) => item.entityType.wireName), [
+      'user_profiles',
+    ]);
+    expect(remote.pushCalls, 1);
+    expect(remote.pullCalls, 1);
+  });
 
   test(
     'pushProfile reads the active profile and creates a Profile item',

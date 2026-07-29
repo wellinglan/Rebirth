@@ -18,6 +18,14 @@ final class ProfileSyncRepositoryImpl implements ProfileSyncRepository {
   final ProfileSyncAdapter adapter;
 
   @override
+  Future<SyncRunResult> syncProfile() {
+    return coordinator.run(
+      direction: SyncRunDirection.twoWay,
+      entityTypes: const [SyncEntityType.profile],
+    );
+  }
+
+  @override
   Future<ProfileSyncResult> pushProfile() {
     return _run(
       direction: SyncRunDirection.push,

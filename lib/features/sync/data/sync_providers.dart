@@ -17,7 +17,11 @@ import 'sync_repository_provider.dart';
 import 'sync_conflict_providers.dart';
 
 final profileSyncAdapterProvider = Provider<ProfileSyncAdapter>((ref) {
-  return ProfileSyncAdapter(ref.watch(appDatabaseProvider));
+  return ProfileSyncAdapter(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncConflictRepositoryProvider),
+    () => ref.read(syncConflictScopeProvider.future),
+  );
 });
 
 final planSyncAdapterProvider = Provider<PlanSyncAdapter>((ref) {

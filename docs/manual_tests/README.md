@@ -15,6 +15,7 @@ become manual PASS.
 | Personal Data Aggregation | `36_personal_data_aggregation.md` |
 | Growth System Foundation and Journal State Semantics | `37_growth_system_foundation.md` |
 | Journal Prompt System | `38_journal_prompt_system.md` |
+| Settings Information Architecture and Sync Center | `39_settings_information_architecture_and_sync_center.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.

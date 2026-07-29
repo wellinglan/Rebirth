@@ -163,3 +163,14 @@ automatically, or implement a reusable Prompt Template aggregate.
 User acceptance on 2026-07-30 passed all 93 manual checks with no reported
 failure or anomaly. The manual matrix is
 `docs/manual_tests/38_journal_prompt_system.md`.
+
+## 10. Sprint 12D Sync Center Integration
+
+The completed Prompt System keeps its existing data and synchronization
+semantics. Sync Center presents prompt configuration and Journal entries as
+one Journal module and preserves the internal configuration-before-entry
+order. Module counts aggregate both entity results; conflict filtering groups
+both under Journal without showing technical entity names or prompt text.
+
+Sprint 12D adds no prompt behavior, payload change, migration, AI call,
+automatic sync, or Server change.

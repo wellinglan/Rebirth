@@ -651,3 +651,27 @@ Cursor advancement stays centralized in `SyncCoordinator`, and validation or
 transaction failure cannot partially apply an aggregate. No automatic or
 background synchronization was added. See
 `docs/38_JOURNAL_PROMPT_SYSTEM.md`.
+
+## Sprint 12D Product Module Layer
+
+The protocol-level entity registry remains unchanged. A separate product
+module registry groups entities for user-facing manual sync:
+
+1. Profile
+2. Plan
+3. Today
+4. Journal, containing prompt configuration then entry
+5. Health
+
+The order is explicit and does not use `SyncEntityType.index`.
+`SyncModuleRunner` delegates to current feature controllers and
+`SyncCoordinator`; Sync All neither bypasses global single-flight nor copies
+push/pull logic.
+
+Module results aggregate existing entity counts. `failedEntityCount` is the
+number of failed internal entities, not failed records. Global prerequisite
+failures stop and skip later modules; module failures and conflicts preserve
+results and continue. Running/progress/session results are transient after
+restart. Existing pending metadata, cursors and conflict rows remain
+canonical. See
+`docs/39_SETTINGS_INFORMATION_ARCHITECTURE_AND_SYNC_CENTER.md`.

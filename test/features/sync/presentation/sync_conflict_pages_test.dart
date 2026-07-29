@@ -24,6 +24,31 @@ import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
 void main() {
+  test('module filters group both Journal entity types', () {
+    expect(
+      SyncConflictModuleFilter.journal.includes(
+        SyncEntityType.journalPromptConfiguration,
+      ),
+      isTrue,
+    );
+    expect(
+      SyncConflictModuleFilter.journal.includes(SyncEntityType.journal),
+      isTrue,
+    );
+    expect(
+      SyncConflictModuleFilter.journal.includes(SyncEntityType.health),
+      isFalse,
+    );
+    expect(
+      SyncConflictModuleFilter.fromStableId('module.profile'),
+      SyncConflictModuleFilter.profile,
+    );
+    expect(
+      SyncConflictModuleFilter.fromStableId('unknown'),
+      SyncConflictModuleFilter.all,
+    );
+  });
+
   testWidgets('conflict list renders loading, empty, error, and Plan title', (
     tester,
   ) async {
@@ -38,7 +63,7 @@ void main() {
 
     await _pumpList(tester, items: const []);
     expect(find.byKey(const ValueKey('syncConflictListEmpty')), findsOneWidget);
-    expect(find.text('无待处理冲突'), findsOneWidget);
+    expect(find.text('无待处理问题'), findsOneWidget);
 
     await _pumpList(tester, error: StateError('storage'));
     expect(find.byKey(const ValueKey('syncConflictListError')), findsOneWidget);

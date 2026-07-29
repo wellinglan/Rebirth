@@ -549,3 +549,17 @@ Prompt 配置和 Journal 条目仍仅由用户手动同步，配置先于条目�
 OCC、cursor 和显式冲突恢复。Prompt/Response 正文不得进入 Growth、Personal
 Data、日志或测试证据。本 Sprint 只预留 `futureAi` 来源，不调用模型、不自动
 提出或启用问题。详细约束见 `docs/38_JOURNAL_PROMPT_SYSTEM.md`。
+
+# 二十一、Settings 与统一手动同步边界
+
+Sprint 12D 将普通 Settings 整理为账号、数据与同步、个人数据与隐私、
+Journal、高级设置和关于。Endpoint、Development User Key、设备诊断和旧数据
+归属验证集中到受 `enableDevLogin` 控制的开发者选项；普通页面不显示 Token、
+内部用户 ID、完整设备 ID 或 Profile 推拉方向。
+
+同步中心只包含 Profile、Plan、Today、Journal、Health 五个用户模块。
+`SyncModuleRegistry` 显式定义顺序，Journal 在一个模块内先同步问题配置再同步
+Journal 条目。同步仍由用户主动触发，并继续复用现有 Coordinator、OCC、cursor、
+事务、账号隔离和显式冲突恢复。没有自动同步、后台队列、新 Sync Entity、
+数据库迁移或 Server 变更。详见
+`docs/39_SETTINGS_INFORMATION_ARCHITECTURE_AND_SYNC_CENTER.md`。

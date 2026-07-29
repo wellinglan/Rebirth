@@ -89,3 +89,13 @@ response source of truth. Custom prompt answers cannot be represented safely
 by old clients, so all devices participating in Journal sync must upgrade.
 Prompt configuration is synchronized immediately before entries through the
 same manual action. See `docs/38_JOURNAL_PROMPT_SYSTEM.md`.
+
+## Sprint 12D User-module Presentation
+
+Journal remains two protocol entities but one user-facing Sync Center module.
+Its established request order is unchanged: prompt configuration first, then
+Journal entry. Counts and partial results are aggregated into one Journal
+card, while the Pending Issues Journal filter includes both entity types.
+
+No payload, cursor, conflict, transaction, or Server behavior changed. Journal
+sync remains explicit and manual.
