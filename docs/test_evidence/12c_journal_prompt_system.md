@@ -41,11 +41,22 @@ Quality and remains pending until the implementation commit runs in CI.
 
 | Evidence | Result |
 |---|---|
-| Implementation SHA | PENDING |
-| GitHub Quality Run | PENDING |
-| Publish Alpha Images Run | PENDING |
-| API image tag | PENDING |
-| API image digest | PENDING |
+| Implementation SHA | `df0ca0dd94cfb6ec28425bba389cf7edbce363d6` |
+| GitHub Quality Run | PASS, [30461654412](https://github.com/wellinglan/Rebirth/actions/runs/30461654412) |
+| Publish Alpha Images Run | PASS, [30461654100](https://github.com/wellinglan/Rebirth/actions/runs/30461654100) |
+| API image tags | full SHA, `df0ca0dd`, and `alpha-latest` |
+| API image digest | `sha256:67205d50ce01af212635911ec17d83d1f2a71392fa955d8ac9ddf2c9956af7b0` |
+
+Quality passed all four jobs:
+
+- Flutter Analyze And Test;
+- Android Debug Build;
+- Server SQLite;
+- Server PostgreSQL Multiprocess And Multiworker, including Alembic upgrade,
+  PostgreSQL marker tests, and two-worker verification.
+
+GitHub emitted only its Node.js 20 action deprecation annotation. It did not
+change the successful result.
 
 No Alpha server deployment is part of Sprint 12C.
 
