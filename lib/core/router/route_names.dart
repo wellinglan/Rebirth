@@ -13,6 +13,7 @@ abstract final class RouteNames {
   static const health = 'health';
   static const settings = 'settings';
   static const settingsProfile = 'settingsProfile';
+  static const personalDataOverview = 'personalDataOverview';
   static const syncConflicts = 'syncConflicts';
   static const syncConflictDetails = 'syncConflictDetails';
   static const aiCoach = 'aiCoach';
@@ -35,6 +36,7 @@ abstract final class RoutePaths {
   static const health = '/health';
   static const settings = '/settings';
   static const settingsProfile = '/settings/profile';
+  static const personalDataOverview = '/personal-data';
   static const syncConflicts = '/settings/sync-conflicts';
   static const aiCoach = '/ai-coach';
 

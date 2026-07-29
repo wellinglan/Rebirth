@@ -8,6 +8,8 @@ import 'package:rebirth/features/health/presentation/health_controller.dart';
 import 'package:rebirth/features/journal/presentation/journal_controller.dart';
 import 'package:rebirth/features/journal/presentation/journal_today_controller.dart';
 import 'package:rebirth/features/plan/presentation/plan_controller.dart';
+import 'package:rebirth/features/personal_data/application/personal_data_aggregation_controller.dart';
+import 'package:rebirth/features/personal_data/application/personal_data_providers.dart';
 import 'package:rebirth/features/profile/presentation/profile_controller.dart';
 import 'package:rebirth/features/settings/presentation/settings_controller.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
@@ -29,6 +31,8 @@ void invalidateAccountScopedProviders(Ref ref) {
   ref.invalidate(journalControllerProvider);
   ref.invalidate(journalTodayControllerProvider);
   ref.invalidate(planControllerProvider);
+  ref.invalidate(personalDataAggregationControllerProvider);
+  ref.invalidate(personalDataProviderRegistryProvider);
   ref.invalidate(healthControllerProvider);
   ref.invalidate(growthControllerProvider);
   ref.invalidate(settingsControllerProvider);

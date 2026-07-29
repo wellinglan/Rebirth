@@ -1,0 +1,18 @@
+# Manual Test Index
+
+Manual matrices record only real product execution. Automated tests never
+become manual PASS.
+
+| Current area | Matrix |
+|---|---|
+| Plan cross-device sync | `25_plan_cross_device_sync.md` |
+| Sync conflict recovery | `26_sync_conflict_recovery.md` |
+| Account boundary isolation | `27_account_boundary_isolation.md` |
+| Today cross-device sync | `32_today_cross_device_sync.md` |
+| Today conflict recovery | `33_today_conflict_recovery.md` |
+| Journal cross-device sync | `34_journal_cross_device_sync.md` |
+| Health cross-device sync | `35_health_cross_device_sync.md` |
+| Personal Data Aggregation | `36_personal_data_aggregation.md` |
+
+Older UI, AI, account, and deployment matrices remain in this directory and
+retain their recorded status.

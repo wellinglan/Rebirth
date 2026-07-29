@@ -701,3 +701,22 @@ synchronize Health in this Sprint.
 Product acceptance starts as `NOT EXECUTED` in
 `docs/manual_tests/35_health_cross_device_sync.md`; automated evidence cannot
 close the Health product gate.
+
+## 29. Sprint 12A Personal Data Aggregation
+
+Sprint 12A adds a local-only Personal Data Provider Registry, fault-isolated
+Aggregation Engine, five current feature adapters, and a generic local
+overview. It does not add a Server endpoint, cloud aggregation, automatic
+sync, or AI analysis.
+
+The trusted local account scope comes from the existing Auth Gate.
+Authenticated-offline sessions can aggregate; signed-out, binding-required,
+and rejected sessions cannot retain or open another account's result.
+Aggregation reads bounded local data and never advances a cursor, probes the
+Endpoint, refreshes JWT, or modifies account binding.
+
+Flutter schema remains 8, API remains 1, Sync Protocol remains 2, and
+PostgreSQL/Alembic/Server runtime are unchanged. No Alpha API deployment is
+required. Design is in `docs/36_PERSONAL_DATA_AGGREGATION.md`; manual product
+acceptance begins as `NOT EXECUTED` in
+`docs/manual_tests/36_personal_data_aggregation.md`.

@@ -693,3 +693,25 @@ Rebirth 不会定义什么是成功。
 它只是记录、理解、陪伴，并在漫长时间里帮助用户重新生长。
 
 > Rebirth 的目标，不是帮助你做更多，而是帮助你成为更多。
+
+---
+
+## 16. Personal Data Overview
+
+Settings 提供“个人数据概览”入口，用于按本地自然日查看当前账号中 Profile、
+Plan、Today、Journal 与 Health 的结构化本地摘要。页面支持前一天、后一天、
+回到今天和手动刷新。
+
+该页面是本地聚合基础设施的产品验证面，不是 Growth 图表或 AI Insight：
+
+- 不创建或修改业务记录；
+- 不自动触发云同步；
+- 不调用 AI；
+- 不展示 Journal 完整正文或 Health 备注；
+- 不把聚合结果持久化；
+- signed-out、binding-required 和 rejected session 不可进入；
+- authenticated-offline 可使用。
+
+未来个人数据模块通过统一 Provider 注册后自动进入通用页面，无需修改 Engine
+或页面级模块 switch。技术边界见
+`docs/36_PERSONAL_DATA_AGGREGATION.md`。

@@ -131,6 +131,8 @@ class SettingsPage extends ConsumerWidget {
                     '当前没有后台自动同步。',
               ),
               onOpenProfile: () => context.push(RoutePaths.settingsProfile),
+              onOpenPersonalData: () =>
+                  context.push(RoutePaths.personalDataOverview),
               onOpenSyncConflicts:
                   account.status.isAuthenticated &&
                       authState?.canUseCloudSync == true
@@ -555,6 +557,7 @@ class _SettingsContent extends StatelessWidget {
     required this.onWeChatLogin,
     required this.onSyncSettings,
     required this.onOpenProfile,
+    required this.onOpenPersonalData,
     required this.onOpenSyncConflicts,
     required this.onOpenAiCoach,
   });
@@ -591,6 +594,7 @@ class _SettingsContent extends StatelessWidget {
   final VoidCallback onWeChatLogin;
   final VoidCallback onSyncSettings;
   final VoidCallback onOpenProfile;
+  final VoidCallback onOpenPersonalData;
   final VoidCallback? onOpenSyncConflicts;
   final VoidCallback onOpenAiCoach;
 
@@ -670,6 +674,17 @@ class _SettingsContent extends StatelessWidget {
                     subtitle: '本地资料',
                     icon: Icons.badge_outlined,
                     onTap: onOpenProfile,
+                  ),
+                ),
+                const SizedBox(height: AppLayout.sectionGap),
+                SettingsSection(
+                  title: '个人数据',
+                  child: SettingsTile(
+                    key: const ValueKey('personalDataOverviewSettingsTile'),
+                    title: '个人数据概览',
+                    subtitle: '仅汇总当前账号的本地数据，不进行同步或 AI 分析',
+                    icon: Icons.dashboard_customize_outlined,
+                    onTap: onOpenPersonalData,
                   ),
                 ),
                 const SizedBox(height: AppLayout.sectionGap),

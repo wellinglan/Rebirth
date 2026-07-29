@@ -506,3 +506,17 @@ Rebirth 的使命不会改变。
 ---
 
 > **Rebirth 的目标，不是帮助你做更多，而是帮助你成为更多。**
+
+---
+
+# 十八、本地个人数据聚合边界
+
+Rebirth 通过 `PersonalDataProvider`、Registry 与 Aggregation Engine 对
+Profile、Plan、Today、Journal、Health 进行可扩展的本地派生读取。
+
+聚合结果不是新的业务数据源，不持久化、不自动同步、不上传 Server，也不等于
+AI Consent。Journal 正文和 Health 备注不进入默认聚合结果；Health 始终作为
+高度敏感数据处理。未来模块通过实现 Provider 并在 Composition Root 注册接入，
+不得要求 Engine 或通用页面增加模块 switch。
+
+详细约束见 `docs/36_PERSONAL_DATA_AGGREGATION.md`。

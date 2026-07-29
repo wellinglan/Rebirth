@@ -14,6 +14,7 @@ import '../../features/growth/presentation/growth_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
+import '../../features/personal_data/presentation/personal_data_overview_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/sync/presentation/sync_conflict_detail_page.dart';
@@ -131,6 +132,11 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: RoutePaths.personalDataOverview,
+        name: RouteNames.personalDataOverview,
+        builder: (context, state) => const PersonalDataOverviewPage(),
       ),
       GoRoute(
         path: RoutePaths.aiCoach,
