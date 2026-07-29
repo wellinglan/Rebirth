@@ -46,6 +46,33 @@ class JournalTodayController extends AsyncNotifier<JournalEntry?> {
     return _mutate(() => ref.read(journalRepositoryProvider).reopen(entry.id));
   }
 
+  Future<JournalEntry> applyLatestPrompts() async {
+    final entry = state.asData?.value;
+    if (entry == null) {
+      throw const JournalEntryNotFoundException('today');
+    }
+    if (_mutationInProgress) return entry;
+    _mutationInProgress = true;
+    final previous = state;
+    try {
+      final saved = await ref
+          .read(journalRepositoryImplProvider)
+          .applyLatestPrompts(entry.id);
+      if (ref.mounted) {
+        state = AsyncData(saved);
+        ref
+          ..invalidate(personalDataAggregationControllerProvider)
+          ..invalidate(growthControllerProvider);
+      }
+      return saved;
+    } catch (_) {
+      if (ref.mounted) state = previous;
+      rethrow;
+    } finally {
+      _mutationInProgress = false;
+    }
+  }
+
   Future<void> _mutate(Future<JournalEntry> Function() operation) async {
     if (_mutationInProgress) return;
     _mutationInProgress = true;

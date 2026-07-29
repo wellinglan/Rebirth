@@ -4,6 +4,8 @@ import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/journal/data/journal_sync_adapter.dart';
+import 'package:rebirth/features/journal/data/journal_prompt_repository_provider.dart';
+import 'package:rebirth/features/journal/data/journal_prompt_sync_adapter.dart';
 import 'package:rebirth/features/health/data/health_sync_adapter.dart';
 import 'package:rebirth/features/profile/data/profile_sync_adapter.dart';
 import 'package:rebirth/features/plan/data/plan_sync_adapter.dart';
@@ -43,6 +45,17 @@ final journalSyncAdapterProvider = Provider<JournalSyncAdapter>((ref) {
   );
 });
 
+final journalPromptSyncAdapterProvider = Provider<JournalPromptSyncAdapter>((
+  ref,
+) {
+  return JournalPromptSyncAdapter(
+    ref.watch(appDatabaseProvider),
+    ref.watch(journalPromptRepositoryProvider),
+    ref.watch(syncConflictRepositoryProvider),
+    () => ref.read(syncConflictScopeProvider.future),
+  );
+});
+
 final healthSyncAdapterProvider = Provider<HealthSyncAdapter>((ref) {
   return HealthSyncAdapter(
     ref.watch(appDatabaseProvider),
@@ -57,6 +70,7 @@ final syncEntityAdapterRegistryProvider = Provider<SyncEntityAdapterRegistry>((
   return SyncEntityAdapterRegistry([
     ref.watch(profileSyncAdapterProvider),
     ref.watch(todaySyncAdapterProvider),
+    ref.watch(journalPromptSyncAdapterProvider),
     ref.watch(journalSyncAdapterProvider),
     ref.watch(healthSyncAdapterProvider),
     ref.watch(planSyncAdapterProvider),

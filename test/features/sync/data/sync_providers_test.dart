@@ -7,7 +7,7 @@ import 'package:rebirth/features/sync/data/sync_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 
 void main() {
-  test('provider composition registers all five synchronized domains', () {
+  test('provider composition registers all synchronized domains', () {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(database)],
@@ -22,6 +22,7 @@ void main() {
     expect(registry.registeredTypes, [
       SyncEntityType.profile,
       SyncEntityType.today,
+      SyncEntityType.journalPromptConfiguration,
       SyncEntityType.journal,
       SyncEntityType.health,
       SyncEntityType.plan,
@@ -33,6 +34,10 @@ void main() {
     expect(
       registry.adapterFor(SyncEntityType.today).entityType,
       SyncEntityType.today,
+    );
+    expect(
+      registry.adapterFor(SyncEntityType.journalPromptConfiguration).entityType,
+      SyncEntityType.journalPromptConfiguration,
     );
     expect(
       registry.adapterFor(SyncEntityType.journal).entityType,

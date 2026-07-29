@@ -871,3 +871,26 @@ v1.0 的设计重点是：
 - 为未来同步预留能力，但不提前引入云端复杂度。
 
 > 数据设计的价值，不在于字段数量，而在于多年以后仍能准确理解用户经历了什么。
+
+## 24. Schema 9：Journal Prompt System
+
+Flutter `schemaVersion` 为 `9`。新增三张表：
+
+- `journal_prompt_configurations`：每个用户一个 active `default` 聚合，
+  保存配置版本与同步/OCC 元数据；
+- `journal_prompt_definitions`：保存 system/user/future_ai 来源、stable key、
+  问题文本、顺序、启用状态、版本和逻辑删除；
+- `journal_entry_prompt_items`：保存 Journal entry 的问题/辅助文本快照和
+  nullable 动态回答，删除 entry 时级联删除 item。
+
+约束保证每用户只有一个 active default 配置、每配置 active system stable key
+唯一，并为配置顺序和 entry item 顺序建立索引。v8 到 v9 迁移为每个用户建立
+默认 catalog，并用确定性 UUID 将旧 Journal 五列回填为五个快照 item；重复执行
+不会产生重复项。迁移同时重建 `sync_conflicts` 的 entity type CHECK，使其接受
+`journal_prompt_configurations` 并保留旧冲突。fresh install 与所有受支持升级
+路径最终得到同一 schema 9 约束。
+
+`journal_entry_prompt_items` 是 Journal 回答的 Source of Truth。原
+`journal_entries` 五个回答列暂时保留，只从对应 system stable key 快照派生，
+用于严格的 payload v1 兼容，不再作为新业务写入接口。兼容期结束后才能另行
+设计移除迁移。完整设计见 `docs/38_JOURNAL_PROMPT_SYSTEM.md`。

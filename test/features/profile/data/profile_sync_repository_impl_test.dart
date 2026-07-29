@@ -690,7 +690,7 @@ void main() {
   });
 
   test('schemaVersion is 7', () {
-    expect(database.schemaVersion, 8);
+    expect(database.schemaVersion, 9);
   });
 
   test(

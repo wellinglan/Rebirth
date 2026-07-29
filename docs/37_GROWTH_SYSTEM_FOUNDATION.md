@@ -225,3 +225,11 @@ source accuracy, privacy, independent-account isolation, 320px layout, maximum
 font size, and keyboard operation. Six partial-availability rows remain
 `NOT EXECUTED` because no safe product-level Provider or Contributor failure
 injection is available; automated tests cover those internal invariants.
+
+## Sprint 12C Prompt Boundary
+
+Growth remains independent of Journal prompt configuration and dynamic
+responses. Its Journal source uses only date and lifecycle status metadata;
+prompt text, helper text, answers, and configuration payloads do not enter
+Evidence or projections. The reserved `futureAi` prompt source does not enable
+AI, persistence of Growth Evidence, or any model request.

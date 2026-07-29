@@ -23,6 +23,7 @@ final class SyncApiDataSource implements SyncRemoteDataSource {
     'user_profiles',
     'today_records',
     'journal_entries',
+    'journal_prompt_configurations',
     'goals',
     'health_records',
   };

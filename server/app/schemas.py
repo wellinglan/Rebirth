@@ -19,6 +19,7 @@ MobilePlatform = Literal["android", "ios"]
 SyncTable = Literal[
     "user_profiles",
     "today_records",
+    "journal_prompt_configurations",
     "journal_entries",
     "goals",
     "health_records",
@@ -33,6 +34,8 @@ PlanGoalStatus = Literal[
 ]
 TodayRecordStatus = Literal["draft", "completed"]
 JournalEntryStatus = Literal["draft", "completed"]
+JournalPromptSource = Literal["system", "user", "future_ai"]
+JournalResponseKind = Literal["long_text"]
 HealthDataSource = Literal["manual", "health_connect", "apple_health"]
 
 
@@ -160,16 +163,56 @@ class TodaySyncPayload(BaseModel):
         return self
 
 
+class JournalPromptItemSyncPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    source_prompt_id: str | None
+    source_prompt_stable_key: str | None
+    source_prompt_version: int = Field(ge=1)
+    prompt_source: JournalPromptSource
+    question_text_snapshot: str = Field(min_length=1, max_length=500)
+    helper_text_snapshot: str | None = Field(default=None, max_length=500)
+    response_kind: JournalResponseKind
+    display_order: int = Field(ge=0)
+    answer_text: str | None = Field(default=None, max_length=20000)
+    created_at: int = Field(ge=0)
+    updated_at: int = Field(ge=0)
+
+    @field_validator("id", "source_prompt_id")
+    @classmethod
+    def validate_uuid(cls, value: str | None) -> str | None:
+        if value is not None:
+            UUID(value)
+        return value
+
+    @field_validator(
+        "question_text_snapshot",
+        "helper_text_snapshot",
+        "answer_text",
+    )
+    @classmethod
+    def validate_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("Journal prompt text must not be blank")
+        return trimmed
+
+
 class JournalSyncPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     entry_date: str
     timezone_offset_minutes: int = Field(ge=-840, le=840)
-    most_important_accomplishment: str | None
-    most_draining_event: str | None
-    emotion_source: str | None
-    learning: str | None
-    tomorrow_adjustment: str | None
+    journal_payload_schema_version: Literal[2] | None = None
+    prompt_items: list[JournalPromptItemSyncPayload] | None = None
+    most_important_accomplishment: str | None = None
+    most_draining_event: str | None = None
+    emotion_source: str | None = None
+    learning: str | None = None
+    tomorrow_adjustment: str | None = None
     entry_status: JournalEntryStatus
     created_at: int = Field(ge=0)
 
@@ -193,12 +236,44 @@ class JournalSyncPayload(BaseModel):
         if value is None:
             return None
         trimmed = value.strip()
-        if not trimmed:
-            raise ValueError("Journal content must not be blank")
+        if not trimmed or len(value) > 20000:
+            raise ValueError("Journal content must be valid")
         return trimmed
 
     @model_validator(mode="after")
     def validate_has_content(self) -> "JournalSyncPayload":
+        v1_fields = {
+            "most_important_accomplishment",
+            "most_draining_event",
+            "emotion_source",
+            "learning",
+            "tomorrow_adjustment",
+        }
+        if self.journal_payload_schema_version == 2:
+            if self.prompt_items is None or self.model_fields_set & v1_fields:
+                raise ValueError("Journal v2 must use prompt_items only")
+            ids = {item.id for item in self.prompt_items}
+            identities = {
+                (item.source_prompt_id, item.source_prompt_version)
+                for item in self.prompt_items
+                if item.source_prompt_id is not None
+            }
+            source_count = sum(
+                item.source_prompt_id is not None for item in self.prompt_items
+            )
+            if (
+                not self.prompt_items
+                or len(self.prompt_items) > 100
+                or len(ids) != len(self.prompt_items)
+                or len(identities) != source_count
+                or not any(item.answer_text for item in self.prompt_items)
+            ):
+                raise ValueError("Journal v2 prompt_items are invalid")
+            return self
+        if self.prompt_items is not None or not v1_fields.issubset(
+            self.model_fields_set
+        ):
+            raise ValueError("Journal v1 fields are incomplete")
         if not any(
             (
                 self.most_important_accomplishment,
@@ -209,6 +284,85 @@ class JournalSyncPayload(BaseModel):
             )
         ):
             raise ValueError("Journal requires at least one content field")
+        return self
+
+
+class JournalPromptDefinitionSyncPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    stable_key: str | None
+    source: JournalPromptSource
+    question_text: str = Field(min_length=1, max_length=500)
+    helper_text: str | None = Field(default=None, max_length=500)
+    response_kind: JournalResponseKind
+    display_order: int = Field(ge=0)
+    is_enabled: bool
+    prompt_version: int = Field(ge=1)
+    created_at: int = Field(ge=0)
+    updated_at: int = Field(ge=0)
+    deleted_at: int | None = Field(default=None, ge=0)
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, value: str) -> str:
+        UUID(value)
+        return value
+
+    @field_validator("question_text", "helper_text")
+    @classmethod
+    def validate_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("Journal prompt text must not be blank")
+        return trimmed
+
+    @model_validator(mode="after")
+    def validate_source_identity(self) -> "JournalPromptDefinitionSyncPayload":
+        if self.source == "system":
+            if self.stable_key is None or not self.stable_key.strip():
+                raise ValueError("System prompts require stable_key")
+        elif self.stable_key is not None:
+            raise ValueError("Non-system prompts cannot use stable_key")
+        if self.deleted_at is not None and self.is_enabled:
+            raise ValueError("Deleted prompts cannot be enabled")
+        return self
+
+
+class JournalPromptConfigurationSyncPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    payload_schema_version: Literal[1]
+    logical_key: Literal["default"]
+    configuration_version: int = Field(ge=1)
+    created_at: int = Field(ge=0)
+    prompts: list[JournalPromptDefinitionSyncPayload] = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+    @model_validator(mode="after")
+    def validate_prompt_set(self) -> "JournalPromptConfigurationSyncPayload":
+        ids = {prompt.id for prompt in self.prompts}
+        stable_keys = {
+            prompt.stable_key
+            for prompt in self.prompts
+            if prompt.stable_key is not None
+        }
+        enabled_count = sum(
+            prompt.deleted_at is None and prompt.is_enabled
+            for prompt in self.prompts
+        )
+        if len(ids) != len(self.prompts):
+            raise ValueError("Prompt IDs must be unique")
+        if len(stable_keys) != sum(
+            prompt.stable_key is not None for prompt in self.prompts
+        ):
+            raise ValueError("System stable keys must be unique")
+        if enabled_count < 1 or enabled_count > 20:
+            raise ValueError("Enabled prompt count is invalid")
         return self
 
 

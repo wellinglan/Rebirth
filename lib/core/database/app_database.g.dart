@@ -5388,6 +5388,2340 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
   }
 }
 
+class $JournalPromptConfigurationsTable extends JournalPromptConfigurations
+    with
+        TableInfo<
+          $JournalPromptConfigurationsTable,
+          JournalPromptConfigurationRow
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JournalPromptConfigurationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: databaseUuid.v4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('local_only'),
+  );
+  static const VerificationMeta _serverVersionMeta = const VerificationMeta(
+    'serverVersion',
+  );
+  @override
+  late final GeneratedColumn<int> serverVersion = GeneratedColumn<int>(
+    'server_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
+    'lastSyncedAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastSyncedAt = GeneratedColumn<int>(
+    'last_synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _originDeviceIdMeta = const VerificationMeta(
+    'originDeviceId',
+  );
+  @override
+  late final GeneratedColumn<String> originDeviceId = GeneratedColumn<String>(
+    'origin_device_id',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES user_profiles (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _logicalKeyMeta = const VerificationMeta(
+    'logicalKey',
+  );
+  @override
+  late final GeneratedColumn<String> logicalKey = GeneratedColumn<String>(
+    'logical_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('default'),
+  );
+  static const VerificationMeta _configurationVersionMeta =
+      const VerificationMeta('configurationVersion');
+  @override
+  late final GeneratedColumn<int> configurationVersion = GeneratedColumn<int>(
+    'configuration_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    syncStatus,
+    serverVersion,
+    lastSyncedAt,
+    originDeviceId,
+    deletedAt,
+    userId,
+    logicalKey,
+    configurationVersion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'journal_prompt_configurations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JournalPromptConfigurationRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('server_version')) {
+      context.handle(
+        _serverVersionMeta,
+        serverVersion.isAcceptableOrUnknown(
+          data['server_version']!,
+          _serverVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+        _lastSyncedAtMeta,
+        lastSyncedAt.isAcceptableOrUnknown(
+          data['last_synced_at']!,
+          _lastSyncedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('origin_device_id')) {
+      context.handle(
+        _originDeviceIdMeta,
+        originDeviceId.isAcceptableOrUnknown(
+          data['origin_device_id']!,
+          _originDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('logical_key')) {
+      context.handle(
+        _logicalKeyMeta,
+        logicalKey.isAcceptableOrUnknown(data['logical_key']!, _logicalKeyMeta),
+      );
+    }
+    if (data.containsKey('configuration_version')) {
+      context.handle(
+        _configurationVersionMeta,
+        configurationVersion.isAcceptableOrUnknown(
+          data['configuration_version']!,
+          _configurationVersionMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  JournalPromptConfigurationRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JournalPromptConfigurationRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      serverVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_version'],
+      ),
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_synced_at'],
+      ),
+      originDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origin_device_id'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      logicalKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}logical_key'],
+      )!,
+      configurationVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}configuration_version'],
+      )!,
+    );
+  }
+
+  @override
+  $JournalPromptConfigurationsTable createAlias(String alias) {
+    return $JournalPromptConfigurationsTable(attachedDatabase, alias);
+  }
+}
+
+class JournalPromptConfigurationRow extends DataClass
+    implements Insertable<JournalPromptConfigurationRow> {
+  final String id;
+  final int createdAt;
+  final int updatedAt;
+  final String syncStatus;
+  final int? serverVersion;
+  final int? lastSyncedAt;
+  final String? originDeviceId;
+  final int? deletedAt;
+  final String userId;
+  final String logicalKey;
+  final int configurationVersion;
+  const JournalPromptConfigurationRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.syncStatus,
+    this.serverVersion,
+    this.lastSyncedAt,
+    this.originDeviceId,
+    this.deletedAt,
+    required this.userId,
+    required this.logicalKey,
+    required this.configurationVersion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || serverVersion != null) {
+      map['server_version'] = Variable<int>(serverVersion);
+    }
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<int>(lastSyncedAt);
+    }
+    if (!nullToAbsent || originDeviceId != null) {
+      map['origin_device_id'] = Variable<String>(originDeviceId);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['user_id'] = Variable<String>(userId);
+    map['logical_key'] = Variable<String>(logicalKey);
+    map['configuration_version'] = Variable<int>(configurationVersion);
+    return map;
+  }
+
+  JournalPromptConfigurationsCompanion toCompanion(bool nullToAbsent) {
+    return JournalPromptConfigurationsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      syncStatus: Value(syncStatus),
+      serverVersion: serverVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverVersion),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
+      originDeviceId: originDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originDeviceId),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      userId: Value(userId),
+      logicalKey: Value(logicalKey),
+      configurationVersion: Value(configurationVersion),
+    );
+  }
+
+  factory JournalPromptConfigurationRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JournalPromptConfigurationRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      serverVersion: serializer.fromJson<int?>(json['serverVersion']),
+      lastSyncedAt: serializer.fromJson<int?>(json['lastSyncedAt']),
+      originDeviceId: serializer.fromJson<String?>(json['originDeviceId']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      userId: serializer.fromJson<String>(json['userId']),
+      logicalKey: serializer.fromJson<String>(json['logicalKey']),
+      configurationVersion: serializer.fromJson<int>(
+        json['configurationVersion'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'serverVersion': serializer.toJson<int?>(serverVersion),
+      'lastSyncedAt': serializer.toJson<int?>(lastSyncedAt),
+      'originDeviceId': serializer.toJson<String?>(originDeviceId),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'userId': serializer.toJson<String>(userId),
+      'logicalKey': serializer.toJson<String>(logicalKey),
+      'configurationVersion': serializer.toJson<int>(configurationVersion),
+    };
+  }
+
+  JournalPromptConfigurationRow copyWith({
+    String? id,
+    int? createdAt,
+    int? updatedAt,
+    String? syncStatus,
+    Value<int?> serverVersion = const Value.absent(),
+    Value<int?> lastSyncedAt = const Value.absent(),
+    Value<String?> originDeviceId = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? userId,
+    String? logicalKey,
+    int? configurationVersion,
+  }) => JournalPromptConfigurationRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    serverVersion: serverVersion.present
+        ? serverVersion.value
+        : this.serverVersion,
+    lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+    originDeviceId: originDeviceId.present
+        ? originDeviceId.value
+        : this.originDeviceId,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    userId: userId ?? this.userId,
+    logicalKey: logicalKey ?? this.logicalKey,
+    configurationVersion: configurationVersion ?? this.configurationVersion,
+  );
+  JournalPromptConfigurationRow copyWithCompanion(
+    JournalPromptConfigurationsCompanion data,
+  ) {
+    return JournalPromptConfigurationRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      serverVersion: data.serverVersion.present
+          ? data.serverVersion.value
+          : this.serverVersion,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
+      originDeviceId: data.originDeviceId.present
+          ? data.originDeviceId.value
+          : this.originDeviceId,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      logicalKey: data.logicalKey.present
+          ? data.logicalKey.value
+          : this.logicalKey,
+      configurationVersion: data.configurationVersion.present
+          ? data.configurationVersion.value
+          : this.configurationVersion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalPromptConfigurationRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('originDeviceId: $originDeviceId, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('userId: $userId, ')
+          ..write('logicalKey: $logicalKey, ')
+          ..write('configurationVersion: $configurationVersion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    syncStatus,
+    serverVersion,
+    lastSyncedAt,
+    originDeviceId,
+    deletedAt,
+    userId,
+    logicalKey,
+    configurationVersion,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JournalPromptConfigurationRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.serverVersion == this.serverVersion &&
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.originDeviceId == this.originDeviceId &&
+          other.deletedAt == this.deletedAt &&
+          other.userId == this.userId &&
+          other.logicalKey == this.logicalKey &&
+          other.configurationVersion == this.configurationVersion);
+}
+
+class JournalPromptConfigurationsCompanion
+    extends UpdateCompanion<JournalPromptConfigurationRow> {
+  final Value<String> id;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<String> syncStatus;
+  final Value<int?> serverVersion;
+  final Value<int?> lastSyncedAt;
+  final Value<String?> originDeviceId;
+  final Value<int?> deletedAt;
+  final Value<String> userId;
+  final Value<String> logicalKey;
+  final Value<int> configurationVersion;
+  final Value<int> rowid;
+  const JournalPromptConfigurationsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.originDeviceId = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.logicalKey = const Value.absent(),
+    this.configurationVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  JournalPromptConfigurationsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.originDeviceId = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    required String userId,
+    this.logicalKey = const Value.absent(),
+    this.configurationVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId);
+  static Insertable<JournalPromptConfigurationRow> custom({
+    Expression<String>? id,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? serverVersion,
+    Expression<int>? lastSyncedAt,
+    Expression<String>? originDeviceId,
+    Expression<int>? deletedAt,
+    Expression<String>? userId,
+    Expression<String>? logicalKey,
+    Expression<int>? configurationVersion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (serverVersion != null) 'server_version': serverVersion,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (originDeviceId != null) 'origin_device_id': originDeviceId,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (userId != null) 'user_id': userId,
+      if (logicalKey != null) 'logical_key': logicalKey,
+      if (configurationVersion != null)
+        'configuration_version': configurationVersion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  JournalPromptConfigurationsCompanion copyWith({
+    Value<String>? id,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<String>? syncStatus,
+    Value<int?>? serverVersion,
+    Value<int?>? lastSyncedAt,
+    Value<String?>? originDeviceId,
+    Value<int?>? deletedAt,
+    Value<String>? userId,
+    Value<String>? logicalKey,
+    Value<int>? configurationVersion,
+    Value<int>? rowid,
+  }) {
+    return JournalPromptConfigurationsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      serverVersion: serverVersion ?? this.serverVersion,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      originDeviceId: originDeviceId ?? this.originDeviceId,
+      deletedAt: deletedAt ?? this.deletedAt,
+      userId: userId ?? this.userId,
+      logicalKey: logicalKey ?? this.logicalKey,
+      configurationVersion: configurationVersion ?? this.configurationVersion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (serverVersion.present) {
+      map['server_version'] = Variable<int>(serverVersion.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<int>(lastSyncedAt.value);
+    }
+    if (originDeviceId.present) {
+      map['origin_device_id'] = Variable<String>(originDeviceId.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (logicalKey.present) {
+      map['logical_key'] = Variable<String>(logicalKey.value);
+    }
+    if (configurationVersion.present) {
+      map['configuration_version'] = Variable<int>(configurationVersion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalPromptConfigurationsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('originDeviceId: $originDeviceId, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('userId: $userId, ')
+          ..write('logicalKey: $logicalKey, ')
+          ..write('configurationVersion: $configurationVersion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $JournalPromptDefinitionsTable extends JournalPromptDefinitions
+    with TableInfo<$JournalPromptDefinitionsTable, JournalPromptDefinitionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JournalPromptDefinitionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: databaseUuid.v4,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _configurationIdMeta = const VerificationMeta(
+    'configurationId',
+  );
+  @override
+  late final GeneratedColumn<String> configurationId = GeneratedColumn<String>(
+    'configuration_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES journal_prompt_configurations (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _stableKeyMeta = const VerificationMeta(
+    'stableKey',
+  );
+  @override
+  late final GeneratedColumn<String> stableKey = GeneratedColumn<String>(
+    'stable_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _promptSourceMeta = const VerificationMeta(
+    'promptSource',
+  );
+  @override
+  late final GeneratedColumn<String> promptSource = GeneratedColumn<String>(
+    'prompt_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _questionTextMeta = const VerificationMeta(
+    'questionText',
+  );
+  @override
+  late final GeneratedColumn<String> questionText = GeneratedColumn<String>(
+    'question_text',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 500,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _helperTextMeta = const VerificationMeta(
+    'helperText',
+  );
+  @override
+  late final GeneratedColumn<String> helperText = GeneratedColumn<String>(
+    'helper_text',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 500),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _responseKindMeta = const VerificationMeta(
+    'responseKind',
+  );
+  @override
+  late final GeneratedColumn<String> responseKind = GeneratedColumn<String>(
+    'response_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('long_text'),
+  );
+  static const VerificationMeta _displayOrderMeta = const VerificationMeta(
+    'displayOrder',
+  );
+  @override
+  late final GeneratedColumn<int> displayOrder = GeneratedColumn<int>(
+    'display_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isEnabledMeta = const VerificationMeta(
+    'isEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> isEnabled = GeneratedColumn<bool>(
+    'is_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _promptVersionMeta = const VerificationMeta(
+    'promptVersion',
+  );
+  @override
+  late final GeneratedColumn<int> promptVersion = GeneratedColumn<int>(
+    'prompt_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    deletedAt,
+    configurationId,
+    stableKey,
+    promptSource,
+    questionText,
+    helperText,
+    responseKind,
+    displayOrder,
+    isEnabled,
+    promptVersion,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'journal_prompt_definitions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JournalPromptDefinitionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('configuration_id')) {
+      context.handle(
+        _configurationIdMeta,
+        configurationId.isAcceptableOrUnknown(
+          data['configuration_id']!,
+          _configurationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_configurationIdMeta);
+    }
+    if (data.containsKey('stable_key')) {
+      context.handle(
+        _stableKeyMeta,
+        stableKey.isAcceptableOrUnknown(data['stable_key']!, _stableKeyMeta),
+      );
+    }
+    if (data.containsKey('prompt_source')) {
+      context.handle(
+        _promptSourceMeta,
+        promptSource.isAcceptableOrUnknown(
+          data['prompt_source']!,
+          _promptSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_promptSourceMeta);
+    }
+    if (data.containsKey('question_text')) {
+      context.handle(
+        _questionTextMeta,
+        questionText.isAcceptableOrUnknown(
+          data['question_text']!,
+          _questionTextMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_questionTextMeta);
+    }
+    if (data.containsKey('helper_text')) {
+      context.handle(
+        _helperTextMeta,
+        helperText.isAcceptableOrUnknown(data['helper_text']!, _helperTextMeta),
+      );
+    }
+    if (data.containsKey('response_kind')) {
+      context.handle(
+        _responseKindMeta,
+        responseKind.isAcceptableOrUnknown(
+          data['response_kind']!,
+          _responseKindMeta,
+        ),
+      );
+    }
+    if (data.containsKey('display_order')) {
+      context.handle(
+        _displayOrderMeta,
+        displayOrder.isAcceptableOrUnknown(
+          data['display_order']!,
+          _displayOrderMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayOrderMeta);
+    }
+    if (data.containsKey('is_enabled')) {
+      context.handle(
+        _isEnabledMeta,
+        isEnabled.isAcceptableOrUnknown(data['is_enabled']!, _isEnabledMeta),
+      );
+    }
+    if (data.containsKey('prompt_version')) {
+      context.handle(
+        _promptVersionMeta,
+        promptVersion.isAcceptableOrUnknown(
+          data['prompt_version']!,
+          _promptVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  JournalPromptDefinitionRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JournalPromptDefinitionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      configurationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}configuration_id'],
+      )!,
+      stableKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stable_key'],
+      ),
+      promptSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt_source'],
+      )!,
+      questionText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question_text'],
+      )!,
+      helperText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}helper_text'],
+      ),
+      responseKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}response_kind'],
+      )!,
+      displayOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}display_order'],
+      )!,
+      isEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_enabled'],
+      )!,
+      promptVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}prompt_version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $JournalPromptDefinitionsTable createAlias(String alias) {
+    return $JournalPromptDefinitionsTable(attachedDatabase, alias);
+  }
+}
+
+class JournalPromptDefinitionRow extends DataClass
+    implements Insertable<JournalPromptDefinitionRow> {
+  final String id;
+  final int? deletedAt;
+  final String configurationId;
+  final String? stableKey;
+  final String promptSource;
+  final String questionText;
+  final String? helperText;
+  final String responseKind;
+  final int displayOrder;
+  final bool isEnabled;
+  final int promptVersion;
+  final int createdAt;
+  final int updatedAt;
+  const JournalPromptDefinitionRow({
+    required this.id,
+    this.deletedAt,
+    required this.configurationId,
+    this.stableKey,
+    required this.promptSource,
+    required this.questionText,
+    this.helperText,
+    required this.responseKind,
+    required this.displayOrder,
+    required this.isEnabled,
+    required this.promptVersion,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['configuration_id'] = Variable<String>(configurationId);
+    if (!nullToAbsent || stableKey != null) {
+      map['stable_key'] = Variable<String>(stableKey);
+    }
+    map['prompt_source'] = Variable<String>(promptSource);
+    map['question_text'] = Variable<String>(questionText);
+    if (!nullToAbsent || helperText != null) {
+      map['helper_text'] = Variable<String>(helperText);
+    }
+    map['response_kind'] = Variable<String>(responseKind);
+    map['display_order'] = Variable<int>(displayOrder);
+    map['is_enabled'] = Variable<bool>(isEnabled);
+    map['prompt_version'] = Variable<int>(promptVersion);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  JournalPromptDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return JournalPromptDefinitionsCompanion(
+      id: Value(id),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      configurationId: Value(configurationId),
+      stableKey: stableKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stableKey),
+      promptSource: Value(promptSource),
+      questionText: Value(questionText),
+      helperText: helperText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(helperText),
+      responseKind: Value(responseKind),
+      displayOrder: Value(displayOrder),
+      isEnabled: Value(isEnabled),
+      promptVersion: Value(promptVersion),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory JournalPromptDefinitionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JournalPromptDefinitionRow(
+      id: serializer.fromJson<String>(json['id']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      configurationId: serializer.fromJson<String>(json['configurationId']),
+      stableKey: serializer.fromJson<String?>(json['stableKey']),
+      promptSource: serializer.fromJson<String>(json['promptSource']),
+      questionText: serializer.fromJson<String>(json['questionText']),
+      helperText: serializer.fromJson<String?>(json['helperText']),
+      responseKind: serializer.fromJson<String>(json['responseKind']),
+      displayOrder: serializer.fromJson<int>(json['displayOrder']),
+      isEnabled: serializer.fromJson<bool>(json['isEnabled']),
+      promptVersion: serializer.fromJson<int>(json['promptVersion']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'configurationId': serializer.toJson<String>(configurationId),
+      'stableKey': serializer.toJson<String?>(stableKey),
+      'promptSource': serializer.toJson<String>(promptSource),
+      'questionText': serializer.toJson<String>(questionText),
+      'helperText': serializer.toJson<String?>(helperText),
+      'responseKind': serializer.toJson<String>(responseKind),
+      'displayOrder': serializer.toJson<int>(displayOrder),
+      'isEnabled': serializer.toJson<bool>(isEnabled),
+      'promptVersion': serializer.toJson<int>(promptVersion),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  JournalPromptDefinitionRow copyWith({
+    String? id,
+    Value<int?> deletedAt = const Value.absent(),
+    String? configurationId,
+    Value<String?> stableKey = const Value.absent(),
+    String? promptSource,
+    String? questionText,
+    Value<String?> helperText = const Value.absent(),
+    String? responseKind,
+    int? displayOrder,
+    bool? isEnabled,
+    int? promptVersion,
+    int? createdAt,
+    int? updatedAt,
+  }) => JournalPromptDefinitionRow(
+    id: id ?? this.id,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    configurationId: configurationId ?? this.configurationId,
+    stableKey: stableKey.present ? stableKey.value : this.stableKey,
+    promptSource: promptSource ?? this.promptSource,
+    questionText: questionText ?? this.questionText,
+    helperText: helperText.present ? helperText.value : this.helperText,
+    responseKind: responseKind ?? this.responseKind,
+    displayOrder: displayOrder ?? this.displayOrder,
+    isEnabled: isEnabled ?? this.isEnabled,
+    promptVersion: promptVersion ?? this.promptVersion,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  JournalPromptDefinitionRow copyWithCompanion(
+    JournalPromptDefinitionsCompanion data,
+  ) {
+    return JournalPromptDefinitionRow(
+      id: data.id.present ? data.id.value : this.id,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      configurationId: data.configurationId.present
+          ? data.configurationId.value
+          : this.configurationId,
+      stableKey: data.stableKey.present ? data.stableKey.value : this.stableKey,
+      promptSource: data.promptSource.present
+          ? data.promptSource.value
+          : this.promptSource,
+      questionText: data.questionText.present
+          ? data.questionText.value
+          : this.questionText,
+      helperText: data.helperText.present
+          ? data.helperText.value
+          : this.helperText,
+      responseKind: data.responseKind.present
+          ? data.responseKind.value
+          : this.responseKind,
+      displayOrder: data.displayOrder.present
+          ? data.displayOrder.value
+          : this.displayOrder,
+      isEnabled: data.isEnabled.present ? data.isEnabled.value : this.isEnabled,
+      promptVersion: data.promptVersion.present
+          ? data.promptVersion.value
+          : this.promptVersion,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalPromptDefinitionRow(')
+          ..write('id: $id, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('configurationId: $configurationId, ')
+          ..write('stableKey: $stableKey, ')
+          ..write('promptSource: $promptSource, ')
+          ..write('questionText: $questionText, ')
+          ..write('helperText: $helperText, ')
+          ..write('responseKind: $responseKind, ')
+          ..write('displayOrder: $displayOrder, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('promptVersion: $promptVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    deletedAt,
+    configurationId,
+    stableKey,
+    promptSource,
+    questionText,
+    helperText,
+    responseKind,
+    displayOrder,
+    isEnabled,
+    promptVersion,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JournalPromptDefinitionRow &&
+          other.id == this.id &&
+          other.deletedAt == this.deletedAt &&
+          other.configurationId == this.configurationId &&
+          other.stableKey == this.stableKey &&
+          other.promptSource == this.promptSource &&
+          other.questionText == this.questionText &&
+          other.helperText == this.helperText &&
+          other.responseKind == this.responseKind &&
+          other.displayOrder == this.displayOrder &&
+          other.isEnabled == this.isEnabled &&
+          other.promptVersion == this.promptVersion &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class JournalPromptDefinitionsCompanion
+    extends UpdateCompanion<JournalPromptDefinitionRow> {
+  final Value<String> id;
+  final Value<int?> deletedAt;
+  final Value<String> configurationId;
+  final Value<String?> stableKey;
+  final Value<String> promptSource;
+  final Value<String> questionText;
+  final Value<String?> helperText;
+  final Value<String> responseKind;
+  final Value<int> displayOrder;
+  final Value<bool> isEnabled;
+  final Value<int> promptVersion;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const JournalPromptDefinitionsCompanion({
+    this.id = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.configurationId = const Value.absent(),
+    this.stableKey = const Value.absent(),
+    this.promptSource = const Value.absent(),
+    this.questionText = const Value.absent(),
+    this.helperText = const Value.absent(),
+    this.responseKind = const Value.absent(),
+    this.displayOrder = const Value.absent(),
+    this.isEnabled = const Value.absent(),
+    this.promptVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  JournalPromptDefinitionsCompanion.insert({
+    this.id = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    required String configurationId,
+    this.stableKey = const Value.absent(),
+    required String promptSource,
+    required String questionText,
+    this.helperText = const Value.absent(),
+    this.responseKind = const Value.absent(),
+    required int displayOrder,
+    this.isEnabled = const Value.absent(),
+    this.promptVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : configurationId = Value(configurationId),
+       promptSource = Value(promptSource),
+       questionText = Value(questionText),
+       displayOrder = Value(displayOrder);
+  static Insertable<JournalPromptDefinitionRow> custom({
+    Expression<String>? id,
+    Expression<int>? deletedAt,
+    Expression<String>? configurationId,
+    Expression<String>? stableKey,
+    Expression<String>? promptSource,
+    Expression<String>? questionText,
+    Expression<String>? helperText,
+    Expression<String>? responseKind,
+    Expression<int>? displayOrder,
+    Expression<bool>? isEnabled,
+    Expression<int>? promptVersion,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (configurationId != null) 'configuration_id': configurationId,
+      if (stableKey != null) 'stable_key': stableKey,
+      if (promptSource != null) 'prompt_source': promptSource,
+      if (questionText != null) 'question_text': questionText,
+      if (helperText != null) 'helper_text': helperText,
+      if (responseKind != null) 'response_kind': responseKind,
+      if (displayOrder != null) 'display_order': displayOrder,
+      if (isEnabled != null) 'is_enabled': isEnabled,
+      if (promptVersion != null) 'prompt_version': promptVersion,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  JournalPromptDefinitionsCompanion copyWith({
+    Value<String>? id,
+    Value<int?>? deletedAt,
+    Value<String>? configurationId,
+    Value<String?>? stableKey,
+    Value<String>? promptSource,
+    Value<String>? questionText,
+    Value<String?>? helperText,
+    Value<String>? responseKind,
+    Value<int>? displayOrder,
+    Value<bool>? isEnabled,
+    Value<int>? promptVersion,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return JournalPromptDefinitionsCompanion(
+      id: id ?? this.id,
+      deletedAt: deletedAt ?? this.deletedAt,
+      configurationId: configurationId ?? this.configurationId,
+      stableKey: stableKey ?? this.stableKey,
+      promptSource: promptSource ?? this.promptSource,
+      questionText: questionText ?? this.questionText,
+      helperText: helperText ?? this.helperText,
+      responseKind: responseKind ?? this.responseKind,
+      displayOrder: displayOrder ?? this.displayOrder,
+      isEnabled: isEnabled ?? this.isEnabled,
+      promptVersion: promptVersion ?? this.promptVersion,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (configurationId.present) {
+      map['configuration_id'] = Variable<String>(configurationId.value);
+    }
+    if (stableKey.present) {
+      map['stable_key'] = Variable<String>(stableKey.value);
+    }
+    if (promptSource.present) {
+      map['prompt_source'] = Variable<String>(promptSource.value);
+    }
+    if (questionText.present) {
+      map['question_text'] = Variable<String>(questionText.value);
+    }
+    if (helperText.present) {
+      map['helper_text'] = Variable<String>(helperText.value);
+    }
+    if (responseKind.present) {
+      map['response_kind'] = Variable<String>(responseKind.value);
+    }
+    if (displayOrder.present) {
+      map['display_order'] = Variable<int>(displayOrder.value);
+    }
+    if (isEnabled.present) {
+      map['is_enabled'] = Variable<bool>(isEnabled.value);
+    }
+    if (promptVersion.present) {
+      map['prompt_version'] = Variable<int>(promptVersion.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalPromptDefinitionsCompanion(')
+          ..write('id: $id, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('configurationId: $configurationId, ')
+          ..write('stableKey: $stableKey, ')
+          ..write('promptSource: $promptSource, ')
+          ..write('questionText: $questionText, ')
+          ..write('helperText: $helperText, ')
+          ..write('responseKind: $responseKind, ')
+          ..write('displayOrder: $displayOrder, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('promptVersion: $promptVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $JournalEntryPromptItemsTable extends JournalEntryPromptItems
+    with TableInfo<$JournalEntryPromptItemsTable, JournalEntryPromptItemRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JournalEntryPromptItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: databaseUuid.v4,
+  );
+  static const VerificationMeta _journalEntryIdMeta = const VerificationMeta(
+    'journalEntryId',
+  );
+  @override
+  late final GeneratedColumn<String> journalEntryId = GeneratedColumn<String>(
+    'journal_entry_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES journal_entries (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sourcePromptIdMeta = const VerificationMeta(
+    'sourcePromptId',
+  );
+  @override
+  late final GeneratedColumn<String> sourcePromptId = GeneratedColumn<String>(
+    'source_prompt_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourcePromptStableKeyMeta =
+      const VerificationMeta('sourcePromptStableKey');
+  @override
+  late final GeneratedColumn<String> sourcePromptStableKey =
+      GeneratedColumn<String>(
+        'source_prompt_stable_key',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sourcePromptVersionMeta =
+      const VerificationMeta('sourcePromptVersion');
+  @override
+  late final GeneratedColumn<int> sourcePromptVersion = GeneratedColumn<int>(
+    'source_prompt_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _promptSourceMeta = const VerificationMeta(
+    'promptSource',
+  );
+  @override
+  late final GeneratedColumn<String> promptSource = GeneratedColumn<String>(
+    'prompt_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _questionTextSnapshotMeta =
+      const VerificationMeta('questionTextSnapshot');
+  @override
+  late final GeneratedColumn<String> questionTextSnapshot =
+      GeneratedColumn<String>(
+        'question_text_snapshot',
+        aliasedName,
+        false,
+        additionalChecks: GeneratedColumn.checkTextLength(
+          minTextLength: 1,
+          maxTextLength: 500,
+        ),
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _helperTextSnapshotMeta =
+      const VerificationMeta('helperTextSnapshot');
+  @override
+  late final GeneratedColumn<String> helperTextSnapshot =
+      GeneratedColumn<String>(
+        'helper_text_snapshot',
+        aliasedName,
+        true,
+        additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 500),
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _responseKindMeta = const VerificationMeta(
+    'responseKind',
+  );
+  @override
+  late final GeneratedColumn<String> responseKind = GeneratedColumn<String>(
+    'response_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('long_text'),
+  );
+  static const VerificationMeta _displayOrderMeta = const VerificationMeta(
+    'displayOrder',
+  );
+  @override
+  late final GeneratedColumn<int> displayOrder = GeneratedColumn<int>(
+    'display_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _answerTextMeta = const VerificationMeta(
+    'answerText',
+  );
+  @override
+  late final GeneratedColumn<String> answerText = GeneratedColumn<String>(
+    'answer_text',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 20000),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    journalEntryId,
+    sourcePromptId,
+    sourcePromptStableKey,
+    sourcePromptVersion,
+    promptSource,
+    questionTextSnapshot,
+    helperTextSnapshot,
+    responseKind,
+    displayOrder,
+    answerText,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'journal_entry_prompt_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JournalEntryPromptItemRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('journal_entry_id')) {
+      context.handle(
+        _journalEntryIdMeta,
+        journalEntryId.isAcceptableOrUnknown(
+          data['journal_entry_id']!,
+          _journalEntryIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_journalEntryIdMeta);
+    }
+    if (data.containsKey('source_prompt_id')) {
+      context.handle(
+        _sourcePromptIdMeta,
+        sourcePromptId.isAcceptableOrUnknown(
+          data['source_prompt_id']!,
+          _sourcePromptIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_prompt_stable_key')) {
+      context.handle(
+        _sourcePromptStableKeyMeta,
+        sourcePromptStableKey.isAcceptableOrUnknown(
+          data['source_prompt_stable_key']!,
+          _sourcePromptStableKeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_prompt_version')) {
+      context.handle(
+        _sourcePromptVersionMeta,
+        sourcePromptVersion.isAcceptableOrUnknown(
+          data['source_prompt_version']!,
+          _sourcePromptVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourcePromptVersionMeta);
+    }
+    if (data.containsKey('prompt_source')) {
+      context.handle(
+        _promptSourceMeta,
+        promptSource.isAcceptableOrUnknown(
+          data['prompt_source']!,
+          _promptSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_promptSourceMeta);
+    }
+    if (data.containsKey('question_text_snapshot')) {
+      context.handle(
+        _questionTextSnapshotMeta,
+        questionTextSnapshot.isAcceptableOrUnknown(
+          data['question_text_snapshot']!,
+          _questionTextSnapshotMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_questionTextSnapshotMeta);
+    }
+    if (data.containsKey('helper_text_snapshot')) {
+      context.handle(
+        _helperTextSnapshotMeta,
+        helperTextSnapshot.isAcceptableOrUnknown(
+          data['helper_text_snapshot']!,
+          _helperTextSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('response_kind')) {
+      context.handle(
+        _responseKindMeta,
+        responseKind.isAcceptableOrUnknown(
+          data['response_kind']!,
+          _responseKindMeta,
+        ),
+      );
+    }
+    if (data.containsKey('display_order')) {
+      context.handle(
+        _displayOrderMeta,
+        displayOrder.isAcceptableOrUnknown(
+          data['display_order']!,
+          _displayOrderMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayOrderMeta);
+    }
+    if (data.containsKey('answer_text')) {
+      context.handle(
+        _answerTextMeta,
+        answerText.isAcceptableOrUnknown(data['answer_text']!, _answerTextMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  JournalEntryPromptItemRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JournalEntryPromptItemRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      journalEntryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}journal_entry_id'],
+      )!,
+      sourcePromptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_prompt_id'],
+      ),
+      sourcePromptStableKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_prompt_stable_key'],
+      ),
+      sourcePromptVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_prompt_version'],
+      )!,
+      promptSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt_source'],
+      )!,
+      questionTextSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question_text_snapshot'],
+      )!,
+      helperTextSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}helper_text_snapshot'],
+      ),
+      responseKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}response_kind'],
+      )!,
+      displayOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}display_order'],
+      )!,
+      answerText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}answer_text'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $JournalEntryPromptItemsTable createAlias(String alias) {
+    return $JournalEntryPromptItemsTable(attachedDatabase, alias);
+  }
+}
+
+class JournalEntryPromptItemRow extends DataClass
+    implements Insertable<JournalEntryPromptItemRow> {
+  final String id;
+  final String journalEntryId;
+  final String? sourcePromptId;
+  final String? sourcePromptStableKey;
+  final int sourcePromptVersion;
+  final String promptSource;
+  final String questionTextSnapshot;
+  final String? helperTextSnapshot;
+  final String responseKind;
+  final int displayOrder;
+  final String? answerText;
+  final int createdAt;
+  final int updatedAt;
+  const JournalEntryPromptItemRow({
+    required this.id,
+    required this.journalEntryId,
+    this.sourcePromptId,
+    this.sourcePromptStableKey,
+    required this.sourcePromptVersion,
+    required this.promptSource,
+    required this.questionTextSnapshot,
+    this.helperTextSnapshot,
+    required this.responseKind,
+    required this.displayOrder,
+    this.answerText,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['journal_entry_id'] = Variable<String>(journalEntryId);
+    if (!nullToAbsent || sourcePromptId != null) {
+      map['source_prompt_id'] = Variable<String>(sourcePromptId);
+    }
+    if (!nullToAbsent || sourcePromptStableKey != null) {
+      map['source_prompt_stable_key'] = Variable<String>(sourcePromptStableKey);
+    }
+    map['source_prompt_version'] = Variable<int>(sourcePromptVersion);
+    map['prompt_source'] = Variable<String>(promptSource);
+    map['question_text_snapshot'] = Variable<String>(questionTextSnapshot);
+    if (!nullToAbsent || helperTextSnapshot != null) {
+      map['helper_text_snapshot'] = Variable<String>(helperTextSnapshot);
+    }
+    map['response_kind'] = Variable<String>(responseKind);
+    map['display_order'] = Variable<int>(displayOrder);
+    if (!nullToAbsent || answerText != null) {
+      map['answer_text'] = Variable<String>(answerText);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  JournalEntryPromptItemsCompanion toCompanion(bool nullToAbsent) {
+    return JournalEntryPromptItemsCompanion(
+      id: Value(id),
+      journalEntryId: Value(journalEntryId),
+      sourcePromptId: sourcePromptId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourcePromptId),
+      sourcePromptStableKey: sourcePromptStableKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourcePromptStableKey),
+      sourcePromptVersion: Value(sourcePromptVersion),
+      promptSource: Value(promptSource),
+      questionTextSnapshot: Value(questionTextSnapshot),
+      helperTextSnapshot: helperTextSnapshot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(helperTextSnapshot),
+      responseKind: Value(responseKind),
+      displayOrder: Value(displayOrder),
+      answerText: answerText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(answerText),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory JournalEntryPromptItemRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JournalEntryPromptItemRow(
+      id: serializer.fromJson<String>(json['id']),
+      journalEntryId: serializer.fromJson<String>(json['journalEntryId']),
+      sourcePromptId: serializer.fromJson<String?>(json['sourcePromptId']),
+      sourcePromptStableKey: serializer.fromJson<String?>(
+        json['sourcePromptStableKey'],
+      ),
+      sourcePromptVersion: serializer.fromJson<int>(
+        json['sourcePromptVersion'],
+      ),
+      promptSource: serializer.fromJson<String>(json['promptSource']),
+      questionTextSnapshot: serializer.fromJson<String>(
+        json['questionTextSnapshot'],
+      ),
+      helperTextSnapshot: serializer.fromJson<String?>(
+        json['helperTextSnapshot'],
+      ),
+      responseKind: serializer.fromJson<String>(json['responseKind']),
+      displayOrder: serializer.fromJson<int>(json['displayOrder']),
+      answerText: serializer.fromJson<String?>(json['answerText']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'journalEntryId': serializer.toJson<String>(journalEntryId),
+      'sourcePromptId': serializer.toJson<String?>(sourcePromptId),
+      'sourcePromptStableKey': serializer.toJson<String?>(
+        sourcePromptStableKey,
+      ),
+      'sourcePromptVersion': serializer.toJson<int>(sourcePromptVersion),
+      'promptSource': serializer.toJson<String>(promptSource),
+      'questionTextSnapshot': serializer.toJson<String>(questionTextSnapshot),
+      'helperTextSnapshot': serializer.toJson<String?>(helperTextSnapshot),
+      'responseKind': serializer.toJson<String>(responseKind),
+      'displayOrder': serializer.toJson<int>(displayOrder),
+      'answerText': serializer.toJson<String?>(answerText),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  JournalEntryPromptItemRow copyWith({
+    String? id,
+    String? journalEntryId,
+    Value<String?> sourcePromptId = const Value.absent(),
+    Value<String?> sourcePromptStableKey = const Value.absent(),
+    int? sourcePromptVersion,
+    String? promptSource,
+    String? questionTextSnapshot,
+    Value<String?> helperTextSnapshot = const Value.absent(),
+    String? responseKind,
+    int? displayOrder,
+    Value<String?> answerText = const Value.absent(),
+    int? createdAt,
+    int? updatedAt,
+  }) => JournalEntryPromptItemRow(
+    id: id ?? this.id,
+    journalEntryId: journalEntryId ?? this.journalEntryId,
+    sourcePromptId: sourcePromptId.present
+        ? sourcePromptId.value
+        : this.sourcePromptId,
+    sourcePromptStableKey: sourcePromptStableKey.present
+        ? sourcePromptStableKey.value
+        : this.sourcePromptStableKey,
+    sourcePromptVersion: sourcePromptVersion ?? this.sourcePromptVersion,
+    promptSource: promptSource ?? this.promptSource,
+    questionTextSnapshot: questionTextSnapshot ?? this.questionTextSnapshot,
+    helperTextSnapshot: helperTextSnapshot.present
+        ? helperTextSnapshot.value
+        : this.helperTextSnapshot,
+    responseKind: responseKind ?? this.responseKind,
+    displayOrder: displayOrder ?? this.displayOrder,
+    answerText: answerText.present ? answerText.value : this.answerText,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  JournalEntryPromptItemRow copyWithCompanion(
+    JournalEntryPromptItemsCompanion data,
+  ) {
+    return JournalEntryPromptItemRow(
+      id: data.id.present ? data.id.value : this.id,
+      journalEntryId: data.journalEntryId.present
+          ? data.journalEntryId.value
+          : this.journalEntryId,
+      sourcePromptId: data.sourcePromptId.present
+          ? data.sourcePromptId.value
+          : this.sourcePromptId,
+      sourcePromptStableKey: data.sourcePromptStableKey.present
+          ? data.sourcePromptStableKey.value
+          : this.sourcePromptStableKey,
+      sourcePromptVersion: data.sourcePromptVersion.present
+          ? data.sourcePromptVersion.value
+          : this.sourcePromptVersion,
+      promptSource: data.promptSource.present
+          ? data.promptSource.value
+          : this.promptSource,
+      questionTextSnapshot: data.questionTextSnapshot.present
+          ? data.questionTextSnapshot.value
+          : this.questionTextSnapshot,
+      helperTextSnapshot: data.helperTextSnapshot.present
+          ? data.helperTextSnapshot.value
+          : this.helperTextSnapshot,
+      responseKind: data.responseKind.present
+          ? data.responseKind.value
+          : this.responseKind,
+      displayOrder: data.displayOrder.present
+          ? data.displayOrder.value
+          : this.displayOrder,
+      answerText: data.answerText.present
+          ? data.answerText.value
+          : this.answerText,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalEntryPromptItemRow(')
+          ..write('id: $id, ')
+          ..write('journalEntryId: $journalEntryId, ')
+          ..write('sourcePromptId: $sourcePromptId, ')
+          ..write('sourcePromptStableKey: $sourcePromptStableKey, ')
+          ..write('sourcePromptVersion: $sourcePromptVersion, ')
+          ..write('promptSource: $promptSource, ')
+          ..write('questionTextSnapshot: $questionTextSnapshot, ')
+          ..write('helperTextSnapshot: $helperTextSnapshot, ')
+          ..write('responseKind: $responseKind, ')
+          ..write('displayOrder: $displayOrder, ')
+          ..write('answerText: $answerText, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    journalEntryId,
+    sourcePromptId,
+    sourcePromptStableKey,
+    sourcePromptVersion,
+    promptSource,
+    questionTextSnapshot,
+    helperTextSnapshot,
+    responseKind,
+    displayOrder,
+    answerText,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JournalEntryPromptItemRow &&
+          other.id == this.id &&
+          other.journalEntryId == this.journalEntryId &&
+          other.sourcePromptId == this.sourcePromptId &&
+          other.sourcePromptStableKey == this.sourcePromptStableKey &&
+          other.sourcePromptVersion == this.sourcePromptVersion &&
+          other.promptSource == this.promptSource &&
+          other.questionTextSnapshot == this.questionTextSnapshot &&
+          other.helperTextSnapshot == this.helperTextSnapshot &&
+          other.responseKind == this.responseKind &&
+          other.displayOrder == this.displayOrder &&
+          other.answerText == this.answerText &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class JournalEntryPromptItemsCompanion
+    extends UpdateCompanion<JournalEntryPromptItemRow> {
+  final Value<String> id;
+  final Value<String> journalEntryId;
+  final Value<String?> sourcePromptId;
+  final Value<String?> sourcePromptStableKey;
+  final Value<int> sourcePromptVersion;
+  final Value<String> promptSource;
+  final Value<String> questionTextSnapshot;
+  final Value<String?> helperTextSnapshot;
+  final Value<String> responseKind;
+  final Value<int> displayOrder;
+  final Value<String?> answerText;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const JournalEntryPromptItemsCompanion({
+    this.id = const Value.absent(),
+    this.journalEntryId = const Value.absent(),
+    this.sourcePromptId = const Value.absent(),
+    this.sourcePromptStableKey = const Value.absent(),
+    this.sourcePromptVersion = const Value.absent(),
+    this.promptSource = const Value.absent(),
+    this.questionTextSnapshot = const Value.absent(),
+    this.helperTextSnapshot = const Value.absent(),
+    this.responseKind = const Value.absent(),
+    this.displayOrder = const Value.absent(),
+    this.answerText = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  JournalEntryPromptItemsCompanion.insert({
+    this.id = const Value.absent(),
+    required String journalEntryId,
+    this.sourcePromptId = const Value.absent(),
+    this.sourcePromptStableKey = const Value.absent(),
+    required int sourcePromptVersion,
+    required String promptSource,
+    required String questionTextSnapshot,
+    this.helperTextSnapshot = const Value.absent(),
+    this.responseKind = const Value.absent(),
+    required int displayOrder,
+    this.answerText = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : journalEntryId = Value(journalEntryId),
+       sourcePromptVersion = Value(sourcePromptVersion),
+       promptSource = Value(promptSource),
+       questionTextSnapshot = Value(questionTextSnapshot),
+       displayOrder = Value(displayOrder);
+  static Insertable<JournalEntryPromptItemRow> custom({
+    Expression<String>? id,
+    Expression<String>? journalEntryId,
+    Expression<String>? sourcePromptId,
+    Expression<String>? sourcePromptStableKey,
+    Expression<int>? sourcePromptVersion,
+    Expression<String>? promptSource,
+    Expression<String>? questionTextSnapshot,
+    Expression<String>? helperTextSnapshot,
+    Expression<String>? responseKind,
+    Expression<int>? displayOrder,
+    Expression<String>? answerText,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (journalEntryId != null) 'journal_entry_id': journalEntryId,
+      if (sourcePromptId != null) 'source_prompt_id': sourcePromptId,
+      if (sourcePromptStableKey != null)
+        'source_prompt_stable_key': sourcePromptStableKey,
+      if (sourcePromptVersion != null)
+        'source_prompt_version': sourcePromptVersion,
+      if (promptSource != null) 'prompt_source': promptSource,
+      if (questionTextSnapshot != null)
+        'question_text_snapshot': questionTextSnapshot,
+      if (helperTextSnapshot != null)
+        'helper_text_snapshot': helperTextSnapshot,
+      if (responseKind != null) 'response_kind': responseKind,
+      if (displayOrder != null) 'display_order': displayOrder,
+      if (answerText != null) 'answer_text': answerText,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  JournalEntryPromptItemsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? journalEntryId,
+    Value<String?>? sourcePromptId,
+    Value<String?>? sourcePromptStableKey,
+    Value<int>? sourcePromptVersion,
+    Value<String>? promptSource,
+    Value<String>? questionTextSnapshot,
+    Value<String?>? helperTextSnapshot,
+    Value<String>? responseKind,
+    Value<int>? displayOrder,
+    Value<String?>? answerText,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return JournalEntryPromptItemsCompanion(
+      id: id ?? this.id,
+      journalEntryId: journalEntryId ?? this.journalEntryId,
+      sourcePromptId: sourcePromptId ?? this.sourcePromptId,
+      sourcePromptStableKey:
+          sourcePromptStableKey ?? this.sourcePromptStableKey,
+      sourcePromptVersion: sourcePromptVersion ?? this.sourcePromptVersion,
+      promptSource: promptSource ?? this.promptSource,
+      questionTextSnapshot: questionTextSnapshot ?? this.questionTextSnapshot,
+      helperTextSnapshot: helperTextSnapshot ?? this.helperTextSnapshot,
+      responseKind: responseKind ?? this.responseKind,
+      displayOrder: displayOrder ?? this.displayOrder,
+      answerText: answerText ?? this.answerText,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (journalEntryId.present) {
+      map['journal_entry_id'] = Variable<String>(journalEntryId.value);
+    }
+    if (sourcePromptId.present) {
+      map['source_prompt_id'] = Variable<String>(sourcePromptId.value);
+    }
+    if (sourcePromptStableKey.present) {
+      map['source_prompt_stable_key'] = Variable<String>(
+        sourcePromptStableKey.value,
+      );
+    }
+    if (sourcePromptVersion.present) {
+      map['source_prompt_version'] = Variable<int>(sourcePromptVersion.value);
+    }
+    if (promptSource.present) {
+      map['prompt_source'] = Variable<String>(promptSource.value);
+    }
+    if (questionTextSnapshot.present) {
+      map['question_text_snapshot'] = Variable<String>(
+        questionTextSnapshot.value,
+      );
+    }
+    if (helperTextSnapshot.present) {
+      map['helper_text_snapshot'] = Variable<String>(helperTextSnapshot.value);
+    }
+    if (responseKind.present) {
+      map['response_kind'] = Variable<String>(responseKind.value);
+    }
+    if (displayOrder.present) {
+      map['display_order'] = Variable<int>(displayOrder.value);
+    }
+    if (answerText.present) {
+      map['answer_text'] = Variable<String>(answerText.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalEntryPromptItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('journalEntryId: $journalEntryId, ')
+          ..write('sourcePromptId: $sourcePromptId, ')
+          ..write('sourcePromptStableKey: $sourcePromptStableKey, ')
+          ..write('sourcePromptVersion: $sourcePromptVersion, ')
+          ..write('promptSource: $promptSource, ')
+          ..write('questionTextSnapshot: $questionTextSnapshot, ')
+          ..write('helperTextSnapshot: $helperTextSnapshot, ')
+          ..write('responseKind: $responseKind, ')
+          ..write('displayOrder: $displayOrder, ')
+          ..write('answerText: $answerText, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $HealthRecordsTable extends HealthRecords
     with TableInfo<$HealthRecordsTable, HealthRecord> {
   @override
@@ -10590,6 +12924,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GoalsTable goals = $GoalsTable(this);
   late final $TodayRecordsTable todayRecords = $TodayRecordsTable(this);
   late final $JournalEntriesTable journalEntries = $JournalEntriesTable(this);
+  late final $JournalPromptConfigurationsTable journalPromptConfigurations =
+      $JournalPromptConfigurationsTable(this);
+  late final $JournalPromptDefinitionsTable journalPromptDefinitions =
+      $JournalPromptDefinitionsTable(this);
+  late final $JournalEntryPromptItemsTable journalEntryPromptItems =
+      $JournalEntryPromptItemsTable(this);
   late final $HealthRecordsTable healthRecords = $HealthRecordsTable(this);
   late final $AiReportsTable aiReports = $AiReportsTable(this);
   late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
@@ -10609,6 +12949,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     goals,
     todayRecords,
     journalEntries,
+    journalPromptConfigurations,
+    journalPromptDefinitions,
+    journalEntryPromptItems,
     healthRecords,
     aiReports,
     syncConflicts,
@@ -10651,6 +12994,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('journal_entries', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'journal_entries',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('journal_entry_prompt_items', kind: UpdateKind.delete),
+      ],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -10767,6 +13119,31 @@ final class $$UserProfilesTableReferences
     ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_journalEntriesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $JournalPromptConfigurationsTable,
+    List<JournalPromptConfigurationRow>
+  >
+  _journalPromptConfigurationsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.journalPromptConfigurations,
+        aliasName: 'user_profiles__id__journal_prompt_configurations__user_id',
+      );
+
+  $$JournalPromptConfigurationsTableProcessedTableManager
+  get journalPromptConfigurationsRefs {
+    final manager = $$JournalPromptConfigurationsTableTableManager(
+      $_db,
+      $_db.journalPromptConfigurations,
+    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _journalPromptConfigurationsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -11018,6 +13395,35 @@ class $$UserProfilesTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> journalPromptConfigurationsRefs(
+    Expression<bool> Function(
+      $$JournalPromptConfigurationsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$JournalPromptConfigurationsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.journalPromptConfigurations,
+          getReferencedColumn: (t) => t.userId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalPromptConfigurationsTableFilterComposer(
+                $db: $db,
+                $table: $db.journalPromptConfigurations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
@@ -11351,6 +13757,35 @@ class $$UserProfilesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> journalPromptConfigurationsRefs<T extends Object>(
+    Expression<T> Function(
+      $$JournalPromptConfigurationsTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$JournalPromptConfigurationsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.journalPromptConfigurations,
+          getReferencedColumn: (t) => t.userId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalPromptConfigurationsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.journalPromptConfigurations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> healthRecordsRefs<T extends Object>(
     Expression<T> Function($$HealthRecordsTableAnnotationComposer a) f,
   ) {
@@ -11471,6 +13906,7 @@ class $$UserProfilesTableTableManager
             bool goalsRefs,
             bool todayRecordsRefs,
             bool journalEntriesRefs,
+            bool journalPromptConfigurationsRefs,
             bool healthRecordsRefs,
             bool aiReportsRefs,
             bool syncConflictsRefs,
@@ -11562,6 +13998,7 @@ class $$UserProfilesTableTableManager
                 goalsRefs = false,
                 todayRecordsRefs = false,
                 journalEntriesRefs = false,
+                journalPromptConfigurationsRefs = false,
                 healthRecordsRefs = false,
                 aiReportsRefs = false,
                 syncConflictsRefs = false,
@@ -11574,6 +14011,8 @@ class $$UserProfilesTableTableManager
                     if (goalsRefs) db.goals,
                     if (todayRecordsRefs) db.todayRecords,
                     if (journalEntriesRefs) db.journalEntries,
+                    if (journalPromptConfigurationsRefs)
+                      db.journalPromptConfigurations,
                     if (healthRecordsRefs) db.healthRecords,
                     if (aiReportsRefs) db.aiReports,
                     if (syncConflictsRefs) db.syncConflicts,
@@ -11660,6 +14099,27 @@ class $$UserProfilesTableTableManager
                                 table,
                                 p0,
                               ).journalEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.userId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (journalPromptConfigurationsRefs)
+                        await $_getPrefetchedData<
+                          UserProfile,
+                          $UserProfilesTable,
+                          JournalPromptConfigurationRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UserProfilesTableReferences
+                              ._journalPromptConfigurationsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UserProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).journalPromptConfigurationsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.userId == item.id,
@@ -11775,6 +14235,7 @@ typedef $$UserProfilesTableProcessedTableManager =
         bool goalsRefs,
         bool todayRecordsRefs,
         bool journalEntriesRefs,
+        bool journalPromptConfigurationsRefs,
         bool healthRecordsRefs,
         bool aiReportsRefs,
         bool syncConflictsRefs,
@@ -14608,6 +17069,32 @@ final class $$JournalEntriesTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<
+    $JournalEntryPromptItemsTable,
+    List<JournalEntryPromptItemRow>
+  >
+  _journalEntryPromptItemsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.journalEntryPromptItems,
+        aliasName:
+            'journal_entries__id__journal_entry_prompt_items__journal_entry_id',
+      );
+
+  $$JournalEntryPromptItemsTableProcessedTableManager
+  get journalEntryPromptItemsRefs {
+    final manager = $$JournalEntryPromptItemsTableTableManager(
+      $_db,
+      $_db.journalEntryPromptItems,
+    ).filter((f) => f.journalEntryId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _journalEntryPromptItemsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$JournalEntriesTableFilterComposer
@@ -14743,6 +17230,32 @@ class $$JournalEntriesTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> journalEntryPromptItemsRefs(
+    Expression<bool> Function($$JournalEntryPromptItemsTableFilterComposer f) f,
+  ) {
+    final $$JournalEntryPromptItemsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.journalEntryPromptItems,
+          getReferencedColumn: (t) => t.journalEntryId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalEntryPromptItemsTableFilterComposer(
+                $db: $db,
+                $table: $db.journalEntryPromptItems,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
   }
 }
 
@@ -15004,6 +17517,33 @@ class $$JournalEntriesTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> journalEntryPromptItemsRefs<T extends Object>(
+    Expression<T> Function($$JournalEntryPromptItemsTableAnnotationComposer a)
+    f,
+  ) {
+    final $$JournalEntryPromptItemsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.journalEntryPromptItems,
+          getReferencedColumn: (t) => t.journalEntryId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalEntryPromptItemsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.journalEntryPromptItems,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$JournalEntriesTableTableManager
@@ -15019,7 +17559,11 @@ class $$JournalEntriesTableTableManager
           $$JournalEntriesTableUpdateCompanionBuilder,
           (JournalEntry, $$JournalEntriesTableReferences),
           JournalEntry,
-          PrefetchHooks Function({bool userId, bool todayRecordId})
+          PrefetchHooks Function({
+            bool userId,
+            bool todayRecordId,
+            bool journalEntryPromptItemsRefs,
+          })
         > {
   $$JournalEntriesTableTableManager(
     _$AppDatabase db,
@@ -15128,7 +17672,1152 @@ class $$JournalEntriesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({userId = false, todayRecordId = false}) {
+          prefetchHooksCallback:
+              ({
+                userId = false,
+                todayRecordId = false,
+                journalEntryPromptItemsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (journalEntryPromptItemsRefs) db.journalEntryPromptItems,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (userId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.userId,
+                                    referencedTable:
+                                        $$JournalEntriesTableReferences
+                                            ._userIdTable(db),
+                                    referencedColumn:
+                                        $$JournalEntriesTableReferences
+                                            ._userIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (todayRecordId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.todayRecordId,
+                                    referencedTable:
+                                        $$JournalEntriesTableReferences
+                                            ._todayRecordIdTable(db),
+                                    referencedColumn:
+                                        $$JournalEntriesTableReferences
+                                            ._todayRecordIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (journalEntryPromptItemsRefs)
+                        await $_getPrefetchedData<
+                          JournalEntry,
+                          $JournalEntriesTable,
+                          JournalEntryPromptItemRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$JournalEntriesTableReferences
+                              ._journalEntryPromptItemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$JournalEntriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).journalEntryPromptItemsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.journalEntryId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$JournalEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $JournalEntriesTable,
+      JournalEntry,
+      $$JournalEntriesTableFilterComposer,
+      $$JournalEntriesTableOrderingComposer,
+      $$JournalEntriesTableAnnotationComposer,
+      $$JournalEntriesTableCreateCompanionBuilder,
+      $$JournalEntriesTableUpdateCompanionBuilder,
+      (JournalEntry, $$JournalEntriesTableReferences),
+      JournalEntry,
+      PrefetchHooks Function({
+        bool userId,
+        bool todayRecordId,
+        bool journalEntryPromptItemsRefs,
+      })
+    >;
+typedef $$JournalPromptConfigurationsTableCreateCompanionBuilder =
+    JournalPromptConfigurationsCompanion Function({
+      Value<String> id,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<String> syncStatus,
+      Value<int?> serverVersion,
+      Value<int?> lastSyncedAt,
+      Value<String?> originDeviceId,
+      Value<int?> deletedAt,
+      required String userId,
+      Value<String> logicalKey,
+      Value<int> configurationVersion,
+      Value<int> rowid,
+    });
+typedef $$JournalPromptConfigurationsTableUpdateCompanionBuilder =
+    JournalPromptConfigurationsCompanion Function({
+      Value<String> id,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<String> syncStatus,
+      Value<int?> serverVersion,
+      Value<int?> lastSyncedAt,
+      Value<String?> originDeviceId,
+      Value<int?> deletedAt,
+      Value<String> userId,
+      Value<String> logicalKey,
+      Value<int> configurationVersion,
+      Value<int> rowid,
+    });
+
+final class $$JournalPromptConfigurationsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $JournalPromptConfigurationsTable,
+          JournalPromptConfigurationRow
+        > {
+  $$JournalPromptConfigurationsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UserProfilesTable _userIdTable(_$AppDatabase db) => db.userProfiles
+      .createAlias('journal_prompt_configurations__user_id__user_profiles__id');
+
+  $$UserProfilesTableProcessedTableManager get userId {
+    final $_column = $_itemColumn<String>('user_id')!;
+
+    final manager = $$UserProfilesTableTableManager(
+      $_db,
+      $_db.userProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $JournalPromptDefinitionsTable,
+    List<JournalPromptDefinitionRow>
+  >
+  _journalPromptDefinitionsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.journalPromptDefinitions,
+    aliasName:
+        'journal_prompt_configurations__id__journal_prompt_definitions__configuration_id',
+  );
+
+  $$JournalPromptDefinitionsTableProcessedTableManager
+  get journalPromptDefinitionsRefs {
+    final manager =
+        $$JournalPromptDefinitionsTableTableManager(
+          $_db,
+          $_db.journalPromptDefinitions,
+        ).filter(
+          (f) => f.configurationId.id.sqlEquals($_itemColumn<String>('id')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _journalPromptDefinitionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$JournalPromptConfigurationsTableFilterComposer
+    extends Composer<_$AppDatabase, $JournalPromptConfigurationsTable> {
+  $$JournalPromptConfigurationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverVersion => $composableBuilder(
+    column: $table.serverVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originDeviceId => $composableBuilder(
+    column: $table.originDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get logicalKey => $composableBuilder(
+    column: $table.logicalKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get configurationVersion => $composableBuilder(
+    column: $table.configurationVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UserProfilesTableFilterComposer get userId {
+    final $$UserProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> journalPromptDefinitionsRefs(
+    Expression<bool> Function($$JournalPromptDefinitionsTableFilterComposer f)
+    f,
+  ) {
+    final $$JournalPromptDefinitionsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.journalPromptDefinitions,
+          getReferencedColumn: (t) => t.configurationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalPromptDefinitionsTableFilterComposer(
+                $db: $db,
+                $table: $db.journalPromptDefinitions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$JournalPromptConfigurationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $JournalPromptConfigurationsTable> {
+  $$JournalPromptConfigurationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverVersion => $composableBuilder(
+    column: $table.serverVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originDeviceId => $composableBuilder(
+    column: $table.originDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get logicalKey => $composableBuilder(
+    column: $table.logicalKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get configurationVersion => $composableBuilder(
+    column: $table.configurationVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UserProfilesTableOrderingComposer get userId {
+    final $$UserProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$JournalPromptConfigurationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $JournalPromptConfigurationsTable> {
+  $$JournalPromptConfigurationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serverVersion => $composableBuilder(
+    column: $table.serverVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get originDeviceId => $composableBuilder(
+    column: $table.originDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get logicalKey => $composableBuilder(
+    column: $table.logicalKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get configurationVersion => $composableBuilder(
+    column: $table.configurationVersion,
+    builder: (column) => column,
+  );
+
+  $$UserProfilesTableAnnotationComposer get userId {
+    final $$UserProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> journalPromptDefinitionsRefs<T extends Object>(
+    Expression<T> Function($$JournalPromptDefinitionsTableAnnotationComposer a)
+    f,
+  ) {
+    final $$JournalPromptDefinitionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.journalPromptDefinitions,
+          getReferencedColumn: (t) => t.configurationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalPromptDefinitionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.journalPromptDefinitions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$JournalPromptConfigurationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $JournalPromptConfigurationsTable,
+          JournalPromptConfigurationRow,
+          $$JournalPromptConfigurationsTableFilterComposer,
+          $$JournalPromptConfigurationsTableOrderingComposer,
+          $$JournalPromptConfigurationsTableAnnotationComposer,
+          $$JournalPromptConfigurationsTableCreateCompanionBuilder,
+          $$JournalPromptConfigurationsTableUpdateCompanionBuilder,
+          (
+            JournalPromptConfigurationRow,
+            $$JournalPromptConfigurationsTableReferences,
+          ),
+          JournalPromptConfigurationRow,
+          PrefetchHooks Function({
+            bool userId,
+            bool journalPromptDefinitionsRefs,
+          })
+        > {
+  $$JournalPromptConfigurationsTableTableManager(
+    _$AppDatabase db,
+    $JournalPromptConfigurationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JournalPromptConfigurationsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$JournalPromptConfigurationsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$JournalPromptConfigurationsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int?> serverVersion = const Value.absent(),
+                Value<int?> lastSyncedAt = const Value.absent(),
+                Value<String?> originDeviceId = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> logicalKey = const Value.absent(),
+                Value<int> configurationVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalPromptConfigurationsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                serverVersion: serverVersion,
+                lastSyncedAt: lastSyncedAt,
+                originDeviceId: originDeviceId,
+                deletedAt: deletedAt,
+                userId: userId,
+                logicalKey: logicalKey,
+                configurationVersion: configurationVersion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int?> serverVersion = const Value.absent(),
+                Value<int?> lastSyncedAt = const Value.absent(),
+                Value<String?> originDeviceId = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                required String userId,
+                Value<String> logicalKey = const Value.absent(),
+                Value<int> configurationVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalPromptConfigurationsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                serverVersion: serverVersion,
+                lastSyncedAt: lastSyncedAt,
+                originDeviceId: originDeviceId,
+                deletedAt: deletedAt,
+                userId: userId,
+                logicalKey: logicalKey,
+                configurationVersion: configurationVersion,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$JournalPromptConfigurationsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({userId = false, journalPromptDefinitionsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (journalPromptDefinitionsRefs)
+                      db.journalPromptDefinitions,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (userId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.userId,
+                                    referencedTable:
+                                        $$JournalPromptConfigurationsTableReferences
+                                            ._userIdTable(db),
+                                    referencedColumn:
+                                        $$JournalPromptConfigurationsTableReferences
+                                            ._userIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (journalPromptDefinitionsRefs)
+                        await $_getPrefetchedData<
+                          JournalPromptConfigurationRow,
+                          $JournalPromptConfigurationsTable,
+                          JournalPromptDefinitionRow
+                        >(
+                          currentTable: table,
+                          referencedTable:
+                              $$JournalPromptConfigurationsTableReferences
+                                  ._journalPromptDefinitionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$JournalPromptConfigurationsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).journalPromptDefinitionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.configurationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$JournalPromptConfigurationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $JournalPromptConfigurationsTable,
+      JournalPromptConfigurationRow,
+      $$JournalPromptConfigurationsTableFilterComposer,
+      $$JournalPromptConfigurationsTableOrderingComposer,
+      $$JournalPromptConfigurationsTableAnnotationComposer,
+      $$JournalPromptConfigurationsTableCreateCompanionBuilder,
+      $$JournalPromptConfigurationsTableUpdateCompanionBuilder,
+      (
+        JournalPromptConfigurationRow,
+        $$JournalPromptConfigurationsTableReferences,
+      ),
+      JournalPromptConfigurationRow,
+      PrefetchHooks Function({bool userId, bool journalPromptDefinitionsRefs})
+    >;
+typedef $$JournalPromptDefinitionsTableCreateCompanionBuilder =
+    JournalPromptDefinitionsCompanion Function({
+      Value<String> id,
+      Value<int?> deletedAt,
+      required String configurationId,
+      Value<String?> stableKey,
+      required String promptSource,
+      required String questionText,
+      Value<String?> helperText,
+      Value<String> responseKind,
+      required int displayOrder,
+      Value<bool> isEnabled,
+      Value<int> promptVersion,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$JournalPromptDefinitionsTableUpdateCompanionBuilder =
+    JournalPromptDefinitionsCompanion Function({
+      Value<String> id,
+      Value<int?> deletedAt,
+      Value<String> configurationId,
+      Value<String?> stableKey,
+      Value<String> promptSource,
+      Value<String> questionText,
+      Value<String?> helperText,
+      Value<String> responseKind,
+      Value<int> displayOrder,
+      Value<bool> isEnabled,
+      Value<int> promptVersion,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$JournalPromptDefinitionsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $JournalPromptDefinitionsTable,
+          JournalPromptDefinitionRow
+        > {
+  $$JournalPromptDefinitionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $JournalPromptConfigurationsTable _configurationIdTable(
+    _$AppDatabase db,
+  ) => db.journalPromptConfigurations.createAlias(
+    'journal_prompt_definitions__configuration_id__journal_prompt_configurations__id',
+  );
+
+  $$JournalPromptConfigurationsTableProcessedTableManager get configurationId {
+    final $_column = $_itemColumn<String>('configuration_id')!;
+
+    final manager = $$JournalPromptConfigurationsTableTableManager(
+      $_db,
+      $_db.journalPromptConfigurations,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_configurationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$JournalPromptDefinitionsTableFilterComposer
+    extends Composer<_$AppDatabase, $JournalPromptDefinitionsTable> {
+  $$JournalPromptDefinitionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stableKey => $composableBuilder(
+    column: $table.stableKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get promptSource => $composableBuilder(
+    column: $table.promptSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questionText => $composableBuilder(
+    column: $table.questionText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get helperText => $composableBuilder(
+    column: $table.helperText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get responseKind => $composableBuilder(
+    column: $table.responseKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get displayOrder => $composableBuilder(
+    column: $table.displayOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isEnabled => $composableBuilder(
+    column: $table.isEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get promptVersion => $composableBuilder(
+    column: $table.promptVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$JournalPromptConfigurationsTableFilterComposer get configurationId {
+    final $$JournalPromptConfigurationsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configurationId,
+          referencedTable: $db.journalPromptConfigurations,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalPromptConfigurationsTableFilterComposer(
+                $db: $db,
+                $table: $db.journalPromptConfigurations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$JournalPromptDefinitionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $JournalPromptDefinitionsTable> {
+  $$JournalPromptDefinitionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stableKey => $composableBuilder(
+    column: $table.stableKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get promptSource => $composableBuilder(
+    column: $table.promptSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questionText => $composableBuilder(
+    column: $table.questionText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get helperText => $composableBuilder(
+    column: $table.helperText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get responseKind => $composableBuilder(
+    column: $table.responseKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get displayOrder => $composableBuilder(
+    column: $table.displayOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isEnabled => $composableBuilder(
+    column: $table.isEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get promptVersion => $composableBuilder(
+    column: $table.promptVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$JournalPromptConfigurationsTableOrderingComposer get configurationId {
+    final $$JournalPromptConfigurationsTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configurationId,
+          referencedTable: $db.journalPromptConfigurations,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalPromptConfigurationsTableOrderingComposer(
+                $db: $db,
+                $table: $db.journalPromptConfigurations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$JournalPromptDefinitionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $JournalPromptDefinitionsTable> {
+  $$JournalPromptDefinitionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get stableKey =>
+      $composableBuilder(column: $table.stableKey, builder: (column) => column);
+
+  GeneratedColumn<String> get promptSource => $composableBuilder(
+    column: $table.promptSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get questionText => $composableBuilder(
+    column: $table.questionText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get helperText => $composableBuilder(
+    column: $table.helperText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get responseKind => $composableBuilder(
+    column: $table.responseKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get displayOrder => $composableBuilder(
+    column: $table.displayOrder,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isEnabled =>
+      $composableBuilder(column: $table.isEnabled, builder: (column) => column);
+
+  GeneratedColumn<int> get promptVersion => $composableBuilder(
+    column: $table.promptVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$JournalPromptConfigurationsTableAnnotationComposer get configurationId {
+    final $$JournalPromptConfigurationsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.configurationId,
+          referencedTable: $db.journalPromptConfigurations,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$JournalPromptConfigurationsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.journalPromptConfigurations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$JournalPromptDefinitionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $JournalPromptDefinitionsTable,
+          JournalPromptDefinitionRow,
+          $$JournalPromptDefinitionsTableFilterComposer,
+          $$JournalPromptDefinitionsTableOrderingComposer,
+          $$JournalPromptDefinitionsTableAnnotationComposer,
+          $$JournalPromptDefinitionsTableCreateCompanionBuilder,
+          $$JournalPromptDefinitionsTableUpdateCompanionBuilder,
+          (
+            JournalPromptDefinitionRow,
+            $$JournalPromptDefinitionsTableReferences,
+          ),
+          JournalPromptDefinitionRow,
+          PrefetchHooks Function({bool configurationId})
+        > {
+  $$JournalPromptDefinitionsTableTableManager(
+    _$AppDatabase db,
+    $JournalPromptDefinitionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JournalPromptDefinitionsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$JournalPromptDefinitionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$JournalPromptDefinitionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> configurationId = const Value.absent(),
+                Value<String?> stableKey = const Value.absent(),
+                Value<String> promptSource = const Value.absent(),
+                Value<String> questionText = const Value.absent(),
+                Value<String?> helperText = const Value.absent(),
+                Value<String> responseKind = const Value.absent(),
+                Value<int> displayOrder = const Value.absent(),
+                Value<bool> isEnabled = const Value.absent(),
+                Value<int> promptVersion = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalPromptDefinitionsCompanion(
+                id: id,
+                deletedAt: deletedAt,
+                configurationId: configurationId,
+                stableKey: stableKey,
+                promptSource: promptSource,
+                questionText: questionText,
+                helperText: helperText,
+                responseKind: responseKind,
+                displayOrder: displayOrder,
+                isEnabled: isEnabled,
+                promptVersion: promptVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                required String configurationId,
+                Value<String?> stableKey = const Value.absent(),
+                required String promptSource,
+                required String questionText,
+                Value<String?> helperText = const Value.absent(),
+                Value<String> responseKind = const Value.absent(),
+                required int displayOrder,
+                Value<bool> isEnabled = const Value.absent(),
+                Value<int> promptVersion = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalPromptDefinitionsCompanion.insert(
+                id: id,
+                deletedAt: deletedAt,
+                configurationId: configurationId,
+                stableKey: stableKey,
+                promptSource: promptSource,
+                questionText: questionText,
+                helperText: helperText,
+                responseKind: responseKind,
+                displayOrder: displayOrder,
+                isEnabled: isEnabled,
+                promptVersion: promptVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$JournalPromptDefinitionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({configurationId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -15148,30 +18837,17 @@ class $$JournalEntriesTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (userId) {
+                    if (configurationId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.userId,
-                                referencedTable: $$JournalEntriesTableReferences
-                                    ._userIdTable(db),
+                                currentColumn: table.configurationId,
+                                referencedTable:
+                                    $$JournalPromptDefinitionsTableReferences
+                                        ._configurationIdTable(db),
                                 referencedColumn:
-                                    $$JournalEntriesTableReferences
-                                        ._userIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-                    if (todayRecordId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.todayRecordId,
-                                referencedTable: $$JournalEntriesTableReferences
-                                    ._todayRecordIdTable(db),
-                                referencedColumn:
-                                    $$JournalEntriesTableReferences
-                                        ._todayRecordIdTable(db)
+                                    $$JournalPromptDefinitionsTableReferences
+                                        ._configurationIdTable(db)
                                         .id,
                               )
                               as T;
@@ -15188,19 +18864,530 @@ class $$JournalEntriesTableTableManager
       );
 }
 
-typedef $$JournalEntriesTableProcessedTableManager =
+typedef $$JournalPromptDefinitionsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $JournalEntriesTable,
-      JournalEntry,
-      $$JournalEntriesTableFilterComposer,
-      $$JournalEntriesTableOrderingComposer,
-      $$JournalEntriesTableAnnotationComposer,
-      $$JournalEntriesTableCreateCompanionBuilder,
-      $$JournalEntriesTableUpdateCompanionBuilder,
-      (JournalEntry, $$JournalEntriesTableReferences),
-      JournalEntry,
-      PrefetchHooks Function({bool userId, bool todayRecordId})
+      $JournalPromptDefinitionsTable,
+      JournalPromptDefinitionRow,
+      $$JournalPromptDefinitionsTableFilterComposer,
+      $$JournalPromptDefinitionsTableOrderingComposer,
+      $$JournalPromptDefinitionsTableAnnotationComposer,
+      $$JournalPromptDefinitionsTableCreateCompanionBuilder,
+      $$JournalPromptDefinitionsTableUpdateCompanionBuilder,
+      (JournalPromptDefinitionRow, $$JournalPromptDefinitionsTableReferences),
+      JournalPromptDefinitionRow,
+      PrefetchHooks Function({bool configurationId})
+    >;
+typedef $$JournalEntryPromptItemsTableCreateCompanionBuilder =
+    JournalEntryPromptItemsCompanion Function({
+      Value<String> id,
+      required String journalEntryId,
+      Value<String?> sourcePromptId,
+      Value<String?> sourcePromptStableKey,
+      required int sourcePromptVersion,
+      required String promptSource,
+      required String questionTextSnapshot,
+      Value<String?> helperTextSnapshot,
+      Value<String> responseKind,
+      required int displayOrder,
+      Value<String?> answerText,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$JournalEntryPromptItemsTableUpdateCompanionBuilder =
+    JournalEntryPromptItemsCompanion Function({
+      Value<String> id,
+      Value<String> journalEntryId,
+      Value<String?> sourcePromptId,
+      Value<String?> sourcePromptStableKey,
+      Value<int> sourcePromptVersion,
+      Value<String> promptSource,
+      Value<String> questionTextSnapshot,
+      Value<String?> helperTextSnapshot,
+      Value<String> responseKind,
+      Value<int> displayOrder,
+      Value<String?> answerText,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$JournalEntryPromptItemsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $JournalEntryPromptItemsTable,
+          JournalEntryPromptItemRow
+        > {
+  $$JournalEntryPromptItemsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $JournalEntriesTable _journalEntryIdTable(_$AppDatabase db) =>
+      db.journalEntries.createAlias(
+        'journal_entry_prompt_items__journal_entry_id__journal_entries__id',
+      );
+
+  $$JournalEntriesTableProcessedTableManager get journalEntryId {
+    final $_column = $_itemColumn<String>('journal_entry_id')!;
+
+    final manager = $$JournalEntriesTableTableManager(
+      $_db,
+      $_db.journalEntries,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_journalEntryIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$JournalEntryPromptItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $JournalEntryPromptItemsTable> {
+  $$JournalEntryPromptItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourcePromptId => $composableBuilder(
+    column: $table.sourcePromptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourcePromptStableKey => $composableBuilder(
+    column: $table.sourcePromptStableKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sourcePromptVersion => $composableBuilder(
+    column: $table.sourcePromptVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get promptSource => $composableBuilder(
+    column: $table.promptSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questionTextSnapshot => $composableBuilder(
+    column: $table.questionTextSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get helperTextSnapshot => $composableBuilder(
+    column: $table.helperTextSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get responseKind => $composableBuilder(
+    column: $table.responseKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get displayOrder => $composableBuilder(
+    column: $table.displayOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get answerText => $composableBuilder(
+    column: $table.answerText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$JournalEntriesTableFilterComposer get journalEntryId {
+    final $$JournalEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.journalEntryId,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$JournalEntryPromptItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $JournalEntryPromptItemsTable> {
+  $$JournalEntryPromptItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourcePromptId => $composableBuilder(
+    column: $table.sourcePromptId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourcePromptStableKey => $composableBuilder(
+    column: $table.sourcePromptStableKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sourcePromptVersion => $composableBuilder(
+    column: $table.sourcePromptVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get promptSource => $composableBuilder(
+    column: $table.promptSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questionTextSnapshot => $composableBuilder(
+    column: $table.questionTextSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get helperTextSnapshot => $composableBuilder(
+    column: $table.helperTextSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get responseKind => $composableBuilder(
+    column: $table.responseKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get displayOrder => $composableBuilder(
+    column: $table.displayOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get answerText => $composableBuilder(
+    column: $table.answerText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$JournalEntriesTableOrderingComposer get journalEntryId {
+    final $$JournalEntriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.journalEntryId,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$JournalEntryPromptItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $JournalEntryPromptItemsTable> {
+  $$JournalEntryPromptItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sourcePromptId => $composableBuilder(
+    column: $table.sourcePromptId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourcePromptStableKey => $composableBuilder(
+    column: $table.sourcePromptStableKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sourcePromptVersion => $composableBuilder(
+    column: $table.sourcePromptVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get promptSource => $composableBuilder(
+    column: $table.promptSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get questionTextSnapshot => $composableBuilder(
+    column: $table.questionTextSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get helperTextSnapshot => $composableBuilder(
+    column: $table.helperTextSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get responseKind => $composableBuilder(
+    column: $table.responseKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get displayOrder => $composableBuilder(
+    column: $table.displayOrder,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get answerText => $composableBuilder(
+    column: $table.answerText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$JournalEntriesTableAnnotationComposer get journalEntryId {
+    final $$JournalEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.journalEntryId,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$JournalEntryPromptItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $JournalEntryPromptItemsTable,
+          JournalEntryPromptItemRow,
+          $$JournalEntryPromptItemsTableFilterComposer,
+          $$JournalEntryPromptItemsTableOrderingComposer,
+          $$JournalEntryPromptItemsTableAnnotationComposer,
+          $$JournalEntryPromptItemsTableCreateCompanionBuilder,
+          $$JournalEntryPromptItemsTableUpdateCompanionBuilder,
+          (JournalEntryPromptItemRow, $$JournalEntryPromptItemsTableReferences),
+          JournalEntryPromptItemRow,
+          PrefetchHooks Function({bool journalEntryId})
+        > {
+  $$JournalEntryPromptItemsTableTableManager(
+    _$AppDatabase db,
+    $JournalEntryPromptItemsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JournalEntryPromptItemsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$JournalEntryPromptItemsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$JournalEntryPromptItemsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> journalEntryId = const Value.absent(),
+                Value<String?> sourcePromptId = const Value.absent(),
+                Value<String?> sourcePromptStableKey = const Value.absent(),
+                Value<int> sourcePromptVersion = const Value.absent(),
+                Value<String> promptSource = const Value.absent(),
+                Value<String> questionTextSnapshot = const Value.absent(),
+                Value<String?> helperTextSnapshot = const Value.absent(),
+                Value<String> responseKind = const Value.absent(),
+                Value<int> displayOrder = const Value.absent(),
+                Value<String?> answerText = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalEntryPromptItemsCompanion(
+                id: id,
+                journalEntryId: journalEntryId,
+                sourcePromptId: sourcePromptId,
+                sourcePromptStableKey: sourcePromptStableKey,
+                sourcePromptVersion: sourcePromptVersion,
+                promptSource: promptSource,
+                questionTextSnapshot: questionTextSnapshot,
+                helperTextSnapshot: helperTextSnapshot,
+                responseKind: responseKind,
+                displayOrder: displayOrder,
+                answerText: answerText,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required String journalEntryId,
+                Value<String?> sourcePromptId = const Value.absent(),
+                Value<String?> sourcePromptStableKey = const Value.absent(),
+                required int sourcePromptVersion,
+                required String promptSource,
+                required String questionTextSnapshot,
+                Value<String?> helperTextSnapshot = const Value.absent(),
+                Value<String> responseKind = const Value.absent(),
+                required int displayOrder,
+                Value<String?> answerText = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalEntryPromptItemsCompanion.insert(
+                id: id,
+                journalEntryId: journalEntryId,
+                sourcePromptId: sourcePromptId,
+                sourcePromptStableKey: sourcePromptStableKey,
+                sourcePromptVersion: sourcePromptVersion,
+                promptSource: promptSource,
+                questionTextSnapshot: questionTextSnapshot,
+                helperTextSnapshot: helperTextSnapshot,
+                responseKind: responseKind,
+                displayOrder: displayOrder,
+                answerText: answerText,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$JournalEntryPromptItemsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({journalEntryId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (journalEntryId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.journalEntryId,
+                                referencedTable:
+                                    $$JournalEntryPromptItemsTableReferences
+                                        ._journalEntryIdTable(db),
+                                referencedColumn:
+                                    $$JournalEntryPromptItemsTableReferences
+                                        ._journalEntryIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$JournalEntryPromptItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $JournalEntryPromptItemsTable,
+      JournalEntryPromptItemRow,
+      $$JournalEntryPromptItemsTableFilterComposer,
+      $$JournalEntryPromptItemsTableOrderingComposer,
+      $$JournalEntryPromptItemsTableAnnotationComposer,
+      $$JournalEntryPromptItemsTableCreateCompanionBuilder,
+      $$JournalEntryPromptItemsTableUpdateCompanionBuilder,
+      (JournalEntryPromptItemRow, $$JournalEntryPromptItemsTableReferences),
+      JournalEntryPromptItemRow,
+      PrefetchHooks Function({bool journalEntryId})
     >;
 typedef $$HealthRecordsTableCreateCompanionBuilder =
     HealthRecordsCompanion Function({
@@ -18084,6 +22271,22 @@ class $AppDatabaseManager {
       $$TodayRecordsTableTableManager(_db, _db.todayRecords);
   $$JournalEntriesTableTableManager get journalEntries =>
       $$JournalEntriesTableTableManager(_db, _db.journalEntries);
+  $$JournalPromptConfigurationsTableTableManager
+  get journalPromptConfigurations =>
+      $$JournalPromptConfigurationsTableTableManager(
+        _db,
+        _db.journalPromptConfigurations,
+      );
+  $$JournalPromptDefinitionsTableTableManager get journalPromptDefinitions =>
+      $$JournalPromptDefinitionsTableTableManager(
+        _db,
+        _db.journalPromptDefinitions,
+      );
+  $$JournalEntryPromptItemsTableTableManager get journalEntryPromptItems =>
+      $$JournalEntryPromptItemsTableTableManager(
+        _db,
+        _db.journalEntryPromptItems,
+      );
   $$HealthRecordsTableTableManager get healthRecords =>
       $$HealthRecordsTableTableManager(_db, _db.healthRecords);
   $$AiReportsTableTableManager get aiReports =>

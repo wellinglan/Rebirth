@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 
 void main() {
-  test('v2 to v8 preserves goals and adds account boundary tables', () async {
+  test('v2 to v9 preserves goals and adds current tables', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -33,7 +33,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 8);
+    expect(version.read<int>('user_version'), 9);
 
     final goal =
         await (migrated.select(migrated.goals)..where(
@@ -69,7 +69,7 @@ void main() {
 
     final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(migrated.close);
-    expect(migrated.schemaVersion, 8);
+    expect(migrated.schemaVersion, 9);
     final existing = await migrated.select(migrated.goals).getSingle();
     expect(existing.title, 'v1 普通目标');
     expect(existing.archivedAt, isNull);
@@ -100,7 +100,7 @@ void main() {
     );
   });
 
-  test('v3 to v8 preserves goals and creates conflict indexes', () async {
+  test('v3 to v9 preserves goals and creates conflict indexes', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -129,7 +129,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 8);
+    expect(version.read<int>('user_version'), 9);
     final goal = await migrated.select(migrated.goals).getSingle();
     expect(goal.id, '00000000-0000-4000-8000-000000000021');
     expect(goal.syncStatus, 'conflict');
@@ -154,7 +154,7 @@ void main() {
   });
 
   test(
-    'v4 to v8 preserves data and supersedes unhydrated legacy conflicts',
+    'v4 to v9 preserves data and supersedes unhydrated legacy conflicts',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -203,7 +203,7 @@ void main() {
 
       final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
       addTearDown(migrated.close);
-      expect(migrated.schemaVersion, 8);
+      expect(migrated.schemaVersion, 9);
       expect(await migrated.select(migrated.goals).get(), hasLength(1));
       expect(await migrated.select(migrated.userProfiles).get(), hasLength(1));
       expect(await migrated.select(migrated.appSettings).get(), hasLength(1));
@@ -228,7 +228,7 @@ void main() {
   );
 
   test(
-    'v5 to v8 backfills existing binding without claiming legacy data',
+    'v5 to v9 backfills existing binding without claiming legacy data',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -317,7 +317,7 @@ CREATE TABLE cloud_account_bindings_v5 (
   );
 
   test(
-    'v6 to v8 preserves legacy quarantine and business sync metadata',
+    'v6 to v9 preserves legacy quarantine and business sync metadata',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -392,7 +392,7 @@ CREATE TABLE cloud_account_bindings_v6 (
           .select(migrated.cloudAccountBindings)
           .getSingle();
       final profile = await migrated.select(migrated.userProfiles).getSingle();
-      expect(migrated.schemaVersion, 8);
+      expect(migrated.schemaVersion, 9);
       expect(binding.syncEligibilityStatus, 'legacy_review_required');
       expect(binding.verificationStatus, 'not_verified');
       expect(binding.verificationTime, isNull);
@@ -404,7 +404,7 @@ CREATE TABLE cloud_account_bindings_v6 (
     },
   );
 
-  test('v7 to v8 adds nullable remote record identity', () async {
+  test('v7 to v9 adds nullable remote identity and prompt schema', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -449,10 +449,100 @@ CREATE TABLE cloud_account_bindings_v6 (
     addTearDown(migrated.close);
     final conflict = await migrated.select(migrated.syncConflicts).getSingle();
 
-    expect(migrated.schemaVersion, 8);
+    expect(migrated.schemaVersion, 9);
     expect(conflict.recordId, '70000000-0000-4000-8000-000000000081');
     expect(conflict.remoteRecordId, isNull);
   });
+
+  test(
+    'v8 to v9 backfills prompt configuration and Journal snapshots',
+    () async {
+      final fixture = await _createDatabaseFixture();
+      addTearDown(fixture.dispose);
+      final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      final bootstrap = await original.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
+      const journalId = '80000000-0000-4000-8000-000000000001';
+      await original
+          .into(original.journalEntries)
+          .insert(
+            JournalEntriesCompanion.insert(
+              id: const Value(journalId),
+              userId: bootstrap.activeUserId,
+              entryDate: '2026-07-29',
+              timezoneOffsetMinutes: 480,
+              mostImportantAccomplishment: const Value('完成迁移验证'),
+              learning: const Value('问题快照需要稳定'),
+              originDeviceId: Value(bootstrap.localInstallationId),
+            ),
+          );
+      await original.customStatement('DROP TABLE journal_entry_prompt_items');
+      await original.customStatement('DROP TABLE journal_prompt_definitions');
+      await original.customStatement(
+        'DROP TABLE journal_prompt_configurations',
+      );
+      await original.customStatement('PRAGMA user_version = 8');
+      await original.close();
+
+      final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      addTearDown(migrated.close);
+      final configuration = await migrated
+          .select(migrated.journalPromptConfigurations)
+          .getSingle();
+      final prompts = await migrated
+          .select(migrated.journalPromptDefinitions)
+          .get();
+      final items = await migrated
+          .select(migrated.journalEntryPromptItems)
+          .get();
+
+      expect(migrated.schemaVersion, 9);
+      expect(configuration.userId, bootstrap.activeUserId);
+      expect(configuration.logicalKey, 'default');
+      expect(prompts, hasLength(5));
+      expect(items, hasLength(5));
+      expect(
+        items
+            .singleWhere(
+              (item) => item.sourcePromptStableKey == 'system.accomplishment',
+            )
+            .answerText,
+        '完成迁移验证',
+      );
+      expect(
+        items
+            .singleWhere(
+              (item) => item.sourcePromptStableKey == 'system.learning',
+            )
+            .answerText,
+        '问题快照需要稳定',
+      );
+      expect(
+        items.where((item) => item.journalEntryId == journalId),
+        hasLength(5),
+      );
+      await migrated
+          .into(migrated.syncConflicts)
+          .insert(
+            SyncConflictsCompanion.insert(
+              id: const Value('80000000-0000-4000-8000-000000000009'),
+              localUserId: bootstrap.activeUserId,
+              endpointKey: 'https://alpha.example.test',
+              cloudUserId: 'cloud-user-v8',
+              entityType: 'journal_prompt_configurations',
+              recordId: configuration.id,
+              localUpdatedAt: configuration.updatedAt,
+              remoteOperation: 'unknown_pending_pull',
+              remoteServerVersion: 0,
+              detectedAt: configuration.updatedAt,
+              lastSeenAt: configuration.updatedAt,
+              resolutionStatus: 'awaiting_remote_snapshot',
+            ),
+          );
+      expect(await migrated.select(migrated.syncConflicts).get(), hasLength(1));
+    },
+  );
 }
 
 Future<void> _replaceGoalsWithVersionTwoDefinition(AppDatabase database) {
@@ -536,6 +626,9 @@ Future<void> _expectCoreTableSet(AppDatabase database) async {
     'sync_conflicts',
     'installation_info',
     'cloud_account_bindings',
+    'journal_prompt_configurations',
+    'journal_prompt_definitions',
+    'journal_entry_prompt_items',
   });
 }
 

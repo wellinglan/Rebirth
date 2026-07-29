@@ -751,3 +751,17 @@ Journal draft, complete, reopen, cross-device conflict recovery, Growth source
 accuracy, privacy, independent-account isolation, 320px layout, maximum font
 size, and keyboard operation passed. The Growth System Product Gate and
 Journal State Semantics Gate are `CLOSED / ACCEPTED`.
+
+## 30. Sprint 12C Journal Prompt System
+
+Journal prompt configuration is now a user-scoped manual-sync aggregate.
+Journal payload v2 carries versioned prompt snapshots and dynamic responses;
+the API still validates strict legacy v1 payloads. Prompt configuration sync
+runs before Journal entry sync and uses existing OCC, cursors, tombstones, and
+explicit conflict recovery.
+
+Flutter schema is 9. API Version remains 1, Sync Protocol remains 2, and the
+PostgreSQL/Alembic schema is unchanged because sync payloads remain JSON.
+Publishing a new API image is required after CI, but Sprint 12C must not
+automatically deploy it to the Beijing Alpha server. Manual gates remain open;
+see `docs/manual_tests/38_journal_prompt_system.md`.

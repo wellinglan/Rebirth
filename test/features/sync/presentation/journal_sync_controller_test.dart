@@ -167,6 +167,38 @@ final class _FakeJournalConflictService
 final class _FakeConflictRepository extends Fake
     implements SyncConflictRepository {
   @override
+  Future<SyncConflictRecord> getConflict(
+    SyncConflictScope scope,
+    String conflictId,
+  ) async {
+    return SyncConflictRecord(
+      id: conflictId,
+      scope: scope,
+      entityType: SyncEntityType.journal,
+      recordId: 'journal-entry',
+      localSnapshot: const SyncConflictSnapshot(
+        payload: null,
+        updatedAt: 1,
+        deletedAt: null,
+        serverVersion: 1,
+        originDeviceId: null,
+      ),
+      remoteSnapshot: const SyncConflictSnapshot(
+        payload: null,
+        updatedAt: 2,
+        deletedAt: null,
+        serverVersion: 2,
+        originDeviceId: null,
+      ),
+      remoteOperation: SyncConflictOperation.upsert,
+      detectedAt: 3,
+      lastSeenAt: 3,
+      resolutionStatus: SyncConflictResolutionStatus.unresolved,
+      resolvedAt: null,
+    );
+  }
+
+  @override
   Future<List<SyncConflictRecord>> listActiveConflicts(
     SyncConflictScope scope,
   ) async => const [];

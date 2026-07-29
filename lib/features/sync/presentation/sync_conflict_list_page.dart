@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart';
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
@@ -118,6 +119,10 @@ String _displayTitle(SyncConflictRecord conflict) {
   if (remote is JournalSyncPayload) {
     return '${remote.entryDate} Journal';
   }
+  if (local is JournalPromptConfigurationSyncPayload ||
+      remote is JournalPromptConfigurationSyncPayload) {
+    return 'Journal 问题配置';
+  }
   if (local is HealthSyncPayload) {
     return '${local.recordDate} Health';
   }
@@ -130,6 +135,9 @@ String _displayTitle(SyncConflictRecord conflict) {
   if (conflict.entityType == SyncEntityType.journal) {
     return '已删除的 Journal 记录';
   }
+  if (conflict.entityType == SyncEntityType.journalPromptConfiguration) {
+    return '已删除的 Journal 问题配置';
+  }
   if (conflict.entityType == SyncEntityType.health) {
     return '已删除的 Health 记录';
   }
@@ -139,6 +147,7 @@ String _displayTitle(SyncConflictRecord conflict) {
 String _entityLabel(SyncEntityType type) => switch (type) {
   SyncEntityType.profile => 'Profile',
   SyncEntityType.today => 'Today',
+  SyncEntityType.journalPromptConfiguration => 'Journal 问题配置',
   SyncEntityType.journal => 'Journal',
   SyncEntityType.plan => 'Plan',
   SyncEntityType.health => 'Health',

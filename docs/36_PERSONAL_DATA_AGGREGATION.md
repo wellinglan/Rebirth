@@ -283,3 +283,10 @@ failure checks remain `NOT EXECUTED` because no safe product operation can
 force a local provider failure; automated fault-injection evidence covers
 those internal invariants. The Personal Data Aggregation Product Gate and
 Account Boundary Isolation Gate are `CLOSED / ACCEPTED`.
+
+## Sprint 12C Journal Prompt Privacy
+
+Personal Data Aggregation continues to select Journal metadata only. It does
+not read `journal_prompt_definitions` or `journal_entry_prompt_items`, and it
+does not expose prompt text, helper text, response text, UUIDs, or configuration
+payloads. Schema 9 does not change contributor output or consent semantics.

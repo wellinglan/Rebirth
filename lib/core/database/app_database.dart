@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart';
+import 'package:rebirth/core/journal/journal_prompt_catalog.dart';
+import 'package:rebirth/core/utils/deterministic_uuid.dart';
 
 import 'daos/bootstrap_dao.dart';
 import 'database_connection.dart';
@@ -10,6 +12,9 @@ import 'tables/goals_table.dart';
 import 'tables/health_records_table.dart';
 import 'tables/installation_info_table.dart';
 import 'tables/journal_entries_table.dart';
+import 'tables/journal_entry_prompt_items_table.dart';
+import 'tables/journal_prompt_configurations_table.dart';
+import 'tables/journal_prompt_definitions_table.dart';
 import 'tables/sync_conflicts_table.dart';
 import 'tables/today_records_table.dart';
 import 'tables/user_profiles_table.dart';
@@ -23,6 +28,9 @@ part 'app_database.g.dart';
     Goals,
     TodayRecords,
     JournalEntries,
+    JournalPromptConfigurations,
+    JournalPromptDefinitions,
+    JournalEntryPromptItems,
     HealthRecords,
     AiReports,
     SyncConflicts,
@@ -42,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -51,6 +59,7 @@ class AppDatabase extends _$AppDatabase {
       await _createVersionOneIndexes();
       await _createSyncConflictIndexes();
       await _createAccountBoundaryIndexes();
+      await _createJournalPromptIndexes();
     },
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
@@ -137,6 +146,15 @@ class AppDatabase extends _$AppDatabase {
           await migrator.addColumn(syncConflicts, syncConflicts.remoteRecordId);
         }
       }
+      if (from < 9) {
+        await migrator.alterTable(TableMigration(syncConflicts));
+        await _createSyncConflictIndexes();
+        await migrator.createTable(journalPromptConfigurations);
+        await migrator.createTable(journalPromptDefinitions);
+        await migrator.createTable(journalEntryPromptItems);
+        await _createJournalPromptIndexes();
+        await _backfillJournalPromptSystem();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -168,6 +186,128 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _createAccountBoundaryIndexes() async {
     for (final statement in _accountBoundaryIndexes) {
       await customStatement(statement);
+    }
+  }
+
+  Future<void> _createJournalPromptIndexes() async {
+    for (final statement in _journalPromptIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _backfillJournalPromptSystem() async {
+    final users = await customSelect(
+      'SELECT id, created_at, updated_at FROM user_profiles',
+    ).get();
+    final fallbackInstallation = await customSelect(
+      'SELECT installation_id FROM installation_info LIMIT 1',
+    ).getSingleOrNull();
+
+    for (final user in users) {
+      final userId = user.read<String>('id');
+      final createdAt = user.read<int>('created_at');
+      final updatedAt = user.read<int>('updated_at');
+      final settings = await customSelect(
+        'SELECT local_installation_id FROM app_settings '
+        'WHERE user_id = ? LIMIT 1',
+        variables: [Variable.withString(userId)],
+      ).getSingleOrNull();
+      final originDeviceId =
+          settings?.read<String>('local_installation_id') ??
+          fallbackInstallation?.read<String>('installation_id');
+      final configurationId = deterministicUuid(
+        'journal-prompt-configuration:$userId:default',
+      );
+
+      await customStatement(
+        'INSERT OR IGNORE INTO journal_prompt_configurations '
+        '(id, user_id, logical_key, configuration_version, created_at, '
+        'updated_at, sync_status, server_version, last_synced_at, '
+        'origin_device_id, deleted_at) '
+        "VALUES (?, ?, 'default', 1, ?, ?, 'local_only', NULL, NULL, ?, NULL)",
+        [configurationId, userId, createdAt, updatedAt, originDeviceId],
+      );
+
+      for (final prompt in JournalPromptCatalog.prompts) {
+        final promptId = deterministicUuid(
+          'journal-prompt:$configurationId:${prompt.stableKey}',
+        );
+        await customStatement(
+          'INSERT OR IGNORE INTO journal_prompt_definitions '
+          '(id, configuration_id, stable_key, prompt_source, question_text, '
+          'helper_text, response_kind, display_order, is_enabled, '
+          'prompt_version, created_at, updated_at, deleted_at) '
+          "VALUES (?, ?, ?, 'system', ?, ?, 'long_text', ?, 1, 1, ?, ?, NULL)",
+          [
+            promptId,
+            configurationId,
+            prompt.stableKey,
+            prompt.questionText,
+            prompt.helperText,
+            prompt.displayOrder,
+            createdAt,
+            updatedAt,
+          ],
+        );
+      }
+    }
+
+    final entries = await customSelect(
+      'SELECT id, user_id, created_at, updated_at, '
+      'most_important_accomplishment, most_draining_event, emotion_source, '
+      'learning, tomorrow_adjustment FROM journal_entries',
+    ).get();
+    for (final entry in entries) {
+      final entryId = entry.read<String>('id');
+      final userId = entry.read<String>('user_id');
+      final configurationId = deterministicUuid(
+        'journal-prompt-configuration:$userId:default',
+      );
+      final answers = <String, String?>{
+        JournalPromptCatalog.accomplishmentKey: entry.readNullable<String>(
+          'most_important_accomplishment',
+        ),
+        JournalPromptCatalog.drainingEventKey: entry.readNullable<String>(
+          'most_draining_event',
+        ),
+        JournalPromptCatalog.emotionSourceKey: entry.readNullable<String>(
+          'emotion_source',
+        ),
+        JournalPromptCatalog.learningKey: entry.readNullable<String>(
+          'learning',
+        ),
+        JournalPromptCatalog.tomorrowAdjustmentKey: entry.readNullable<String>(
+          'tomorrow_adjustment',
+        ),
+      };
+      for (final prompt in JournalPromptCatalog.prompts) {
+        final promptId = deterministicUuid(
+          'journal-prompt:$configurationId:${prompt.stableKey}',
+        );
+        final itemId = deterministicUuid(
+          'journal-entry-prompt-item:$entryId:${prompt.stableKey}:1',
+        );
+        await customStatement(
+          'INSERT OR IGNORE INTO journal_entry_prompt_items '
+          '(id, journal_entry_id, source_prompt_id, source_prompt_stable_key, '
+          'source_prompt_version, prompt_source, question_text_snapshot, '
+          'helper_text_snapshot, response_kind, display_order, answer_text, '
+          'created_at, updated_at) '
+          "VALUES (?, ?, ?, ?, 1, 'system', ?, ?, 'long_text', ?, ?, ?, ?)",
+          [
+            itemId,
+            entryId,
+            promptId,
+            prompt.stableKey,
+            prompt.questionText,
+            prompt.helperText,
+            prompt.displayOrder,
+            answers[prompt.stableKey],
+            entry.read<int>('created_at'),
+            entry.read<int>('updated_at'),
+          ],
+        );
+      }
     }
   }
 
@@ -277,4 +417,25 @@ const _syncConflictIndexes = <String>[
 const _accountBoundaryIndexes = <String>[
   'CREATE INDEX IF NOT EXISTS cloud_account_bindings_status_last_used '
       'ON cloud_account_bindings (status, last_used_at DESC)',
+];
+
+const _journalPromptIndexes = <String>[
+  'CREATE UNIQUE INDEX IF NOT EXISTS '
+      'journal_prompt_configurations_user_default_active '
+      'ON journal_prompt_configurations (user_id, logical_key) '
+      'WHERE deleted_at IS NULL',
+  'CREATE UNIQUE INDEX IF NOT EXISTS '
+      'journal_prompt_definitions_system_key_active '
+      'ON journal_prompt_definitions (configuration_id, stable_key) '
+      'WHERE stable_key IS NOT NULL AND deleted_at IS NULL',
+  'CREATE INDEX IF NOT EXISTS journal_prompt_definitions_order '
+      'ON journal_prompt_definitions '
+      '(configuration_id, is_enabled DESC, display_order, id)',
+  'CREATE INDEX IF NOT EXISTS journal_entry_prompt_items_entry_order '
+      'ON journal_entry_prompt_items (journal_entry_id, display_order, id)',
+  'CREATE UNIQUE INDEX IF NOT EXISTS '
+      'journal_entry_prompt_items_source_snapshot '
+      'ON journal_entry_prompt_items '
+      '(journal_entry_id, source_prompt_id, source_prompt_version) '
+      'WHERE source_prompt_id IS NOT NULL',
 ];

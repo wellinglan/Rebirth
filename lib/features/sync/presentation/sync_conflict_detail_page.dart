@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart';
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
@@ -142,6 +143,8 @@ class SyncConflictDetailPage extends ConsumerWidget {
             ? '操作未完成，本地 Today 内容已保留'
             : record.entityType == SyncEntityType.journal
             ? '操作未完成，本地 Journal 内容已保留'
+            : record.entityType == SyncEntityType.journalPromptConfiguration
+            ? '操作未完成，本地 Journal 问题配置已保留'
             : record.entityType == SyncEntityType.health
             ? '操作未完成，本地 Health 内容已保留'
             : '操作未完成，本地 Plan 内容已保留',
@@ -169,6 +172,13 @@ class SyncConflictDetailPage extends ConsumerWidget {
                 '云端已删除时本地 Journal 将软删除。操作失败或取消时本地内容保持不变。'
           : '当前本地 Journal 将覆盖服务器当前版本，其他设备随后同步时会看到该版本。'
                 '服务器如果再次变化可能重新产生冲突。操作失败或取消时本地内容保持不变。';
+    }
+    if (entityType == SyncEntityType.journalPromptConfiguration) {
+      return adopt
+          ? '采用云端后，当前 Journal 问题配置会被服务器版本替换；历史 Journal 的问题快照和回答不会改变。'
+                '操作失败或取消时本地配置保持不变。'
+          : '当前 Journal 问题配置将覆盖服务器版本，其他设备随后同步时会看到该配置。'
+                '历史 Journal 不会改变，服务器再次变化时可能重新产生冲突。';
     }
     if (entityType == SyncEntityType.health) {
       return adopt
@@ -349,6 +359,9 @@ class _VersionSummary extends StatelessWidget {
     final plan = payload is PlanSyncPayload ? payload : null;
     final today = payload is TodaySyncPayload ? payload : null;
     final journal = payload is JournalSyncPayload ? payload : null;
+    final promptConfiguration = payload is JournalPromptConfigurationSyncPayload
+        ? payload
+        : null;
     final health = payload is HealthSyncPayload ? payload : null;
     final awaiting = operation == SyncConflictOperation.unknownPendingPull;
     return Card(
@@ -372,7 +385,21 @@ class _VersionSummary extends StatelessWidget {
             if (awaiting)
               const Text('需要重新同步以获取服务器当前版本。')
             else ...[
-              if (health != null) ...[
+              if (promptConfiguration != null) ...[
+                const _Line(label: '配置', value: '默认 Journal 问题'),
+                _Line(
+                  label: '启用问题',
+                  value: promptConfiguration.prompts
+                      .where((prompt) => !prompt.isDeleted && prompt.isEnabled)
+                      .length
+                      .toString(),
+                ),
+                _Line(
+                  label: '问题总数',
+                  value: promptConfiguration.prompts.length.toString(),
+                ),
+                const _Line(label: '内容', value: '问题文本已隐藏'),
+              ] else if (health != null) ...[
                 _Line(label: '日期', value: health.recordDate),
                 _Line(
                   label: '记录类型',
@@ -512,17 +539,26 @@ String _displayTitle(SyncConflictRecord record) {
   if (local is PlanSyncPayload) return local.title;
   if (local is TodaySyncPayload) return '${local.recordDate} Today';
   if (local is JournalSyncPayload) return '${local.entryDate} Journal';
+  if (local is JournalPromptConfigurationSyncPayload) {
+    return 'Journal 问题配置';
+  }
   if (local is HealthSyncPayload) return '${local.recordDate} Health';
   final remote = record.remoteSnapshot.payload;
   if (remote is PlanSyncPayload) return remote.title;
   if (remote is TodaySyncPayload) return '${remote.recordDate} Today';
   if (remote is JournalSyncPayload) return '${remote.entryDate} Journal';
+  if (remote is JournalPromptConfigurationSyncPayload) {
+    return 'Journal 问题配置';
+  }
   if (remote is HealthSyncPayload) return '${remote.recordDate} Health';
   if (record.entityType == SyncEntityType.today) {
     return '已删除的 Today 记录';
   }
   if (record.entityType == SyncEntityType.journal) {
     return '已删除的 Journal 记录';
+  }
+  if (record.entityType == SyncEntityType.journalPromptConfiguration) {
+    return '已删除的 Journal 问题配置';
   }
   if (record.entityType == SyncEntityType.health) {
     return '已删除的 Health 记录';

@@ -1,6 +1,7 @@
 enum SyncEntityType {
   profile('user_profiles'),
   today('today_records'),
+  journalPromptConfiguration('journal_prompt_configurations'),
   journal('journal_entries'),
   plan('goals'),
   health('health_records');

@@ -33,14 +33,22 @@ final class JournalSyncViewState {
       status == JournalSyncStatus.adoptingRemote ||
       status == JournalSyncStatus.keepingLocal;
 
+  Iterable<SyncEntityResult> get _journalResults =>
+      lastResult?.entityResults.where(
+        (result) =>
+            result.entityType == SyncEntityType.journal ||
+            result.entityType == SyncEntityType.journalPromptConfiguration,
+      ) ??
+      const [];
+
   int get pushedCount =>
-      lastResult?.resultFor(SyncEntityType.journal)?.pushedCount ?? 0;
+      _journalResults.fold(0, (total, result) => total + result.pushedCount);
   int get pulledCount =>
-      lastResult?.resultFor(SyncEntityType.journal)?.pulledCount ?? 0;
+      _journalResults.fold(0, (total, result) => total + result.pulledCount);
   int get deletedCount =>
-      lastResult?.resultFor(SyncEntityType.journal)?.deletedCount ?? 0;
+      _journalResults.fold(0, (total, result) => total + result.deletedCount);
   int get conflictCount =>
-      lastResult?.resultFor(SyncEntityType.journal)?.conflictCount ?? 0;
+      _journalResults.fold(0, (total, result) => total + result.conflictCount);
 
   String get statusLabel => switch (status) {
     JournalSyncStatus.idle => '可手动同步',

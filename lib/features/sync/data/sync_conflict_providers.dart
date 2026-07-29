@@ -6,9 +6,14 @@ import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/journal/data/journal_conflict_resolution_service_impl.dart';
+import 'package:rebirth/features/journal/data/journal_prompt_conflict_resolution_service.dart';
 import 'package:rebirth/features/journal/data/journal_sync_payload_codec.dart';
+import 'package:rebirth/features/journal/data/journal_prompt_sync_payload_codec.dart';
 import 'package:rebirth/features/journal/domain/journal_conflict_resolution_service.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
+import 'package:rebirth/features/journal/domain/journal_entry_prompt_item.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/health/data/health_conflict_resolution_service_impl.dart';
 import 'package:rebirth/features/health/data/health_sync_payload_codec.dart';
@@ -35,6 +40,7 @@ final syncConflictRepositoryProvider = Provider<SyncConflictRepository>((ref) {
     ref.watch(appDatabaseProvider),
     payloadCodecs: const [
       TodaySyncPayloadCodec(),
+      JournalPromptSyncPayloadCodec(),
       JournalSyncPayloadCodec(),
       HealthSyncPayloadCodec(),
       PlanSyncPayloadCodec(),
@@ -142,6 +148,14 @@ final journalConflictResolutionServiceProvider =
       );
     });
 
+final journalPromptConflictResolutionServiceProvider =
+    Provider<JournalPromptConflictResolutionService>((ref) {
+      return JournalPromptConflictResolutionService(
+        ref.watch(appDatabaseProvider),
+        ref.watch(syncConflictRepositoryProvider),
+      );
+    });
+
 final healthConflictResolutionServiceProvider =
     Provider<HealthConflictResolutionService>((ref) {
       return HealthConflictResolutionServiceImpl(
@@ -171,6 +185,12 @@ Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
       localUserId,
       record.recordId,
     ),
+    SyncEntityType.journalPromptConfiguration =>
+      _loadJournalPromptConfigurationSnapshot(
+        database,
+        localUserId,
+        record.recordId,
+      ),
     SyncEntityType.health => _loadHealthSnapshot(
       database,
       localUserId,
@@ -178,6 +198,60 @@ Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
     ),
     _ => null,
   };
+}
+
+Future<SyncConflictSnapshot?> _loadJournalPromptConfigurationSnapshot(
+  AppDatabase database,
+  String localUserId,
+  String recordId,
+) async {
+  final configuration =
+      await (database.select(database.journalPromptConfigurations)..where(
+            (row) => row.userId.equals(localUserId) & row.id.equals(recordId),
+          ))
+          .getSingleOrNull();
+  if (configuration == null) return null;
+  final rows =
+      await (database.select(database.journalPromptDefinitions)
+            ..where((row) => row.configurationId.equals(configuration.id))
+            ..orderBy([
+              (row) => OrderingTerm.asc(row.displayOrder),
+              (row) => OrderingTerm.asc(row.id),
+            ]))
+          .get();
+  return SyncConflictSnapshot(
+    payload: configuration.deletedAt == null
+        ? JournalPromptConfigurationSyncPayload(
+            logicalKey: configuration.logicalKey,
+            configurationVersion: configuration.configurationVersion,
+            createdAt: configuration.createdAt,
+            prompts: [
+              for (final row in rows)
+                JournalPromptDefinition(
+                  id: row.id,
+                  configurationId: configuration.id,
+                  stableKey: row.stableKey,
+                  source: JournalPromptSource.fromWireName(row.promptSource),
+                  questionText: row.questionText,
+                  helperText: row.helperText,
+                  responseKind: JournalResponseKind.fromWireName(
+                    row.responseKind,
+                  ),
+                  displayOrder: row.displayOrder,
+                  isEnabled: row.isEnabled,
+                  promptVersion: row.promptVersion,
+                  createdAt: row.createdAt,
+                  updatedAt: row.updatedAt,
+                  deletedAt: row.deletedAt,
+                ),
+            ],
+          )
+        : null,
+    updatedAt: configuration.updatedAt,
+    deletedAt: configuration.deletedAt,
+    serverVersion: configuration.serverVersion,
+    originDeviceId: configuration.originDeviceId,
+  );
 }
 
 Future<SyncConflictSnapshot?> _loadHealthSnapshot(
@@ -226,11 +300,40 @@ Future<SyncConflictSnapshot?> _loadJournalSnapshot(
           ))
           .getSingleOrNull();
   if (journal == null) return null;
+  final promptRows =
+      await (database.select(database.journalEntryPromptItems)
+            ..where((row) => row.journalEntryId.equals(journal.id))
+            ..orderBy([
+              (row) => OrderingTerm.asc(row.displayOrder),
+              (row) => OrderingTerm.asc(row.id),
+            ]))
+          .get();
   return SyncConflictSnapshot(
     payload: journal.deletedAt == null
         ? JournalSyncPayload(
             entryDate: journal.entryDate,
             timezoneOffsetMinutes: journal.timezoneOffsetMinutes,
+            promptItems: [
+              for (final item in promptRows)
+                JournalEntryPromptItem(
+                  id: item.id,
+                  sourcePromptId: item.sourcePromptId,
+                  sourcePromptStableKey: item.sourcePromptStableKey,
+                  sourcePromptVersion: item.sourcePromptVersion,
+                  promptSource: JournalPromptSource.fromWireName(
+                    item.promptSource,
+                  ),
+                  questionTextSnapshot: item.questionTextSnapshot,
+                  helperTextSnapshot: item.helperTextSnapshot,
+                  responseKind: JournalResponseKind.fromWireName(
+                    item.responseKind,
+                  ),
+                  displayOrder: item.displayOrder,
+                  answerText: item.answerText,
+                  createdAt: item.createdAt,
+                  updatedAt: item.updatedAt,
+                ),
+            ],
             mostImportantAccomplishment: journal.mostImportantAccomplishment,
             mostDrainingEvent: journal.mostDrainingEvent,
             emotionSource: journal.emotionSource,
@@ -331,6 +434,11 @@ Future<SyncConflictSnapshot?> _loadTodaySnapshot(
 }
 
 bool _samePayload(Object? left, Object? right) {
+  if (left is JournalPromptConfigurationSyncPayload &&
+      right is JournalPromptConfigurationSyncPayload) {
+    return const JournalPromptSyncPayloadCodec().canonicalJson(left) ==
+        const JournalPromptSyncPayloadCodec().canonicalJson(right);
+  }
   if (left is JournalSyncPayload && right is JournalSyncPayload) {
     return const JournalSyncPayloadCodec().canonicalJson(left) ==
         const JournalSyncPayloadCodec().canonicalJson(right);

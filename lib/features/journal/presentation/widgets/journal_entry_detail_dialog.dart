@@ -26,23 +26,11 @@ class JournalEntryDetailDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _DetailAnswer(
-                question: '今天最重要的完成是什么？',
-                answer: entry.mostImportantAccomplishment,
-              ),
-              _DetailAnswer(
-                question: '今天最消耗我的事情是什么？',
-                answer: entry.mostDrainingEvent,
-              ),
-              _DetailAnswer(
-                question: '今天主要情绪的来源是什么？',
-                answer: entry.emotionSource,
-              ),
-              _DetailAnswer(question: '今天我学到了什么？', answer: entry.learning),
-              _DetailAnswer(
-                question: '明天我想如何调整？',
-                answer: entry.tomorrowAdjustment,
-              ),
+              for (final item in entry.promptItems)
+                _DetailAnswer(
+                  question: item.questionTextSnapshot,
+                  answer: item.answerText,
+                ),
               Text(
                 journalHistoryStatusLabel(entry: entry, today: today),
                 style: Theme.of(context).textTheme.labelLarge,

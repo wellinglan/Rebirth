@@ -73,6 +73,21 @@ final syncConflictResolutionHandlerRegistryProvider =
               .retryRequestedResolution,
         ),
         _CallbackConflictResolutionHandler(
+          entityType: SyncEntityType.journalPromptConfiguration,
+          isBusy: journalState.isBusy,
+          resolvingConflictId: journalState.resolvingConflictId,
+          retryHydration: ref
+              .read(journalSyncControllerProvider.notifier)
+              .retryConflictHydration,
+          adoptRemote: ref
+              .read(journalSyncControllerProvider.notifier)
+              .adoptRemote,
+          keepLocal: ref.read(journalSyncControllerProvider.notifier).keepLocal,
+          retryRequestedResolution: ref
+              .read(journalSyncControllerProvider.notifier)
+              .retryRequestedResolution,
+        ),
+        _CallbackConflictResolutionHandler(
           entityType: SyncEntityType.journal,
           isBusy: journalState.isBusy,
           resolvingConflictId: journalState.resolvingConflictId,

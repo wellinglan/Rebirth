@@ -537,3 +537,15 @@ Journal 产品状态统一为未记录（派生）、草稿和已完成。用户
 同步、OCC 和冲突恢复语义，不自动同步。
 
 详细约束见 `docs/37_GROWTH_SYSTEM_FOUNDATION.md`。
+
+# 二十、Journal Prompt System 边界
+
+Sprint 12C 将 Journal 从固定五问升级为用户级 Prompt Configuration
+Aggregate。新建 Journal 读取当前启用的问题，保存时持久化问题文本与版本快照；
+历史 Journal 不随问题编辑、排序、禁用或删除而变化。动态 item 是回答的唯一
+Source of Truth，旧五列仅作为 Journal payload v1 的临时兼容镜像。
+
+Prompt 配置和 Journal 条目仍仅由用户手动同步，配置先于条目同步，并使用现有
+OCC、cursor 和显式冲突恢复。Prompt/Response 正文不得进入 Growth、Personal
+Data、日志或测试证据。本 Sprint 只预留 `futureAi` 来源，不调用模型、不自动
+提出或启用问题。详细约束见 `docs/38_JOURNAL_PROMPT_SYSTEM.md`。

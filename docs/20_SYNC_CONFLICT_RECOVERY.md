@@ -313,3 +313,16 @@ Conflict list and detail presentation deliberately omit Health metrics and
 notes. They show only date, source/type, operation and synchronization state.
 Today rows and Today conflicts are outside every Health resolution
 transaction.
+
+## Journal Prompt Configuration Conflicts
+
+Sprint 12C registers `journal_prompt_configurations` in the generic conflict
+registry. Conflict list and detail surfaces expose only type, configuration
+version, prompt counts, operation, and sync state; full question and response
+text is excluded.
+
+Adopt Remote transactionally replaces the local configuration aggregate. Keep
+Local preserves the complete local aggregate, adopts the current remote
+server-version baseline, and returns it to pending for a normal push. Neither
+action rewrites historical Journal snapshots, resets cursors, performs field
+merge, or silently selects a winner.

@@ -635,3 +635,19 @@ that cursor unchanged and does not mutate Today or another entity cursor.
 Settings exposes a separate manual Health action. No automatic sync, Growth
 sync, AI sync, PostgreSQL migration, or Alembic revision was added. See
 `docs/33_HEALTH_CROSS_DEVICE_SYNC.md`.
+
+## Sprint 12C Journal Prompt Configuration Boundary
+
+The registry now includes `journal_prompt_configurations` as a distinct typed
+entity. A manual Journal operation coordinates two entities in deterministic
+order: prompt configuration first, then Journal entries. The configuration is
+one aggregate payload keyed logically by `default`; identical configurations
+with different UUIDs converge, while semantic differences use explicit OCC
+conflicts.
+
+Journal entry payload v2 carries dynamic prompt snapshots. Strict payload v1
+remains readable and is deterministically adapted to the default catalog.
+Cursor advancement stays centralized in `SyncCoordinator`, and validation or
+transaction failure cannot partially apply an aggregate. No automatic or
+background synchronization was added. See
+`docs/38_JOURNAL_PROMPT_SYSTEM.md`.

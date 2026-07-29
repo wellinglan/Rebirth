@@ -13,6 +13,7 @@ import '../../features/ai_coach/domain/ai_data_scope.dart';
 import '../../features/growth/presentation/growth_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
+import '../../features/journal/presentation/journal_prompt_management_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
 import '../../features/personal_data/presentation/personal_data_overview_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
@@ -101,6 +102,14 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
                 name: RouteNames.journal,
                 builder: (context, state) =>
                     JournalPage(targetDate: state.uri.queryParameters['date']),
+                routes: [
+                  GoRoute(
+                    path: 'prompts',
+                    name: RouteNames.journalPrompts,
+                    builder: (context, state) =>
+                        const JournalPromptManagementPage(),
+                  ),
+                ],
               ),
             ],
           ),

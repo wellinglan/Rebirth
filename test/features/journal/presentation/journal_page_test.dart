@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/journal/data/journal_repository_provider.dart';
+import 'package:rebirth/features/journal/data/journal_prompt_repository_provider.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt_repository.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
@@ -531,6 +534,9 @@ Future<void> _pumpJournalPage(
     ProviderScope(
       overrides: [
         journalRepositoryProvider.overrideWithValue(repository),
+        journalPromptRepositoryProvider.overrideWithValue(
+          _FakeJournalPromptRepository(),
+        ),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 14, 9)),
         ),
@@ -540,6 +546,60 @@ Future<void> _pumpJournalPage(
       ),
     ),
   );
+}
+
+final class _FakeJournalPromptRepository implements JournalPromptRepository {
+  JournalPromptConfiguration get _configuration => JournalPromptConfiguration(
+    id: '00000000-0000-4000-8000-000000000001',
+    userId: 'user-id',
+    logicalKey: 'default',
+    configurationVersion: 1,
+    createdAt: 1,
+    updatedAt: 1,
+    syncStatus: 'synced',
+    serverVersion: 1,
+    lastSyncedAt: 1,
+    originDeviceId: '00000000-0000-4000-8000-000000000002',
+    deletedAt: null,
+    prompts: const [],
+  );
+
+  @override
+  Future<JournalPromptConfiguration> ensureInitialized() async =>
+      _configuration;
+
+  @override
+  Future<JournalPromptConfiguration> getConfiguration() async => _configuration;
+
+  @override
+  Future<JournalPromptConfiguration> createUserPrompt(
+    JournalPromptInput input,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<JournalPromptConfiguration> deleteUserPrompt(String promptId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<JournalPromptConfiguration> duplicateAsUserPrompt(String promptId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<JournalPromptConfiguration> reorderPrompts(
+    List<String> enabledPromptIds,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<JournalPromptConfiguration> setPromptEnabled(
+    String promptId,
+    bool isEnabled,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<JournalPromptConfiguration> updateUserPrompt(
+    String promptId,
+    JournalPromptInput input,
+  ) => throw UnimplementedError();
 }
 
 Future<void> _tapSave(WidgetTester tester) async {

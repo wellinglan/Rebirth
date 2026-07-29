@@ -25,7 +25,7 @@ void main() {
     final database = File(
       'lib/core/database/app_database.dart',
     ).readAsStringSync();
-    expect(database, contains('int get schemaVersion => 8;'));
+    expect(database, contains('int get schemaVersion => 9;'));
     final presentation = [
       ..._dartSources('lib/features/ai_coach/presentation/widgets'),
       File(

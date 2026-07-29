@@ -76,3 +76,16 @@ Journal summaries and Journal-specific confirmations.
 Manual Windows and Android evidence belongs in
 `docs/manual_tests/34_journal_cross_device_sync.md`. Automated results must not
 be recorded as manual PASS.
+
+## Sprint 12C Payload Evolution
+
+This document's original fixed-field contract is Journal payload v1. New
+clients use payload v2 with ordered `prompt_items`, including question/version
+snapshots and nullable answers. The server accepts strict v1 and v2 payloads;
+new clients convert v1 deterministically to the five system snapshots.
+
+The five legacy columns remain derived compatibility mirrors, not the Journal
+response source of truth. Custom prompt answers cannot be represented safely
+by old clients, so all devices participating in Journal sync must upgrade.
+Prompt configuration is synchronized immediately before entries through the
+same manual action. See `docs/38_JOURNAL_PROMPT_SYSTEM.md`.

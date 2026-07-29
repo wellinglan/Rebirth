@@ -14,6 +14,7 @@ become manual PASS.
 | Health cross-device sync | `35_health_cross_device_sync.md` |
 | Personal Data Aggregation | `36_personal_data_aggregation.md` |
 | Growth System Foundation and Journal State Semantics | `37_growth_system_foundation.md` |
+| Journal Prompt System | `38_journal_prompt_system.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.

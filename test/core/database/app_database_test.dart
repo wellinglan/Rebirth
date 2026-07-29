@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 5 with account boundary tables', () async {
+  test('creates schema version 9 with Journal prompt tables', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -36,13 +36,16 @@ void main() {
         'sync_conflicts',
         'installation_info',
         'cloud_account_bindings',
+        'journal_prompt_configurations',
+        'journal_prompt_definitions',
+        'journal_entry_prompt_items',
       }),
     );
 
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 8);
+    expect(versionRow.read<int>('user_version'), 9);
   });
 
   test(

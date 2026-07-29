@@ -1,4 +1,5 @@
 import 'journal_entry.dart';
+import 'journal_entry_prompt_item.dart';
 
 final class JournalSaveData {
   const JournalSaveData({
@@ -7,6 +8,7 @@ final class JournalSaveData {
     this.emotionSource,
     this.learning,
     this.tomorrowAdjustment,
+    this.promptItems,
     this.status = JournalEntryStatus.draft,
   });
 
@@ -15,6 +17,7 @@ final class JournalSaveData {
   final String? emotionSource;
   final String? learning;
   final String? tomorrowAdjustment;
+  final List<JournalEntryPromptItem>? promptItems;
   final JournalEntryStatus status;
 
   JournalSaveData withStatus(JournalEntryStatus status) {
@@ -24,6 +27,7 @@ final class JournalSaveData {
       emotionSource: emotionSource,
       learning: learning,
       tomorrowAdjustment: tomorrowAdjustment,
+      promptItems: promptItems,
       status: status,
     );
   }

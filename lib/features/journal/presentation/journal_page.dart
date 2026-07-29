@@ -7,6 +7,7 @@ import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 
 import 'journal_controller.dart';
+import 'journal_prompt_controller.dart';
 import 'journal_today_controller.dart';
 import 'widgets/journal_entry_detail_dialog.dart';
 import 'widgets/journal_form.dart';
@@ -35,6 +36,7 @@ class _JournalPageState extends ConsumerState<JournalPage> {
   @override
   Widget build(BuildContext context) {
     final journalState = ref.watch(journalTodayControllerProvider);
+    final promptState = ref.watch(journalPromptControllerProvider);
     final historyState = ref.watch(journalControllerProvider);
     final dateTimeService = ref.watch(dateTimeServiceProvider);
     final today = dateTimeService.currentLocalDateString();
@@ -81,23 +83,59 @@ class _JournalPageState extends ConsumerState<JournalPage> {
                 isValid: targetDateIsValid,
                 state: targetEntry,
               ),
-            JournalForm(
-              entry: entry,
-              recordDate: entry?.entryDate ?? today,
-              onSaveDraft: (data) =>
-                  _saveTodayEntry(ref, data, complete: false),
-              onComplete: (data) => _saveTodayEntry(ref, data, complete: true),
-              onReopen: entry == null ? null : () => _reopenTodayEntry(ref),
-              onDelete: entry == null
-                  ? null
-                  : () => _confirmDelete(context, entry),
-              onOpenDailyInsight: (recordDate, hasUnsavedChanges) =>
-                  _openDailyInsight(
-                    context,
-                    recordDate,
-                    hasUnsavedChanges: hasUnsavedChanges,
+            if (entry == null && promptState.isLoading)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    key: ValueKey('journalPromptFormLoadingState'),
                   ),
-            ),
+                ),
+              )
+            else if (entry == null && promptState.hasError)
+              Padding(
+                padding: const EdgeInsets.all(32),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('复盘问题暂时无法加载'),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () => ref
+                            .read(journalPromptControllerProvider.notifier)
+                            .reload(),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('重试'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              JournalForm(
+                entry: entry,
+                recordDate: entry?.entryDate ?? today,
+                prompts: promptState.asData?.value.activePrompts ?? const [],
+                onSaveDraft: (data) =>
+                    _saveTodayEntry(ref, data, complete: false),
+                onComplete: (data) =>
+                    _saveTodayEntry(ref, data, complete: true),
+                onReopen: entry == null ? null : () => _reopenTodayEntry(ref),
+                onApplyLatestPrompts: entry?.status == JournalEntryStatus.draft
+                    ? () => _applyLatestPrompts(ref)
+                    : null,
+                onManagePrompts: () => context.push(RoutePaths.journalPrompts),
+                onDelete: entry == null
+                    ? null
+                    : () => _confirmDelete(context, entry),
+                onOpenDailyInsight: (recordDate, hasUnsavedChanges) =>
+                    _openDailyInsight(
+                      context,
+                      recordDate,
+                      hasUnsavedChanges: hasUnsavedChanges,
+                    ),
+              ),
             const Divider(height: 1),
             JournalHistoryList(
               state: historyState,
@@ -170,6 +208,14 @@ class _JournalPageState extends ConsumerState<JournalPage> {
   Future<void> _reopenTodayEntry(WidgetRef ref) async {
     await ref.read(journalTodayControllerProvider.notifier).reopen();
     await _reloadJournalHistory(ref);
+  }
+
+  Future<JournalEntry> _applyLatestPrompts(WidgetRef ref) async {
+    final saved = await ref
+        .read(journalTodayControllerProvider.notifier)
+        .applyLatestPrompts();
+    await _reloadJournalHistory(ref);
+    return saved;
   }
 
   Future<void> _reloadJournalHistory(WidgetRef ref) async {

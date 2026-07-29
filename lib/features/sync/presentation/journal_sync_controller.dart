@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/journal/presentation/journal_controller.dart';
 import 'package:rebirth/features/journal/presentation/journal_today_controller.dart';
+import 'package:rebirth/features/journal/presentation/journal_prompt_controller.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/data/sync_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
@@ -23,7 +24,10 @@ final journalSyncRunnerProvider = Provider<JournalSyncRunner>((ref) {
       .read(syncCoordinatorProvider)
       .run(
         direction: SyncRunDirection.twoWay,
-        entityTypes: const [SyncEntityType.journal],
+        entityTypes: const [
+          SyncEntityType.journalPromptConfiguration,
+          SyncEntityType.journal,
+        ],
       );
 });
 
@@ -32,7 +36,10 @@ final journalConflictPullRunnerProvider = Provider<JournalSyncRunner>((ref) {
       .read(syncCoordinatorProvider)
       .run(
         direction: SyncRunDirection.pull,
-        entityTypes: const [SyncEntityType.journal],
+        entityTypes: const [
+          SyncEntityType.journalPromptConfiguration,
+          SyncEntityType.journal,
+        ],
         pullMode: SyncPullMode.preferRemoteConflictResolution,
       );
 });
@@ -42,7 +49,10 @@ final journalPushRunnerProvider = Provider<JournalSyncRunner>((ref) {
       .read(syncCoordinatorProvider)
       .run(
         direction: SyncRunDirection.push,
-        entityTypes: const [SyncEntityType.journal],
+        entityTypes: const [
+          SyncEntityType.journalPromptConfiguration,
+          SyncEntityType.journal,
+        ],
       );
 });
 
@@ -50,6 +60,7 @@ final journalViewRefresherProvider = Provider<JournalViewRefresher>((ref) {
   return () async {
     await ref.read(journalTodayControllerProvider.notifier).reload();
     await ref.read(journalControllerProvider.notifier).reload();
+    await ref.read(journalPromptControllerProvider.notifier).reload();
   };
 });
 
@@ -80,9 +91,7 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
       () => _runConflictAction(
         conflictId: conflictId,
         status: JournalSyncStatus.adoptingRemote,
-        prepare: (scope) => ref
-            .read(journalConflictResolutionServiceProvider)
-            .requestAdoptRemote(scope: scope, conflictId: conflictId),
+        prepare: (scope) => _requestAdoptRemote(scope, conflictId),
         runner: ref.read(journalConflictPullRunnerProvider),
       ),
     );
@@ -94,9 +103,7 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
       () => _runConflictAction(
         conflictId: conflictId,
         status: JournalSyncStatus.keepingLocal,
-        prepare: (scope) => ref
-            .read(journalConflictResolutionServiceProvider)
-            .requestKeepLocal(scope: scope, conflictId: conflictId),
+        prepare: (scope) => _requestKeepLocal(scope, conflictId),
         runner: ref.read(journalPushRunnerProvider),
       ),
     );
@@ -146,9 +153,9 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
     state = state.copyWith(status: JournalSyncStatus.syncing, clearError: true);
     try {
       var result = await ref.read(journalSyncRunnerProvider)();
-      final entity = result.resultFor(SyncEntityType.journal);
+      final hasConflict = _hasJournalEntityConflict(result);
       if (!result.isSuccessful &&
-          entity?.status == SyncEntityStatus.conflict &&
+          hasConflict &&
           await _hasAwaitingRemoteSnapshot()) {
         if (ref.mounted) {
           state = state.copyWith(status: JournalSyncStatus.hydratingConflict);
@@ -156,10 +163,9 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
         result = await ref.read(journalConflictPullRunnerProvider)();
       }
       await reloadConflictCount();
-      final finalEntity = result.resultFor(SyncEntityType.journal);
       final status = result.isSuccessful
           ? JournalSyncStatus.succeeded
-          : finalEntity?.status == SyncEntityStatus.conflict
+          : _hasJournalEntityConflict(result)
           ? JournalSyncStatus.conflict
           : JournalSyncStatus.failed;
       if (ref.mounted) {
@@ -198,10 +204,9 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
       final result = await runner();
       await reloadConflictCount();
       ref.invalidate(syncConflictDetailsProvider(conflictId));
-      final entity = result.resultFor(SyncEntityType.journal);
       final nextStatus = result.isSuccessful
           ? JournalSyncStatus.succeeded
-          : entity?.status == SyncEntityStatus.conflict
+          : _hasJournalEntityConflict(result)
           ? JournalSyncStatus.conflict
           : JournalSyncStatus.failed;
       if (ref.mounted) {
@@ -237,7 +242,12 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
           : (await ref
                     .read(syncConflictRepositoryProvider)
                     .listActiveConflicts(scope))
-                .where((item) => item.entityType == SyncEntityType.journal)
+                .where(
+                  (item) =>
+                      item.entityType == SyncEntityType.journal ||
+                      item.entityType ==
+                          SyncEntityType.journalPromptConfiguration,
+                )
                 .length;
       if (!ref.mounted) return;
       state = state.copyWith(activeConflictCount: count);
@@ -256,6 +266,40 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
     return scope;
   }
 
+  Future<void> _requestAdoptRemote(
+    SyncConflictScope scope,
+    String conflictId,
+  ) async {
+    final conflict = await ref
+        .read(syncConflictRepositoryProvider)
+        .getConflict(scope, conflictId);
+    if (conflict.entityType == SyncEntityType.journalPromptConfiguration) {
+      return ref
+          .read(journalPromptConflictResolutionServiceProvider)
+          .requestAdoptRemote(scope: scope, conflictId: conflictId);
+    }
+    return ref
+        .read(journalConflictResolutionServiceProvider)
+        .requestAdoptRemote(scope: scope, conflictId: conflictId);
+  }
+
+  Future<void> _requestKeepLocal(
+    SyncConflictScope scope,
+    String conflictId,
+  ) async {
+    final conflict = await ref
+        .read(syncConflictRepositoryProvider)
+        .getConflict(scope, conflictId);
+    if (conflict.entityType == SyncEntityType.journalPromptConfiguration) {
+      return ref
+          .read(journalPromptConflictResolutionServiceProvider)
+          .requestKeepLocal(scope: scope, conflictId: conflictId);
+    }
+    return ref
+        .read(journalConflictResolutionServiceProvider)
+        .requestKeepLocal(scope: scope, conflictId: conflictId);
+  }
+
   Future<bool> _hasAwaitingRemoteSnapshot() async {
     final scope = await ref.read(syncConflictScopeProvider.future);
     if (scope == null || !ref.mounted) return false;
@@ -264,7 +308,8 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
         .listActiveConflicts(scope);
     return records.any(
       (item) =>
-          item.entityType == SyncEntityType.journal &&
+          (item.entityType == SyncEntityType.journal ||
+              item.entityType == SyncEntityType.journalPromptConfiguration) &&
           item.resolutionStatus ==
               SyncConflictResolutionStatus.awaitingRemoteSnapshot,
     );
@@ -275,5 +320,14 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
       _active = null;
       _activeOperation = null;
     }
+  }
+
+  bool _hasJournalEntityConflict(SyncRunResult result) {
+    return [
+      SyncEntityType.journalPromptConfiguration,
+      SyncEntityType.journal,
+    ].any(
+      (type) => result.resultFor(type)?.status == SyncEntityStatus.conflict,
+    );
   }
 }

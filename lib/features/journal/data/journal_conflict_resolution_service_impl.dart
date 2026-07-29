@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart' as db;
 import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/utils/deterministic_uuid.dart';
 import 'package:rebirth/features/journal/domain/journal_conflict_resolution_service.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_repository.dart';
@@ -105,6 +106,9 @@ final class JournalConflictResolutionServiceImpl
     required int timestamp,
     required String originDeviceId,
   }) async {
+    final promptItems = await (_database.select(
+      _database.journalEntryPromptItems,
+    )..where((row) => row.journalEntryId.equals(local.id))).get();
     final global = await (_database.select(
       _database.journalEntries,
     )..where((row) => row.id.equals(remoteId))).getSingleOrNull();
@@ -172,6 +176,34 @@ final class JournalConflictResolutionServiceImpl
             (row) => row.userId.equals(local.userId) & row.id.equals(remoteId),
           ))
           .write(changes);
+    }
+    await (_database.delete(
+      _database.journalEntryPromptItems,
+    )..where((row) => row.journalEntryId.equals(remoteId))).go();
+    for (final item in promptItems) {
+      await _database
+          .into(_database.journalEntryPromptItems)
+          .insert(
+            db.JournalEntryPromptItemsCompanion.insert(
+              id: Value(
+                deterministicUuid(
+                  'journal-conflict-rekey:$remoteId:${item.id}',
+                ),
+              ),
+              journalEntryId: remoteId,
+              sourcePromptId: Value(item.sourcePromptId),
+              sourcePromptStableKey: Value(item.sourcePromptStableKey),
+              sourcePromptVersion: item.sourcePromptVersion,
+              promptSource: item.promptSource,
+              questionTextSnapshot: item.questionTextSnapshot,
+              helperTextSnapshot: Value(item.helperTextSnapshot),
+              responseKind: Value(item.responseKind),
+              displayOrder: item.displayOrder,
+              answerText: Value(item.answerText),
+              createdAt: Value(item.createdAt),
+              updatedAt: Value(timestamp),
+            ),
+          );
     }
   }
 }

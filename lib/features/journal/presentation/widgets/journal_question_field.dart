@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class JournalQuestionField extends StatelessWidget {
   const JournalQuestionField({
@@ -6,6 +7,7 @@ class JournalQuestionField extends StatelessWidget {
     required this.controller,
     required this.fieldKey,
     required this.onChanged,
+    this.helperText,
     this.readOnly = false,
     super.key,
   });
@@ -14,6 +16,7 @@ class JournalQuestionField extends StatelessWidget {
   final TextEditingController controller;
   final Key fieldKey;
   final ValueChanged<String> onChanged;
+  final String? helperText;
   final bool readOnly;
 
   @override
@@ -26,8 +29,10 @@ class JournalQuestionField extends StatelessWidget {
       keyboardType: TextInputType.multiline,
       textInputAction: TextInputAction.newline,
       readOnly: readOnly,
+      inputFormatters: [LengthLimitingTextInputFormatter(20000)],
       decoration: InputDecoration(
         labelText: question,
+        helperText: helperText,
         alignLabelWithHint: true,
         border: const OutlineInputBorder(),
       ),

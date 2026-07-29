@@ -5,9 +5,13 @@ import 'package:rebirth/features/journal/domain/journal_repository.dart';
 
 import 'journal_repository_impl.dart';
 
-final journalRepositoryProvider = Provider<JournalRepository>((ref) {
+final journalRepositoryImplProvider = Provider<JournalRepositoryImpl>((ref) {
   return JournalRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
     dateTimeService: ref.watch(dateTimeServiceProvider),
   );
+});
+
+final journalRepositoryProvider = Provider<JournalRepository>((ref) {
+  return ref.watch(journalRepositoryImplProvider);
 });

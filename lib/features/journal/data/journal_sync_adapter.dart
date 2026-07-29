@@ -1,6 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart' as db;
+import 'package:rebirth/core/journal/journal_prompt_catalog.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
+import 'package:rebirth/features/journal/domain/journal_entry_prompt_item.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
@@ -42,35 +45,36 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
       final date = left.entryDate.compareTo(right.entryDate);
       return date != 0 ? date : left.id.compareTo(right.id);
     });
-    return rows
-        .map((row) {
-          final originDeviceId =
-              row.originDeviceId ?? context.localInstallationId;
-          if (!JournalSyncPayloadCodec.isUuid(row.id) ||
-              !JournalSyncPayloadCodec.isUuid(originDeviceId)) {
-            throw const SyncException('本地 Journal ID 或来源设备无效。');
-          }
-          if (row.deletedAt case final deletedAt? when deletedAt < 0) {
-            throw const SyncException('本地 Journal tombstone 时间无效。');
-          }
-          final payload = row.deletedAt == null
-              ? _payloadFromRecord(row)
-              : null;
-          if (payload != null) _payloadCodec.validate(payload);
-          return SyncPushItem(
-            entityType: entityType,
-            operation: row.deletedAt == null
-                ? SyncOperation.upsert
-                : SyncOperation.delete,
-            recordId: row.id,
-            payload: payload,
-            updatedAt: row.updatedAt,
-            deletedAt: row.deletedAt,
-            originDeviceId: originDeviceId,
-            clientVersion: row.serverVersion ?? 0,
-          );
-        })
-        .toList(growable: false);
+    final pending = <SyncPushItem>[];
+    for (final row in rows) {
+      final originDeviceId = row.originDeviceId ?? context.localInstallationId;
+      if (!JournalSyncPayloadCodec.isUuid(row.id) ||
+          !JournalSyncPayloadCodec.isUuid(originDeviceId)) {
+        throw const SyncException('本地 Journal ID 或来源设备无效。');
+      }
+      if (row.deletedAt case final deletedAt? when deletedAt < 0) {
+        throw const SyncException('本地 Journal tombstone 时间无效。');
+      }
+      final payload = row.deletedAt == null
+          ? await _payloadFromRecord(row)
+          : null;
+      if (payload != null) _payloadCodec.validate(payload);
+      pending.add(
+        SyncPushItem(
+          entityType: entityType,
+          operation: row.deletedAt == null
+              ? SyncOperation.upsert
+              : SyncOperation.delete,
+          recordId: row.id,
+          payload: payload,
+          updatedAt: row.updatedAt,
+          deletedAt: row.deletedAt,
+          originDeviceId: originDeviceId,
+          clientVersion: row.serverVersion ?? 0,
+        ),
+      );
+    }
+    return List.unmodifiable(pending);
   }
 
   @override
@@ -210,7 +214,7 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
               entityType: entityType,
               recordId: local.id,
               remoteRecordId: item.remoteRecordId ?? local.id,
-              localSnapshot: _localSnapshot(local),
+              localSnapshot: await _localSnapshot(local),
               remoteSnapshot: SyncConflictSnapshot(
                 payload: null,
                 updatedAt: null,
@@ -516,12 +520,22 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
               entryDate: payload.entryDate,
               timezoneOffsetMinutes: payload.timezoneOffsetMinutes,
               mostImportantAccomplishment: Value(
-                payload.mostImportantAccomplishment,
+                payload.legacyAnswerFor(JournalPromptCatalog.accomplishmentKey),
               ),
-              mostDrainingEvent: Value(payload.mostDrainingEvent),
-              emotionSource: Value(payload.emotionSource),
-              learning: Value(payload.learning),
-              tomorrowAdjustment: Value(payload.tomorrowAdjustment),
+              mostDrainingEvent: Value(
+                payload.legacyAnswerFor(JournalPromptCatalog.drainingEventKey),
+              ),
+              emotionSource: Value(
+                payload.legacyAnswerFor(JournalPromptCatalog.emotionSourceKey),
+              ),
+              learning: Value(
+                payload.legacyAnswerFor(JournalPromptCatalog.learningKey),
+              ),
+              tomorrowAdjustment: Value(
+                payload.legacyAnswerFor(
+                  JournalPromptCatalog.tomorrowAdjustmentKey,
+                ),
+              ),
               entryStatus: Value(payload.status.name),
               createdAt: Value(payload.createdAt),
               updatedAt: Value(change.updatedAt),
@@ -532,6 +546,7 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
               originDeviceId: Value(change.originDeviceId),
             ),
           );
+      await _replacePromptItems(change.recordId, payload.promptItems);
       return;
     }
     await (_database.update(_database.journalEntries)..where(
@@ -545,12 +560,22 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
             entryDate: Value(payload.entryDate),
             timezoneOffsetMinutes: Value(payload.timezoneOffsetMinutes),
             mostImportantAccomplishment: Value(
-              payload.mostImportantAccomplishment,
+              payload.legacyAnswerFor(JournalPromptCatalog.accomplishmentKey),
             ),
-            mostDrainingEvent: Value(payload.mostDrainingEvent),
-            emotionSource: Value(payload.emotionSource),
-            learning: Value(payload.learning),
-            tomorrowAdjustment: Value(payload.tomorrowAdjustment),
+            mostDrainingEvent: Value(
+              payload.legacyAnswerFor(JournalPromptCatalog.drainingEventKey),
+            ),
+            emotionSource: Value(
+              payload.legacyAnswerFor(JournalPromptCatalog.emotionSourceKey),
+            ),
+            learning: Value(
+              payload.legacyAnswerFor(JournalPromptCatalog.learningKey),
+            ),
+            tomorrowAdjustment: Value(
+              payload.legacyAnswerFor(
+                JournalPromptCatalog.tomorrowAdjustmentKey,
+              ),
+            ),
             entryStatus: Value(payload.status.name),
             createdAt: Value(payload.createdAt),
             updatedAt: Value(change.updatedAt),
@@ -561,6 +586,7 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
             originDeviceId: Value(change.originDeviceId),
           ),
         );
+    await _replacePromptItems(change.recordId, payload.promptItems);
   }
 
   Future<void> _applyAdoptRemoteDifferentIdentity({
@@ -598,19 +624,7 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
     if (global != null && global.userId != context.userId) {
       throw const SyncException('云端 Journal ID 与其他本地用户冲突。');
     }
-    final resolvedPayload =
-        remotePayload ??
-        JournalSyncPayload(
-          entryDate: local.entryDate,
-          timezoneOffsetMinutes: local.timezoneOffsetMinutes,
-          mostImportantAccomplishment: local.mostImportantAccomplishment,
-          mostDrainingEvent: local.mostDrainingEvent,
-          emotionSource: local.emotionSource,
-          learning: local.learning,
-          tomorrowAdjustment: local.tomorrowAdjustment,
-          status: _status(local.entryStatus),
-          createdAt: local.createdAt,
-        );
+    final resolvedPayload = remotePayload ?? await _payloadFromRecord(local);
     await _upsertRemote(
       context: context,
       change: change,
@@ -664,7 +678,7 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
           entityType: entityType,
           recordId: candidate.local.id,
           remoteRecordId: candidate.change.recordId,
-          localSnapshot: _localSnapshot(candidate.local),
+          localSnapshot: await _localSnapshot(candidate.local),
           remoteSnapshot: _remoteSnapshot(candidate.change),
           remoteOperation: candidate.change.operation == SyncOperation.delete
               ? SyncConflictOperation.delete
@@ -778,10 +792,11 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
     return today?.id;
   }
 
-  JournalSyncPayload _payloadFromRecord(db.JournalEntry row) {
+  Future<JournalSyncPayload> _payloadFromRecord(db.JournalEntry row) async {
     return JournalSyncPayload(
       entryDate: row.entryDate,
       timezoneOffsetMinutes: row.timezoneOffsetMinutes,
+      promptItems: await _loadPromptItems(row.id),
       mostImportantAccomplishment: row.mostImportantAccomplishment,
       mostDrainingEvent: row.mostDrainingEvent,
       emotionSource: row.emotionSource,
@@ -798,14 +813,74 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
     _ => throw const SyncException('Journal 状态无效。'),
   };
 
-  SyncConflictSnapshot _localSnapshot(db.JournalEntry row) {
+  Future<SyncConflictSnapshot> _localSnapshot(db.JournalEntry row) async {
     return SyncConflictSnapshot(
-      payload: row.deletedAt == null ? _payloadFromRecord(row) : null,
+      payload: row.deletedAt == null ? await _payloadFromRecord(row) : null,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
       serverVersion: row.serverVersion,
       originDeviceId: row.originDeviceId,
     );
+  }
+
+  Future<List<JournalEntryPromptItem>> _loadPromptItems(
+    String journalEntryId,
+  ) async {
+    final rows =
+        await (_database.select(_database.journalEntryPromptItems)
+              ..where((row) => row.journalEntryId.equals(journalEntryId))
+              ..orderBy([
+                (row) => OrderingTerm.asc(row.displayOrder),
+                (row) => OrderingTerm.asc(row.id),
+              ]))
+            .get();
+    return [
+      for (final row in rows)
+        JournalEntryPromptItem(
+          id: row.id,
+          sourcePromptId: row.sourcePromptId,
+          sourcePromptStableKey: row.sourcePromptStableKey,
+          sourcePromptVersion: row.sourcePromptVersion,
+          promptSource: JournalPromptSource.fromWireName(row.promptSource),
+          questionTextSnapshot: row.questionTextSnapshot,
+          helperTextSnapshot: row.helperTextSnapshot,
+          responseKind: JournalResponseKind.fromWireName(row.responseKind),
+          displayOrder: row.displayOrder,
+          answerText: row.answerText,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+        ),
+    ];
+  }
+
+  Future<void> _replacePromptItems(
+    String journalEntryId,
+    List<JournalEntryPromptItem> items,
+  ) async {
+    await (_database.delete(
+      _database.journalEntryPromptItems,
+    )..where((row) => row.journalEntryId.equals(journalEntryId))).go();
+    for (final item in items) {
+      await _database
+          .into(_database.journalEntryPromptItems)
+          .insert(
+            db.JournalEntryPromptItemsCompanion.insert(
+              id: Value(item.id),
+              journalEntryId: journalEntryId,
+              sourcePromptId: Value(item.sourcePromptId),
+              sourcePromptStableKey: Value(item.sourcePromptStableKey),
+              sourcePromptVersion: item.sourcePromptVersion,
+              promptSource: item.promptSource.wireName,
+              questionTextSnapshot: item.questionTextSnapshot,
+              helperTextSnapshot: Value(item.helperTextSnapshot),
+              responseKind: Value(item.responseKind.wireName),
+              displayOrder: item.displayOrder,
+              answerText: Value(item.answerText),
+              createdAt: Value(item.createdAt),
+              updatedAt: Value(item.updatedAt),
+            ),
+          );
+    }
   }
 
   SyncConflictSnapshot _remoteSnapshot(SyncChange change) {
