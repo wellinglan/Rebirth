@@ -36,10 +36,7 @@ final journalConflictPullRunnerProvider = Provider<JournalSyncRunner>((ref) {
       .read(syncCoordinatorProvider)
       .run(
         direction: SyncRunDirection.pull,
-        entityTypes: const [
-          SyncEntityType.journalPromptConfiguration,
-          SyncEntityType.journal,
-        ],
+        entityTypes: const [SyncEntityType.journal],
         pullMode: SyncPullMode.preferRemoteConflictResolution,
       );
 });
@@ -49,10 +46,28 @@ final journalPushRunnerProvider = Provider<JournalSyncRunner>((ref) {
       .read(syncCoordinatorProvider)
       .run(
         direction: SyncRunDirection.push,
-        entityTypes: const [
-          SyncEntityType.journalPromptConfiguration,
-          SyncEntityType.journal,
-        ],
+        entityTypes: const [SyncEntityType.journal],
+      );
+});
+
+final journalPromptConflictPullRunnerProvider = Provider<JournalSyncRunner>((
+  ref,
+) {
+  return () => ref
+      .read(syncCoordinatorProvider)
+      .run(
+        direction: SyncRunDirection.pull,
+        entityTypes: const [SyncEntityType.journalPromptConfiguration],
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      );
+});
+
+final journalPromptPushRunnerProvider = Provider<JournalSyncRunner>((ref) {
+  return () => ref
+      .read(syncCoordinatorProvider)
+      .run(
+        direction: SyncRunDirection.push,
+        entityTypes: const [SyncEntityType.journalPromptConfiguration],
       );
 });
 
@@ -200,8 +215,19 @@ class JournalSyncController extends Notifier<JournalSyncViewState> {
     try {
       final scope = await _requireScope();
       if (prepare != null) await prepare(scope);
+      final conflict = await ref
+          .read(syncConflictRepositoryProvider)
+          .getConflict(scope, conflictId);
+      final selectedRunner = switch (conflict.entityType) {
+        SyncEntityType.journal => runner,
+        SyncEntityType.journalPromptConfiguration =>
+          status == JournalSyncStatus.keepingLocal
+              ? ref.read(journalPromptPushRunnerProvider)
+              : ref.read(journalPromptConflictPullRunnerProvider),
+        _ => throw const SyncException('该冲突不属于 Journal。'),
+      };
       await Future<void>.delayed(Duration.zero);
-      final result = await runner();
+      final result = await selectedRunner();
       await reloadConflictCount();
       ref.invalidate(syncConflictDetailsProvider(conflictId));
       final nextStatus = result.isSuccessful

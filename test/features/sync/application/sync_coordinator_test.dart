@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' show DriftWrappedException;
 import 'package:drift/native.dart' show SqliteException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/network/api_exception.dart';
@@ -616,7 +617,7 @@ void main() {
     final result = await coordinator.run(direction: SyncRunDirection.pull);
 
     expect(result.failure?.reason, SyncFailureReason.applyFailed);
-    expect(result.failure?.diagnosticCode, 'state');
+    expect(result.failure?.diagnosticCode, startsWith('state@'));
     expect(cursorStore.value, 0);
     expect(cursorStore.writeCalls, 0);
   });
@@ -651,6 +652,26 @@ void main() {
 
     expect(result.failure?.reason, SyncFailureReason.applyFailed);
     expect(result.failure?.diagnosticCode, 'conflict-changed');
+  });
+
+  test('wrapped apply failure exposes root type and source location', () async {
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 7,
+      items: [_pulledItem(serverVersion: 7)],
+    );
+    adapter.applyError = DriftWrappedException(
+      message: 'wrapped',
+      cause: StateError('multiple rows'),
+      trace: StackTrace.fromString(
+        '#0 TodaySyncAdapter.applyRemoteChanges '
+        '(package:rebirth/features/today/data/today_sync_adapter.dart:321:7)',
+      ),
+    );
+
+    final result = await coordinator.run(direction: SyncRunDirection.pull);
+
+    expect(result.failure?.reason, SyncFailureReason.applyFailed);
+    expect(result.failure?.diagnosticCode, 'state@today_sync_adapter-321');
   });
 
   test('conflict is explicit and never advances cursor', () async {

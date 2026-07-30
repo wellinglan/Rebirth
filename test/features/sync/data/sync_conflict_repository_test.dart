@@ -238,6 +238,43 @@ void main() {
     },
   );
 
+  test(
+    'local lookup tolerates duplicate active conflicts from legacy data',
+    () async {
+      final unresolved = await repository.upsertDetectedConflict(
+        _detection(scope: scope, detectedAt: 100),
+      );
+      await database.customStatement('DROP INDEX sync_conflicts_one_active');
+      final row = await database.select(database.syncConflicts).getSingle();
+      await database
+          .into(database.syncConflicts)
+          .insert(
+            row
+                .toCompanion(false)
+                .copyWith(
+                  id: const Value('00000000-0000-4000-8000-000000000083'),
+                  detectedAt: const Value(110),
+                  lastSeenAt: const Value(110),
+                  resolutionStatus: const Value('awaiting_remote_snapshot'),
+                  remotePayloadJson: const Value(null),
+                  remoteOperation: const Value('unknown_pending_pull'),
+                ),
+          );
+
+      final selected = await repository.findActiveConflict(
+        scope: scope,
+        entityType: SyncEntityType.plan,
+        recordId: _recordId,
+      );
+
+      expect(selected?.id, isNot(unresolved.id));
+      expect(
+        selected?.resolutionStatus,
+        SyncConflictResolutionStatus.awaitingRemoteSnapshot,
+      );
+    },
+  );
+
   test('superseded conflict remains historical and inactive', () async {
     final conflict = await repository.upsertDetectedConflict(
       _detection(scope: scope),

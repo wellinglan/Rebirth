@@ -68,7 +68,7 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
     required SyncEntityType entityType,
     required String recordId,
   }) async {
-    final row =
+    final rows =
         await (_database.select(_database.syncConflicts)..where(
               (row) =>
                   _scopePredicate(row, scope) &
@@ -76,8 +76,8 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
                   row.recordId.equals(recordId) &
                   row.resolvedAt.isNull(),
             ))
-            .getSingleOrNull();
-    return row == null ? null : _toDomain(row);
+            .get();
+    return _selectPreferred(rows);
   }
 
   @override
@@ -95,6 +95,10 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
                   row.resolvedAt.isNull(),
             ))
             .get();
+    return _selectPreferred(rows);
+  }
+
+  SyncConflictRecord? _selectPreferred(List<db.SyncConflictRow> rows) {
     if (rows.isEmpty) return null;
     final conflicts = rows.map(_toDomain).toList(growable: false)
       ..sort((left, right) {

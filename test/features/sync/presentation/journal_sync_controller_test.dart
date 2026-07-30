@@ -133,6 +133,41 @@ void main() {
 
     expect(operations, ['adopt', 'pull', 'refresh', 'keep', 'push', 'refresh']);
   });
+
+  test('prompt conflict retry does not run Journal entry sync', () async {
+    final operations = <String>[];
+    final container = ProviderContainer(
+      overrides: [
+        syncConflictScopeProvider.overrideWith((ref) async => _scope),
+        syncConflictRepositoryProvider.overrideWithValue(
+          _FakeConflictRepository(
+            entityType: SyncEntityType.journalPromptConfiguration,
+          ),
+        ),
+        journalConflictPullRunnerProvider.overrideWithValue(() async {
+          operations.add('journal');
+          return _result(status: SyncEntityStatus.succeeded);
+        }),
+        journalPromptConflictPullRunnerProvider.overrideWithValue(() async {
+          operations.add('prompt');
+          return _result(
+            status: SyncEntityStatus.succeeded,
+            entityType: SyncEntityType.journalPromptConfiguration,
+          );
+        }),
+        journalViewRefresherProvider.overrideWithValue(() async {
+          operations.add('refresh');
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(journalSyncControllerProvider.notifier)
+        .retryConflictHydration('conflict');
+
+    expect(operations, ['prompt', 'refresh']);
+  });
 }
 
 const _scope = SyncConflictScope(
@@ -166,6 +201,10 @@ final class _FakeJournalConflictService
 
 final class _FakeConflictRepository extends Fake
     implements SyncConflictRepository {
+  _FakeConflictRepository({this.entityType = SyncEntityType.journal});
+
+  final SyncEntityType entityType;
+
   @override
   Future<SyncConflictRecord> getConflict(
     SyncConflictScope scope,
@@ -174,7 +213,7 @@ final class _FakeConflictRepository extends Fake
     return SyncConflictRecord(
       id: conflictId,
       scope: scope,
-      entityType: SyncEntityType.journal,
+      entityType: entityType,
       recordId: 'journal-entry',
       localSnapshot: const SyncConflictSnapshot(
         payload: null,
@@ -206,6 +245,7 @@ final class _FakeConflictRepository extends Fake
 
 SyncRunResult _result({
   required SyncEntityStatus status,
+  SyncEntityType entityType = SyncEntityType.journal,
   int pushed = 0,
   int pulled = 0,
   int deleted = 0,
@@ -216,7 +256,7 @@ SyncRunResult _result({
     phases: const [SyncRunPhase.completed],
     entityResults: [
       SyncEntityResult(
-        entityType: SyncEntityType.journal,
+        entityType: entityType,
         status: status,
         message: status == SyncEntityStatus.succeeded
             ? 'Journal synced'

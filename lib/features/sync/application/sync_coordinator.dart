@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart'
+    show CouldNotRollBackException, DriftWrappedException, InvalidDataException;
 import 'package:drift/native.dart' show SqliteException;
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
@@ -298,14 +300,14 @@ final class SyncCoordinator {
             ),
           ),
         );
-      } catch (error) {
+      } catch (error, stackTrace) {
         final phase = phases.isEmpty ? SyncRunPhase.failed : phases.last;
         firstFailure ??= SyncFailure(
           reason: _reasonFor(error, phase),
           phase: phase,
           message: _messageFor(error, phase),
           entityType: entityType,
-          diagnosticCode: _diagnosticCodeFor(error),
+          diagnosticCode: _diagnosticCodeFor(error, stackTrace),
         );
         entityResults.add(
           progress.merge(
@@ -549,20 +551,74 @@ final class SyncCoordinator {
     return '同步失败，本地记录未受影响。';
   }
 
-  static String? _diagnosticCodeFor(Object error) {
-    if (error is SqliteException) {
-      return 'sqlite-${error.extendedResultCode}';
+  static String? _diagnosticCodeFor(Object error, StackTrace stackTrace) {
+    final (root, rootTrace) = _unwrapDiagnosticError(error, stackTrace);
+    if (root is SqliteException) {
+      return 'sqlite-${root.extendedResultCode}';
     }
-    if (error is SyncConflictNotFoundException) return 'conflict-not-found';
-    if (error is SyncConflictNotReadyException) return 'conflict-not-ready';
-    if (error is SyncConflictChangedException) return 'conflict-changed';
-    if (error is SyncConflictResolutionException) {
+    if (root is SyncConflictNotFoundException) return 'conflict-not-found';
+    if (root is SyncConflictNotReadyException) return 'conflict-not-ready';
+    if (root is SyncConflictChangedException) return 'conflict-changed';
+    if (root is SyncConflictResolutionException) {
       return 'conflict-resolution';
     }
-    if (error is StateError) return 'state';
-    if (error is FormatException) return 'format';
-    if (error is TypeError) return 'type';
-    return null;
+    if (root is InvalidDataException) return 'invalid-data';
+    final base = switch (root) {
+      StateError() => 'state',
+      FormatException() => 'format',
+      TypeError() => 'type',
+      RangeError() => 'range',
+      ArgumentError() => 'argument',
+      _ => 'other-${_runtimeTypeCode(root)}',
+    };
+    final location = _rebirthStackLocation(rootTrace);
+    return location == null ? base : '$base@$location';
+  }
+
+  static (Object, StackTrace) _unwrapDiagnosticError(
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    var current = error;
+    var currentTrace = stackTrace;
+    for (var depth = 0; depth < 4; depth += 1) {
+      if (current case DriftWrappedException(
+        cause: final Object cause,
+        trace: final StackTrace? trace,
+      )) {
+        current = cause;
+        currentTrace = trace ?? currentTrace;
+        continue;
+      }
+      if (current case CouldNotRollBackException(
+        cause: final Object cause,
+        originalStackTrace: final StackTrace trace,
+      )) {
+        current = cause;
+        currentTrace = trace;
+        continue;
+      }
+      break;
+    }
+    return (current, currentTrace);
+  }
+
+  static String _runtimeTypeCode(Object error) {
+    return error.runtimeType
+        .toString()
+        .replaceAll(RegExp('[^A-Za-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '')
+        .toLowerCase();
+  }
+
+  static String? _rebirthStackLocation(StackTrace stackTrace) {
+    final match = RegExp(
+      r'package:rebirth/([^:\s]+)\.dart:(\d+)',
+    ).firstMatch(stackTrace.toString());
+    if (match == null) return null;
+    final path = match.group(1)!;
+    final file = path.substring(path.lastIndexOf('/') + 1);
+    return '$file-${match.group(2)}';
   }
 }
 

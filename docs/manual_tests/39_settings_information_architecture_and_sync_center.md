@@ -284,6 +284,35 @@ preserve the remaining conflict count, and keep unrelated local conflicts
 intact. If Journal still fails, record all three message components; the third
 component should now identify the exact conflict-domain state.
 
+The follow-up APK was installed over the existing app, but both records still
+failed on 2026-07-30:
+
+- Today Retry Cloud Version remained
+  `applyFailed / apply / state`;
+- Journal Continue Processing remained `applyFailed / apply`, with the cloud
+  snapshot still visible and local content preserved.
+
+This showed that remote-ID duplicate selection was not the Today exception
+site. The existing record first uses local-record conflict lookup, which still
+required exactly one row. It also showed that a Journal entry conflict action
+was unnecessarily running both Journal entry and prompt-configuration sync, so
+an unrelated prompt-configuration apply failure could block the entry action.
+
+The next release candidate:
+
+- applies deterministic selection to both local-record and remote-record
+  conflict lookups, including legacy duplicate rows;
+- runs Journal entry and prompt-configuration conflict actions independently;
+- unwraps Drift database exceptions before classification;
+- adds a privacy-safe source fingerprint such as
+  `state@today_sync_adapter-321` for state and otherwise-unclassified failures;
+- includes regression tests for legacy duplicate local conflicts, wrapped
+  apply failures, and Journal prompt/entry action isolation.
+
+Again install over the existing app without clearing data. The old Today and
+Journal records are the required acceptance fixtures and must be retained until
+both converge or the new source fingerprint is captured.
+
 ## Gates
 
 - Settings Information Architecture Product Gate:
