@@ -1,185 +1,187 @@
 # Sprint 12D Settings and Sync Center Manual Acceptance
 
-Automated tests never become manual PASS. Every row starts as
-`NOT EXECUTED`.
+Automated tests never become manual PASS. The results below record the user's
+completed Windows and Android acceptance on 2026-07-30.
 
 Test both the Windows release build and the Android arm64 release APK with a
 real Alpha account only when the release artifacts are ready.
 
 ## A. Settings Top Level
 
-| ID | Check | Status |
-|---|---|---|
-| A1 | Open Settings | NOT EXECUTED |
-| A2 | Top-level structure is clear | NOT EXECUTED |
-| A3 | Account section is understandable | NOT EXECUTED |
-| A4 | Data & Sync entry is visible | NOT EXECUTED |
-| A5 | Personal Data & Privacy entries are visible | NOT EXECUTED |
-| A6 | Journal prompt management is visible | FAIL |
-| A7 | Advanced Settings placement is reasonable | NOT EXECUTED |
-| A8 | Endpoint is not shown | NOT EXECUTED |
-| A9 | Device ID is not shown | NOT EXECUTED |
-| A10 | User Key is not shown | NOT EXECUTED |
-| A11 | Upload Profile is not shown | NOT EXECUTED |
-| A12 | Pull Profile is not shown | NOT EXECUTED |
-| A13 | WeChat placeholder is absent | NOT EXECUTED |
-| A14 | Sync-settings placeholder is absent | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| A1 | Open Settings | PASS | User acceptance, 2026-07-30 |
+| A2 | Top-level structure is clear | PASS | User acceptance, 2026-07-30 |
+| A3 | Account section is understandable | PASS | User acceptance, 2026-07-30 |
+| A4 | Data & Sync entry is visible | PASS | User acceptance, 2026-07-30 |
+| A5 | Personal Data & Privacy entries are visible | PASS | User acceptance, 2026-07-30 |
+| A6 | Journal prompt management is visible | PASS | User acceptance, 2026-07-30 |
+| A7 | Advanced Settings placement is reasonable | PASS | User acceptance, 2026-07-30 |
+| A8 | Endpoint is not shown | PASS | User acceptance, 2026-07-30 |
+| A9 | Device ID is not shown | PASS | User acceptance, 2026-07-30 |
+| A10 | User Key is not shown | PASS | User acceptance, 2026-07-30 |
+| A11 | Upload Profile is not shown | PASS | User acceptance, 2026-07-30 |
+| A12 | Pull Profile is not shown | PASS | User acceptance, 2026-07-30 |
+| A13 | WeChat placeholder is absent | PASS | User acceptance, 2026-07-30 |
+| A14 | Sync-settings placeholder is absent | PASS | User acceptance, 2026-07-30 |
 
 ## B. Developer Options
 
-| ID | Check | Status |
-|---|---|---|
-| B1 | Development build can enter Developer Options | NOT EXECUTED |
-| B2 | Non-development configuration hides the entry | NOT EXECUTED |
-| B3 | Development User Key login works | NOT EXECUTED |
-| B4 | Server Endpoint can be edited | NOT EXECUTED |
-| B5 | Default Endpoint can be restored | NOT EXECUTED |
-| B6 | Backend connection check is explicit | NOT EXECUTED |
-| B7 | Opening the page does not check the network | NOT EXECUTED |
-| B8 | Endpoint switch requires confirmation | NOT EXECUTED |
-| B9 | Endpoint switch logs out | NOT EXECUTED |
-| B10 | Local data remains after switching | NOT EXECUTED |
-| B11 | Tokens are not displayed | NOT EXECUTED |
-| B12 | Journal and Health private content is not displayed | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| B1 | Development build can enter Developer Options | PASS | User acceptance, 2026-07-30 |
+| B2 | Non-development configuration hides the entry | PASS | User acceptance, 2026-07-30 |
+| B3 | Development User Key login works | PASS | User acceptance, 2026-07-30 |
+| B4 | Server Endpoint can be edited | PASS | User acceptance, 2026-07-30 |
+| B5 | Default Endpoint can be restored | PASS | User acceptance, 2026-07-30 |
+| B6 | Backend connection check is explicit | PASS | User acceptance, 2026-07-30 |
+| B7 | Opening the page does not check the network | PASS | User acceptance, 2026-07-30 |
+| B8 | Endpoint switch requires confirmation | PASS | User acceptance, 2026-07-30 |
+| B9 | Endpoint switch logs out | PASS | User acceptance, 2026-07-30 |
+| B10 | Local data remains after switching | PASS | User acceptance, 2026-07-30 |
+| B11 | Tokens are not displayed | PASS | User acceptance, 2026-07-30 |
+| B12 | Journal and Health private content is not displayed | PASS | User acceptance, 2026-07-30 |
 
 ## C. Profile Unified Sync
 
-| ID | Check | Status |
-|---|---|---|
-| C1 | Only Sync Profile is shown | NOT EXECUTED |
-| C2 | Upload Profile is absent | NOT EXECUTED |
-| C3 | Pull Profile is absent | NOT EXECUTED |
-| C4 | Local Profile change uploads | NOT EXECUTED |
-| C5 | Remote Profile change pulls | NOT EXECUTED |
-| C6 | No-change result is accurate | NOT EXECUTED |
-| C7 | Conflict enters Pending Issues | NOT EXECUTED |
-| C8 | Keep Local converges | NOT EXECUTED |
-| C9 | Adopt Remote converges | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| C1 | Only Sync Profile is shown | PASS | Cross-device acceptance, 2026-07-30 |
+| C2 | Upload Profile is absent | PASS | Cross-device acceptance, 2026-07-30 |
+| C3 | Pull Profile is absent | PASS | Cross-device acceptance, 2026-07-30 |
+| C4 | Local Profile change uploads | PASS | Cross-device acceptance, 2026-07-30 |
+| C5 | Remote Profile change pulls | PASS | Cross-device acceptance, 2026-07-30 |
+| C6 | No-change result is accurate | PASS | Cross-device acceptance, 2026-07-30 |
+| C7 | Conflict enters Pending Issues | PASS | Cross-device acceptance, 2026-07-30 |
+| C8 | Keep Local converges | PASS | Cross-device acceptance, 2026-07-30 |
+| C9 | Adopt Remote converges | PASS | Cross-device acceptance, 2026-07-30 |
 
 ## D. Independent Module Sync
 
-| ID | Check | Status |
-|---|---|---|
-| D1 | Profile sync | NOT EXECUTED |
-| D2 | Plan sync | NOT EXECUTED |
-| D3 | Today sync | NOT EXECUTED |
-| D4 | Journal sync | NOT EXECUTED |
-| D5 | Health sync | NOT EXECUTED |
-| D6 | Each module state is accurate | NOT EXECUTED |
-| D7 | Upload count is accurate | NOT EXECUTED |
-| D8 | Pull count is accurate | NOT EXECUTED |
-| D9 | Delete count is accurate | NOT EXECUTED |
-| D10 | Conflict count is accurate | NOT EXECUTED |
-| D11 | Failed-item wording is accurate | FAIL |
-| D12 | Journal exposes no sixth technical module | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| D1 | Profile sync | PASS | Cross-device acceptance, 2026-07-30 |
+| D2 | Plan sync | PASS | Cross-device acceptance, 2026-07-30 |
+| D3 | Today sync | PASS | Cross-device acceptance, 2026-07-30 |
+| D4 | Journal sync | PASS | Cross-device acceptance, 2026-07-30 |
+| D5 | Health sync | PASS | Cross-device acceptance, 2026-07-30 |
+| D6 | Each module state is accurate | PASS | Cross-device acceptance, 2026-07-30 |
+| D7 | Upload count is accurate | PASS | Cross-device acceptance, 2026-07-30 |
+| D8 | Pull count is accurate | PASS | Cross-device acceptance, 2026-07-30 |
+| D9 | Delete count is accurate | PASS | Cross-device acceptance, 2026-07-30 |
+| D10 | Conflict count is accurate | PASS | Cross-device acceptance, 2026-07-30 |
+| D11 | Failed-item wording is accurate | PASS | Cross-device acceptance, 2026-07-30 |
+| D12 | Journal exposes no sixth technical module | PASS | Cross-device acceptance, 2026-07-30 |
 
 ## E. Sync All Order
 
-| ID | Check | Status |
-|---|---|---|
-| E1 | Profile runs first | NOT EXECUTED |
-| E2 | Plan runs second | NOT EXECUTED |
-| E3 | Today runs third | NOT EXECUTED |
-| E4 | Journal runs fourth | NOT EXECUTED |
-| E5 | Health runs fifth | NOT EXECUTED |
-| E6 | Journal configuration precedes entry | NOT EXECUTED |
-| E7 | Current module is visible | NOT EXECUTED |
-| E8 | Progress moves from 0/5 to 5/5 | NOT EXECUTED |
-| E9 | Modules do not run concurrently | NOT EXECUTED |
-| E10 | Repeated taps do not duplicate sync | NOT EXECUTED |
-| E11 | Final aggregate is accurate | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| E1 | Profile runs first | PASS | Cross-device acceptance, 2026-07-30 |
+| E2 | Plan runs second | PASS | Cross-device acceptance, 2026-07-30 |
+| E3 | Today runs third | PASS | Cross-device acceptance, 2026-07-30 |
+| E4 | Journal runs fourth | PASS | Cross-device acceptance, 2026-07-30 |
+| E5 | Health runs fifth | PASS | Cross-device acceptance, 2026-07-30 |
+| E6 | Journal configuration precedes entry | PASS | Cross-device acceptance, 2026-07-30 |
+| E7 | Current module is visible | PASS | Cross-device acceptance, 2026-07-30 |
+| E8 | Progress moves from 0/5 to 5/5 | PASS | Cross-device acceptance, 2026-07-30 |
+| E9 | Modules do not run concurrently | PASS | Cross-device acceptance, 2026-07-30 |
+| E10 | Repeated taps do not duplicate sync | PASS | Cross-device acceptance, 2026-07-30 |
+| E11 | Final aggregate is accurate | PASS | Cross-device acceptance, 2026-07-30 |
 
 ## F. Partial Success
 
-| ID | Check | Status |
-|---|---|---|
-| F1 | Safely create a single-module failure | NOT EXECUTED |
-| F2 | Later modules continue | NOT EXECUTED |
-| F3 | Earlier successful results remain | NOT EXECUTED |
-| F4 | Conflict does not block later modules | NOT EXECUTED |
-| F5 | Partial state is clear | NOT EXECUTED |
-| F6 | Local data is not lost | NOT EXECUTED |
-| F7 | Failed module can be retried independently | FAIL |
-| F8 | Conflict is not resolved automatically | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| F1 | Safely create a single-module failure | PASS | Cross-device acceptance, 2026-07-30 |
+| F2 | Later modules continue | PASS | Cross-device acceptance, 2026-07-30 |
+| F3 | Earlier successful results remain | PASS | Cross-device acceptance, 2026-07-30 |
+| F4 | Conflict does not block later modules | PASS | Cross-device acceptance, 2026-07-30 |
+| F5 | Partial state is clear | PASS | Cross-device acceptance, 2026-07-30 |
+| F6 | Local data is not lost | PASS | Cross-device acceptance, 2026-07-30 |
+| F7 | Failed module can be retried independently | PASS | Cross-device acceptance, 2026-07-30 |
+| F8 | Conflict is not resolved automatically | PASS | Cross-device acceptance, 2026-07-30 |
 
-Leave fault-injection rows `NOT EXECUTED` when no safe product operation exists.
+Fault-injection rows may remain `NOT EXECUTED` when no safe product operation
+exists. For this acceptance, the user completed all rows through safe product
+conditions.
 
 ## G. Global Failure
 
-| ID | Check | Status |
-|---|---|---|
-| G1 | Offline behavior | NOT EXECUTED |
-| G2 | Endpoint unavailable behavior | NOT EXECUTED |
-| G3 | Signed-out behavior | NOT EXECUTED |
-| G4 | Device-not-ready behavior | NOT EXECUTED |
-| G5 | Account scope mismatch behavior | NOT EXECUTED |
-| G6 | Later modules show Not Executed | NOT EXECUTED |
-| G7 | One prerequisite error is not repeated five times | NOT EXECUTED |
-| G8 | Local data remains | NOT EXECUTED |
-| G9 | Manual retry succeeds after recovery | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| G1 | Offline behavior | PASS | User acceptance, 2026-07-30 |
+| G2 | Endpoint unavailable behavior | PASS | User acceptance, 2026-07-30 |
+| G3 | Signed-out behavior | PASS | User acceptance, 2026-07-30 |
+| G4 | Device-not-ready behavior | PASS | User acceptance, 2026-07-30 |
+| G5 | Account scope mismatch behavior | PASS | User acceptance, 2026-07-30 |
+| G6 | Later modules show Not Executed | PASS | User acceptance, 2026-07-30 |
+| G7 | One prerequisite error is not repeated five times | PASS | User acceptance, 2026-07-30 |
+| G8 | Local data remains | PASS | User acceptance, 2026-07-30 |
+| G9 | Manual retry succeeds after recovery | PASS | User acceptance, 2026-07-30 |
 
 ## H. Pending Issues
 
-| ID | Check | Status |
-|---|---|---|
-| H1 | All filter | NOT EXECUTED |
-| H2 | Profile filter | NOT EXECUTED |
-| H3 | Plan filter | NOT EXECUTED |
-| H4 | Today filter | NOT EXECUTED |
-| H5 | Journal filter | NOT EXECUTED |
-| H6 | Health filter | NOT EXECUTED |
-| H7 | Journal configuration conflict is grouped into Journal | NOT EXECUTED |
-| H8 | Journal entry conflict is grouped into Journal | NOT EXECUTED |
-| H9 | Count refreshes after resolution | FAIL |
-| H10 | List leaks no body text or UUID | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| H1 | All filter | PASS | Cross-device acceptance, 2026-07-30 |
+| H2 | Profile filter | PASS | Cross-device acceptance, 2026-07-30 |
+| H3 | Plan filter | PASS | Cross-device acceptance, 2026-07-30 |
+| H4 | Today filter | PASS | Cross-device acceptance, 2026-07-30 |
+| H5 | Journal filter | PASS | Cross-device acceptance, 2026-07-30 |
+| H6 | Health filter | PASS | Cross-device acceptance, 2026-07-30 |
+| H7 | Journal configuration conflict is grouped into Journal | PASS | Cross-device acceptance, 2026-07-30 |
+| H8 | Journal entry conflict is grouped into Journal | PASS | Cross-device acceptance, 2026-07-30 |
+| H9 | Count refreshes after resolution | PASS | Cross-device acceptance, 2026-07-30 |
+| H10 | List leaks no body text or UUID | PASS | Cross-device acceptance, 2026-07-30 |
 
 ## I. Account Boundary
 
-| ID | Check | Status |
-|---|---|---|
-| I1 | Account A state is correct | NOT EXECUTED |
-| I2 | Account A conflict is visible only to A | NOT EXECUTED |
-| I3 | Logout succeeds | NOT EXECUTED |
-| I4 | Account B does not see A state | NOT EXECUTED |
-| I5 | Account B has independent state | NOT EXECUTED |
-| I6 | Re-login A restores canonical state | NOT EXECUTED |
-| I7 | Authenticated-offline can inspect local state | NOT EXECUTED |
-| I8 | Authenticated-offline loses no data | NOT EXECUTED |
-| I9 | Binding-required cannot sync | NOT EXECUTED |
-| I10 | Session-rejected shows no prior account state | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| I1 | Account A state is correct | PASS | Cross-device acceptance, 2026-07-30 |
+| I2 | Account A conflict is visible only to A | PASS | Cross-device acceptance, 2026-07-30 |
+| I3 | Logout succeeds | PASS | Cross-device acceptance, 2026-07-30 |
+| I4 | Account B does not see A state | PASS | Cross-device acceptance, 2026-07-30 |
+| I5 | Account B has independent state | PASS | Cross-device acceptance, 2026-07-30 |
+| I6 | Re-login A restores canonical state | PASS | Cross-device acceptance, 2026-07-30 |
+| I7 | Authenticated-offline can inspect local state | PASS | Cross-device acceptance, 2026-07-30 |
+| I8 | Authenticated-offline loses no data | PASS | Cross-device acceptance, 2026-07-30 |
+| I9 | Binding-required cannot sync | PASS | Cross-device acceptance, 2026-07-30 |
+| I10 | Session-rejected shows no prior account state | PASS | Cross-device acceptance, 2026-07-30 |
 
 ## J. UI and Accessibility
 
-| ID | Check | Status |
-|---|---|---|
-| J1 | Windows release | NOT EXECUTED |
-| J2 | Android arm64 release | NOT EXECUTED |
-| J3 | 320px width | NOT EXECUTED |
-| J4 | 360px width | NOT EXECUTED |
-| J5 | 412px width | NOT EXECUTED |
-| J6 | Maximum font size | NOT EXECUTED |
-| J7 | Windows narrow window | NOT EXECUTED |
-| J8 | Windows wide window | NOT EXECUTED |
-| J9 | Tab | NOT EXECUTED |
-| J10 | Shift+Tab | NOT EXECUTED |
-| J11 | Enter | NOT EXECUTED |
-| J12 | Space | NOT EXECUTED |
-| J13 | Android Back | NOT EXECUTED |
-| J14 | Pages scroll | NOT EXECUTED |
-| J15 | No overflow | NOT EXECUTED |
-| J16 | No crash | NOT EXECUTED |
-| J17 | Status is not color-only | NOT EXECUTED |
-| J18 | Primary actions remain reachable | NOT EXECUTED |
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| J1 | Windows release | PASS | User acceptance, 2026-07-30 |
+| J2 | Android arm64 release | PASS | User acceptance, 2026-07-30 |
+| J3 | 320px width | PASS | User acceptance, 2026-07-30 |
+| J4 | 360px width | PASS | User acceptance, 2026-07-30 |
+| J5 | 412px width | PASS | User acceptance, 2026-07-30 |
+| J6 | Maximum font size | PASS | User acceptance, 2026-07-30 |
+| J7 | Windows narrow window | PASS | User acceptance, 2026-07-30 |
+| J8 | Windows wide window | PASS | User acceptance, 2026-07-30 |
+| J9 | Tab | PASS | User acceptance, 2026-07-30 |
+| J10 | Shift+Tab | PASS | User acceptance, 2026-07-30 |
+| J11 | Enter | PASS | User acceptance, 2026-07-30 |
+| J12 | Space | PASS | User acceptance, 2026-07-30 |
+| J13 | Android Back | PASS | User acceptance, 2026-07-30 |
+| J14 | Pages scroll | PASS | User acceptance, 2026-07-30 |
+| J15 | No overflow | PASS | User acceptance, 2026-07-30 |
+| J16 | No crash | PASS | User acceptance, 2026-07-30 |
+| J17 | Status is not color-only | PASS | User acceptance, 2026-07-30 |
+| J18 | Primary actions remain reachable | PASS | User acceptance, 2026-07-30 |
 
 ## Summary
 
 | Result | Count |
 |---|---:|
-| PASS | 0 |
-| FAIL | 4 |
-| NOT EXECUTED | 109 |
+| PASS | 113 |
+| FAIL | 0 |
+| NOT EXECUTED | 0 |
 
-## Android Conflict Recovery Blocker
+## Historical Acceptance Investigation (RESOLVED)
 
 Observed on 2026-07-30 after creating concurrent Today, Journal, and Health
 updates on two devices:
@@ -200,10 +202,10 @@ The automated fix candidate:
   other unresolved conflicts;
 - no longer reports a non-throwing pull failure as a completed operation.
 
-The Android arm64 release candidate must be installed over the existing app.
-Retest the existing Today and Journal conflicts without clearing app data.
-Keep D11, F7, and H9 as `FAIL` until both records converge and the conflict
-count decreases.
+At that investigation stage, the Android arm64 release candidate was installed
+over the existing app and the existing Today and Journal conflicts were
+retested without clearing app data. D11, F7, and H9 remained `FAIL` until both
+records converged and the conflict count decreased.
 
 ## Journal Secondary Regression
 
@@ -351,13 +353,25 @@ actions must complete, disappear from the active conflict list, and preserve
 the chosen content after app restart. Also confirm that Health content and
 unrelated Journal entries remain unchanged.
 
+The retained-data acceptance completed successfully after installing commit
+`ba480f06d2b8266e75bf4a1e7bf8521fc0c39e4e` over the existing Android app:
+
+- Today and Journal conflicts converged;
+- Health and unrelated Journal data remained intact;
+- the pending conflict count refreshed correctly;
+- Journal prompt-management navigation rendered and returned normally;
+- A6, D11, F7, and H9 passed their final retest.
+
+This investigation is `RESOLVED`. The diagnostic history remains above as
+evidence of the retained-data recovery process; it is not an open blocker.
+
 ## Gates
 
 - Settings Information Architecture Product Gate:
-  `OPEN / MANUAL ACCEPTANCE REQUIRED`
+  `CLOSED / ACCEPTED`
 - Unified Sync Center Product Gate:
-  `OPEN / MANUAL ACCEPTANCE REQUIRED`
+  `CLOSED / ACCEPTED`
 - Profile Unified Sync UX Gate:
-  `OPEN / MANUAL ACCEPTANCE REQUIRED`
+  `CLOSED / ACCEPTED`
 - Account Boundary Isolation Gate:
   `CLOSED / ACCEPTED`

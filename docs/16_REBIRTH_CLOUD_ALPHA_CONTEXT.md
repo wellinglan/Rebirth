@@ -786,3 +786,10 @@ Protocol remains 2, Flutter schemaVersion remains 9, and PostgreSQL, Alembic,
 Server runtime, GHCR images, and Beijing Alpha deployment are unchanged.
 Manual acceptance is tracked in
 `docs/manual_tests/39_settings_information_architecture_and_sync_center.md`.
+
+On 2026-07-30, user acceptance passed all 113 Sprint 12D manual checks on
+Windows and Android. Retained-data Today, Journal, and Health conflict recovery
+also converged after the final Android release candidate was installed without
+clearing app data. The Settings Information Architecture, Unified Sync Center,
+Profile Unified Sync UX, and Account Boundary Isolation gates are
+`CLOSED / ACCEPTED`.

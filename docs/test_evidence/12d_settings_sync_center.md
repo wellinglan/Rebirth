@@ -71,11 +71,15 @@ not change font dependencies.
 
 ## Manual Status
 
-All rows in
-`docs/manual_tests/39_settings_information_architecture_and_sync_center.md`
-remain `NOT EXECUTED`.
+Manual acceptance remains distinct from the automated evidence above. On
+2026-07-30, the user completed all 113 Windows and Android checks in
+`docs/manual_tests/39_settings_information_architecture_and_sync_center.md`:
 
-- Settings Information Architecture Product Gate: OPEN
-- Unified Sync Center Product Gate: OPEN
-- Profile Unified Sync UX Gate: OPEN
+- PASS: 113
+- FAIL: 0
+- NOT EXECUTED: 0
+
+- Settings Information Architecture Product Gate: CLOSED / ACCEPTED
+- Unified Sync Center Product Gate: CLOSED / ACCEPTED
+- Profile Unified Sync UX Gate: CLOSED / ACCEPTED
 - Account Boundary Isolation Gate: CLOSED / ACCEPTED

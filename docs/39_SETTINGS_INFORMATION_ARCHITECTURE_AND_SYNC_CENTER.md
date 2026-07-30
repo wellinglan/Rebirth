@@ -264,9 +264,11 @@ Production authentication remains planned for Sprint 13A.
 
 ## Gates
 
-- Settings Information Architecture Product Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
-- Unified Sync Center Product Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
-- Profile Unified Sync UX Gate: `OPEN / MANUAL ACCEPTANCE REQUIRED`
+- Settings Information Architecture Product Gate: `CLOSED / ACCEPTED`
+- Unified Sync Center Product Gate: `CLOSED / ACCEPTED`
+- Profile Unified Sync UX Gate: `CLOSED / ACCEPTED`
 - Account Boundary Isolation Gate: `CLOSED / ACCEPTED`
 
+On 2026-07-30, user acceptance passed all 113 manual checks on Windows and
+Android, including retained-data Today, Journal, and Health conflict recovery.
 See `manual_tests/39_settings_information_architecture_and_sync_center.md`.
