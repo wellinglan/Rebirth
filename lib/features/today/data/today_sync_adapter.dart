@@ -925,7 +925,8 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
     }
     final linkedHealth =
         await (_database.select(_database.healthRecords)
-              ..where((health) => health.todayRecordId.equals(row.id)))
+              ..where((health) => health.todayRecordId.equals(row.id))
+              ..limit(1))
             .getSingleOrNull();
     return linkedHealth == null;
   }

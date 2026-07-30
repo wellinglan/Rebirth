@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart' as db;
@@ -8,6 +8,8 @@ import 'package:rebirth/features/journal/data/journal_repository_impl.dart';
 import 'package:rebirth/features/journal/data/journal_sync_adapter.dart';
 import 'package:rebirth/features/journal/data/journal_sync_payload_codec.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
+import 'package:rebirth/features/journal/domain/journal_entry_prompt_item.dart';
+import 'package:rebirth/features/journal/domain/journal_prompt.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_repository_impl.dart';
@@ -66,6 +68,7 @@ void main() {
   Future<SyncConflictRecord> createConflict(
     String recordId, {
     String? remoteRecordId,
+    JournalSyncPayload remotePayload = _remotePayload,
   }) async {
     final row = await (database.select(
       database.journalEntries,
@@ -83,8 +86,8 @@ void main() {
           serverVersion: row.serverVersion,
           originDeviceId: row.originDeviceId,
         ),
-        remoteSnapshot: const SyncConflictSnapshot(
-          payload: _remotePayload,
+        remoteSnapshot: SyncConflictSnapshot(
+          payload: remotePayload,
           updatedAt: 900,
           deletedAt: null,
           serverVersion: 6,
@@ -209,6 +212,87 @@ void main() {
       final active = await conflicts.listActiveConflicts(scope);
       expect(active, hasLength(1));
       expect(active.single.recordId, other.id);
+    },
+  );
+
+  test(
+    'Adopt Remote reassigns same-date prompt snapshots to a different ID',
+    () async {
+      final localRecordId = await createConflictedJournal();
+      final localPrompt =
+          (await database.select(database.journalEntryPromptItems).get()).first;
+      final remotePayload = JournalSyncPayload(
+        entryDate: '2026-07-28',
+        timezoneOffsetMinutes: 480,
+        status: JournalEntryStatus.completed,
+        createdAt: 10,
+        promptItems: [
+          JournalEntryPromptItem(
+            id: localPrompt.id,
+            sourcePromptId: localPrompt.sourcePromptId,
+            sourcePromptStableKey: localPrompt.sourcePromptStableKey,
+            sourcePromptVersion: localPrompt.sourcePromptVersion,
+            promptSource: JournalPromptSource.fromWireName(
+              localPrompt.promptSource,
+            ),
+            questionTextSnapshot: localPrompt.questionTextSnapshot,
+            helperTextSnapshot: localPrompt.helperTextSnapshot,
+            responseKind: JournalResponseKind.fromWireName(
+              localPrompt.responseKind,
+            ),
+            displayOrder: localPrompt.displayOrder,
+            answerText: 'Remote answer',
+            createdAt: localPrompt.createdAt,
+            updatedAt: 900,
+          ),
+        ],
+      );
+      final conflict = await createConflict(
+        localRecordId,
+        remoteRecordId: _remoteRecordId,
+        remotePayload: remotePayload,
+      );
+      await service.requestAdoptRemote(scope: scope, conflictId: conflict.id);
+      final adapter = JournalSyncAdapter(
+        database,
+        conflicts,
+        () async => scope,
+      );
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [
+          SyncChange(
+            entityType: SyncEntityType.journal,
+            operation: SyncOperation.upsert,
+            recordId: _remoteRecordId,
+            payload: remotePayload,
+            updatedAt: 900,
+            deletedAt: null,
+            originDeviceId: _remoteOriginId,
+            serverVersion: 6,
+          ),
+        ],
+        syncedAt: 1000,
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      );
+      final entries = await database.select(database.journalEntries).get();
+      final prompts = await database
+          .select(database.journalEntryPromptItems)
+          .get();
+
+      expect(result.status, SyncEntityStatus.succeeded);
+      expect(
+        entries.singleWhere((row) => row.id == localRecordId).deletedAt,
+        isNotNull,
+      );
+      expect(
+        entries.singleWhere((row) => row.id == _remoteRecordId).deletedAt,
+        isNull,
+      );
+      expect(prompts, hasLength(1));
+      expect(prompts.single.id, localPrompt.id);
+      expect(prompts.single.journalEntryId, _remoteRecordId);
+      expect(prompts.single.answerText, 'Remote answer');
     },
   );
 

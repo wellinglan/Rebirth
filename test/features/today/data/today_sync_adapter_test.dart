@@ -131,6 +131,44 @@ void main() {
     expect(loaded?.dailyNote, 'Cloud Today');
   });
 
+  test(
+    'remote Today does not assume a placeholder has at most one linked Health',
+    () async {
+      final placeholder = await repository.getToday();
+      final bootstrap = await database.bootstrapDao.bootstrap();
+      for (final (index, id) in [
+        '21111111-1111-4111-8111-111111111111',
+        '31111111-1111-4111-8111-111111111111',
+      ].indexed) {
+        await database
+            .into(database.healthRecords)
+            .insert(
+              HealthRecordsCompanion.insert(
+                id: Value(id),
+                userId: bootstrap.activeUserId,
+                todayRecordId: Value(placeholder.id),
+                recordDate: '2026-07-28',
+                timezoneOffsetMinutes: 480,
+                createdAt: Value(10 + index),
+                updatedAt: Value(10 + index),
+                deletedAt: Value(20 + index),
+              ),
+            );
+      }
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [_remoteChange(note: 'Cloud Today')],
+        syncedAt: 1000,
+      );
+      final rows = await database.select(database.todayRecords).get();
+
+      expect(result.status, SyncEntityStatus.conflict);
+      expect(rows, hasLength(1));
+      expect(rows.single.id, placeholder.id);
+      expect(await database.select(database.healthRecords).get(), hasLength(2));
+    },
+  );
+
   test('remote Today update preserves local Health aggregate', () async {
     final entry = await repository.saveToday(
       TodaySaveData(

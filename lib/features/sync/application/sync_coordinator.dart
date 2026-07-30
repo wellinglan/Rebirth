@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart'
     show CouldNotRollBackException, DriftWrappedException, InvalidDataException;
+import 'package:drift/isolate.dart' show DriftRemoteException;
 import 'package:drift/native.dart' show SqliteException;
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
@@ -582,6 +583,14 @@ final class SyncCoordinator {
     var current = error;
     var currentTrace = stackTrace;
     for (var depth = 0; depth < 4; depth += 1) {
+      if (current case DriftRemoteException(
+        remoteCause: final Object cause,
+        remoteStackTrace: final StackTrace? trace,
+      )) {
+        current = cause;
+        currentTrace = trace ?? currentTrace;
+        continue;
+      }
       if (current case DriftWrappedException(
         cause: final Object cause,
         trace: final StackTrace? trace,

@@ -614,6 +614,9 @@ final class JournalSyncAdapter implements SyncEntityAdapter {
             syncStatus: const Value('synced'),
           ),
         );
+    await (_database.delete(
+      _database.journalEntryPromptItems,
+    )..where((row) => row.journalEntryId.equals(conflict.recordId))).go();
 
     final remotePayload = payload is JournalSyncPayload ? payload : null;
     final global = await (_database.select(

@@ -313,6 +313,44 @@ Again install over the existing app without clearing data. The old Today and
 Journal records are the required acceptance fixtures and must be retained until
 both converge or the new source fingerprint is captured.
 
+The retained Android fixtures then produced these more precise fingerprints:
+
+- Today Retry Cloud Version:
+  `applyFailed / apply / state@today_sync_adapter-927`;
+- Journal Continue Processing:
+  `applyFailed / apply / other-driftremoteexception`.
+
+The Today source location identifies the placeholder eligibility query. A
+historical Today can have more than one linked soft-deleted Health row, while
+the query incorrectly required zero or one row merely to determine whether any
+row existed.
+
+The Journal failure is caused by same-date prompt snapshot identity. Two
+devices can create different Journal entry IDs for the same date while deriving
+the same prompt item IDs from that date and prompt configuration. During Adopt
+Remote, the losing local Journal was soft-deleted but retained those child
+rows, so inserting the remote Journal prompt snapshots violated their primary
+keys inside the Drift background isolate.
+
+The next release candidate:
+
+- limits the Today linked-Health lookup to one row because it is an existence
+  check, preserving all Health rows and local Health semantics;
+- removes prompt snapshots only from the losing local Journal after an explicit
+  Adopt Remote request and before inserting the different remote Journal ID;
+- leaves other Journal entries, other users, prompt configuration, cursors, and
+  server records unchanged;
+- unwraps `DriftRemoteException` so any remaining background-isolate failure
+  reports its actual privacy-safe category;
+- adds regression tests for multiple historical Health links and colliding
+  same-date Journal prompt snapshot IDs.
+
+Install the new arm64 release over the existing Android app without clearing
+data. Retry Today Retry Cloud Version and Journal Continue Processing. Both
+actions must complete, disappear from the active conflict list, and preserve
+the chosen content after app restart. Also confirm that Health content and
+unrelated Journal entries remain unchanged.
+
 ## Gates
 
 - Settings Information Architecture Product Gate:
