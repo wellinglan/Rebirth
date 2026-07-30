@@ -236,6 +236,23 @@ normally, and conflicted Journal reopen/delete show the Sync Center guidance.
 Then retry the existing Today and Journal conflicts and record the exact
 parenthesized failure reason and phase if either operation still fails.
 
+The first follow-up APK reported `applyFailed / apply` for both Today and
+Journal. This confirms that authentication, transport, pull decoding, and the
+server cursor completed, while the local apply transaction rolled back. It
+does not yet distinguish a SQLite constraint failure from an unexpected local
+state failure.
+
+The next diagnostic candidate adds only a privacy-safe local failure
+fingerprint to the existing message:
+
+- `sqlite-<extended-code>` identifies the SQLite constraint family without
+  exposing SQL, parameters, IDs, or record content;
+- `state`, `format`, or `type` identifies a non-SQL local apply category;
+- no token, payload, note, prompt answer, or database statement is displayed.
+
+Keep D11, F7, H9, and A6 open until the existing records are retested. Do not
+clear app data before capturing the new fingerprint.
+
 ## Gates
 
 - Settings Information Architecture Product Gate:

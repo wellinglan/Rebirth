@@ -353,7 +353,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('操作未完成（pullFailed / pull），本地 Today 内容已保留'),
+      find.text('操作未完成（pullFailed / pull / sqlite-2067），本地 Today 内容已保留'),
       findsOneWidget,
     );
     expect(find.text('冲突操作已完成'), findsNothing);
@@ -583,6 +583,7 @@ SyncRunResult _failedHandlerResult(SyncEntityType entityType) {
       phase: SyncRunPhase.pull,
       message: '后端返回了倒退的同步游标。',
       entityType: entityType,
+      diagnosticCode: 'sqlite-2067',
     ),
   );
 }

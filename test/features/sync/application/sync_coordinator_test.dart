@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/native.dart' show SqliteException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
@@ -614,8 +615,28 @@ void main() {
     final result = await coordinator.run(direction: SyncRunDirection.pull);
 
     expect(result.failure?.reason, SyncFailureReason.applyFailed);
+    expect(result.failure?.diagnosticCode, 'state');
     expect(cursorStore.value, 0);
     expect(cursorStore.writeCalls, 0);
+  });
+
+  test('SQLite apply failure exposes only its stable result code', () async {
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 7,
+      items: [_pulledItem(serverVersion: 7)],
+    );
+    adapter.applyError = SqliteException(
+      extendedResultCode: 2067,
+      message: 'private database detail',
+      causingStatement: 'private statement',
+      parametersToStatement: const ['private value'],
+    );
+
+    final result = await coordinator.run(direction: SyncRunDirection.pull);
+
+    expect(result.failure?.reason, SyncFailureReason.applyFailed);
+    expect(result.failure?.diagnosticCode, 'sqlite-2067');
+    expect(result.failure?.message, isNot(contains('private')));
   });
 
   test('conflict is explicit and never advances cursor', () async {

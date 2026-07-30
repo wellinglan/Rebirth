@@ -162,9 +162,15 @@ class SyncConflictDetailPage extends ConsumerWidget {
       SyncEntityType.health => '本地 Health 内容已保留',
       SyncEntityType.plan => '本地 Plan 内容已保留',
     };
-    final diagnostic = failure == null
+    final diagnosticParts = failure == null
+        ? <String>[]
+        : <String>[failure.reason.name, failure.phase.name];
+    if (failure?.diagnosticCode case final code?) {
+      diagnosticParts.add(code);
+    }
+    final diagnostic = diagnosticParts.isEmpty
         ? ''
-        : '（${failure.reason.name} / ${failure.phase.name}）';
+        : '（${diagnosticParts.join(' / ')}）';
     return '操作未完成$diagnostic，$preserved';
   }
 

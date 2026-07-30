@@ -190,12 +190,14 @@ final class SyncFailure {
     required this.phase,
     required this.message,
     this.entityType,
+    this.diagnosticCode,
   });
 
   final SyncFailureReason reason;
   final SyncRunPhase phase;
   final String message;
   final SyncEntityType? entityType;
+  final String? diagnosticCode;
 }
 
 final class SyncRunResult {

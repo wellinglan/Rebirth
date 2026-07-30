@@ -1,3 +1,4 @@
+import 'package:drift/native.dart' show SqliteException;
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
@@ -303,6 +304,7 @@ final class SyncCoordinator {
           phase: phase,
           message: _messageFor(error, phase),
           entityType: entityType,
+          diagnosticCode: _diagnosticCodeFor(error),
         );
         entityResults.add(
           progress.merge(
@@ -544,6 +546,16 @@ final class SyncCoordinator {
       return '同步已应用，但游标保存失败；下次将安全重放。';
     }
     return '同步失败，本地记录未受影响。';
+  }
+
+  static String? _diagnosticCodeFor(Object error) {
+    if (error is SqliteException) {
+      return 'sqlite-${error.extendedResultCode}';
+    }
+    if (error is StateError) return 'state';
+    if (error is FormatException) return 'format';
+    if (error is TypeError) return 'type';
+    return null;
   }
 }
 
