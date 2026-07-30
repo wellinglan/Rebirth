@@ -17,7 +17,7 @@ become manual PASS.
 | Journal Prompt System | `38_journal_prompt_system.md` |
 | Settings Information Architecture and Sync Center | `39_settings_information_architecture_and_sync_center.md` |
 | Authentication Protocol and Secure Session (67 PASS / 0 FAIL / 12 NOT EXECUTED) | `40_authentication_protocol_and_secure_session.md` |
-| Public Username/Password Login (0 PASS / 0 FAIL / 114 NOT EXECUTED) | `41_public_username_password_login.md` |
+| Public Username/Password Login (107 PASS / 0 FAIL / 7 NOT EXECUTED) | `41_public_username_password_login.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.

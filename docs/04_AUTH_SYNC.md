@@ -246,3 +246,8 @@ editing UI.
 Authentication success does not synchronize. It resolves Account Boundary,
 selects the matching local profile, and leaves all five modules under existing
 manual sync rules. See `docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`.
+
+User acceptance on 2026-07-30 recorded 107 PASS, 0 FAIL, and 7 NOT EXECUTED.
+H1-H7 remain NOT EXECUTED because no safe unbound-legacy-data fixture was
+available. Public Login Experience, Authentication Protocol, Password
+Credential Security, and Secure Client Storage are `CLOSED / ACCEPTED`.

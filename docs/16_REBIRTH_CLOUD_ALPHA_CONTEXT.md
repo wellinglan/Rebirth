@@ -843,3 +843,9 @@ The earlier Phase 0A operation remains the only remote change: effective access
 token minutes are 15, the API image digest is unchanged, and PostgreSQL was not
 restarted. Manual public-login acceptance is tracked in
 `docs/manual_tests/41_public_username_password_login.md`.
+
+On 2026-07-30, Sprint 13A.2 public-login acceptance recorded 107 PASS,
+0 FAIL, and 7 NOT EXECUTED. H1-H7 remain honest NOT EXECUTED results because
+no safe unbound-legacy-data fixture was available. The Public Login Experience,
+Authentication Protocol, Password Credential Security, and Secure Client
+Storage gates are `CLOSED / ACCEPTED`.

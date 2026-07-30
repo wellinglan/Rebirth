@@ -794,5 +794,8 @@ to public login while preserving local data.
 
 This Sprint does not add account recovery, email/SMS verification, MFA, passkeys,
 biometrics, WeChat, session management, account deletion, or automatic sync.
-Manual acceptance remains required; see
+User acceptance on 2026-07-30 recorded 107 PASS, 0 FAIL, and 7 NOT EXECUTED.
+H1-H7 remain NOT EXECUTED because no safe unbound-legacy-data fixture was
+available. The public login, authentication protocol, password credential
+security, and secure client storage gates are accepted; see
 `docs/manual_tests/41_public_username_password_login.md`.

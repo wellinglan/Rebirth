@@ -599,3 +599,8 @@ Refresh Token 只进入平台安全存储。认证仍不触发自动同步。Pas
 MFA、微信登录与绑定继续延期。Flutter schemaVersion 保持 9，API Version 保持
 1，Sync Protocol 保持 2。详见
 `docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`。
+
+2026-07-30 人工验收结果为 107 PASS / 0 FAIL / 7 NOT EXECUTED。
+H1-H7 因不存在可安全使用的未绑定旧数据环境而诚实保留为 NOT EXECUTED。
+Public Login Experience、Authentication Protocol、Password Credential
+Security 与 Secure Client Storage Gate 已 `CLOSED / ACCEPTED`。

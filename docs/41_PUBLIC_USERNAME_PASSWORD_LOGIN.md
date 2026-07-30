@@ -166,10 +166,10 @@ acceptance.
 
 ## Gates
 
-- Public Login Experience Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
-- Authentication Protocol Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
-- Password Credential Security Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
-- Secure Client Storage Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
+- Public Login Experience Gate: CLOSED / ACCEPTED
+- Authentication Protocol Gate: CLOSED / ACCEPTED
+- Password Credential Security Gate: CLOSED / ACCEPTED
+- Secure Client Storage Gate: CLOSED / ACCEPTED
 - Refresh Token Rotation Gate: CLOSED / ACCEPTED
 - Development Account Upgrade Gate: CLOSED / ACCEPTED
 - Account Boundary Isolation Gate: CLOSED / ACCEPTED
@@ -177,5 +177,6 @@ acceptance.
 - WeChat Login And Binding Gate: OPEN / DEFERRED TO SPRINT 13B
 
 The manual matrix is
-`manual_tests/41_public_username_password_login.md`. Automated results never
-convert its rows to PASS.
+`manual_tests/41_public_username_password_login.md`. User acceptance on
+2026-07-30 recorded 107 PASS, 0 FAIL, and 7 NOT EXECUTED. H1-H7 remain honest
+NOT EXECUTED results because no safe unbound-legacy-data fixture was available.

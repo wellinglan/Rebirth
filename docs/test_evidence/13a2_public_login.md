@@ -68,7 +68,12 @@ deprecation advisory. It did not fail or skip a quality job.
 
 ## Manual Gate
 
-`manual_tests/41_public_username_password_login.md` starts at 0 PASS, 0 FAIL,
-and 114 NOT EXECUTED. Public Login Experience, Authentication Protocol,
-Password Credential Security, and Secure Client Storage remain open for real
-Windows and Android acceptance.
+User acceptance on 2026-07-30 recorded 107 PASS, 0 FAIL, and 7 NOT EXECUTED
+in `manual_tests/41_public_username_password_login.md`. The retained rows are
+H1-H7 because no safe unbound-legacy-data fixture was available; automated
+coverage does not replace them.
+
+Public Login Experience, Authentication Protocol, Password Credential
+Security, and Secure Client Storage are `CLOSED / ACCEPTED`. Public Account
+Recovery remains deferred, and WeChat Login and Binding remains deferred to
+Sprint 13B.

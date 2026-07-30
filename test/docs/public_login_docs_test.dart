@@ -20,12 +20,12 @@ void main() {
     expect(build, isNot(contains('100.')));
     expect(design, contains('schemaVersion remains 9'));
     expect(design, contains('Sync Protocol remains 2'));
-    expect(
-      RegExp(r'\| [A-J]\d+ \|.*\| NOT EXECUTED \|').allMatches(manual).length,
-      114,
-    );
-    expect(manual, contains('| PASS | 0 |'));
+    final notExecutedIds = RegExp(
+      r'\| ([A-J]\d+) \|.*\| NOT EXECUTED \|',
+    ).allMatches(manual).map((match) => match.group(1)).toList();
+    expect(notExecutedIds, <String>['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7']);
+    expect(manual, contains('| PASS | 107 |'));
     expect(manual, contains('| FAIL | 0 |'));
-    expect(manual, contains('| NOT EXECUTED | 114 |'));
+    expect(manual, contains('| NOT EXECUTED | 7 |'));
   });
 }
