@@ -50,6 +50,7 @@ class AuthIdentity(Base):
     )
     created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    last_used_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
 
 class AuthCredential(Base):

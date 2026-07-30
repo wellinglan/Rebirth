@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import Settings
+from app.identity import DEV_PROVIDER, PASSWORD_PROVIDER
 from app.models import (
     AuthCredential,
     AuthIdentity,
@@ -28,11 +29,11 @@ from app.models import (
     CloudUser,
     LegacyRefreshMigration,
 )
+from app.repositories.identity_repository import IdentityRepository
 from app.security import create_access_token
+from app.services.identity_service import IdentityService
 
 
-PASSWORD_PROVIDER = "password_username"
-DEV_PROVIDER = "dev"
 PASSWORD_ALGORITHM = "argon2id"
 PASSWORD_PARAMETERS_VERSION = 1
 
@@ -192,11 +193,9 @@ def login_password_user(
     )
     now = _utc_milliseconds()
     _check_rate_limit(session, bucket, now)
-    identity = session.scalar(
-        select(AuthIdentity).where(
-            AuthIdentity.provider == PASSWORD_PROVIDER,
-            AuthIdentity.provider_subject == normalized,
-        )
+    identity = IdentityRepository(session).find_by_provider_subject(
+        PASSWORD_PROVIDER,
+        normalized,
     )
     credential = None
     if identity is not None:
@@ -255,21 +254,17 @@ def dev_login(
     if not normalized_key:
         raise AuthProtocolError("invalid_request", "The request body is invalid.", 422)
     subject = _hmac_hex(settings.auth_dev_identity_hmac_key, normalized_key)
-    identity = session.scalar(
-        select(AuthIdentity).where(
-            AuthIdentity.provider == DEV_PROVIDER,
-            AuthIdentity.provider_subject == subject,
-        )
+    identities = IdentityRepository(session)
+    identity = identities.find_by_provider_subject(
+        DEV_PROVIDER,
+        subject,
     )
     now = _utc_milliseconds()
     if identity is None:
-        legacy = session.scalar(
-            select(AuthIdentity)
-            .where(
-                AuthIdentity.provider == DEV_PROVIDER,
-                AuthIdentity.provider_subject == normalized_key,
-            )
-            .with_for_update()
+        legacy = identities.find_by_provider_subject(
+            DEV_PROVIDER,
+            normalized_key,
+            for_update=True,
         )
         if legacy is not None:
             identity = legacy
@@ -304,11 +299,9 @@ def dev_login(
                 session.flush()
             except IntegrityError:
                 session.rollback()
-                identity = session.scalar(
-                    select(AuthIdentity).where(
-                        AuthIdentity.provider == DEV_PROVIDER,
-                        AuthIdentity.provider_subject == subject,
-                    )
+                identity = identities.find_by_provider_subject(
+                    DEV_PROVIDER,
+                    subject,
                 )
                 if identity is None:
                     raise
@@ -354,11 +347,9 @@ def attach_password_identity(
             "Development account verification failed.",
             403,
         )
-    existing = session.scalar(
-        select(AuthIdentity).where(
-            AuthIdentity.user_id == user_id,
-            AuthIdentity.provider == PASSWORD_PROVIDER,
-        )
+    existing = IdentityRepository(session).find_for_user_provider(
+        user_id,
+        PASSWORD_PROVIDER,
     )
     if existing is not None:
         raise AuthProtocolError(
@@ -547,6 +538,7 @@ def _issue_new_session(
     legacy_migrated_at: int | None = None,
 ) -> IssuedTokenPair:
     absolute_expires_at = now + settings.auth_session_absolute_days * 86_400_000
+    IdentityService(session).record_used(identity, now)
     auth_session = AuthSession(
         id=str(uuid.uuid4()),
         user_id=user.id,
@@ -679,11 +671,7 @@ def _migrate_legacy_refresh(
             "refresh_token_invalid",
             "The refresh token is invalid.",
         )
-    identity = session.scalar(
-        select(AuthIdentity)
-        .where(AuthIdentity.user_id == user.id)
-        .order_by(AuthIdentity.created_at, AuthIdentity.id)
-    )
+    identity = IdentityRepository(session).first_for_user(user.id)
     if identity is None:
         raise AuthProtocolError(
             "refresh_token_invalid",

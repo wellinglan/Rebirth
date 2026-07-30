@@ -38,6 +38,10 @@ void main() {
       }
       expect(find.byKey(const ValueKey('accountSettingsTile')), findsOneWidget);
       expect(
+        find.byKey(const ValueKey('accountSecuritySettingsTile')),
+        findsOneWidget,
+      );
+      expect(
         find.byKey(const ValueKey('syncCenterSettingsTile')),
         findsOneWidget,
       );

@@ -8,6 +8,7 @@ import 'package:rebirth/core/config/app_config_provider.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/router/app_router.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
@@ -117,6 +118,32 @@ void main() {
 
     expect(find.byKey(const ValueKey('loginPage')), findsNothing);
     expect(find.byKey(const ValueKey('todayEmptyState')), findsOneWidget);
+  });
+
+  testWidgets('signed-out account cannot enter account security', (
+    tester,
+  ) async {
+    final container = ProviderContainer(
+      overrides: [
+        appAuthStateProvider.overrideWithValue(
+          const AsyncData(AppAuthState.signedOut()),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider);
+    router.go(RoutePaths.settingsAccountSecurity);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const RebirthApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('publicLoginPage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('accountSecurityPage')), findsNothing);
   });
 
   testWidgets('signed-out user can navigate between login and register', (

@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.database import get_session
 from app.models import AuthSession, CloudUser
 from app.schemas import (
+    AuthIdentitiesResponse,
+    AuthIdentitySummaryResponse,
     AuthSessionResponse,
     AuthUserResponse,
     DevLoginRequest,
@@ -18,6 +20,7 @@ from app.schemas import (
     TokenResponse,
     WeChatMobileRequest,
 )
+from app.services.identity_service import IdentityService
 from app.security import (
     AuthContext,
     optional_logout_auth_context,
@@ -164,6 +167,24 @@ def current_session(
         access_expires_at=context.access_expires_at,
         session_absolute_expires_at=auth_session.absolute_expires_at,
         user=AuthUserResponse(id=user.id, display_name=user.display_name),
+    )
+
+
+@router.get("/identities", response_model=AuthIdentitiesResponse)
+def current_identities(
+    context: AuthContext = Depends(require_auth_context),
+    session: Session = Depends(get_session),
+) -> AuthIdentitiesResponse:
+    identities = IdentityService(session).list_for_user(context.user_id)
+    return AuthIdentitiesResponse(
+        identities=[
+            AuthIdentitySummaryResponse(
+                provider=identity.provider,
+                created_at=identity.created_at,
+                last_used_at=identity.last_used_at,
+            )
+            for identity in identities
+        ]
     )
 
 

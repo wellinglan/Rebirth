@@ -23,6 +23,7 @@ import '../../features/personal_data/presentation/personal_data_overview_page.da
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/settings/presentation/account_details_page.dart';
+import '../../features/settings/presentation/account_security_page.dart';
 import '../../features/settings/presentation/developer_options_page.dart';
 import '../../features/sync/presentation/sync_center_page.dart';
 import '../../features/sync/presentation/sync_conflict_detail_page.dart';
@@ -196,6 +197,13 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
             path: 'account',
             name: RouteNames.settingsAccount,
             builder: (context, state) => const AccountDetailsPage(),
+            routes: [
+              GoRoute(
+                path: 'security',
+                name: RouteNames.settingsAccountSecurity,
+                builder: (context, state) => const AccountSecurityPage(),
+              ),
+            ],
           ),
           if (config.enableDevLogin)
             GoRoute(

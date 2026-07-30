@@ -6,6 +6,7 @@ import 'package:rebirth/core/network/api_client_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary_repository.dart';
 import 'package:rebirth/features/account/domain/auth_repository.dart';
+import 'package:rebirth/features/account/domain/identity_repository.dart';
 import 'package:rebirth/features/account/domain/legacy_ownership_verification_repository.dart';
 
 import 'account_boundary_repository_impl.dart';
@@ -14,6 +15,8 @@ import 'account_repository_impl.dart';
 import 'auth_session_manager.dart';
 import 'auth_session_store.dart';
 import 'device_info_service.dart';
+import 'identity_api_data_source.dart';
+import 'identity_repository_impl.dart';
 import 'secure_auth_session_store.dart';
 import 'legacy_ownership_verification_api_data_source.dart';
 import 'legacy_ownership_verification_repository_impl.dart';
@@ -44,6 +47,10 @@ final accountBoundaryRepositoryProvider = Provider<AccountBoundaryRepository>((
 
 final accountRemoteDataSourceProvider = Provider<AccountRemoteDataSource>(
   (ref) => AccountApiDataSource(ref.watch(apiClientProvider)),
+);
+
+final identityRemoteDataSourceProvider = Provider<IdentityRemoteDataSource>(
+  (ref) => IdentityApiDataSource(ref.watch(apiClientProvider)),
 );
 
 final authSessionManagerProvider = Provider<AuthSessionManager>((ref) {
@@ -77,6 +84,13 @@ final accountRepositoryProvider = Provider<AuthRepository>((ref) {
     deviceInfoService: ref.watch(deviceInfoServiceProvider),
     config: ref.watch(appConfigProvider),
     serverBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
+  );
+});
+
+final identityRepositoryProvider = Provider<IdentityRepository>((ref) {
+  return IdentityRepositoryImpl(
+    ref.watch(authSessionManagerProvider),
+    ref.watch(identityRemoteDataSourceProvider),
   );
 });
 

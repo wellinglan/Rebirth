@@ -101,16 +101,27 @@ class _SettingsContent extends StatelessWidget {
       children: [
         SettingsSection(
           title: '账号',
-          child: SettingsTile(
-            key: const ValueKey('accountSettingsTile'),
-            title: displayName?.isNotEmpty == true
-                ? displayName!
-                : 'Rebirth 用户',
-            subtitle:
-                '${_accountSummary(account, auth)} · '
-                '${account.deviceRegistered ? '设备已准备' : '设备待准备'}',
-            icon: Icons.account_circle_outlined,
-            onTap: () => context.push(RoutePaths.settingsAccount),
+          child: Column(
+            children: [
+              SettingsTile(
+                key: const ValueKey('accountSettingsTile'),
+                title: displayName?.isNotEmpty == true
+                    ? displayName!
+                    : 'Rebirth 用户',
+                subtitle:
+                    '${_accountSummary(account, auth)} · '
+                    '${account.deviceRegistered ? '设备已准备' : '设备待准备'}',
+                icon: Icons.account_circle_outlined,
+                onTap: () => context.push(RoutePaths.settingsAccount),
+              ),
+              SettingsTile(
+                key: const ValueKey('accountSecuritySettingsTile'),
+                title: '账号安全',
+                subtitle: '查看已绑定的登录方式',
+                icon: Icons.security_outlined,
+                onTap: () => context.push(RoutePaths.settingsAccountSecurity),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: AppLayout.sectionGap),

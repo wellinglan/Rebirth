@@ -31,6 +31,7 @@ void main() {
   test('existing route locations remain available without a date', () {
     expect(RoutePaths.todayHistory, '/today/history');
     expect(RoutePaths.journal, '/journal');
+    expect(RoutePaths.settingsAccountSecurity, '/settings/account/security');
   });
 
   test('public authentication routes contain no credential parameters', () {

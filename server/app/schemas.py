@@ -433,6 +433,16 @@ class AuthUserResponse(BaseModel):
     display_name: str | None
 
 
+class AuthIdentitySummaryResponse(BaseModel):
+    provider: str
+    created_at: int
+    last_used_at: int | None
+
+
+class AuthIdentitiesResponse(BaseModel):
+    identities: list[AuthIdentitySummaryResponse]
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
