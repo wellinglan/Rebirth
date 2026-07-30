@@ -175,7 +175,7 @@ class AccountController extends AsyncNotifier<AccountViewState> {
 
   String _messageFor(Object error) {
     if (error is ApiException) return error.message;
-    if (error is AccountAuthenticationRequiredException) return '请先开发登录';
+    if (error is AccountAuthenticationRequiredException) return '请先登录';
     if (error is ArgumentError) return '请输入有效的开发账号标识。';
     return '操作暂时无法完成，请稍后重试。';
   }

@@ -228,3 +228,21 @@ Authentication gates every existing Sync API, but does not change API Version 1,
 Sync Protocol 2, entity payloads, device ownership, cursor semantics, OCC, or the
 manual-only sync policy. See
 `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.
+
+## Sprint 13A.2 Public Auth Entry
+
+The current client no longer uses Development User Key as its normal entry.
+`/auth/login` and `/auth/register` call the existing password endpoints through
+`AppAuthController`, `PasswordAuthService`, and `AuthSessionManager`. The
+developer endpoint is a separate route available only to explicitly enabled
+Alpha/Development builds.
+
+Runtime endpoint priority remains saved developer endpoint over build fallback
+for builds that expose Developer Options. The authoritative compile-time key is
+now `REBIRTH_SERVER_ENDPOINT`; `REBIRTH_API_BASE_URL` remains only a development
+compatibility fallback. Production requires the new key and exposes no endpoint
+editing UI.
+
+Authentication success does not synchronize. It resolves Account Boundary,
+selects the matching local profile, and leaves all five modules under existing
+manual sync rules. See `docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`.

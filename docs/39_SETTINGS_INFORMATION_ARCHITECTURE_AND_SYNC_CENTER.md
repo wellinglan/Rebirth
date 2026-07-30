@@ -255,15 +255,16 @@ Manual Windows keyboard and Android release behavior remains a product gate.
 - no retry scheduler
 - no Growth or AI sync
 - no new sync entity
-- no production authentication or WeChat login
+- no Password Recovery, MFA, or WeChat login
 - no database migration
 - no Server, PostgreSQL, or Alembic change
 - no Beijing Alpha deployment
 
-Sprint 13A.1 now provides the underlying session-backed authentication protocol
-and secure client credential storage. The public registration/login experience
-remains deferred to Sprint 13A.2. Settings and the unified manual sync center keep
-the Sprint 12D information architecture and behavior described here.
+Sprint 13A.1 provides the underlying session-backed authentication protocol and
+secure client credential storage. Sprint 13A.2 adds the public registration/login
+experience while preserving this Settings and unified manual sync architecture.
+Production hides Developer Options; explicitly enabled Alpha/Development builds
+retain it as a separate technical surface.
 
 ## Gates
 

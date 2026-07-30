@@ -3,5 +3,5 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_config.dart';
 
 final appConfigProvider = Provider<AppConfig>(
-  (ref) => const AppConfig.development(),
+  (ref) => AppConfig.fromEnvironment(),
 );

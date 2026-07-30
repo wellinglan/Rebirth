@@ -3,9 +3,13 @@ import 'account_boundary.dart';
 enum AppAuthStatus {
   initializing,
   signedOut,
+  submittingLogin,
+  submittingRegister,
+  submittingDeveloperLogin,
   bindingRequired,
   authenticated,
   authenticatedOffline,
+  refreshOutcomeUnknown,
   sessionRejected,
   fatalMigrationError,
 }
@@ -21,6 +25,8 @@ final class AppAuthState {
     this.verificationReason,
     this.unboundProfileCount = 0,
     this.message,
+    this.identityProvider,
+    this.displayName,
   });
 
   const AppAuthState.initializing() : this(status: AppAuthStatus.initializing);
@@ -37,10 +43,17 @@ final class AppAuthState {
   final String? verificationReason;
   final int unboundProfileCount;
   final String? message;
+  final String? identityProvider;
+  final String? displayName;
 
   bool get canAccessBusiness =>
       status == AppAuthStatus.authenticated ||
       status == AppAuthStatus.authenticatedOffline;
+
+  bool get isSubmitting =>
+      status == AppAuthStatus.submittingLogin ||
+      status == AppAuthStatus.submittingRegister ||
+      status == AppAuthStatus.submittingDeveloperLogin;
 
   bool get isOffline => status == AppAuthStatus.authenticatedOffline;
 

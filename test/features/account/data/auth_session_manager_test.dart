@@ -52,6 +52,21 @@ void main() {
     },
   );
 
+  test('expired absolute session cannot enter offline mode', () async {
+    store.session = _persistedSession.copyWith(sessionAbsoluteExpiresAt: 999);
+    remote.healthError = const ApiException(
+      message: 'offline',
+      isNetworkError: true,
+    );
+
+    final state = await manager.initialize();
+
+    expect(state.status, AuthSessionManagerStatus.sessionRejected);
+    expect(state.session, isNull);
+    expect(store.session, isNull);
+    expect(remote.refreshCalls, 0);
+  });
+
   test('startup refresh stores a new token pair', () async {
     store.session = _persistedSession;
     remote.refreshResult = _runtimeSession;

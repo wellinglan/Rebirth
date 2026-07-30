@@ -20,9 +20,11 @@ void main() {
     await _pump(tester, enableDevLogin: true);
 
     expect(find.text('账号'), findsOneWidget);
-    expect(find.text('当前 Alpha 版本使用开发云账号。'), findsOneWidget);
+    expect(find.textContaining('Alpha 环境'), findsOneWidget);
+    expect(find.text('开发账号'), findsOneWidget);
     expect(find.text('账号模式'), findsOneWidget);
-    expect(find.text('登录状态'), findsOneWidget);
+    expect(find.text('登录方式'), findsOneWidget);
+    expect(find.text('会话状态'), findsOneWidget);
     expect(find.text('云端连接'), findsOneWidget);
     expect(find.text('当前设备'), findsOneWidget);
     expect(find.text('同步资格'), findsOneWidget);
@@ -80,6 +82,9 @@ Future<void> _pump(
       overrides: [
         appConfigProvider.overrideWithValue(
           AppConfig(
+            environment: enableDevLogin
+                ? AppEnvironment.alpha
+                : AppEnvironment.production,
             apiBaseUrl: 'http://127.0.0.1:8000',
             enableDevLogin: enableDevLogin,
             appVersionLabel: 'test',
@@ -92,6 +97,8 @@ Future<void> _pump(
             AppAuthState(
               status: AppAuthStatus.authenticated,
               syncEligibility: null,
+              identityProvider: 'dev',
+              displayName: '测试用户',
             ),
           ),
         ),

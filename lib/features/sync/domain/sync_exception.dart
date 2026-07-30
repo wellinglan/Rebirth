@@ -8,7 +8,7 @@ class SyncException implements Exception {
 }
 
 final class SyncAuthenticationRequiredException extends SyncException {
-  const SyncAuthenticationRequiredException() : super('请先开发登录');
+  const SyncAuthenticationRequiredException() : super('请先登录');
 }
 
 final class SyncDeviceRegistrationRequiredException extends SyncException {

@@ -53,6 +53,7 @@ class SettingsPage extends ConsumerWidget {
               conflictCount: syncCenter.value?.totalConflictCount ?? 0,
               enabledPromptCount: promptConfiguration.value?.activePromptCount,
               enableDeveloperOptions: config.enableDevLogin,
+              isAlpha: config.isAlpha,
               appVersionLabel: config.appVersionLabel,
             ),
           ),
@@ -77,6 +78,7 @@ class _SettingsContent extends StatelessWidget {
     required this.conflictCount,
     required this.enabledPromptCount,
     required this.enableDeveloperOptions,
+    required this.isAlpha,
     required this.appVersionLabel,
   });
 
@@ -87,6 +89,7 @@ class _SettingsContent extends StatelessWidget {
   final int conflictCount;
   final int? enabledPromptCount;
   final bool enableDeveloperOptions;
+  final bool isAlpha;
   final String appVersionLabel;
 
   @override
@@ -183,7 +186,7 @@ class _SettingsContent extends StatelessWidget {
           title: '关于 Rebirth',
           child: SettingsTile(
             key: const ValueKey('aboutRebirthSettingsTile'),
-            title: 'Rebirth Alpha',
+            title: isAlpha ? 'Rebirth Alpha' : 'Rebirth',
             subtitle: '版本 $appVersionLabel · 帮助你持续成为更好的自己',
             icon: Icons.info_outline,
           ),
@@ -224,6 +227,7 @@ String _accountSummary(AccountStatus account, AppAuthState? auth) {
     AppAuthStatus.authenticated => '云端已连接',
     AppAuthStatus.authenticatedOffline => '离线可用',
     AppAuthStatus.bindingRequired => '需要确认本地数据归属',
+    AppAuthStatus.refreshOutcomeUnknown => '登录状态需要重新确认',
     AppAuthStatus.sessionRejected => '会话已失效',
     _ when account.mode == AccountMode.localOnly => '本地模式',
     _ => '当前未登录',

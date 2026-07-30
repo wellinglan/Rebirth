@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app/rebirth_app.dart';
+import 'core/config/app_config_provider.dart';
 import 'core/config/server_endpoint_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final container = ProviderContainer();
+  container.read(appConfigProvider);
   await container.read(serverEndpointControllerProvider.future);
 
   runApp(

@@ -1,8 +1,8 @@
-import 'package:rebirth/core/network/api_client.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 
 import 'auth_session_manager.dart';
-import 'dto/auth_dto.dart';
+import 'password_auth_remote_data_source.dart';
+import 'secure_auth_session_store.dart';
 
 abstract interface class PasswordAuthService {
   Future<AuthSession> register({
@@ -26,13 +26,13 @@ abstract interface class PasswordAuthService {
 
 final class PasswordAuthServiceImpl implements PasswordAuthService {
   const PasswordAuthServiceImpl({
-    required this.apiClient,
+    required this.remoteDataSource,
     required this.sessionManager,
     required this.serverBaseUrl,
     required this.loadClientMetadata,
   });
 
-  final ApiClient apiClient;
+  final PasswordAuthRemoteDataSource remoteDataSource;
   final AuthSessionManager sessionManager;
   final String serverBaseUrl;
   final Future<Map<String, Object?>> Function() loadClientMetadata;
@@ -44,10 +44,12 @@ final class PasswordAuthServiceImpl implements PasswordAuthService {
     String? displayName,
   }) {
     return _createSession(
-      '/auth/register',
-      username: username,
-      password: password,
-      displayName: displayName,
+      (metadata) => remoteDataSource.register(
+        username: username,
+        password: password,
+        displayName: displayName,
+        clientMetadata: metadata,
+      ),
     );
   }
 
@@ -57,9 +59,11 @@ final class PasswordAuthServiceImpl implements PasswordAuthService {
     required String password,
   }) {
     return _createSession(
-      '/auth/login',
-      username: username,
-      password: password,
+      (metadata) => remoteDataSource.login(
+        username: username,
+        password: password,
+        clientMetadata: metadata,
+      ),
     );
   }
 
@@ -70,45 +74,40 @@ final class PasswordAuthServiceImpl implements PasswordAuthService {
     required String password,
     String? displayName,
   }) async {
-    final body = <String, Object?>{
-      'dev_user_key': devUserKey,
-      'username': username,
-      'password': password,
-    };
-    if (displayName != null) body['display_name'] = displayName;
     await sessionManager.runAuthorized(
-      (accessToken) => apiClient.postJson(
-        '/auth/identities/password/attach',
+      (accessToken) => remoteDataSource.attachPasswordIdentity(
+        devUserKey: devUserKey,
+        username: username,
+        password: password,
+        displayName: displayName,
         accessToken: accessToken,
-        timeout: const Duration(seconds: 8),
-        body: body,
       ),
       canReplay: false,
     );
   }
 
   Future<AuthSession> _createSession(
-    String path, {
-    required String username,
-    required String password,
-    String? displayName,
-  }) async {
+    Future<AuthSession> Function(Map<String, Object?> metadata) request,
+  ) async {
     final metadata = await loadClientMetadata();
-    final body = <String, Object?>{
-      'username': username,
-      'password': password,
-      ...metadata,
-    };
-    if (displayName != null) body['display_name'] = displayName;
-    final json = await apiClient.postJson(
-      path,
-      timeout: const Duration(seconds: 8),
-      body: body,
-    );
-    final session = AuthSessionDto.fromJson(
-      json,
-    ).toDomain().copyWith(serverBaseUrl: serverBaseUrl);
-    await sessionManager.acceptLogin(session);
+    final session = (await request(
+      metadata,
+    )).copyWith(serverBaseUrl: serverBaseUrl);
+    try {
+      await sessionManager.acceptLogin(session);
+    } on AuthSessionStorageException {
+      await _revokeUnpersistedSession(session);
+      rethrow;
+    }
     return session;
+  }
+
+  Future<void> _revokeUnpersistedSession(AuthSession session) async {
+    try {
+      await remoteDataSource.revokeSession(session);
+    } catch (_) {
+      // The local session remains unusable even if remote revocation is unknown.
+    }
+    await sessionManager.discardUnpersistedLogin();
   }
 }

@@ -2,10 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/app_config.dart';
+import '../config/app_config_provider.dart';
 import '../../features/account/domain/app_auth_state.dart';
 import '../../features/account/presentation/app_auth_controller.dart';
 import '../../features/account/presentation/auth_gate_status_pages.dart';
+import '../../features/account/presentation/developer_login_page.dart';
 import '../../features/account/presentation/login_page.dart';
+import '../../features/account/presentation/register_page.dart';
 import '../../features/ai_coach/presentation/ai_coach_page.dart';
 import '../../features/ai_coach/presentation/ai_daily_insight_page.dart';
 import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
@@ -29,20 +33,21 @@ import '../app/home_shell.dart';
 import 'route_names.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final config = ref.watch(appConfigProvider);
   final refresh = _AuthRouterRefresh(ref.read(appAuthStateProvider));
   ref.listen<AsyncValue<AppAuthState>>(
     appAuthStateProvider,
     (_, next) => refresh.update(next),
   );
   ref.onDispose(refresh.dispose);
-  return _createAppRouter(refresh);
+  return _createAppRouter(refresh, config);
 });
 
-GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
+GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
   return GoRouter(
     initialLocation: RoutePaths.today,
     refreshListenable: refresh,
-    redirect: (context, state) => _authRedirect(refresh.auth, state),
+    redirect: (context, state) => _authRedirect(refresh.auth, state, config),
     routes: [
       GoRoute(
         path: RoutePaths.authStartup,
@@ -52,8 +57,19 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
       GoRoute(
         path: RoutePaths.login,
         name: RouteNames.login,
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) => const PublicLoginPage(),
       ),
+      GoRoute(
+        path: RoutePaths.register,
+        name: RouteNames.register,
+        builder: (context, state) => const PublicRegisterPage(),
+      ),
+      if (config.enableDevLogin)
+        GoRoute(
+          path: RoutePaths.developerLogin,
+          name: RouteNames.developerLogin,
+          builder: (context, state) => const DeveloperLoginPage(),
+        ),
       GoRoute(
         path: RoutePaths.accountBindingRequired,
         name: RouteNames.accountBindingRequired,
@@ -181,11 +197,12 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
             name: RouteNames.settingsAccount,
             builder: (context, state) => const AccountDetailsPage(),
           ),
-          GoRoute(
-            path: 'developer-options',
-            name: RouteNames.settingsDeveloperOptions,
-            builder: (context, state) => const DeveloperOptionsPage(),
-          ),
+          if (config.enableDevLogin)
+            GoRoute(
+              path: 'developer-options',
+              name: RouteNames.settingsDeveloperOptions,
+              builder: (context, state) => const DeveloperOptionsPage(),
+            ),
           GoRoute(
             path: 'sync-center',
             name: RouteNames.syncCenter,
@@ -218,16 +235,34 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
   );
 }
 
-String? _authRedirect(AsyncValue<AppAuthState> auth, GoRouterState state) {
+String? _authRedirect(
+  AsyncValue<AppAuthState> auth,
+  GoRouterState state,
+  AppConfig config,
+) {
   final currentPath = state.uri.path;
+  final devRouteDenied =
+      !config.enableDevLogin &&
+      (currentPath == RoutePaths.developerLogin ||
+          currentPath == RoutePaths.settingsDeveloperOptions);
+  if (devRouteDenied) {
+    return auth.value?.canAccessBusiness == true
+        ? RoutePaths.settings
+        : RoutePaths.login;
+  }
   final target = auth.when(
     loading: () => RoutePaths.authStartup,
     error: (_, _) => RoutePaths.fatalMigrationError,
     data: (value) => switch (value.status) {
       AppAuthStatus.initializing => RoutePaths.authStartup,
-      AppAuthStatus.signedOut => RoutePaths.login,
+      AppAuthStatus.signedOut ||
+      AppAuthStatus.submittingLogin ||
+      AppAuthStatus.submittingRegister ||
+      AppAuthStatus.submittingDeveloperLogin ||
+      AppAuthStatus.sessionRejected ||
+      AppAuthStatus.refreshOutcomeUnknown =>
+        _isPublicAuthPath(currentPath, config) ? null : RoutePaths.login,
       AppAuthStatus.bindingRequired => RoutePaths.accountBindingRequired,
-      AppAuthStatus.sessionRejected => RoutePaths.sessionRejected,
       AppAuthStatus.fatalMigrationError => RoutePaths.fatalMigrationError,
       AppAuthStatus.authenticated || AppAuthStatus.authenticatedOffline =>
         _isAuthGatePath(currentPath) ? RoutePaths.today : null,
@@ -239,9 +274,17 @@ String? _authRedirect(AsyncValue<AppAuthState> auth, GoRouterState state) {
 bool _isAuthGatePath(String path) {
   return path == RoutePaths.authStartup ||
       path == RoutePaths.login ||
+      path == RoutePaths.register ||
+      path == RoutePaths.developerLogin ||
       path == RoutePaths.accountBindingRequired ||
       path == RoutePaths.sessionRejected ||
       path == RoutePaths.fatalMigrationError;
+}
+
+bool _isPublicAuthPath(String path, AppConfig config) {
+  return path == RoutePaths.login ||
+      path == RoutePaths.register ||
+      (config.enableDevLogin && path == RoutePaths.developerLogin);
 }
 
 final class _AuthRouterRefresh extends ChangeNotifier {

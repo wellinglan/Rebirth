@@ -222,3 +222,36 @@ User acceptance on 2026-07-30 recorded 67 PASS, 0 FAIL, and 12 NOT EXECUTED.
 The retained rows are A8, C6-C8, and F1-F8. They remain honest capability or
 fixture limitations and are not converted from automated coverage. See
 `docs/manual_tests/40_authentication_protocol_and_secure_session.md`.
+
+## Sprint 13A.2 Public Client Layer
+
+The protocol is now exposed through public Material 3 login and registration
+pages. `AppAuthController` owns password login/register single-flight and sends
+successful sessions through the existing Account Boundary. Passwords remain in
+ephemeral Widget controllers and never enter auth state, storage, logs, routes,
+or evidence.
+
+Production compile-time configuration requires a Server endpoint and forcibly
+disables Developer Login at config, router, controller, and Settings boundaries.
+Alpha may expose a separate low-priority developer page only when explicitly
+enabled. Public pages contain no endpoint or Dev Key.
+
+An absolute-expired session cannot enter offline mode. Session rejection and
+unknown refresh outcomes clear untrusted cloud credentials, deactivate the
+active account scope, preserve business data, and return to public login with
+sanitized messages.
+
+The protocol, API routes, refresh rotation, Server schema, and Alembic revision
+are unchanged by 13A.2. See `docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`.
+
+Updated gates:
+
+- Public Login Experience Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
+- Authentication Protocol Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
+- Password Credential Security Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
+- Secure Client Storage Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
+- Refresh Token Rotation Gate: CLOSED / ACCEPTED
+- Development Account Upgrade Gate: CLOSED / ACCEPTED
+- Account Boundary Isolation Gate: CLOSED / ACCEPTED
+- Public Account Recovery Gate: OPEN / DEFERRED
+- WeChat Login And Binding Gate: OPEN / DEFERRED TO SPRINT 13B

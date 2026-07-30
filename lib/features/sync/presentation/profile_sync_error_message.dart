@@ -2,7 +2,7 @@ import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
 
 String profileSyncErrorMessage(Object error) {
-  if (error is SyncAuthenticationRequiredException) return '请先开发登录';
+  if (error is SyncAuthenticationRequiredException) return '请先登录';
   if (error is SyncDeviceRegistrationRequiredException) {
     return '请先注册当前设备';
   }

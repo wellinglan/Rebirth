@@ -19,7 +19,8 @@ class AccountDetailsPage extends ConsumerWidget {
     final settings = ref.watch(settingsControllerProvider);
     final account = ref.watch(accountControllerProvider);
     final auth = ref.watch(appAuthStateProvider);
-    final enableDevLogin = ref.watch(appConfigProvider).enableDevLogin;
+    final config = ref.watch(appConfigProvider);
+    final enableDevLogin = config.enableDevLogin;
     return Scaffold(
       key: const ValueKey('accountDetailsPage'),
       appBar: AppBar(title: const Text('账号')),
@@ -49,7 +50,7 @@ class AccountDetailsPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '当前 Alpha 版本使用开发云账号。',
+                    _accountEnvironmentDescription(authValue, config.isAlpha),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -63,7 +64,12 @@ class AccountDetailsPage extends ConsumerWidget {
                         ),
                         _AccountRow(
                           icon: Icons.login_outlined,
-                          title: '登录状态',
+                          title: '登录方式',
+                          value: _loginMethodLabel(authValue),
+                        ),
+                        _AccountRow(
+                          icon: Icons.verified_user_outlined,
+                          title: '会话状态',
                           value: _authStatusLabel(authValue),
                         ),
                         _AccountRow(
@@ -222,3 +228,18 @@ String _authStatusLabel(AppAuthState? state) => switch (state?.status) {
   AppAuthStatus.signedOut => '未登录',
   _ => '正在确认',
 };
+
+String _loginMethodLabel(AppAuthState? state) =>
+    switch (state?.identityProvider) {
+      'password_username' => '用户名密码登录',
+      'dev' => '开发账号',
+      _ => '正在确认',
+    };
+
+String _accountEnvironmentDescription(AppAuthState? state, bool isAlpha) {
+  final displayName = state?.displayName?.trim();
+  final prefix = displayName?.isNotEmpty == true
+      ? '当前登录：$displayName'
+      : '当前账号已安全连接';
+  return isAlpha ? '$prefix · Alpha 环境' : prefix;
+}

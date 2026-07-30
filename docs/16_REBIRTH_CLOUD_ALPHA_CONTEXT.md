@@ -824,3 +824,22 @@ and aggregate business-data counts were unchanged. The API startup hook invoked
 `alembic upgrade head` as a no-op; revision `20260730_0003` did not change.
 Health and all authentication routes passed. See
 `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.
+
+## Sprint 13A.2 Public Login Client
+
+The Alpha client now uses public username/password login and registration as the
+primary entry. The Alpha badge and a separate low-priority Developer Login link
+appear only when `REBIRTH_ENV=alpha` and
+`REBIRTH_ENABLE_DEV_LOGIN=true`. Public pages never show the private Alpha
+endpoint or Development User Key.
+
+Production and Alpha client builds must pass `REBIRTH_SERVER_ENDPOINT` at build
+time. No real endpoint is stored in Git documentation. Sprint 13A.2 changes only
+Flutter client code, tests, CI client build parameters, and documentation. It
+does not redeploy the Beijing API, publish a new Server image, restart
+PostgreSQL, modify Alembic, or change business data.
+
+The earlier Phase 0A operation remains the only remote change: effective access
+token minutes are 15, the API image digest is unchanged, and PostgreSQL was not
+restarted. Manual public-login acceptance is tracked in
+`docs/manual_tests/41_public_username_password_login.md`.

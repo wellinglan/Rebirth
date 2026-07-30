@@ -54,6 +54,11 @@ final class AuthSessionManager {
         );
         return _state;
       }
+      if (session.sessionAbsoluteExpiresAt > 0 &&
+          session.sessionAbsoluteExpiresAt <= nowMilliseconds()) {
+        await _rejectSession();
+        return _state;
+      }
       if (_hasUsableAccessToken(session)) {
         _state = AuthSessionManagerState(
           status: AuthSessionManagerStatus.authenticated,
@@ -107,6 +112,17 @@ final class AuthSessionManager {
     _state = AuthSessionManagerState(
       status: AuthSessionManagerStatus.authenticated,
       session: bound,
+    );
+  }
+
+  Future<void> discardUnpersistedLogin() async {
+    try {
+      await sessionStore.clear();
+    } catch (_) {
+      // The failed secure-store write must not leave a runtime session active.
+    }
+    _state = const AuthSessionManagerState(
+      status: AuthSessionManagerStatus.signedOut,
     );
   }
 

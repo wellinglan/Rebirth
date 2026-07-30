@@ -3,6 +3,8 @@ import 'package:rebirth/core/network/api_client.dart';
 import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
 import 'package:rebirth/features/account/data/password_auth_service.dart';
+import 'package:rebirth/features/account/data/password_auth_remote_data_source.dart';
+import 'package:rebirth/features/account/data/secure_auth_session_store.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 
@@ -20,7 +22,7 @@ void main() {
     );
     api = _RecordingApiClient();
     service = PasswordAuthServiceImpl(
-      apiClient: api,
+      remoteDataSource: PasswordAuthApiDataSource(api),
       sessionManager: manager,
       serverBaseUrl: 'https://api.example',
       loadClientMetadata: () async => {
@@ -44,7 +46,7 @@ void main() {
       expect(api.lastBody?['password'], '  exact password  ');
       expect(api.lastBody?['client_installation_id'], 'install-1');
       expect(store.session?.refreshToken, 'refresh-token');
-    expect(store.session?.serverBaseUrl, 'http://127.0.0.1:8000');
+      expect(store.session?.serverBaseUrl, 'http://127.0.0.1:8000');
     },
   );
 
@@ -76,6 +78,29 @@ void main() {
       expect(store.session?.identityProvider, 'dev');
     },
   );
+
+  test('secure-store failure revokes the new server session', () async {
+    final failingManager = AuthSessionManager.forTesting(
+      sessionStore: _FailingSessionStore(),
+    );
+    final failingService = PasswordAuthServiceImpl(
+      remoteDataSource: PasswordAuthApiDataSource(api),
+      sessionManager: failingManager,
+      serverBaseUrl: 'https://api.example',
+      loadClientMetadata: () async => const {},
+    );
+
+    await expectLater(
+      failingService.login(
+        username: 'example.user',
+        password: 'password-is-long-enough',
+      ),
+      throwsA(isA<AuthSessionStorageException>()),
+    );
+
+    expect(api.paths, ['/auth/login', '/auth/logout']);
+    expect(failingManager.state.session, isNull);
+  });
 }
 
 const _session = AuthSession(
@@ -102,7 +127,21 @@ final class _MemorySessionStore implements AuthSessionStore {
   Future<void> save(AuthSession session) async => this.session = session;
 }
 
+final class _FailingSessionStore implements AuthSessionStore {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<AuthSession?> read() async => null;
+
+  @override
+  Future<void> save(AuthSession session) {
+    throw const AuthSessionStorageException('private platform detail');
+  }
+}
+
 final class _RecordingApiClient implements ApiClient {
+  final List<String> paths = [];
   String? lastPath;
   String? lastAccessToken;
   Map<String, Object?>? lastBody;
@@ -123,6 +162,7 @@ final class _RecordingApiClient implements ApiClient {
     String? accessToken,
     Duration? timeout,
   }) async {
+    paths.add(path);
     lastPath = path;
     lastAccessToken = accessToken;
     lastBody = body;

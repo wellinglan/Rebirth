@@ -198,7 +198,7 @@ final class SyncCoordinator {
       firstFailure = const SyncFailure(
         reason: SyncFailureReason.authenticationRequired,
         phase: SyncRunPhase.sessionCheck,
-        message: '请先完成开发登录。',
+        message: '请先完成登录。',
       );
       return finish();
     }
@@ -207,7 +207,7 @@ final class SyncCoordinator {
       firstFailure = const SyncFailure(
         reason: SyncFailureReason.authenticationRequired,
         phase: SyncRunPhase.sessionCheck,
-        message: '请先完成开发登录。',
+        message: '请先完成登录。',
       );
       return finish();
     }
@@ -377,10 +377,8 @@ final class SyncCoordinator {
               .toList(growable: false),
         );
         final response = await sessionManager.runAuthorized(
-          (accessToken) => remoteDataSource.push(
-            request,
-            accessToken: accessToken,
-          ),
+          (accessToken) =>
+              remoteDataSource.push(request, accessToken: accessToken),
         );
         phases.add(SyncRunPhase.acknowledgePush);
         final acknowledged = await adapter.acknowledgePush(
@@ -429,10 +427,8 @@ final class SyncCoordinator {
         tables: [adapter.entityType.wireName],
       );
       final response = await sessionManager.runAuthorized(
-        (accessToken) => remoteDataSource.pull(
-          request,
-          accessToken: accessToken,
-        ),
+        (accessToken) =>
+            remoteDataSource.pull(request, accessToken: accessToken),
       );
       if (pullMode == SyncPullMode.incremental &&
           response.serverVersion < cursor.serverVersion) {

@@ -1,5 +1,9 @@
 # Rebirth Android APK 构建说明
 
+> Sprint 13A.2 起，Alpha 与 Production 必须使用明确的构建环境参数。
+> 权威命令见 `rebirth_client_environment_build_guide.md`；示例中的
+> `<endpoint>` 只能在本地替换，不得把真实地址提交到仓库。
+
 > 适用项目：Rebirth  
 > 适用平台：Windows 开发机  
 > 目标产物：Android Release APK  

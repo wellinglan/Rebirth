@@ -33,6 +33,19 @@ void main() {
     expect(RoutePaths.journal, '/journal');
   });
 
+  test('public authentication routes contain no credential parameters', () {
+    expect(RoutePaths.login, '/auth/login');
+    expect(RoutePaths.register, '/auth/register');
+    expect(RoutePaths.developerLogin, '/auth/developer');
+    for (final path in [
+      RoutePaths.login,
+      RoutePaths.register,
+      RoutePaths.developerLogin,
+    ]) {
+      expect(Uri.parse(path).query, isEmpty);
+    }
+  });
+
   test('Daily refresh route preserves sorted original scopes', () {
     final location = RoutePaths.aiCoachDaily(
       '2026-07-16',

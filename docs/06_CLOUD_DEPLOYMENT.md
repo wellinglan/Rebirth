@@ -1,5 +1,11 @@
 # Rebirth Cloud Deployment Foundation
 
+> Client builds now use `REBIRTH_ENV`, `REBIRTH_SERVER_ENDPOINT`, and
+> `REBIRTH_ENABLE_DEV_LOGIN`. See
+> `release/rebirth_client_environment_build_guide.md`. The older
+> `REBIRTH_API_BASE_URL` key is retained only as a development compatibility
+> fallback and must not be used for Production/Alpha release evidence.
+
 > Status: Sprint 6E development foundation, not a production deployment guide
 
 ## One Contract, Multiple Environments

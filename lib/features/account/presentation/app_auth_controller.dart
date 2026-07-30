@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rebirth/core/config/app_config_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_session_manager_state.dart';
+import 'package:rebirth/features/account/domain/public_auth_input.dart';
 
 import 'account_scoped_provider_invalidator.dart';
+import 'auth_presentation_error_mapper.dart';
 
 final appAuthControllerProvider =
     AsyncNotifierProvider<AppAuthController, AppAuthState>(
@@ -18,6 +21,7 @@ final appAuthStateProvider = Provider<AsyncValue<AppAuthState>>(
 
 class AppAuthController extends AsyncNotifier<AppAuthState> {
   bool _ownershipMutationInProgress = false;
+  bool _authenticationInProgress = false;
 
   @override
   Future<AppAuthState> build() => _restore();
@@ -27,15 +31,23 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
       final managerState = await ref
           .read(authSessionManagerProvider)
           .initialize();
-      if (managerState.status == AuthSessionManagerStatus.sessionRejected ||
-          managerState.status ==
-              AuthSessionManagerStatus.refreshOutcomeUnknown) {
+      if (managerState.status == AuthSessionManagerStatus.sessionRejected) {
         await ref
             .read(accountBoundaryRepositoryProvider)
             .deactivateAllProfiles();
         return const AppAuthState(
           status: AppAuthStatus.sessionRejected,
-          message: '云端会话需要重新验证，本地数据仍然保留。',
+          message: '登录状态已失效，请重新登录。',
+        );
+      }
+      if (managerState.status ==
+          AuthSessionManagerStatus.refreshOutcomeUnknown) {
+        await ref
+            .read(accountBoundaryRepositoryProvider)
+            .deactivateAllProfiles();
+        return const AppAuthState(
+          status: AppAuthStatus.refreshOutcomeUnknown,
+          message: '登录状态无法确认，请重新登录。',
         );
       }
       final session = managerState.session;
@@ -58,7 +70,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
         );
       }
       final online =
-          managerState.status != AuthSessionManagerStatus.authenticatedOffline &&
+          managerState.status !=
+              AuthSessionManagerStatus.authenticatedOffline &&
           await _backendIsReachable();
       return AppAuthState(
         status: online
@@ -70,13 +83,17 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
         syncEligibility: resolution.syncEligibility,
         verificationStatus: resolution.verificationStatus,
         verificationReason: resolution.verificationReason,
+        identityProvider: session.identityProvider,
+        displayName: session.user.displayName,
       );
     } on AccountSessionRejectedException catch (error) {
+      await ref.read(accountBoundaryRepositoryProvider).deactivateAllProfiles();
       return AppAuthState(
         status: AppAuthStatus.sessionRejected,
         message: error.message,
       );
     } on AccountScopeMismatchException catch (error) {
+      await ref.read(accountBoundaryRepositoryProvider).deactivateAllProfiles();
       return AppAuthState(
         status: AppAuthStatus.sessionRejected,
         message: error.message,
@@ -90,8 +107,15 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
   }
 
   Future<bool> devLogin(String devUserKey) async {
-    if (state.isLoading) return false;
-    state = const AsyncLoading<AppAuthState>();
+    if (!ref.read(appConfigProvider).enableDevLogin ||
+        _authenticationInProgress ||
+        state.isLoading) {
+      return false;
+    }
+    _authenticationInProgress = true;
+    state = const AsyncData(
+      AppAuthState(status: AppAuthStatus.submittingDeveloperLogin),
+    );
     try {
       final session = await ref
           .read(accountRepositoryProvider)
@@ -121,6 +145,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
           syncEligibility: resolution.syncEligibility,
           verificationStatus: resolution.verificationStatus,
           verificationReason: resolution.verificationReason,
+          identityProvider: session.identityProvider,
+          displayName: session.user.displayName,
         ),
       );
       return true;
@@ -130,6 +156,101 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
       invalidateAccountScopedProviders(ref);
       state = AsyncData(AppAuthState.signedOut(message: _messageFor(error)));
       return false;
+    } finally {
+      _authenticationInProgress = false;
+    }
+  }
+
+  Future<bool> loginWithPassword({
+    required String username,
+    required String password,
+  }) {
+    return _authenticateWithPassword(
+      status: AppAuthStatus.submittingLogin,
+      operation: () => ref
+          .read(passwordAuthServiceProvider)
+          .login(
+            username: PublicAuthInput.normalizeUsername(username),
+            password: password,
+          ),
+    );
+  }
+
+  Future<bool> registerWithPassword({
+    required String username,
+    required String password,
+    String? displayName,
+  }) {
+    return _authenticateWithPassword(
+      status: AppAuthStatus.submittingRegister,
+      operation: () => ref
+          .read(passwordAuthServiceProvider)
+          .register(
+            username: PublicAuthInput.normalizeUsername(username),
+            password: password,
+            displayName: displayName,
+          ),
+    );
+  }
+
+  Future<bool> _authenticateWithPassword({
+    required AppAuthStatus status,
+    required Future<AuthSession> Function() operation,
+  }) async {
+    if (_authenticationInProgress || state.isLoading) return false;
+    _authenticationInProgress = true;
+    state = AsyncData(AppAuthState(status: status));
+    AuthSession? session;
+    try {
+      session = await operation();
+      final resolution = await ref
+          .read(accountBoundaryRepositoryProvider)
+          .resolveAndActivate(session);
+      invalidateAccountScopedProviders(ref);
+      if (!resolution.isActivated) {
+        state = AsyncData(
+          AppAuthState(
+            status: AppAuthStatus.bindingRequired,
+            cloudUserId: session.user.id,
+            accountScope: resolution.accountScope,
+            unboundProfileCount: resolution.unboundProfileCount,
+            identityProvider: session.identityProvider,
+            displayName: session.user.displayName,
+            message: '检测到旧本地数据。请明确选择其归属，系统不会自动绑定或同步。',
+          ),
+        );
+        return true;
+      }
+      state = AsyncData(
+        AppAuthState(
+          status: AppAuthStatus.authenticated,
+          localUserId: resolution.localUserId,
+          cloudUserId: session.user.id,
+          accountScope: resolution.accountScope,
+          syncEligibility: resolution.syncEligibility,
+          verificationStatus: resolution.verificationStatus,
+          verificationReason: resolution.verificationReason,
+          identityProvider: session.identityProvider,
+          displayName: session.user.displayName,
+        ),
+      );
+      return true;
+    } catch (error) {
+      if (session != null) {
+        await ref.read(authSessionManagerProvider).logout();
+        await ref
+            .read(accountBoundaryRepositoryProvider)
+            .deactivateAllProfiles();
+        invalidateAccountScopedProviders(ref);
+      }
+      state = AsyncData(
+        AppAuthState.signedOut(
+          message: AuthPresentationErrorMapper.messageFor(error),
+        ),
+      );
+      return false;
+    } finally {
+      _authenticationInProgress = false;
     }
   }
 
@@ -191,6 +312,8 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
           syncEligibility: resolution.syncEligibility,
           verificationStatus: resolution.verificationStatus,
           verificationReason: resolution.verificationReason,
+          identityProvider: session.identityProvider,
+          displayName: session.user.displayName,
         ),
       );
     } finally {
@@ -243,6 +366,6 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
     if (error is ArgumentError) return '请输入有效的开发账号标识。';
     if (error is AccountSessionRejectedException) return error.message;
     if (error is AccountScopeMismatchException) return error.message;
-    return '登录失败，请检查服务器连接和账号标识。';
+    return AuthPresentationErrorMapper.messageFor(error);
   }
 }

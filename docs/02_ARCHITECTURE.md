@@ -835,3 +835,36 @@ definitive session rejection. The access token is memory-only. Sync adapters and
 repositories remain unchanged below this authentication boundary.
 
 See `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.
+
+## 23. Public Authentication Composition
+
+`AppConfig.fromEnvironment()` is the normal composition root for production,
+alpha, and development builds. Production requires a compile-time Server
+endpoint and overrides every Dev Login request to false. Tests inject
+`AppConfig.test()` and fake stores/services without platform environment or
+network access.
+
+The presentation/application flow is:
+
+```text
+PublicLoginPage / PublicRegisterPage
+  -> AppAuthController
+  -> PasswordAuthService
+  -> AuthSessionManager
+  -> ApiClient
+```
+
+Presentation owns only ephemeral field controllers. Application state contains
+no password or token. `AuthSessionManager` retains exclusive ownership of
+runtime access credentials and secure refresh persistence. After login or
+registration, `AppAuthController` invokes the existing Account Boundary and
+the shared account-scoped provider invalidator.
+
+GoRouter treats login, registration, optional developer login, and bootstrap as
+public. Every business, Settings, Sync, Conflict, Profile, Journal Prompt, and
+Personal Data route remains protected. Production does not register developer
+routes. Session rejection and unknown refresh results deactivate the active
+scope and resolve to public login without rendering the old business shell.
+
+No database or Server architecture changed. See
+`docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`.

@@ -2,30 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/config/app_config_provider.dart';
-import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/domain/public_auth_input.dart';
 
 import 'app_auth_controller.dart';
 
-class PublicLoginPage extends ConsumerStatefulWidget {
-  const PublicLoginPage({super.key});
+class PublicRegisterPage extends ConsumerStatefulWidget {
+  const PublicRegisterPage({super.key});
 
   @override
-  ConsumerState<PublicLoginPage> createState() => _PublicLoginPageState();
+  ConsumerState<PublicRegisterPage> createState() => _PublicRegisterPageState();
 }
 
-class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
+class _PublicRegisterPageState extends ConsumerState<PublicRegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
+  final _displayNameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmationController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
     _usernameController.dispose();
+    _displayNameController.dispose();
     _passwordController.dispose();
+    _confirmationController.dispose();
     super.dispose();
   }
 
@@ -33,12 +36,12 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
   Widget build(BuildContext context) {
     final config = ref.watch(appConfigProvider);
     final auth = ref.watch(appAuthStateProvider).value;
-    final isSubmitting = auth?.status == AppAuthStatus.submittingLogin;
+    final isSubmitting = auth?.status == AppAuthStatus.submittingRegister;
     return Scaffold(
-      key: const ValueKey('loginPage'),
+      key: const ValueKey('publicRegisterPage'),
+      appBar: AppBar(title: const Text('创建账号')),
       body: SafeArea(
         child: Center(
-          key: const ValueKey('publicLoginPage'),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: ConstrainedBox(
@@ -50,28 +53,21 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Rebirth',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.displaySmall,
+                        '加入 Rebirth',
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        '登录你的账号，继续使用独立的本地数据空间',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      const Text('注册成功后将直接进入你的独立本地数据空间。'),
                       if (config.isAlpha) ...[
                         const SizedBox(height: AppSpacing.sm),
-                        const Center(
-                          child: Chip(
-                            key: ValueKey('alphaEnvironmentBadge'),
-                            label: Text('Alpha 环境'),
-                          ),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Chip(label: Text('Alpha 环境')),
                         ),
                       ],
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.lg),
                       TextFormField(
-                        key: const ValueKey('loginUsernameField'),
+                        key: const ValueKey('registerUsernameField'),
                         controller: _usernameController,
                         enabled: !isSubmitting,
                         autofocus: true,
@@ -79,10 +75,11 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
                         textCapitalization: TextCapitalization.none,
                         autocorrect: false,
                         enableSuggestions: false,
-                        autofillHints: const [AutofillHints.username],
+                        autofillHints: const [AutofillHints.newUsername],
                         maxLength: PublicAuthInput.usernameMaxLength,
                         decoration: const InputDecoration(
                           labelText: '用户名',
+                          helperText: '4–64 位，可使用字母、数字、点、下划线或连字符',
                           border: OutlineInputBorder(),
                         ),
                         textInputAction: TextInputAction.next,
@@ -90,23 +87,37 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       TextFormField(
-                        key: const ValueKey('loginPasswordField'),
+                        key: const ValueKey('registerDisplayNameField'),
+                        controller: _displayNameController,
+                        enabled: !isSubmitting,
+                        maxLength: PublicAuthInput.displayNameMaxLength,
+                        decoration: const InputDecoration(
+                          labelText: '显示名称（可选）',
+                          border: OutlineInputBorder(),
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: PublicAuthInput.displayNameError,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      TextFormField(
+                        key: const ValueKey('registerPasswordField'),
                         controller: _passwordController,
                         enabled: !isSubmitting,
                         obscureText: _obscurePassword,
                         autocorrect: false,
                         enableSuggestions: false,
-                        autofillHints: const [AutofillHints.password],
+                        autofillHints: const [AutofillHints.newPassword],
                         maxLength: PublicAuthInput.passwordMaxLength,
                         decoration: InputDecoration(
                           labelText: '密码',
+                          helperText: '12–128 个字符，空格会作为密码的一部分',
                           border: const OutlineInputBorder(),
                           suffixIcon: Semantics(
                             button: true,
                             label: _obscurePassword ? '显示密码' : '隐藏密码',
                             child: IconButton(
                               key: const ValueKey(
-                                'loginPasswordVisibilityButton',
+                                'registerPasswordVisibilityButton',
                               ),
                               tooltip: _obscurePassword ? '显示密码' : '隐藏密码',
                               onPressed: isSubmitting
@@ -123,8 +134,29 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
                             ),
                           ),
                         ),
+                        textInputAction: TextInputAction.next,
+                        validator: PublicAuthInput.registrationPasswordError,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      TextFormField(
+                        key: const ValueKey('registerConfirmationField'),
+                        controller: _confirmationController,
+                        enabled: !isSubmitting,
+                        obscureText: _obscurePassword,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        autofillHints: const [AutofillHints.newPassword],
+                        maxLength: PublicAuthInput.passwordMaxLength,
+                        decoration: const InputDecoration(
+                          labelText: '确认密码',
+                          border: OutlineInputBorder(),
+                        ),
                         textInputAction: TextInputAction.done,
-                        validator: PublicAuthInput.loginPasswordError,
+                        validator: (value) =>
+                            PublicAuthInput.confirmationPasswordError(
+                              value,
+                              _passwordController.text,
+                            ),
                         onFieldSubmitted: (_) => _submit(),
                       ),
                       if (auth?.message case final message?) ...[
@@ -133,7 +165,7 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
                           liveRegion: true,
                           child: Text(
                             message,
-                            key: const ValueKey('loginErrorMessage'),
+                            key: const ValueKey('registerErrorMessage'),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.error,
                             ),
@@ -142,7 +174,7 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
                       ],
                       const SizedBox(height: AppSpacing.md),
                       FilledButton.icon(
-                        key: const ValueKey('loginSubmitButton'),
+                        key: const ValueKey('registerSubmitButton'),
                         onPressed: isSubmitting ? null : _submit,
                         icon: isSubmitting
                             ? const SizedBox.square(
@@ -151,29 +183,15 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.login),
-                        label: Text(isSubmitting ? '登录中...' : '登录'),
+                            : const Icon(Icons.person_add_outlined),
+                        label: Text(isSubmitting ? '创建中...' : '创建账号'),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       TextButton(
-                        key: const ValueKey('openRegisterButton'),
-                        onPressed: isSubmitting
-                            ? null
-                            : () => context.push(RoutePaths.register),
-                        child: const Text('创建新账号'),
+                        key: const ValueKey('backToLoginButton'),
+                        onPressed: isSubmitting ? null : () => context.pop(),
+                        child: const Text('返回登录'),
                       ),
-                      if (config.enableDevLogin) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        const Divider(),
-                        TextButton.icon(
-                          key: const ValueKey('openDeveloperLoginButton'),
-                          onPressed: isSubmitting
-                              ? null
-                              : () => context.push(RoutePaths.developerLogin),
-                          icon: const Icon(Icons.developer_mode_outlined),
-                          label: const Text('开发者入口'),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -190,15 +208,16 @@ class _PublicLoginPageState extends ConsumerState<PublicLoginPage> {
     FocusScope.of(context).unfocus();
     final success = await ref
         .read(appAuthControllerProvider.notifier)
-        .loginWithPassword(
+        .registerWithPassword(
           username: _usernameController.text,
           password: _passwordController.text,
+          displayName: PublicAuthInput.normalizeDisplayName(
+            _displayNameController.text,
+          ),
         );
-    if (!success && mounted) _passwordController.clear();
+    if (!success && mounted) {
+      _passwordController.clear();
+      _confirmationController.clear();
+    }
   }
-}
-
-@Deprecated('Use PublicLoginPage.')
-class LoginPage extends PublicLoginPage {
-  const LoginPage({super.key});
 }

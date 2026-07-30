@@ -18,6 +18,7 @@ import 'secure_auth_session_store.dart';
 import 'legacy_ownership_verification_api_data_source.dart';
 import 'legacy_ownership_verification_repository_impl.dart';
 import 'password_auth_service.dart';
+import 'password_auth_remote_data_source.dart';
 
 final authSessionStoreProvider = Provider<AuthSessionStore>(
   (ref) => SecureAuthSessionStore(
@@ -81,7 +82,7 @@ final accountRepositoryProvider = Provider<AuthRepository>((ref) {
 
 final passwordAuthServiceProvider = Provider<PasswordAuthService>((ref) {
   return PasswordAuthServiceImpl(
-    apiClient: ref.watch(apiClientProvider),
+    remoteDataSource: ref.watch(passwordAuthRemoteDataSourceProvider),
     sessionManager: ref.watch(authSessionManagerProvider),
     serverBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
     loadClientMetadata: () async {
@@ -97,6 +98,11 @@ final passwordAuthServiceProvider = Provider<PasswordAuthService>((ref) {
     },
   );
 });
+
+final passwordAuthRemoteDataSourceProvider =
+    Provider<PasswordAuthRemoteDataSource>(
+      (ref) => PasswordAuthApiDataSource(ref.watch(apiClientProvider)),
+    );
 
 final legacyOwnershipVerificationRemoteDataSourceProvider =
     Provider<LegacyOwnershipVerificationRemoteDataSource>(

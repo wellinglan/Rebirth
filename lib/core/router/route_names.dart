@@ -1,6 +1,8 @@
 abstract final class RouteNames {
   static const authStartup = 'authStartup';
   static const login = 'login';
+  static const register = 'register';
+  static const developerLogin = 'developerLogin';
   static const accountBindingRequired = 'accountBindingRequired';
   static const sessionRejected = 'sessionRejected';
   static const fatalMigrationError = 'fatalMigrationError';
@@ -27,7 +29,9 @@ abstract final class RouteNames {
 
 abstract final class RoutePaths {
   static const authStartup = '/auth/startup';
-  static const login = '/login';
+  static const login = '/auth/login';
+  static const register = '/auth/register';
+  static const developerLogin = '/auth/developer';
   static const accountBindingRequired = '/auth/binding-required';
   static const sessionRejected = '/auth/session-rejected';
   static const fatalMigrationError = '/auth/migration-error';

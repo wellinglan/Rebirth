@@ -11,6 +11,7 @@ product gates.
 | 12C Journal Prompt System | `12c_journal_prompt_system.md` |
 | 12D Settings and Sync Center | `12d_settings_sync_center.md` |
 | 13A.1 Authentication Protocol and accepted manual boundary | `13a1_authentication_protocol.md` |
+| 13A.2 Public Username/Password Login | `13a2_public_login.md` |
 
 Sprint evidence files are completed only with real local and GitHub
 Quality results. Queued or in-progress work is never recorded as PASS.

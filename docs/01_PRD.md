@@ -777,3 +777,22 @@ Sprint 13A.1 manual acceptance recorded 67 PASS, 0 FAIL, and 12 NOT EXECUTED.
 Public username/password registration and login, production hiding of development
 authentication, and the remaining public authentication gates continue in Sprint
 13A.2. Password recovery, MFA, and WeChat authentication remain deferred.
+
+## 23. Public Username/Password Login
+
+Sprint 13A.2 makes public username/password authentication the normal Windows and
+Android entry. Signed-out users may log in or register; successful authentication
+restores or creates only the CloudUser-bound local space. Devices with unresolved
+legacy data continue to the existing ownership review and never assign data
+silently.
+
+Production shows no Developer Login, Alpha badge, endpoint, Dev Key, or internal
+identifier. Alpha may expose a clearly marked low-priority developer route while
+keeping public login primary. Offline use is allowed only for an existing trusted
+binding and unexpired session metadata. Rejected or unknown refresh outcomes return
+to public login while preserving local data.
+
+This Sprint does not add account recovery, email/SMS verification, MFA, passkeys,
+biometrics, WeChat, session management, account deletion, or automatic sync.
+Manual acceptance remains required; see
+`docs/manual_tests/41_public_username_password_login.md`.

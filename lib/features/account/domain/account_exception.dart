@@ -2,5 +2,5 @@ final class AccountAuthenticationRequiredException implements Exception {
   const AccountAuthenticationRequiredException();
 
   @override
-  String toString() => '请先开发登录';
+  String toString() => '请先登录';
 }

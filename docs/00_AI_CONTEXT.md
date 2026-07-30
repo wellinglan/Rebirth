@@ -582,3 +582,20 @@ Rotation、Development Account Upgrade 与 Account Boundary Isolation Gate 已
 关闭，其余公开认证体验 Gate 转入 Sprint 13A.2。Flutter schemaVersion 保持
 9，Server API 保持 1。详见
 `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`。
+
+# 二十三、公开认证产品入口边界
+
+Sprint 13A.2 将普通入口升级为用户名密码登录与注册。App 必须先完成安全会话恢复，
+再由 Router 进入登录、账号归属确认或受保护业务壳；启动时不得短暂展示旧账号正文。
+登录与注册成功仍必须经过既有 Account Boundary，A/B 本地数据空间、conflict、
+cursor 与 serverVersion 不得串用或被清理。
+
+Production 构建强制关闭开发登录，即使传入冲突的编译参数也不能重新启用；
+Alpha/Development 仅可在公开登录页底部提供低优先级独立开发入口。普通页面不显示
+Endpoint、Dev Key、Token、Session ID 或内部账号 ID。
+
+Password 只存在于临时 Widget Controller，Access Token 只存在于运行时，
+Refresh Token 只进入平台安全存储。认证仍不触发自动同步。Password Recovery、
+MFA、微信登录与绑定继续延期。Flutter schemaVersion 保持 9，API Version 保持
+1，Sync Protocol 保持 2。详见
+`docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`。
