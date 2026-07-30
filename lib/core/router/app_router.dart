@@ -105,14 +105,6 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
                 name: RouteNames.journal,
                 builder: (context, state) =>
                     JournalPage(targetDate: state.uri.queryParameters['date']),
-                routes: [
-                  GoRoute(
-                    path: 'prompts',
-                    name: RouteNames.journalPrompts,
-                    builder: (context, state) =>
-                        const JournalPromptManagementPage(),
-                  ),
-                ],
               ),
             ],
           ),
@@ -149,6 +141,11 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh) {
         path: RoutePaths.personalDataOverview,
         name: RouteNames.personalDataOverview,
         builder: (context, state) => const PersonalDataOverviewPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.journalPrompts,
+        name: RouteNames.journalPrompts,
+        builder: (context, state) => const JournalPromptManagementPage(),
       ),
       GoRoute(
         path: RoutePaths.aiCoach,

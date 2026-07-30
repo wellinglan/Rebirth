@@ -482,6 +482,30 @@ void main() {
     );
   });
 
+  testWidgets('conflicted Journal explains why reopen and delete are blocked', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(
+      entry: _completedEntry(),
+      conflictPending: true,
+    );
+    await _pumpJournalPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('reopenJournalButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirmReopenJournalButton')));
+    await tester.pumpAndSettle();
+    expect(find.text('该 Journal 存在同步冲突，请先在设置的同步中心处理'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('deleteJournalButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirmDeleteJournalButton')));
+    await tester.pumpAndSettle();
+    expect(find.text('该 Journal 存在同步冲突，请先在设置的同步中心处理'), findsOneWidget);
+    expect(repository.entry, isNotNull);
+  });
+
   testWidgets('saved content is filled when the page is opened again', (
     tester,
   ) async {
@@ -687,6 +711,7 @@ final class _FakeJournalRepository implements JournalRepository {
     this.historyLoadError,
     this.historyEntries,
     this.failuresBeforeSuccess = 0,
+    this.conflictPending = false,
   });
 
   JournalEntry? entry;
@@ -697,6 +722,7 @@ final class _FakeJournalRepository implements JournalRepository {
   Object? historyLoadError;
   final List<JournalEntry>? historyEntries;
   int failuresBeforeSuccess;
+  final bool conflictPending;
   int saveAttempts = 0;
   int listRecentCalls = 0;
   int listByDateCalls = 0;
@@ -748,6 +774,9 @@ final class _FakeJournalRepository implements JournalRepository {
 
   @override
   Future<JournalEntry> reopen(String id) {
+    if (conflictPending) {
+      throw JournalConflictPendingException(id);
+    }
     final current = entry;
     if (current == null || current.id != id) {
       throw JournalEntryNotFoundException(id);
@@ -803,6 +832,9 @@ final class _FakeJournalRepository implements JournalRepository {
 
   @override
   Future<void> softDelete(String id) async {
+    if (conflictPending) {
+      throw JournalConflictPendingException(id);
+    }
     if (entry?.id == id) {
       entry = null;
     }

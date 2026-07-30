@@ -5,6 +5,7 @@ import 'package:rebirth/core/utils/deterministic_uuid.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_entry_prompt_item.dart';
 import 'package:rebirth/features/journal/domain/journal_prompt.dart';
+import 'package:rebirth/features/journal/domain/journal_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 
 import 'journal_question_field.dart';
@@ -256,11 +257,17 @@ class _JournalFormState extends State<JournalForm> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(message)));
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('操作失败，内容已保留，请重试')));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _mutationFailureMessage(error, fallback: '操作失败，内容已保留，请重试'),
+            ),
+          ),
+        );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -296,11 +303,17 @@ class _JournalFormState extends State<JournalForm> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('记录已重新变为草稿')));
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('重新编辑失败，请稍后重试')));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _mutationFailureMessage(error, fallback: '重新编辑失败，请稍后重试'),
+            ),
+          ),
+        );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -337,14 +350,26 @@ class _JournalFormState extends State<JournalForm> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('已应用最新问题')));
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('更新问题失败，原内容已保留')));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _mutationFailureMessage(error, fallback: '更新问题失败，原内容已保留'),
+            ),
+          ),
+        );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  String _mutationFailureMessage(Object error, {required String fallback}) {
+    return error is JournalConflictPendingException
+        ? '该 Journal 存在同步冲突，请先在设置的同步中心处理'
+        : fallback;
   }
 
   Future<void> _confirmDiscardChanges() async {

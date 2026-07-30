@@ -352,7 +352,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('操作未完成，本地 Today 内容已保留'), findsOneWidget);
+    expect(
+      find.text('操作未完成（pullFailed / pull），本地 Today 内容已保留'),
+      findsOneWidget,
+    );
     expect(find.text('冲突操作已完成'), findsNothing);
   });
 

@@ -137,7 +137,9 @@ class SyncConflictDetailPage extends ConsumerWidget {
       if (result case final SyncRunResult syncResult) {
         final failure = syncResult.failure;
         if (failure != null && failure.reason != SyncFailureReason.conflict) {
-          throw StateError(failure.message);
+          if (!context.mounted) return;
+          _message(context, _failureMessage(record, failure));
+          return;
         }
       }
       ref.invalidate(syncConflictDetailsProvider(conflictId));
@@ -147,21 +149,23 @@ class SyncConflictDetailPage extends ConsumerWidget {
       _message(context, '冲突操作已完成');
     } catch (_) {
       if (!context.mounted) return;
-      _message(
-        context,
-        record.entityType == SyncEntityType.profile
-            ? '操作未完成，本地 Profile 已保留'
-            : record.entityType == SyncEntityType.today
-            ? '操作未完成，本地 Today 内容已保留'
-            : record.entityType == SyncEntityType.journal
-            ? '操作未完成，本地 Journal 内容已保留'
-            : record.entityType == SyncEntityType.journalPromptConfiguration
-            ? '操作未完成，本地 Journal 问题配置已保留'
-            : record.entityType == SyncEntityType.health
-            ? '操作未完成，本地 Health 内容已保留'
-            : '操作未完成，本地 Plan 内容已保留',
-      );
+      _message(context, _failureMessage(record));
     }
+  }
+
+  String _failureMessage(SyncConflictRecord record, [SyncFailure? failure]) {
+    final preserved = switch (record.entityType) {
+      SyncEntityType.profile => '本地 Profile 已保留',
+      SyncEntityType.today => '本地 Today 内容已保留',
+      SyncEntityType.journal => '本地 Journal 内容已保留',
+      SyncEntityType.journalPromptConfiguration => '本地 Journal 问题配置已保留',
+      SyncEntityType.health => '本地 Health 内容已保留',
+      SyncEntityType.plan => '本地 Plan 内容已保留',
+    };
+    final diagnostic = failure == null
+        ? ''
+        : '（${failure.reason.name} / ${failure.phase.name}）';
+    return '操作未完成$diagnostic，$preserved';
   }
 
   void _message(BuildContext context, String message) {

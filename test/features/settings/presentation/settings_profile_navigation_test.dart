@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ import 'package:rebirth/features/account/data/auth_session_store.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
+import 'package:rebirth/features/journal/data/journal_prompt_repository_impl.dart';
 
 void main() {
   testWidgets('Settings opens globally and Profile returns an updated name', (
@@ -101,6 +103,75 @@ void main() {
     final stored = await database.select(database.userProfiles).getSingle();
     expect(stored.displayName, '跨页刷新昵称');
   });
+
+  testWidgets(
+    'Settings opens prompt management for a conflicted configuration',
+    (tester) async {
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(database.close);
+      final bootstrap = await database.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
+      final dateTimeService = DateTimeService(
+        now: () => DateTime(2026, 7, 30, 9),
+      );
+      await JournalPromptRepositoryImpl(
+        database: database,
+        dateTimeService: dateTimeService,
+      ).ensureInitialized();
+      await (database.update(
+        database.journalPromptConfigurations,
+      )..where((row) => row.userId.equals(bootstrap.activeUserId))).write(
+        const JournalPromptConfigurationsCompanion(
+          syncStatus: Value('conflict'),
+        ),
+      );
+      await tester.binding.setSurfaceSize(const Size(900, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(database),
+            dateTimeServiceProvider.overrideWithValue(dateTimeService),
+            authSessionStoreProvider.overrideWithValue(_MemorySessionStore()),
+            appAuthStateProvider.overrideWithValue(
+              AsyncData(
+                AppAuthState(
+                  status: AppAuthStatus.authenticated,
+                  localUserId: bootstrap.activeUserId,
+                  cloudUserId: 'settings-user',
+                ),
+              ),
+            ),
+          ],
+          child: const RebirthApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('settingsEntryButton')));
+      await tester.pumpAndSettle();
+
+      final promptTile = find.byKey(
+        const ValueKey('journalPromptSettingsTile'),
+      );
+      await tester.ensureVisible(promptTile);
+      await tester.tap(promptTile);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('journalPromptManagementPage')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('journalPromptLoadingState')),
+        findsNothing,
+      );
+      expect(find.text('使用中的问题'), findsOneWidget);
+      expect(find.text('同步状态：存在冲突，请到同步中心处理'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   test(
     'Settings/Profile architecture keeps future auth boundaries explicit',

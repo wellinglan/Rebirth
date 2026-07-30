@@ -13,6 +13,7 @@ class JournalPromptManagementPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(journalPromptControllerProvider);
     return Scaffold(
+      key: const ValueKey('journalPromptManagementPage'),
       appBar: AppBar(
         title: const Text('复盘问题'),
         actions: [
@@ -190,7 +191,11 @@ class _PromptConfigurationBody extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              configuration.isPending ? '同步状态：待手动同步' : '同步状态：已同步',
+              switch (configuration.syncStatus) {
+                'conflict' => '同步状态：存在冲突，请到同步中心处理',
+                'pending' || 'local_only' => '同步状态：待手动同步',
+                _ => '同步状态：已同步',
+              },
               key: const ValueKey('journalPromptSyncStatus'),
               style: Theme.of(context).textTheme.labelMedium,
             ),

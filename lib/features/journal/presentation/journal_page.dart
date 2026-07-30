@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
+import 'package:rebirth/features/journal/domain/journal_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 
 import 'journal_controller.dart';
@@ -272,6 +273,13 @@ class _JournalPageState extends ConsumerState<JournalPage> {
       ScaffoldMessenger.of(this.context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('Journal 已删除，等待手动同步')));
+    } on JournalConflictPendingException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(this.context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('该 Journal 存在同步冲突，请先在设置的同步中心处理')),
+        );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(this.context)

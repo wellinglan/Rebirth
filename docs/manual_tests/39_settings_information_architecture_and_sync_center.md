@@ -15,7 +15,7 @@ real Alpha account only when the release artifacts are ready.
 | A3 | Account section is understandable | NOT EXECUTED |
 | A4 | Data & Sync entry is visible | NOT EXECUTED |
 | A5 | Personal Data & Privacy entries are visible | NOT EXECUTED |
-| A6 | Journal prompt management is visible | NOT EXECUTED |
+| A6 | Journal prompt management is visible | FAIL |
 | A7 | Advanced Settings placement is reasonable | NOT EXECUTED |
 | A8 | Endpoint is not shown | NOT EXECUTED |
 | A9 | Device ID is not shown | NOT EXECUTED |
@@ -176,8 +176,8 @@ Leave fault-injection rows `NOT EXECUTED` when no safe product operation exists.
 | Result | Count |
 |---|---:|
 | PASS | 0 |
-| FAIL | 3 |
-| NOT EXECUTED | 110 |
+| FAIL | 4 |
+| NOT EXECUTED | 109 |
 
 ## Android Conflict Recovery Blocker
 
@@ -204,6 +204,37 @@ The Android arm64 release candidate must be installed over the existing app.
 Retest the existing Today and Journal conflicts without clearing app data.
 Keep D11, F7, and H9 as `FAIL` until both records converge and the conflict
 count decreases.
+
+## Journal Secondary Regression
+
+Observed on 2026-07-30 while the Android Journal conflict remained unresolved:
+
+- Reopen reported a generic retry-later failure.
+- Delete reported that the local record was unchanged.
+- Both operations were correctly blocked by the repository because the Journal
+  still had `syncStatus = conflict`, but the UI did not explain the required
+  recovery action.
+- On both tested devices, Settings > Manage Reflection Questions opened only
+  the Journal shell branch. The title and bottom navigation remained visible,
+  while the page body was blank and the prompt-management page never rendered.
+
+The follow-up fix candidate:
+
+- keeps conflicted Journal mutation protection unchanged and replaces the
+  generic reopen/delete error with guidance to resolve the conflict in Sync
+  Center first;
+- moves `/journal/prompts` out of the stateful Journal shell branch so Settings
+  and Journal can both open it as a standalone page;
+- exposes prompt-configuration conflict status instead of labeling it synced;
+- includes the sync failure reason and phase in unsuccessful conflict-action
+  messages so remaining server or apply failures can be identified without
+  exposing private content.
+
+Install the next Android arm64 release candidate over the existing app without
+clearing data. Confirm that Manage Reflection Questions renders, Back returns
+normally, and conflicted Journal reopen/delete show the Sync Center guidance.
+Then retry the existing Today and Journal conflicts and record the exact
+parenthesized failure reason and phase if either operation still fails.
 
 ## Gates
 
