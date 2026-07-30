@@ -360,7 +360,7 @@ def test_postgres_cleanup_dry_run_and_execution() -> None:
     settings = load_settings(
         database_url=_database_url(),
         environment="test",
-        jwt_secret="postgres-cleanup-test-secret",
+        jwt_secret="postgres-cleanup-test-secret-at-least-32-bytes",
     )
     row_id = str(uuid.uuid4())
     try:
