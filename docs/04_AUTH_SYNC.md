@@ -1,7 +1,7 @@
 # Rebirth Auth & Sync Architecture
 
-> Status: Sprint 10B.2-A authenticated account-bound local data foundation
-> Scope: Auth Gate plus manual Profile/Plan sync; not production authentication or full business sync
+> Status: Sprint 13B.1 multi-identity authentication foundation
+> Scope: Auth Gate, account-bound manual sync, and extensible login identities
 
 ## 目标
 
@@ -251,3 +251,34 @@ User acceptance on 2026-07-30 recorded 107 PASS, 0 FAIL, and 7 NOT EXECUTED.
 H1-H7 remain NOT EXECUTED because no safe unbound-legacy-data fixture was
 available. Public Login Experience, Authentication Protocol, Password
 Credential Security, and Secure Client Storage are `CLOSED / ACCEPTED`.
+
+## Sprint 13B.1 Multi Identity Foundation
+
+The existing `auth_identities` table is the single canonical identity store.
+Sprint 13B.1 does not create a parallel identity table; it adds nullable
+`last_used_at` through Alembic revision `20260731_0004` and backfills existing
+identities from `updated_at`. The existing global
+`UNIQUE(provider, provider_subject)` rule continues to ensure that one external
+identity can belong to only one cloud user.
+
+Password registration and login still use internal provider
+`password_username`; Alpha developer login still uses `dev`. Session issuance
+records the identity's latest usage without changing JWT claims, cloud user ID,
+or session ownership. The authenticated `GET /auth/identities` endpoint maps
+those values to safe client labels `password` and `developer`, and returns only
+provider plus creation/usage timestamps.
+
+Flutter exposes the result through a dedicated Identity Repository and
+Riverpod state. Settings contains an authenticated account-security page.
+Offline sessions show only their current login provider and do not attempt a
+network query. Account switches rebuild identity state from the new
+`AppAuthState`; logout remains protected by the existing Router Auth Gate.
+
+Identity is not a local data owner. The normalized endpoint and Rebirth cloud
+user ID still uniquely determine the Account Boundary binding and active local
+Profile. No Flutter migration was added, so local schema remains `9`. API
+Version `1`, Sync Protocol `2`, manual synchronization, cursors, OCC,
+conflicts, tombstones, and all business payloads are unchanged.
+
+See `docs/40_IDENTITY_FOUNDATION.md` and
+`docs/manual_tests/42_multi_identity_foundation.md`.
