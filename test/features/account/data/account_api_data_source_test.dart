@@ -29,7 +29,12 @@ void main() {
         'access_token': 'test-access-token',
         'refresh_token': 'test-refresh-token',
         'token_type': 'bearer',
-        'user': {'id': 'user-1', 'display_name': 'Dev local-test-user'},
+        'access_expires_at': 1000,
+        'refresh_expires_at': 2000,
+        'session_absolute_expires_at': 3000,
+        'session_id': 'session-1',
+        'identity_provider': 'dev',
+        'user': {'id': 'user-1', 'display_name': 'Alpha User'},
       },
     );
     final dataSource = AccountApiDataSource(client);
@@ -38,7 +43,8 @@ void main() {
 
     expect(client.lastPath, '/auth/dev-login');
     expect(client.lastBody?['dev_user_key'], 'local-test-user');
-    expect(session.user.displayName, 'Dev local-test-user');
+    expect(session.user.displayName, 'Alpha User');
+    expect(session.sessionId, 'session-1');
   });
 
   test('registerDevice requests protected endpoint and converts DTO', () async {

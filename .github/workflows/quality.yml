@@ -43,7 +43,13 @@ jobs:
       REBIRTH_ENV: test
       REBIRTH_DATABASE_URL: postgresql+psycopg://rebirth_test@127.0.0.1:5432/rebirth_test
       REBIRTH_POSTGRES_TEST_URL: postgresql+psycopg://rebirth_test@127.0.0.1:5432/rebirth_test
-      REBIRTH_JWT_SECRET: github-actions-test-only-secret
+      REBIRTH_JWT_SECRET: github-actions-test-only-jwt-secret-123456789
+      AUTH_REFRESH_TOKEN_HMAC_KEY: github-actions-refresh-test-secret-123456789
+      AUTH_DEV_IDENTITY_HMAC_KEY: github-actions-dev-identity-test-secret-1234
+      AUTH_RATE_LIMIT_HMAC_KEY: github-actions-rate-limit-test-secret-123456
+      AUTH_JWT_ISSUER: rebirth-api-test
+      AUTH_JWT_AUDIENCE: rebirth-client-test
+      AUTH_LEGACY_TOKEN_MIGRATION_ENABLED: "false"
       REBIRTH_AI_PROVIDER: fake
     defaults:
       run:

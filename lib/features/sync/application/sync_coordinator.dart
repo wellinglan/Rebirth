@@ -5,7 +5,7 @@ import 'package:drift/native.dart' show SqliteException;
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
-import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/sync/data/dto/sync_dto.dart';
@@ -27,7 +27,7 @@ typedef SyncAccountScopeGuard =
 final class SyncCoordinator {
   SyncCoordinator({
     required this.endpoint,
-    required this.sessionStore,
+    required this.sessionManager,
     required this.remoteDataSource,
     required this.cursorStore,
     required this.adapterRegistry,
@@ -38,7 +38,7 @@ final class SyncCoordinator {
   });
 
   final String endpoint;
-  final AuthSessionStore sessionStore;
+  final AuthSessionManager sessionManager;
   final SyncRemoteDataSource remoteDataSource;
   final SyncCursorStore cursorStore;
   final SyncEntityAdapterRegistry adapterRegistry;
@@ -192,8 +192,18 @@ final class SyncCoordinator {
     }
 
     phases.add(SyncRunPhase.sessionCheck);
-    final session = await sessionStore.read();
-    if (session == null || session.accessToken.trim().isEmpty) {
+    try {
+      await sessionManager.validAccessToken();
+    } catch (_) {
+      firstFailure = const SyncFailure(
+        reason: SyncFailureReason.authenticationRequired,
+        phase: SyncRunPhase.sessionCheck,
+        message: '请先完成开发登录。',
+      );
+      return finish();
+    }
+    final session = sessionManager.state.session;
+    if (session == null) {
       firstFailure = const SyncFailure(
         reason: SyncFailureReason.authenticationRequired,
         phase: SyncRunPhase.sessionCheck,
@@ -348,26 +358,29 @@ final class SyncCoordinator {
           _validatePushItem(item, adapter.entityType);
         }
         phases.add(SyncRunPhase.push);
-        final response = await remoteDataSource.push(
-          SyncPushRequestDto(
-            deviceId: deviceId,
-            items: pending
-                .map(
-                  (item) => SyncPushItemDto(
-                    tableName: item.entityType.wireName,
-                    recordId: item.recordId,
-                    payload: item.payload == null
-                        ? const {}
-                        : adapter.encodePayload(item.payload!),
-                    updatedAt: item.updatedAt,
-                    deletedAt: item.deletedAt,
-                    originDeviceId: item.originDeviceId,
-                    clientVersion: item.clientVersion,
-                  ),
-                )
-                .toList(growable: false),
+        final request = SyncPushRequestDto(
+          deviceId: deviceId,
+          items: pending
+              .map(
+                (item) => SyncPushItemDto(
+                  tableName: item.entityType.wireName,
+                  recordId: item.recordId,
+                  payload: item.payload == null
+                      ? const {}
+                      : adapter.encodePayload(item.payload!),
+                  updatedAt: item.updatedAt,
+                  deletedAt: item.deletedAt,
+                  originDeviceId: item.originDeviceId,
+                  clientVersion: item.clientVersion,
+                ),
+              )
+              .toList(growable: false),
+        );
+        final response = await sessionManager.runAuthorized(
+          (accessToken) => remoteDataSource.push(
+            request,
+            accessToken: accessToken,
           ),
-          accessToken: session.accessToken,
         );
         phases.add(SyncRunPhase.acknowledgePush);
         final acknowledged = await adapter.acknowledgePush(
@@ -408,15 +421,18 @@ final class SyncCoordinator {
       );
 
       phases.add(SyncRunPhase.pull);
-      final response = await remoteDataSource.pull(
-        SyncPullRequestDto(
-          deviceId: deviceId,
-          sinceServerVersion: pullMode == SyncPullMode.incremental
-              ? cursor.serverVersion
-              : 0,
-          tables: [adapter.entityType.wireName],
+      final request = SyncPullRequestDto(
+        deviceId: deviceId,
+        sinceServerVersion: pullMode == SyncPullMode.incremental
+            ? cursor.serverVersion
+            : 0,
+        tables: [adapter.entityType.wireName],
+      );
+      final response = await sessionManager.runAuthorized(
+        (accessToken) => remoteDataSource.pull(
+          request,
+          accessToken: accessToken,
         ),
-        accessToken: session.accessToken,
       );
       if (pullMode == SyncPullMode.incremental &&
           response.serverVersion < cursor.serverVersion) {

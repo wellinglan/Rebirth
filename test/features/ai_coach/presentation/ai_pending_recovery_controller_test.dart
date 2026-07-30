@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
@@ -39,7 +40,7 @@ void main() {
         gateway: gateway,
         reports: reports,
         bindings: bindings,
-        sessionStore: sessions,
+        sessionManager: AuthSessionManager.forTesting(sessionStore: sessions),
         currentEndpoint: endpoint ?? 'http://127.0.0.1:8000',
         endpointValidator: const ServerEndpointValidator(),
       );

@@ -4,6 +4,7 @@ enum AccountAction {
   idle,
   checkingBackend,
   loggingIn,
+  attachingPassword,
   registeringDevice,
   loggingOut,
 }
@@ -20,6 +21,7 @@ final class AccountViewState {
   bool get isBusy => action != AccountAction.idle;
   bool get isCheckingBackend => action == AccountAction.checkingBackend;
   bool get isLoggingIn => action == AccountAction.loggingIn;
+  bool get isAttachingPassword => action == AccountAction.attachingPassword;
   bool get isRegisteringDevice => action == AccountAction.registeringDevice;
   bool get isLoggingOut => action == AccountAction.loggingOut;
 

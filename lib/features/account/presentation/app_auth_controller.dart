@@ -3,6 +3,7 @@ import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
+import 'package:rebirth/features/account/domain/auth_session_manager_state.dart';
 
 import 'account_scoped_provider_invalidator.dart';
 
@@ -23,7 +24,21 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
 
   Future<AppAuthState> _restore() async {
     try {
-      final session = await ref.read(authSessionStoreProvider).read();
+      final managerState = await ref
+          .read(authSessionManagerProvider)
+          .initialize();
+      if (managerState.status == AuthSessionManagerStatus.sessionRejected ||
+          managerState.status ==
+              AuthSessionManagerStatus.refreshOutcomeUnknown) {
+        await ref
+            .read(accountBoundaryRepositoryProvider)
+            .deactivateAllProfiles();
+        return const AppAuthState(
+          status: AppAuthStatus.sessionRejected,
+          message: '云端会话需要重新验证，本地数据仍然保留。',
+        );
+      }
+      final session = managerState.session;
       if (session == null) {
         await ref
             .read(accountBoundaryRepositoryProvider)
@@ -42,7 +57,9 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
           message: '检测到旧本地数据。请明确选择其归属，系统不会自动绑定或同步。',
         );
       }
-      final online = await _backendIsReachable();
+      final online =
+          managerState.status != AuthSessionManagerStatus.authenticatedOffline &&
+          await _backendIsReachable();
       return AppAuthState(
         status: online
             ? AppAuthStatus.authenticated
@@ -151,7 +168,9 @@ class AppAuthController extends AsyncNotifier<AppAuthState> {
     }
     _ownershipMutationInProgress = true;
     try {
-      final session = await ref.read(authSessionStoreProvider).read();
+      final manager = ref.read(authSessionManagerProvider);
+      await manager.initialize();
+      final session = manager.state.session;
       if (session == null) {
         throw const AccountSessionRejectedException('登录会话已失效，请重新登录。');
       }

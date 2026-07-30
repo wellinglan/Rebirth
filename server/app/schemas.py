@@ -411,6 +411,13 @@ class HealthResponse(BaseModel):
 
 class DevLoginRequest(BaseModel):
     dev_user_key: str = Field(min_length=1, max_length=128)
+    client_installation_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+    )
+    platform: Platform | None = None
+    app_version: str | None = Field(default=None, min_length=1, max_length=64)
 
     @field_validator("dev_user_key")
     @classmethod
@@ -430,6 +437,77 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: Literal["bearer"] = "bearer"
+    access_expires_at: int
+    refresh_expires_at: int
+    session_id: str
+    session_absolute_expires_at: int
+    identity_provider: str
+    user: AuthUserResponse
+
+
+class PasswordRegisterRequest(BaseModel):
+    username: str = Field(min_length=4, max_length=64)
+    password: str = Field(min_length=12, max_length=128)
+    display_name: str | None = Field(default=None, max_length=128)
+    client_installation_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+    )
+    platform: Platform | None = None
+    app_version: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class PasswordLoginRequest(BaseModel):
+    username: str = Field(min_length=4, max_length=64)
+    password: str = Field(min_length=1, max_length=128)
+    client_installation_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+    )
+    platform: Platform | None = None
+    app_version: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(min_length=1, max_length=4096)
+    client_installation_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+    )
+    platform: Platform | None = None
+    app_version: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: str | None = Field(default=None, min_length=1, max_length=4096)
+
+
+class LogoutResponse(BaseModel):
+    status: Literal["signed_out"] = "signed_out"
+
+
+class AuthSessionResponse(BaseModel):
+    session_id: str
+    provider: str
+    access_expires_at: int
+    session_absolute_expires_at: int
+    revoked: Literal[False] = False
+    user: AuthUserResponse
+
+
+class PasswordAttachRequest(BaseModel):
+    dev_user_key: str = Field(min_length=1, max_length=128)
+    username: str = Field(min_length=4, max_length=64)
+    password: str = Field(min_length=12, max_length=128)
+    display_name: str | None = Field(default=None, max_length=128)
+
+
+class PasswordAttachResponse(BaseModel):
+    status: Literal["attached"] = "attached"
+    provider: Literal["password_username"] = "password_username"
     user: AuthUserResponse
 
 

@@ -5,6 +5,7 @@ import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/features/account/data/account_api_data_source.dart';
 import 'package:rebirth/features/account/data/account_repository_impl.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/data/device_info_service.dart';
 import 'package:rebirth/features/account/domain/account_exception.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
@@ -26,6 +27,7 @@ void main() {
     repository = AccountRepositoryImpl(
       remoteDataSource: remote,
       sessionStore: store,
+      sessionManager: AuthSessionManager.forTesting(sessionStore: store),
       loadLocalInstallationId: () async {
         installationLoads += 1;
         return 'installation-1';
@@ -69,7 +71,8 @@ void main() {
     final session = await repository.devLogin(' local-test-user ');
 
     expect(remote.lastDevUserKey, 'local-test-user');
-    expect(store.session, same(session));
+    expect(store.session?.user.id, session.user.id);
+    expect(store.session?.refreshToken, session.refreshToken);
     expect(session.serverBaseUrl, AppConfig.defaultApiBaseUrl);
   });
 
@@ -182,6 +185,15 @@ final class _FakeRemoteDataSource implements AccountRemoteDataSource {
     lastDevUserKey = devUserKey;
     return _session;
   }
+
+  @override
+  Future<AuthSession> refreshSession(String refreshToken) async => _session;
+
+  @override
+  Future<void> logout({
+    required String refreshToken,
+    String? accessToken,
+  }) async {}
 
   @override
   Future<DeviceRegistration> registerDevice(

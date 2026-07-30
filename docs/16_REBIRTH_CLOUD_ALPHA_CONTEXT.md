@@ -793,3 +793,24 @@ also converged after the final Android release candidate was installed without
 clearing app data. The Settings Information Architecture, Unified Sync Center,
 Profile Unified Sync UX, and Account Boundary Isolation gates are
 `CLOSED / ACCEPTED`.
+
+## Sprint 13A.1 Authentication Foundation
+
+Sprint 13A.1 adds an undeployed, production-shaped authentication protocol:
+password identities with Argon2id credentials, database-backed sessions,
+short-lived access JWTs, rotating opaque refresh tokens, reuse detection,
+database login throttling, and controlled legacy-token migration.
+
+Existing Dev identities migrate from raw User Key subjects to HMAC subjects
+without changing CloudUser ownership. Developer Options may attach a password
+identity to the same verified Dev account. Flutter stores refresh credentials in
+Android/Windows secure storage and keeps access tokens in memory under a
+single-flight `AuthSessionManager`.
+
+API Version remains 1, Sync Protocol remains 2, and Flutter schemaVersion remains
+9. The Server gains an additive Alembic revision. The Beijing Alpha Server has not
+been updated, migrated, restarted, or otherwise modified by this Sprint. Future
+deployment must configure the four separate authentication secrets, upgrade
+Alembic, deploy the compatible Server before the client, and explicitly control
+the legacy migration deadline. See
+`docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.

@@ -85,7 +85,7 @@ final syncCoordinatorProvider = Provider<SyncCoordinator>((ref) {
   final endpoint = ref.watch(effectiveServerEndpointProvider).baseUrl;
   return SyncCoordinator(
     endpoint: endpoint,
-    sessionStore: ref.watch(authSessionStoreProvider),
+    sessionManager: ref.watch(authSessionManagerProvider),
     remoteDataSource: ref.watch(syncRemoteDataSourceProvider),
     cursorStore: ref.watch(syncCursorStoreProvider),
     adapterRegistry: ref.watch(syncEntityAdapterRegistryProvider),

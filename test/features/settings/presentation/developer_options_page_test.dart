@@ -6,6 +6,7 @@ import 'package:rebirth/core/config/app_config_provider.dart';
 import 'package:rebirth/core/config/server_endpoint.dart';
 import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
+import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/account/domain/legacy_ownership_verification.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/account/presentation/account_view_state.dart';
@@ -93,6 +94,39 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('authenticated dev account can attach password credentials', (
+    tester,
+  ) async {
+    final account = _FakeAccountController(authenticated: true);
+    await _pump(tester, account: account);
+
+    await tester.tap(
+      find.byKey(const ValueKey('attachPasswordIdentityButton')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('attachDevUserKeyField')),
+      'dev-secret',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('attachUsernameField')),
+      'Example.User',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('attachPasswordField')),
+      '  exact password  ',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('confirmPasswordIdentityAttachButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(account.attachCalls, 1);
+    expect(account.attachedUsername, 'Example.User');
+    expect(account.attachedPassword, '  exact password  ');
+    expect(find.text('用户名和密码已绑定到当前账号'), findsOneWidget);
+  });
 }
 
 Future<void> _pump(
@@ -145,13 +179,27 @@ Future<void> _pump(
 }
 
 final class _FakeAccountController extends AccountController {
+  _FakeAccountController({this.authenticated = false});
+
+  final bool authenticated;
   int healthCalls = 0;
   int registrationCalls = 0;
+  int attachCalls = 0;
+  String? attachedUsername;
+  String? attachedPassword;
 
   @override
   Future<AccountViewState> build() async {
-    return const AccountViewState(
-      status: AccountStatus.localOnly(backendConfigured: true),
+    return AccountViewState(
+      status: authenticated
+          ? const AccountStatus(
+              mode: AccountMode.cloudReady,
+              authentication: AuthenticationStatus.signedIn,
+              backendConfigured: true,
+              backendReachable: true,
+              user: AuthUser(id: 'user-1', displayName: 'Alpha User'),
+            )
+          : const AccountStatus.localOnly(backendConfigured: true),
     );
   }
 
@@ -164,6 +212,19 @@ final class _FakeAccountController extends AccountController {
   @override
   Future<bool> registerCurrentDevice() async {
     registrationCalls += 1;
+    return true;
+  }
+
+  @override
+  Future<bool> attachPasswordIdentity({
+    required String devUserKey,
+    required String username,
+    required String password,
+    String? displayName,
+  }) async {
+    attachCalls += 1;
+    attachedUsername = username;
+    attachedPassword = password;
     return true;
   }
 }

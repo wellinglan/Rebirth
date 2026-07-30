@@ -760,3 +760,15 @@ Prompt Configuration。同步全部固定顺序执行并允许模块级失败或
 
 Sprint 12D 不包含生产认证、微信登录、自动同步、AI 或 Growth Sync。生产认证
 基础属于 Sprint 13A。
+
+## 22. Authentication Foundation
+
+Sprint 13A.1 establishes the authentication protocol beneath the future public
+account experience. It supports username/password identities, secure sessions,
+refresh rotation, logout revocation, development-account credential attachment,
+and secure client credential persistence.
+
+This is not yet the public login product. Registration/login screens, account
+recovery, MFA, WeChat login, automatic synchronization, and session management UI
+remain deferred. Existing local-first data and the five manual sync modules retain
+their current product semantics.

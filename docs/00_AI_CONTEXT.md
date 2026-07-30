@@ -563,3 +563,19 @@ Journal 条目。同步仍由用户主动触发，并继续复用现有 Coordina
 事务、账号隔离和显式冲突恢复。没有自动同步、后台队列、新 Sync Entity、
 数据库迁移或 Server 变更。详见
 `docs/39_SETTINGS_INFORMATION_ARCHITECTURE_AND_SYNC_CENTER.md`。
+
+# 二十二、认证协议与安全会话边界
+
+Sprint 13A.1 在不改变 CloudUser 数据所有权的前提下复用 AuthIdentity，新增
+`password_username` 身份、Argon2id 凭据、数据库会话、旋转式 opaque refresh
+token 与短期 access JWT。Dev User Key 新写入改为 HMAC subject；旧身份惰性
+迁移时保持 CloudUser、设备和同步数据归属不变。
+
+Flutter 的 refresh credential 只进入 Android/Windows 安全存储，access token
+仅在内存中存在。`AuthSessionManager` 统一处理单航班 refresh、一次 401 重试、
+endpoint 绑定、离线态和明确失效；不会删除本地业务数据，也不改变五模块手动
+同步、OCC、cursor 或 Sync Protocol 2。
+
+本 Sprint 不提供公开注册/登录页面，不实现找回密码、MFA 或微信认证，不部署
+北京 Alpha。Flutter schemaVersion 保持 9，Server API 保持 1。详见
+`docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`。

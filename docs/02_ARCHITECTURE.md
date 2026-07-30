@@ -820,3 +820,18 @@ cursor, transaction, or account-scope logic.
 metadata, cursors, conflict rows, server versions, and per-record sync metadata
 remain in existing storage. No module history table or restart queue exists.
 See `docs/39_SETTINGS_INFORMATION_ARCHITECTURE_AND_SYNC_CENTER.md`.
+
+## 22. Authentication Session Layer
+
+Authentication is split across Server identity/credential/session services and a
+Flutter `AuthSessionManager`. `CloudUser` owns data; `AuthIdentity` identifies a
+login provider; `AuthCredential` stores Argon2id material; `AuthSession` and
+`AuthRefreshToken` hold durable revocation and rotation state.
+
+Flutter feature gateways never read persisted tokens directly. They request a
+runtime access token through the manager, which owns secure-store recovery,
+single-flight refresh, one-time authorized retry, endpoint binding, logout, and
+definitive session rejection. The access token is memory-only. Sync adapters and
+repositories remain unchanged below this authentication boundary.
+
+See `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.

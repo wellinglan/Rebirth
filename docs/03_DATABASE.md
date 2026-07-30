@@ -894,3 +894,16 @@ Flutter `schemaVersion` 为 `9`。新增三张表：
 `journal_entries` 五个回答列暂时保留，只从对应 system stable key 快照派生，
 用于严格的 payload v1 兼容，不再作为新业务写入接口。兼容期结束后才能另行
 设计移除迁移。完整设计见 `docs/38_JOURNAL_PROMPT_SYSTEM.md`。
+
+## 25. Server Authentication Schema
+
+Sprint 13A.1 does not change Flutter Drift; `schemaVersion` remains `9`.
+
+The Server adds an Alembic revision with `auth_credentials`, `auth_sessions`,
+`auth_refresh_tokens`, `auth_login_throttles`, and
+`legacy_refresh_migrations`. The migration is additive, references existing
+`cloud_users` and `auth_identities`, and supports downgrade/upgrade verification.
+Raw passwords, raw refresh tokens, Dev User Keys, usernames used for throttling,
+and client IP addresses are not persisted in these tables.
+
+See `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.

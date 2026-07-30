@@ -6,6 +6,7 @@ import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/account/data/account_boundary_repository_impl.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/data/legacy_ownership_verification_api_data_source.dart';
 import 'package:rebirth/features/account/data/legacy_ownership_verification_repository_impl.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
@@ -25,7 +26,9 @@ void main() {
     remote = _FakeRemoteDataSource();
     repository = LegacyOwnershipVerificationRepositoryImpl(
       database: database,
-      sessionStore: sessionStore,
+      sessionManager: AuthSessionManager.forTesting(
+        sessionStore: sessionStore,
+      ),
       remoteDataSource: remote,
       dateTimeService: DateTimeService(
         now: () => DateTime.utc(2031, 2, 3, 4, 5, 6),

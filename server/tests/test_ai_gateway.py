@@ -390,8 +390,8 @@ def test_openai_adapter_uses_stateless_strict_responses_api() -> None:
     responses = _ResponsesMock()
     client = SimpleNamespace(responses=responses)
     settings = load_settings(
-        environment="test",
-        jwt_secret="test-secret",
+        environment="development",
+        jwt_secret="test-only-jwt-secret-at-least-32-bytes",
         ai_provider="openai",
         openai_api_key="secret-not-forwarded",
         ai_model="configured-model",

@@ -28,7 +28,7 @@ import '../domain/ai_generation_request_binding.dart';
 final aiGenerationGatewayProvider = Provider<AiGenerationGateway>((ref) {
   return RemoteAiGenerationGateway(
     apiClient: ref.watch(apiClientProvider),
-    sessionStore: ref.watch(authSessionStoreProvider),
+    sessionManager: ref.watch(authSessionManagerProvider),
   );
 });
 

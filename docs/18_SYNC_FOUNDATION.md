@@ -675,3 +675,14 @@ results and continue. Running/progress/session results are transient after
 restart. Existing pending metadata, cursors and conflict rows remain
 canonical. See
 `docs/39_SETTINGS_INFORMATION_ARCHITECTURE_AND_SYNC_CENTER.md`.
+
+## Authentication Transport Update
+
+Sprint 13A.1 routes authenticated Sync requests through the shared
+`AuthSessionManager`. The manager supplies a memory-only access token, performs at
+most one refresh and retry for an explicit access-token expiry, and rejects a
+revoked or expired database session.
+
+This transport update does not alter Sync Protocol 2, entity ordering, payload
+schemas, OCC, cursor advancement, conflict recovery, account scope, or the
+manual-only policy.

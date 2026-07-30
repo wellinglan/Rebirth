@@ -10,6 +10,7 @@ import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/network/api_client.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/ai_coach/data/canonical_json_encoder_impl.dart';
@@ -124,7 +125,7 @@ void main() {
 
       final gateway = RemoteAiGenerationGateway(
         apiClient: api,
-        sessionStore: sessions,
+        sessionManager: AuthSessionManager.forTesting(sessionStore: sessions),
       );
       final capabilities = await gateway.getCapabilities();
       expect(capabilities.durableRequestLedger, isTrue);
@@ -256,7 +257,7 @@ void main() {
 
       final gateway = RemoteAiGenerationGateway(
         apiClient: api,
-        sessionStore: sessions,
+        sessionManager: AuthSessionManager.forTesting(sessionStore: sessions),
       );
       final capabilities = await gateway.getCapabilities();
       expect(

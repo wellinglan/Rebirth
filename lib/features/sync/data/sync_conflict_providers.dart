@@ -61,7 +61,9 @@ final syncConflictScopeProvider = FutureProvider<SyncConflictScope?>((
   final normalized = ref
       .watch(serverEndpointValidatorProvider)
       .normalize(endpoint);
-  final session = await ref.watch(authSessionStoreProvider).read();
+  final manager = ref.watch(authSessionManagerProvider);
+  await manager.initialize();
+  final session = manager.state.session;
   if (session == null ||
       session.user.id.trim().isEmpty ||
       session.serverBaseUrl.trim().isEmpty) {

@@ -5,7 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
-import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/legacy_ownership_verification.dart';
@@ -18,13 +18,13 @@ final class LegacyOwnershipVerificationRepositoryImpl
     implements LegacyOwnershipVerificationRepository {
   const LegacyOwnershipVerificationRepositoryImpl({
     required AppDatabase database,
-    required AuthSessionStore sessionStore,
+    required AuthSessionManager sessionManager,
     required LegacyOwnershipVerificationRemoteDataSource remoteDataSource,
     required DateTimeService dateTimeService,
     ServerEndpointValidator endpointValidator = const ServerEndpointValidator(),
   }) : this._(
          database,
-         sessionStore,
+         sessionManager,
          remoteDataSource,
          dateTimeService,
          endpointValidator,
@@ -32,7 +32,7 @@ final class LegacyOwnershipVerificationRepositoryImpl
 
   const LegacyOwnershipVerificationRepositoryImpl._(
     this._database,
-    this._sessionStore,
+    this._sessionManager,
     this._remoteDataSource,
     this._dateTimeService,
     this._endpointValidator,
@@ -41,7 +41,7 @@ final class LegacyOwnershipVerificationRepositoryImpl
   static const maxEvidenceItems = 500;
 
   final AppDatabase _database;
-  final AuthSessionStore _sessionStore;
+  final AuthSessionManager _sessionManager;
   final LegacyOwnershipVerificationRemoteDataSource _remoteDataSource;
   final DateTimeService _dateTimeService;
   final ServerEndpointValidator _endpointValidator;
@@ -70,9 +70,11 @@ final class LegacyOwnershipVerificationRepositoryImpl
         '旧同步记录超过单次安全验证上限，同步继续保持关闭。',
       );
     }
-    final result = await _remoteDataSource.verify(
-      evidence: evidence,
-      accessToken: session.accessToken,
+    final result = await _sessionManager.runAuthorized(
+      (accessToken) => _remoteDataSource.verify(
+        evidence: evidence,
+        accessToken: accessToken,
+      ),
     );
 
     final currentSession = await _requireSession();
@@ -233,15 +235,16 @@ final class LegacyOwnershipVerificationRepositoryImpl
   }
 
   Future<AuthSession> _requireSession() async {
-    final session = await _sessionStore.read();
-    if (session == null || session.accessToken.trim().isEmpty) {
+    await _sessionManager.validAccessToken();
+    final session = await _sessionManager.readCurrentSession();
+    if (session == null) {
       throw const AccountSessionRejectedException('登录会话已失效，请重新登录。');
     }
     return session;
   }
 
   bool _sameSessionScope(AuthSession left, AuthSession right) {
-    return left.accessToken == right.accessToken &&
+    return left.sessionId == right.sessionId &&
         left.user.id == right.user.id &&
         _normalizeEndpoint(left.serverBaseUrl) ==
             _normalizeEndpoint(right.serverBaseUrl);

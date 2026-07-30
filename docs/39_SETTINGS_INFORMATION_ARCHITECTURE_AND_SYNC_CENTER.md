@@ -260,7 +260,10 @@ Manual Windows keyboard and Android release behavior remains a product gate.
 - no Server, PostgreSQL, or Alembic change
 - no Beijing Alpha deployment
 
-Production authentication remains planned for Sprint 13A.
+Sprint 13A.1 now provides the underlying session-backed authentication protocol
+and secure client credential storage. The public registration/login experience
+remains deferred to Sprint 13A.2. Settings and the unified manual sync center keep
+the Sprint 12D information architecture and behavior described here.
 
 ## Gates
 

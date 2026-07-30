@@ -52,6 +52,147 @@ class AuthIdentity(Base):
     updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
 
+class AuthCredential(Base):
+    __tablename__ = "auth_credentials"
+    __table_args__ = (
+        UniqueConstraint(
+            "identity_id",
+            "credential_type",
+            name="uq_auth_credential_identity_type",
+        ),
+        CheckConstraint(
+            "credential_type = 'password'",
+            name="ck_auth_credential_type",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    identity_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("auth_identities.id"),
+        nullable=False,
+        index=True,
+    )
+    credential_type: Mapped[str] = mapped_column(String(24), nullable=False)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    password_algorithm: Mapped[str] = mapped_column(String(24), nullable=False)
+    password_parameters_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+    created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    password_changed_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    disabled_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+    __table_args__ = (
+        Index("ix_auth_sessions_active", "user_id", "revoked_at"),
+        Index("ix_auth_sessions_expiry", "absolute_expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("cloud_users.id"),
+        nullable=False,
+        index=True,
+    )
+    identity_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("auth_identities.id"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    last_seen_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    absolute_expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    revoked_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    revoke_reason: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    client_installation_id_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+    platform: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    app_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user_agent_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+    refresh_generation: Mapped[int] = mapped_column(Integer, nullable=False)
+    legacy_migrated_at: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+    )
+
+
+class AuthRefreshToken(Base):
+    __tablename__ = "auth_refresh_tokens"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_auth_refresh_token_hash"),
+        Index("ix_auth_refresh_tokens_expiry", "expires_at"),
+        Index("ix_auth_refresh_tokens_session_active", "session_id", "revoked_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("auth_sessions.id"),
+        nullable=False,
+        index=True,
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    parent_token_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("auth_refresh_tokens.id"),
+        nullable=True,
+    )
+    issued_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    used_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    revoked_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    revoke_reason: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    replaced_by_token_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("auth_refresh_tokens.id"),
+        nullable=True,
+    )
+    generation: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class AuthLoginThrottle(Base):
+    __tablename__ = "auth_login_throttles"
+    __table_args__ = (Index("ix_auth_login_throttles_updated", "updated_at"),)
+
+    bucket_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    window_started_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    blocked_until: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
+class LegacyRefreshMigration(Base):
+    __tablename__ = "legacy_refresh_migrations"
+    __table_args__ = (
+        UniqueConstraint(
+            "legacy_token_hash",
+            name="uq_legacy_refresh_migration_hash",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    legacy_token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("auth_sessions.id"),
+        nullable=False,
+        index=True,
+    )
+    migrated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
 class Device(Base):
     __tablename__ = "devices"
     __table_args__ = (

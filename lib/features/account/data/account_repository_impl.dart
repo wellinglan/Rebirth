@@ -7,6 +7,7 @@ import 'package:rebirth/features/account/domain/backend_health.dart';
 import 'package:rebirth/features/account/domain/device_registration.dart';
 
 import 'account_api_data_source.dart';
+import 'auth_session_manager.dart';
 import 'auth_session_store.dart';
 import 'device_info_service.dart';
 
@@ -14,6 +15,7 @@ final class AccountRepositoryImpl implements AuthRepository {
   const AccountRepositoryImpl({
     required this.remoteDataSource,
     required this.sessionStore,
+    required this.sessionManager,
     required this.loadLocalInstallationId,
     required this.deviceInfoService,
     required this.config,
@@ -22,6 +24,7 @@ final class AccountRepositoryImpl implements AuthRepository {
 
   final AccountRemoteDataSource remoteDataSource;
   final AuthSessionStore sessionStore;
+  final AuthSessionManager sessionManager;
   final Future<String> Function() loadLocalInstallationId;
   final DeviceInfoService deviceInfoService;
   final AppConfig config;
@@ -29,7 +32,8 @@ final class AccountRepositoryImpl implements AuthRepository {
 
   @override
   Future<AccountStatus> getAccountStatus() async {
-    final session = await sessionStore.read();
+    final managerState = await sessionManager.initialize();
+    final session = managerState.session ?? await sessionStore.read();
     final backendConfigured = serverBaseUrl.trim().isNotEmpty;
     if (session == null) {
       return AccountStatus.localOnly(backendConfigured: backendConfigured);
@@ -61,40 +65,40 @@ final class AccountRepositoryImpl implements AuthRepository {
     final session = (await remoteDataSource.devLogin(key)).copyWith(
       serverBaseUrl: serverBaseUrl,
     );
-    await sessionStore.save(session);
+    await sessionManager.acceptLogin(session);
     return session;
   }
 
   @override
   Future<DeviceRegistration> registerCurrentDevice() async {
-    final session = await sessionStore.read();
+    final session = sessionManager.state.session ?? await sessionStore.read();
     if (session == null) {
       throw const AccountAuthenticationRequiredException();
     }
     final installationId = await loadLocalInstallationId();
     final deviceInfo = deviceInfoService.current();
-    final registration = await remoteDataSource.registerDevice(
-      DeviceRegistrationRequest(
-        localInstallationId: installationId,
-        platform: deviceInfo.platform,
-        deviceName: deviceInfo.deviceName,
-        appVersion: config.appVersionLabel,
+    final registration = await sessionManager.runAuthorized(
+      (accessToken) => remoteDataSource.registerDevice(
+        DeviceRegistrationRequest(
+          localInstallationId: installationId,
+          platform: deviceInfo.platform,
+          deviceName: deviceInfo.deviceName,
+          appVersion: config.appVersionLabel,
+        ),
+        accessToken: accessToken,
       ),
-      accessToken: session.accessToken,
     );
-    await sessionStore.save(
+    await sessionManager.updateSession(
       session.copyWith(deviceRegistration: registration),
     );
     return registration;
   }
 
   @override
-  Future<void> logout() {
-    return sessionStore.clear();
-  }
+  Future<void> logout() => sessionManager.logout();
 
   @override
-  Future<void> refreshSession() {
-    throw UnsupportedError('Session refresh is not available in Sprint 6C.');
+  Future<void> refreshSession() async {
+    await sessionManager.validAccessToken();
   }
 }

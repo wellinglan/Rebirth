@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/network/api_client.dart';
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/ai_coach/data/remote_ai_generation_gateway.dart';
@@ -21,7 +22,10 @@ void main() {
   setUp(() {
     api = FakeApiClient();
     sessions = FakeSessionStore(session: _session());
-    gateway = RemoteAiGenerationGateway(apiClient: api, sessionStore: sessions);
+    gateway = RemoteAiGenerationGateway(
+      apiClient: api,
+      sessionManager: AuthSessionManager.forTesting(sessionStore: sessions),
+    );
   });
 
   test('capabilities require a current Rebirth session', () async {

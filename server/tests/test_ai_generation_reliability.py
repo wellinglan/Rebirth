@@ -73,6 +73,8 @@ def _insert_processing(
         token,
         client.app.state.settings.jwt_secret,
         algorithms=["HS256"],
+        audience=client.app.state.settings.auth_jwt_audience,
+        issuer=client.app.state.settings.auth_jwt_issuer,
     )["sub"]
     body = request_body()
     with client.app.state.database.session_factory() as session:

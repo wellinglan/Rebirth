@@ -211,3 +211,20 @@ Auth scope -> binding -> sync eligibility + verification -> network
 
 Cursor, conflict, tombstone, AI pending, and AI Consent state are never read
 for recovery or changed by verification.
+
+## Sprint 13A.1 Session-backed Authentication
+
+The earlier development token limitations above are superseded for the current
+codebase. Authentication now uses database-backed sessions, short-lived access
+JWTs, rotating opaque refresh tokens, reuse detection, logout revocation, and
+Android/Windows secure storage. Access tokens are memory-only.
+
+Existing `dev` identities remain compatible through HMAC subject migration.
+`password_username` identities may be registered, logged in, or attached to an
+existing verified Dev account. The public username/password page is deferred to
+Sprint 13A.2 and WeChat remains unimplemented.
+
+Authentication gates every existing Sync API, but does not change API Version 1,
+Sync Protocol 2, entity payloads, device ownership, cursor semantics, OCC, or the
+manual-only sync policy. See
+`docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.

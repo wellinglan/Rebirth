@@ -51,6 +51,15 @@ def main() -> int:
             "REBIRTH_ENV": "development",
             "REBIRTH_DATABASE_URL": args.database_url,
             "REBIRTH_JWT_SECRET": "multiworker-verification-only-secret",
+            "AUTH_REFRESH_TOKEN_HMAC_KEY": (
+                "multiworker-refresh-verification-only-secret"
+            ),
+            "AUTH_DEV_IDENTITY_HMAC_KEY": (
+                "multiworker-dev-identity-verification-secret"
+            ),
+            "AUTH_RATE_LIMIT_HMAC_KEY": (
+                "multiworker-rate-limit-verification-secret"
+            ),
             "REBIRTH_AI_PROVIDER": "fake",
             "REBIRTH_AI_FAKE_SCENARIO": "success",
         }
@@ -148,6 +157,25 @@ def main() -> int:
         )
         if row_count != 1 or provider_started != 1:
             raise RuntimeError("Multi-worker claim ownership verification failed.")
+        refresh_token = login.json()["refresh_token"]
+
+        def refresh() -> tuple[int, dict[str, object]]:
+            response = httpx.post(
+                f"{base_url}/auth/refresh",
+                json={"refresh_token": refresh_token, "platform": "windows"},
+                timeout=20,
+            )
+            return response.status_code, response.json()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            refresh_responses = list(executor.map(lambda _: refresh(), range(2)))
+        if sorted(status for status, _ in refresh_responses) != [200, 401]:
+            raise RuntimeError("Concurrent refresh did not have exactly one winner.")
+        rejection = next(
+            body for status, body in refresh_responses if status == 401
+        )
+        if rejection.get("detail", {}).get("code") != "refresh_token_reused":
+            raise RuntimeError("Concurrent refresh did not trigger reuse detection.")
         print(
             json.dumps(
                 {
@@ -157,6 +185,10 @@ def main() -> int:
                     "final_status": final_body["status"],
                     "ledger_row_count": row_count,
                     "provider_call_started_count": provider_started,
+                    "concurrent_refresh_statuses": sorted(
+                        status for status, _ in refresh_responses
+                    ),
+                    "refresh_reuse_detected": True,
                     "postgres_version": postgres_version,
                 },
                 sort_keys=True,

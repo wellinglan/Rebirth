@@ -11,14 +11,16 @@ import 'package:rebirth/features/account/domain/legacy_ownership_verification_re
 import 'account_boundary_repository_impl.dart';
 import 'account_api_data_source.dart';
 import 'account_repository_impl.dart';
+import 'auth_session_manager.dart';
 import 'auth_session_store.dart';
 import 'device_info_service.dart';
-import 'local_auth_session_store.dart';
+import 'secure_auth_session_store.dart';
 import 'legacy_ownership_verification_api_data_source.dart';
 import 'legacy_ownership_verification_repository_impl.dart';
+import 'password_auth_service.dart';
 
 final authSessionStoreProvider = Provider<AuthSessionStore>(
-  (ref) => LocalAuthSessionStore(
+  (ref) => SecureAuthSessionStore(
     expectedServerBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
   ),
 );
@@ -43,10 +45,28 @@ final accountRemoteDataSourceProvider = Provider<AccountRemoteDataSource>(
   (ref) => AccountApiDataSource(ref.watch(apiClientProvider)),
 );
 
+final authSessionManagerProvider = Provider<AuthSessionManager>((ref) {
+  final dateTimeService = ref.watch(dateTimeServiceProvider);
+  final sessionStore = ref.watch(authSessionStoreProvider);
+  if (sessionStore is! SecureAuthSessionStore) {
+    return AuthSessionManager.forTesting(
+      sessionStore: sessionStore,
+      nowMilliseconds: dateTimeService.currentUtcMillisecondsSinceEpoch,
+    );
+  }
+  return AuthSessionManager(
+    sessionStore: sessionStore,
+    remoteDataSource: ref.watch(accountRemoteDataSourceProvider),
+    serverBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
+    nowMilliseconds: dateTimeService.currentUtcMillisecondsSinceEpoch,
+  );
+});
+
 final accountRepositoryProvider = Provider<AuthRepository>((ref) {
   return AccountRepositoryImpl(
     remoteDataSource: ref.watch(accountRemoteDataSourceProvider),
     sessionStore: ref.watch(authSessionStoreProvider),
+    sessionManager: ref.watch(authSessionManagerProvider),
     loadLocalInstallationId: () async {
       final installation = await ref
           .read(accountBoundaryRepositoryProvider)
@@ -56,6 +76,25 @@ final accountRepositoryProvider = Provider<AuthRepository>((ref) {
     deviceInfoService: ref.watch(deviceInfoServiceProvider),
     config: ref.watch(appConfigProvider),
     serverBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
+  );
+});
+
+final passwordAuthServiceProvider = Provider<PasswordAuthService>((ref) {
+  return PasswordAuthServiceImpl(
+    apiClient: ref.watch(apiClientProvider),
+    sessionManager: ref.watch(authSessionManagerProvider),
+    serverBaseUrl: ref.watch(effectiveServerEndpointProvider).baseUrl,
+    loadClientMetadata: () async {
+      final installation = await ref
+          .read(accountBoundaryRepositoryProvider)
+          .ensureInstallation();
+      final device = ref.read(deviceInfoServiceProvider).current();
+      return {
+        'client_installation_id': installation.installationId,
+        'platform': device.platform,
+        'app_version': ref.read(appConfigProvider).appVersionLabel,
+      };
+    },
   );
 });
 
@@ -70,7 +109,7 @@ final legacyOwnershipVerificationRepositoryProvider =
     Provider<LegacyOwnershipVerificationRepository>((ref) {
       return LegacyOwnershipVerificationRepositoryImpl(
         database: ref.watch(appDatabaseProvider),
-        sessionStore: ref.watch(authSessionStoreProvider),
+        sessionManager: ref.watch(authSessionManagerProvider),
         remoteDataSource: ref.watch(
           legacyOwnershipVerificationRemoteDataSourceProvider,
         ),

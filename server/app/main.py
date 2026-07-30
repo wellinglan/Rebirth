@@ -17,6 +17,11 @@ def create_app(
     database_url: str | None = None,
     environment: str | None = None,
     jwt_secret: str | None = None,
+    auth_refresh_token_hmac_key: str | None = None,
+    auth_dev_identity_hmac_key: str | None = None,
+    auth_rate_limit_hmac_key: str | None = None,
+    auth_legacy_token_migration_enabled: bool | None = None,
+    auth_legacy_token_migration_deadline: str | None = None,
     ai_provider: str | None = None,
     openai_api_key: str | None = None,
     ai_model: str | None = None,
@@ -27,6 +32,15 @@ def create_app(
         database_url=database_url,
         environment=environment,
         jwt_secret=jwt_secret,
+        auth_refresh_token_hmac_key=auth_refresh_token_hmac_key,
+        auth_dev_identity_hmac_key=auth_dev_identity_hmac_key,
+        auth_rate_limit_hmac_key=auth_rate_limit_hmac_key,
+        auth_legacy_token_migration_enabled=(
+            auth_legacy_token_migration_enabled
+        ),
+        auth_legacy_token_migration_deadline=(
+            auth_legacy_token_migration_deadline
+        ),
         ai_provider=ai_provider,
         openai_api_key=openai_api_key,
         ai_model=ai_model,

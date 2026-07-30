@@ -26,3 +26,25 @@ Never commit a GitHub PAT, JWT secret, PostgreSQL password, `.env` file, or Dock
 This remains a Development deployment using the Fake Provider over a Tailscale private network. It is a private Cloud Alpha debug environment, not a production deployment, and it does not expose a public API.
 
 The Beijing server does not pull `python:3.12-slim` or `postgres:17-alpine` directly from Docker Hub. GitHub-hosted Ubuntu runners perform those Docker Hub pulls while building or mirroring, and the server consumes the resulting GHCR images.
+
+## Authentication Foundation Deployment Prerequisites
+
+Sprint 13A.1 images require four independent runtime secrets of at least 32
+bytes: `REBIRTH_JWT_SECRET`, `AUTH_REFRESH_TOKEN_HMAC_KEY`,
+`AUTH_DEV_IDENTITY_HMAC_KEY`, and `AUTH_RATE_LIMIT_HMAC_KEY`. Configure stable
+`AUTH_JWT_ISSUER` and `AUTH_JWT_AUDIENCE` values as well. Never reuse the
+PostgreSQL password, registry credential, or AI provider key for these purposes.
+
+When a future deployment is approved, deploy in this order:
+
+1. back up and verify the existing environment;
+2. add the new secrets without printing them;
+3. run the additive Alembic upgrade;
+4. deploy the compatible API image;
+5. verify health and authentication routes privately;
+6. release the secure-storage client afterward;
+7. enable legacy token migration only with an explicit UTC deadline.
+
+Sprint 13A.1 does not itself connect to the Beijing server, change its Compose
+file, run remote Alembic, pull images, restart services, rebuild PostgreSQL, or
+delete volumes.

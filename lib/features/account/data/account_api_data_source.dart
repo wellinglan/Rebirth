@@ -13,6 +13,13 @@ abstract interface class AccountRemoteDataSource {
 
   Future<AuthSession> devLogin(String devUserKey);
 
+  Future<AuthSession> refreshSession(String refreshToken);
+
+  Future<void> logout({
+    required String refreshToken,
+    String? accessToken,
+  });
+
   Future<DeviceRegistration> registerDevice(
     DeviceRegistrationRequest request, {
     required String accessToken,
@@ -41,6 +48,29 @@ final class AccountApiDataSource implements AccountRemoteDataSource {
       timeout: const Duration(seconds: 5),
     );
     return _parse(() => AuthSessionDto.fromJson(json).toDomain());
+  }
+
+  @override
+  Future<AuthSession> refreshSession(String refreshToken) async {
+    final json = await apiClient.postJson(
+      '/auth/refresh',
+      body: {'refresh_token': refreshToken},
+      timeout: const Duration(seconds: 5),
+    );
+    return _parse(() => AuthSessionDto.fromJson(json).toDomain());
+  }
+
+  @override
+  Future<void> logout({
+    required String refreshToken,
+    String? accessToken,
+  }) async {
+    await apiClient.postJson(
+      '/auth/logout',
+      body: {'refresh_token': refreshToken},
+      accessToken: accessToken,
+      timeout: const Duration(seconds: 5),
+    );
   }
 
   @override

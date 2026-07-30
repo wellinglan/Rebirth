@@ -2,20 +2,38 @@ from __future__ import annotations
 
 import os
 import math
+import secrets
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
 
-_DEVELOPMENT_JWT_SECRET = "rebirth-development-only-not-a-production-secret"
+_DEVELOPMENT_SECRETS = {
+    "jwt": secrets.token_urlsafe(48),
+    "refresh": secrets.token_urlsafe(48),
+    "dev_identity": secrets.token_urlsafe(48),
+    "rate_limit": secrets.token_urlsafe(48),
+}
 
 
 @dataclass(frozen=True)
 class Settings:
     environment: str
     database_url: str
-    jwt_secret: str
+    jwt_secret: str = field(repr=False)
     access_token_minutes: int
     refresh_token_days: int
+    auth_jwt_issuer: str
+    auth_jwt_audience: str
+    auth_refresh_token_hmac_key: str = field(repr=False)
+    auth_dev_identity_hmac_key: str = field(repr=False)
+    auth_rate_limit_hmac_key: str = field(repr=False)
+    auth_session_absolute_days: int
+    auth_legacy_token_migration_enabled: bool
+    auth_legacy_token_migration_deadline: int | None
+    auth_login_max_failures: int
+    auth_login_window_minutes: int
+    auth_login_block_minutes: int
     ai_provider: str = "disabled"
     openai_api_key: str | None = field(default=None, repr=False)
     ai_model: str | None = None
@@ -36,6 +54,11 @@ def load_settings(
     database_url: str | None = None,
     environment: str | None = None,
     jwt_secret: str | None = None,
+    auth_refresh_token_hmac_key: str | None = None,
+    auth_dev_identity_hmac_key: str | None = None,
+    auth_rate_limit_hmac_key: str | None = None,
+    auth_legacy_token_migration_enabled: bool | None = None,
+    auth_legacy_token_migration_deadline: str | None = None,
     ai_provider: str | None = None,
     openai_api_key: str | None = None,
     ai_model: str | None = None,
@@ -43,13 +66,45 @@ def load_settings(
     resolved_environment = (
         environment or os.getenv("REBIRTH_ENV", "development")
     ).lower()
-    configured_secret = jwt_secret or os.getenv("REBIRTH_JWT_SECRET")
-    if not configured_secret:
-        if resolved_environment != "development":
-            raise RuntimeError(
-                "REBIRTH_JWT_SECRET is required outside development."
-            )
-        configured_secret = _DEVELOPMENT_JWT_SECRET
+    configured_secret = _secret(
+        explicit=jwt_secret,
+        env_name="REBIRTH_JWT_SECRET",
+        environment=resolved_environment,
+        development_key="jwt",
+    )
+    refresh_hmac_key = _secret(
+        explicit=auth_refresh_token_hmac_key,
+        env_name="AUTH_REFRESH_TOKEN_HMAC_KEY",
+        environment=resolved_environment,
+        development_key="refresh",
+    )
+    dev_identity_hmac_key = _secret(
+        explicit=auth_dev_identity_hmac_key,
+        env_name="AUTH_DEV_IDENTITY_HMAC_KEY",
+        environment=resolved_environment,
+        development_key="dev_identity",
+    )
+    rate_limit_hmac_key = _secret(
+        explicit=auth_rate_limit_hmac_key,
+        env_name="AUTH_RATE_LIMIT_HMAC_KEY",
+        environment=resolved_environment,
+        development_key="rate_limit",
+    )
+    legacy_enabled = (
+        auth_legacy_token_migration_enabled
+        if auth_legacy_token_migration_enabled is not None
+        else _boolean("AUTH_LEGACY_TOKEN_MIGRATION_ENABLED", "false")
+    )
+    deadline_text = (
+        auth_legacy_token_migration_deadline
+        or os.getenv("AUTH_LEGACY_TOKEN_MIGRATION_DEADLINE")
+    )
+    legacy_deadline = _utc_deadline_milliseconds(deadline_text)
+    if legacy_enabled and legacy_deadline is None:
+        raise RuntimeError(
+            "AUTH_LEGACY_TOKEN_MIGRATION_DEADLINE is required when legacy "
+            "token migration is enabled."
+        )
 
     database_path = Path(__file__).resolve().parents[1] / "rebirth_dev.sqlite"
     resolved_database_url = (
@@ -109,10 +164,34 @@ def load_settings(
         environment=resolved_environment,
         database_url=resolved_database_url,
         jwt_secret=configured_secret,
-        access_token_minutes=int(
-            os.getenv("REBIRTH_ACCESS_TOKEN_MINUTES", "30")
+        access_token_minutes=_positive_int(
+            "AUTH_ACCESS_TOKEN_MINUTES",
+            os.getenv("REBIRTH_ACCESS_TOKEN_MINUTES", "15"),
         ),
-        refresh_token_days=int(os.getenv("REBIRTH_REFRESH_TOKEN_DAYS", "30")),
+        refresh_token_days=_positive_int(
+            "AUTH_REFRESH_TOKEN_DAYS",
+            os.getenv("REBIRTH_REFRESH_TOKEN_DAYS", "30"),
+        ),
+        auth_jwt_issuer=os.getenv("AUTH_JWT_ISSUER", "rebirth-api"),
+        auth_jwt_audience=os.getenv("AUTH_JWT_AUDIENCE", "rebirth-client"),
+        auth_refresh_token_hmac_key=refresh_hmac_key,
+        auth_dev_identity_hmac_key=dev_identity_hmac_key,
+        auth_rate_limit_hmac_key=rate_limit_hmac_key,
+        auth_session_absolute_days=_positive_int(
+            "AUTH_SESSION_ABSOLUTE_DAYS",
+            "90",
+        ),
+        auth_legacy_token_migration_enabled=legacy_enabled,
+        auth_legacy_token_migration_deadline=legacy_deadline,
+        auth_login_max_failures=_positive_int("AUTH_LOGIN_MAX_FAILURES", "5"),
+        auth_login_window_minutes=_positive_int(
+            "AUTH_LOGIN_WINDOW_MINUTES",
+            "15",
+        ),
+        auth_login_block_minutes=_positive_int(
+            "AUTH_LOGIN_BLOCK_MINUTES",
+            "15",
+        ),
         ai_provider=resolved_ai_provider,
         openai_api_key=resolved_api_key,
         ai_model=resolved_ai_model,
@@ -143,3 +222,45 @@ def _positive_float(name: str, default: str) -> float:
     if not math.isfinite(value) or value <= 0:
         raise RuntimeError(f"{name} must be a finite positive number.")
     return value
+
+
+def _secret(
+    *,
+    explicit: str | None,
+    env_name: str,
+    environment: str,
+    development_key: str,
+) -> str:
+    value = explicit or os.getenv(env_name)
+    if value:
+        if environment != "development" and len(value.encode("utf-8")) < 32:
+            raise RuntimeError(f"{env_name} must be at least 32 bytes.")
+        return value
+    if environment == "development":
+        return _DEVELOPMENT_SECRETS[development_key]
+    raise RuntimeError(f"{env_name} is required outside development.")
+
+
+def _boolean(name: str, default: str) -> bool:
+    value = os.getenv(name, default).strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    raise RuntimeError(f"{name} must be true or false.")
+
+
+def _utc_deadline_milliseconds(value: str | None) -> int | None:
+    if value is None or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        raise RuntimeError(
+            "AUTH_LEGACY_TOKEN_MIGRATION_DEADLINE must be an ISO-8601 timestamp."
+        ) from None
+    if parsed.tzinfo is None:
+        raise RuntimeError(
+            "AUTH_LEGACY_TOKEN_MIGRATION_DEADLINE must include a timezone."
+        )
+    return int(parsed.astimezone(timezone.utc).timestamp() * 1000)

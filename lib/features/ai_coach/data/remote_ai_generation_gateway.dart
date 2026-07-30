@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:rebirth/core/network/api_client.dart';
 import 'package:rebirth/core/network/api_exception.dart';
-import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
@@ -11,21 +11,22 @@ import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 final class RemoteAiGenerationGateway implements AiGenerationGateway {
   const RemoteAiGenerationGateway({
     required this.apiClient,
-    required this.sessionStore,
+    required this.sessionManager,
     this.generationTimeout = const Duration(seconds: 100),
   });
 
   final ApiClient apiClient;
-  final AuthSessionStore sessionStore;
+  final AuthSessionManager sessionManager;
   final Duration generationTimeout;
 
   @override
   Future<AiGenerationCapabilities> getCapabilities() async {
-    final token = await _accessToken();
     try {
-      final json = await apiClient.getJson(
-        '/ai/capabilities',
-        accessToken: token,
+      final json = await sessionManager.runAuthorized(
+        (token) => apiClient.getJson(
+          '/ai/capabilities',
+          accessToken: token,
+        ),
       );
       return _decodeCapabilities(json);
     } on ApiException catch (error) {
@@ -66,17 +67,19 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
     required String requestId,
     required AiCoachInputBundle bundle,
   }) async {
-    final token = await _accessToken();
     try {
-      final json = await apiClient.postJson(
-        path,
-        accessToken: token,
-        timeout: generationTimeout,
-        body: {
-          'request_id': requestId,
-          'input_hash': bundle.inputHash,
-          'payload': bundle.canonicalPayload,
-        },
+      final json = await sessionManager.runAuthorized(
+        (token) => apiClient.postJson(
+          path,
+          accessToken: token,
+          timeout: generationTimeout,
+          body: {
+            'request_id': requestId,
+            'input_hash': bundle.inputHash,
+            'payload': bundle.canonicalPayload,
+          },
+        ),
+        canReplay: false,
       );
       return _decodeRemoteResult(
         json,
@@ -101,11 +104,12 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
     required String reportType,
     required String promptVersion,
   }) async {
-    final token = await _accessToken();
     try {
-      final json = await apiClient.getJson(
-        '/ai/requests/$requestId',
-        accessToken: token,
+      final json = await sessionManager.runAuthorized(
+        (token) => apiClient.getJson(
+          '/ai/requests/$requestId',
+          accessToken: token,
+        ),
       );
       return _decodeRemoteResult(
         json,
@@ -130,16 +134,6 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
     } on TypeError {
       throw const AiGenerationException(AiReportFailureCode.responseInvalid);
     }
-  }
-
-  Future<String> _accessToken() async {
-    final session = await sessionStore.read();
-    if (session == null || session.accessToken.isEmpty) {
-      throw const AiGenerationException(
-        AiReportFailureCode.authenticationRequired,
-      );
-    }
-    return session.accessToken;
   }
 
   AiGenerationCapabilities _decodeCapabilities(Map<String, Object?> json) {

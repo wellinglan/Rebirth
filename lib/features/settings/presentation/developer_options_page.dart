@@ -13,6 +13,7 @@ import 'server_endpoint_settings_controller.dart';
 import 'widgets/server_endpoint_card.dart';
 import 'widgets/server_endpoint_dialog.dart';
 import 'widgets/settings_section.dart';
+import 'widgets/password_identity_attach_dialog.dart';
 
 class DeveloperOptionsPage extends ConsumerWidget {
   const DeveloperOptionsPage({super.key});
@@ -80,6 +81,17 @@ class DeveloperOptionsPage extends ConsumerWidget {
                             value.isCheckingBackend ? '检查中...' : '检查后端连接',
                           ),
                         ),
+                        if (value.status.isAuthenticated)
+                          OutlinedButton.icon(
+                            key: const ValueKey('attachPasswordIdentityButton'),
+                            onPressed: value.isBusy
+                                ? null
+                                : () => _attachPasswordIdentity(context, ref),
+                            icon: const Icon(Icons.link),
+                            label: Text(
+                              value.isAttachingPassword ? '绑定中...' : '绑定用户名和密码',
+                            ),
+                          ),
                         if (value.status.isAuthenticated)
                           OutlinedButton.icon(
                             key: const ValueKey('developerLogoutButton'),
@@ -183,6 +195,28 @@ class DeveloperOptionsPage extends ConsumerWidget {
         .checkBackendHealth();
     if (context.mounted) {
       _message(context, success ? '开发后端已连接' : '无法连接开发后端');
+    }
+  }
+
+  Future<void> _attachPasswordIdentity(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final input = await showDialog<PasswordIdentityAttachInput>(
+      context: context,
+      builder: (_) => const PasswordIdentityAttachDialog(),
+    );
+    if (input == null || !context.mounted) return;
+    final success = await ref
+        .read(accountControllerProvider.notifier)
+        .attachPasswordIdentity(
+          devUserKey: input.devUserKey,
+          username: input.username,
+          password: input.password,
+          displayName: input.displayName,
+        );
+    if (context.mounted) {
+      _message(context, success ? '用户名和密码已绑定到当前账号' : '绑定失败，请检查输入后重试');
     }
   }
 

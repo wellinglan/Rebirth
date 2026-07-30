@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
@@ -41,7 +42,7 @@ void main() {
     accountScopeChecks = 0;
     coordinator = SyncCoordinator(
       endpoint: _endpoint,
-      sessionStore: sessionStore,
+      sessionManager: AuthSessionManager.forTesting(sessionStore: sessionStore),
       remoteDataSource: remote,
       cursorStore: cursorStore,
       adapterRegistry: SyncEntityAdapterRegistry([adapter]),
@@ -269,7 +270,9 @@ void main() {
       );
       final todayCoordinator = SyncCoordinator(
         endpoint: _endpoint,
-        sessionStore: sessionStore,
+        sessionManager: AuthSessionManager.forTesting(
+          sessionStore: sessionStore,
+        ),
         remoteDataSource: remote,
         cursorStore: cursorStore,
         adapterRegistry: SyncEntityAdapterRegistry([todayAdapter]),
@@ -319,7 +322,9 @@ void main() {
       );
       final journalCoordinator = SyncCoordinator(
         endpoint: _endpoint,
-        sessionStore: sessionStore,
+        sessionManager: AuthSessionManager.forTesting(
+          sessionStore: sessionStore,
+        ),
         remoteDataSource: remote,
         cursorStore: cursorStore,
         adapterRegistry: SyncEntityAdapterRegistry([journalAdapter]),
@@ -371,7 +376,9 @@ void main() {
       );
       final healthCoordinator = SyncCoordinator(
         endpoint: _endpoint,
-        sessionStore: sessionStore,
+        sessionManager: AuthSessionManager.forTesting(
+          sessionStore: sessionStore,
+        ),
         remoteDataSource: remote,
         cursorStore: cursorStore,
         adapterRegistry: SyncEntityAdapterRegistry([healthAdapter]),
@@ -414,7 +421,7 @@ void main() {
     );
     final healthCoordinator = SyncCoordinator(
       endpoint: _endpoint,
-      sessionStore: sessionStore,
+      sessionManager: AuthSessionManager.forTesting(sessionStore: sessionStore),
       remoteDataSource: remote,
       cursorStore: cursorStore,
       adapterRegistry: SyncEntityAdapterRegistry([healthAdapter]),
@@ -729,7 +736,7 @@ void main() {
     final planAdapter = _FakeAdapter(entityType: SyncEntityType.plan);
     coordinator = SyncCoordinator(
       endpoint: _endpoint,
-      sessionStore: sessionStore,
+      sessionManager: AuthSessionManager.forTesting(sessionStore: sessionStore),
       remoteDataSource: remote,
       cursorStore: cursorStore,
       adapterRegistry: SyncEntityAdapterRegistry([adapter, planAdapter]),
@@ -832,7 +839,7 @@ void main() {
     final planAdapter = _FakeAdapter(entityType: SyncEntityType.plan);
     coordinator = SyncCoordinator(
       endpoint: _endpoint,
-      sessionStore: sessionStore,
+      sessionManager: AuthSessionManager.forTesting(sessionStore: sessionStore),
       remoteDataSource: remote,
       cursorStore: cursorStore,
       adapterRegistry: SyncEntityAdapterRegistry([adapter, planAdapter]),

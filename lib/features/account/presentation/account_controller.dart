@@ -87,6 +87,34 @@ class AccountController extends AsyncNotifier<AccountViewState> {
     }
   }
 
+  Future<bool> attachPasswordIdentity({
+    required String devUserKey,
+    required String username,
+    required String password,
+    String? displayName,
+  }) async {
+    final current = state.value;
+    if (current == null || current.isBusy || !current.status.isAuthenticated) {
+      return false;
+    }
+    _setAction(current, AccountAction.attachingPassword);
+    try {
+      await ref
+          .read(passwordAuthServiceProvider)
+          .attachPasswordIdentity(
+            devUserKey: devUserKey,
+            username: username,
+            password: password,
+            displayName: displayName,
+          );
+      _finish(current.status.copyWith(errorMessage: null));
+      return true;
+    } catch (error) {
+      _finish(current.status.copyWith(errorMessage: _messageFor(error)));
+      return false;
+    }
+  }
+
   Future<bool> registerCurrentDevice() async {
     final current = state.value;
     if (current == null || current.isBusy) return false;

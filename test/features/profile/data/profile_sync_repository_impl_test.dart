@@ -7,6 +7,7 @@ import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/network/api_exception.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/account/domain/device_registration.dart';
@@ -44,7 +45,7 @@ void main() {
     adapter = ProfileSyncAdapter(database);
     coordinator = SyncCoordinator(
       endpoint: _endpoint,
-      sessionStore: sessionStore,
+      sessionManager: AuthSessionManager.forTesting(sessionStore: sessionStore),
       remoteDataSource: remote,
       cursorStore: cursorStore,
       adapterRegistry: SyncEntityAdapterRegistry([adapter]),
@@ -747,8 +748,10 @@ void main() {
       final windowsRepository = ProfileSyncRepositoryImpl(
         coordinator: SyncCoordinator(
           endpoint: _endpoint,
-          sessionStore: _MemorySessionStore(
-            session: _registeredSessionFor('windows-device'),
+          sessionManager: AuthSessionManager.forTesting(
+            sessionStore: _MemorySessionStore(
+              session: _registeredSessionFor('windows-device'),
+            ),
           ),
           remoteDataSource: cloud,
           cursorStore: _MemorySyncCursorStore(),
@@ -763,8 +766,10 @@ void main() {
       final androidRepository = ProfileSyncRepositoryImpl(
         coordinator: SyncCoordinator(
           endpoint: _endpoint,
-          sessionStore: _MemorySessionStore(
-            session: _registeredSessionFor('android-device'),
+          sessionManager: AuthSessionManager.forTesting(
+            sessionStore: _MemorySessionStore(
+              session: _registeredSessionFor('android-device'),
+            ),
           ),
           remoteDataSource: cloud,
           cursorStore: _MemorySyncCursorStore(),

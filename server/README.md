@@ -165,9 +165,17 @@ field, Alembic revision, or PostgreSQL schema changed in Sprint 10B.
 |---|---|---|
 | `REBIRTH_ENV` | `development` | Runtime environment |
 | `REBIRTH_DATABASE_URL` | local SQLite URL | SQLAlchemy SQLite/PostgreSQL URL |
-| `REBIRTH_JWT_SECRET` | development-only placeholder | JWT signing secret |
-| `REBIRTH_ACCESS_TOKEN_MINUTES` | `30` | Access-token lifetime |
-| `REBIRTH_REFRESH_TOKEN_DAYS` | `30` | Refresh-token lifetime |
+| `REBIRTH_JWT_SECRET` | generated in development | JWT signing secret |
+| `AUTH_REFRESH_TOKEN_HMAC_KEY` | generated in development | Opaque refresh-token digest key |
+| `AUTH_DEV_IDENTITY_HMAC_KEY` | generated in development | Dev identity subject key |
+| `AUTH_RATE_LIMIT_HMAC_KEY` | generated in development | Login throttle bucket key |
+| `AUTH_JWT_ISSUER` | `rebirth-api` | Access-token issuer |
+| `AUTH_JWT_AUDIENCE` | `rebirth-client` | Access-token audience |
+| `AUTH_ACCESS_TOKEN_MINUTES` | `15` | Access-token lifetime |
+| `AUTH_REFRESH_TOKEN_DAYS` | `30` | Refresh-token lifetime |
+| `AUTH_SESSION_ABSOLUTE_DAYS` | `90` | Absolute session lifetime |
+| `AUTH_LEGACY_TOKEN_MIGRATION_ENABLED` | `false` | Controlled legacy JWT exchange |
+| `AUTH_LEGACY_TOKEN_MIGRATION_DEADLINE` | none | Required UTC cutoff when enabled |
 | `REBIRTH_AI_PROVIDER` | `disabled` | `disabled`, development `fake`, or `openai` |
 | `OPENAI_API_KEY` | none | Server-only Provider secret |
 | `REBIRTH_AI_MODEL` | none | Configured OpenAI model ID |
@@ -179,4 +187,9 @@ field, Alembic revision, or PostgreSQL schema changed in Sprint 10B.
 
 Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Weekly manual flow is documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`; the developer-only Daily contract is documented in `docs/manual_tests/21_daily_insight_contract.md`.
 
-Outside `development`, `REBIRTH_JWT_SECRET` is mandatory. Production must use HTTPS, managed secrets, PostgreSQL backups, secure client token storage, token refresh/revoke, rate limiting, observability, and a security review. The current SharedPreferences session is development-level only. There is no real WeChat login, background sync, field-level conflict merge, or Today/Journal/Health sync.
+Outside `development`, all four authentication secrets are mandatory and must
+be at least 32 bytes. Production must use HTTPS, managed secret rotation,
+PostgreSQL backups, observability, and a security review. Flutter now stores
+refresh credentials through Android/Windows secure storage and keeps access
+tokens in memory. There is no public login UI, account recovery, MFA, real
+WeChat login, or background sync in Sprint 13A.1.

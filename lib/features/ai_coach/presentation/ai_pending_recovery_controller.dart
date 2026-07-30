@@ -8,7 +8,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.d
 import 'package:rebirth/features/ai_coach/domain/ai_report.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
-import 'package:rebirth/features/account/data/auth_session_store.dart';
+import 'package:rebirth/features/account/data/auth_session_manager.dart';
 
 enum AiPendingRecoveryState {
   awaitingCheck,
@@ -31,7 +31,7 @@ final aiPendingRecoveryControllerProvider =
         gateway: ref.watch(aiGenerationGatewayProvider),
         reports: ref.watch(aiReportRepositoryProvider),
         bindings: ref.watch(aiGenerationRequestBindingStoreProvider),
-        sessionStore: ref.watch(authSessionStoreProvider),
+        sessionManager: ref.watch(authSessionManagerProvider),
         currentEndpoint: ref.watch(effectiveServerEndpointProvider).baseUrl,
         endpointValidator: ref.watch(serverEndpointValidatorProvider),
       );
@@ -42,7 +42,7 @@ final class AiPendingRecoveryController {
     required this.gateway,
     required this.reports,
     required this.bindings,
-    required this.sessionStore,
+    required this.sessionManager,
     required this.currentEndpoint,
     required this.endpointValidator,
   });
@@ -50,7 +50,7 @@ final class AiPendingRecoveryController {
   final AiGenerationGateway gateway;
   final AiReportRepository reports;
   final AiGenerationRequestBindingStore bindings;
-  final AuthSessionStore sessionStore;
+  final AuthSessionManager sessionManager;
   final String currentEndpoint;
   final ServerEndpointValidator endpointValidator;
   final Set<String> _checking = {};
@@ -72,7 +72,8 @@ final class AiPendingRecoveryController {
           endpointValidator.normalize(currentEndpoint)) {
         return AiPendingRecoveryState.endpointMismatch;
       }
-      final session = await sessionStore.read();
+      await sessionManager.initialize();
+      final session = sessionManager.state.session;
       if (session == null || session.user.id != binding.cloudUserId) {
         return AiPendingRecoveryState.accountMismatch;
       }
