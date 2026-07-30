@@ -313,6 +313,58 @@ void main() {
     },
   );
 
+  test(
+    'adopt remote selects the requested duplicate remote conflict',
+    () async {
+      final targetLocal = await createLocalToday();
+      final target = await createConflict(
+        local: targetLocal,
+        remoteRecordId: _remoteId,
+      );
+      await service.requestAdoptRemote(scope: scope, conflictId: target.id);
+
+      final otherRepository = TodayRepositoryImpl(
+        database: database,
+        dateTimeService: DateTimeService(now: () => DateTime(2026, 7, 29, 8)),
+      );
+      final otherEntry = await otherRepository.saveToday(
+        TodaySaveData(dailyNote: 'Other local Today'),
+      );
+      final other = (await today(otherEntry.id))!;
+      final otherConflict = await createConflict(
+        local: other,
+        remoteRecordId: _remoteId,
+      );
+      final adapter = TodaySyncAdapter(
+        database,
+        conflictRepository,
+        () async => scope,
+      );
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [_remoteChange()],
+        syncedAt: 1_000,
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      );
+
+      expect(result.status, SyncEntityStatus.succeeded);
+      expect(
+        (await conflictRepository.getConflict(
+          scope,
+          target.id,
+        )).resolutionStatus,
+        SyncConflictResolutionStatus.resolvedAdoptRemote,
+      );
+      expect(
+        (await conflictRepository.getConflict(
+          scope,
+          otherConflict.id,
+        )).resolutionStatus,
+        SyncConflictResolutionStatus.unresolved,
+      );
+    },
+  );
+
   test('full pull hydrates an awaiting conflict without changing local data', () async {
     final local = await createLocalToday();
     final conflict = await conflictRepository.upsertDetectedConflict(

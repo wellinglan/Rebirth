@@ -202,6 +202,42 @@ void main() {
     },
   );
 
+  test(
+    'remote lookup prioritizes requested then awaiting duplicate conflicts',
+    () async {
+      final unresolved = await repository.upsertDetectedConflict(
+        _detection(
+          scope: scope,
+          recordId: '00000000-0000-4000-8000-000000000081',
+          detectedAt: 100,
+        ),
+      );
+      final awaiting = await repository.upsertDetectedConflict(
+        _detection(
+          scope: scope,
+          recordId: '00000000-0000-4000-8000-000000000082',
+          detectedAt: 110,
+          awaiting: true,
+        ),
+      );
+
+      var selected = await repository.findActiveConflictByRemoteRecordId(
+        scope: scope,
+        entityType: SyncEntityType.plan,
+        remoteRecordId: _remoteRecordId,
+      );
+      expect(selected?.id, awaiting.id);
+
+      await repository.markAdoptRemoteRequested(scope, unresolved.id);
+      selected = await repository.findActiveConflictByRemoteRecordId(
+        scope: scope,
+        entityType: SyncEntityType.plan,
+        remoteRecordId: _remoteRecordId,
+      );
+      expect(selected?.id, unresolved.id);
+    },
+  );
+
   test('superseded conflict remains historical and inactive', () async {
     final conflict = await repository.upsertDetectedConflict(
       _detection(scope: scope),
@@ -299,6 +335,8 @@ const _remoteRecordId = '00000000-0000-4000-8000-000000000092';
 
 SyncConflictDetection _detection({
   required SyncConflictScope scope,
+  String recordId = _recordId,
+  String remoteRecordId = _remoteRecordId,
   int detectedAt = 100,
   int remoteVersion = 7,
   String remoteTitle = 'remote',
@@ -307,8 +345,8 @@ SyncConflictDetection _detection({
   return SyncConflictDetection(
     scope: scope,
     entityType: SyncEntityType.plan,
-    recordId: _recordId,
-    remoteRecordId: _remoteRecordId,
+    recordId: recordId,
+    remoteRecordId: remoteRecordId,
     localSnapshot: _snapshot(title: 'local', updatedAt: 90, serverVersion: 6),
     remoteSnapshot: awaiting
         ? SyncConflictSnapshot(

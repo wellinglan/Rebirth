@@ -253,6 +253,37 @@ fingerprint to the existing message:
 Keep D11, F7, H9, and A6 open until the existing records are retested. Do not
 clear app data before capturing the new fingerprint.
 
+The diagnostic APK produced the following existing-data results:
+
+- Today Retry Cloud Version: `applyFailed / apply / state`;
+- Journal Continue Processing: `applyFailed / apply`, without a diagnostic
+  code.
+
+The Today fingerprint identified a repository assumption that was not enforced
+by the database: multiple active local conflicts can reference the same remote
+record, while remote lookup previously required exactly one row. Historical
+retries can therefore throw `StateError` before the requested conflict is
+applied.
+
+The follow-up candidate:
+
+- selects duplicate remote matches deterministically, preferring an explicit
+  Adopt Remote request, then an awaiting snapshot, then an unresolved conflict;
+- preserves every non-selected conflict for later review;
+- classifies conflict-not-found, conflict-not-ready, conflict-changed, and
+  conflict-resolution failures without exposing record content;
+- adds repository-level and Today/Journal adapter-level regression coverage for
+  duplicate remote conflict identities;
+- does not alter the conflict table, schema version, cursor rules, payloads, or
+  date semantics.
+
+Install the follow-up Android arm64 release over the existing app without
+clearing data. Retry Today first and then Journal. A successful result must
+render the remote snapshot or resolve the requested record, reduce or correctly
+preserve the remaining conflict count, and keep unrelated local conflicts
+intact. If Journal still fails, record all three message components; the third
+component should now identify the exact conflict-domain state.
+
 ## Gates
 
 - Settings Information Architecture Product Gate:

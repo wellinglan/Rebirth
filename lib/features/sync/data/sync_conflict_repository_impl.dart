@@ -86,7 +86,7 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
     required SyncEntityType entityType,
     required String remoteRecordId,
   }) async {
-    final row =
+    final rows =
         await (_database.select(_database.syncConflicts)..where(
               (row) =>
                   _scopePredicate(row, scope) &
@@ -94,8 +94,28 @@ final class SyncConflictRepositoryImpl implements SyncConflictRepository {
                   row.remoteRecordId.equals(remoteRecordId) &
                   row.resolvedAt.isNull(),
             ))
-            .getSingleOrNull();
-    return row == null ? null : _toDomain(row);
+            .get();
+    if (rows.isEmpty) return null;
+    final conflicts = rows.map(_toDomain).toList(growable: false)
+      ..sort((left, right) {
+        final priority = _remoteMatchPriority(
+          left.resolutionStatus,
+        ).compareTo(_remoteMatchPriority(right.resolutionStatus));
+        if (priority != 0) return priority;
+        final detected = right.detectedAt.compareTo(left.detectedAt);
+        return detected != 0 ? detected : left.id.compareTo(right.id);
+      });
+    return conflicts.first;
+  }
+
+  int _remoteMatchPriority(SyncConflictResolutionStatus status) {
+    return switch (status) {
+      SyncConflictResolutionStatus.adoptRemoteRequested => 0,
+      SyncConflictResolutionStatus.awaitingRemoteSnapshot => 1,
+      SyncConflictResolutionStatus.unresolved => 2,
+      SyncConflictResolutionStatus.keepLocalRequested => 3,
+      _ => 4,
+    };
   }
 
   @override

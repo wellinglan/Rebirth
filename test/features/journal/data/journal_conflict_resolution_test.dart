@@ -63,14 +63,19 @@ void main() {
     return entry.id;
   }
 
-  Future<SyncConflictRecord> createConflict(String recordId) async {
-    final row = await database.select(database.journalEntries).getSingle();
+  Future<SyncConflictRecord> createConflict(
+    String recordId, {
+    String? remoteRecordId,
+  }) async {
+    final row = await (database.select(
+      database.journalEntries,
+    )..where((candidate) => candidate.id.equals(recordId))).getSingle();
     return conflicts.upsertDetectedConflict(
       SyncConflictDetection(
         scope: scope,
         entityType: SyncEntityType.journal,
         recordId: recordId,
-        remoteRecordId: recordId,
+        remoteRecordId: remoteRecordId ?? recordId,
         localSnapshot: SyncConflictSnapshot(
           payload: _payloadFromRow(row),
           updatedAt: row.updatedAt,
@@ -206,11 +211,68 @@ void main() {
       expect(active.single.recordId, other.id);
     },
   );
+
+  test(
+    'Adopt Remote selects the requested duplicate remote conflict',
+    () async {
+      final targetRecordId = await createConflictedJournal();
+      final target = await createConflict(
+        targetRecordId,
+        remoteRecordId: _remoteRecordId,
+      );
+      await service.requestAdoptRemote(scope: scope, conflictId: target.id);
+
+      final otherRepository = JournalRepositoryImpl(
+        database: database,
+        dateTimeService: DateTimeService(now: () => DateTime(2026, 7, 29, 8)),
+      );
+      final other = await otherRepository.saveTodayEntry(
+        const JournalSaveData(learning: 'Other local Journal'),
+      );
+      final otherConflict = await createConflict(
+        other.id,
+        remoteRecordId: _remoteRecordId,
+      );
+      final adapter = JournalSyncAdapter(
+        database,
+        conflicts,
+        () async => scope,
+      );
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [
+          const SyncChange(
+            entityType: SyncEntityType.journal,
+            operation: SyncOperation.upsert,
+            recordId: _remoteRecordId,
+            payload: _remotePayload,
+            updatedAt: 900,
+            deletedAt: null,
+            originDeviceId: _remoteOriginId,
+            serverVersion: 6,
+          ),
+        ],
+        syncedAt: 1_000,
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      );
+
+      expect(result.status, SyncEntityStatus.succeeded);
+      expect(
+        (await conflicts.getConflict(scope, target.id)).resolutionStatus,
+        SyncConflictResolutionStatus.resolvedAdoptRemote,
+      );
+      expect(
+        (await conflicts.getConflict(scope, otherConflict.id)).resolutionStatus,
+        SyncConflictResolutionStatus.unresolved,
+      );
+    },
+  );
 }
 
 DateTime _fixedNow() => DateTime(2026, 7, 28, 8);
 
 const _remoteOriginId = '43333333-3333-4333-8333-333333333333';
+const _remoteRecordId = '44444444-4444-4444-8444-444444444444';
 
 const _remotePayload = JournalSyncPayload(
   entryDate: '2026-07-28',

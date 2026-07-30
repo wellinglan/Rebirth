@@ -13,6 +13,7 @@ import 'package:rebirth/features/sync/application/sync_coordinator.dart';
 import 'package:rebirth/features/sync/data/dto/sync_dto.dart';
 import 'package:rebirth/features/sync/data/sync_api_data_source.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_cursor_store.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_adapter.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
@@ -637,6 +638,19 @@ void main() {
     expect(result.failure?.reason, SyncFailureReason.applyFailed);
     expect(result.failure?.diagnosticCode, 'sqlite-2067');
     expect(result.failure?.message, isNot(contains('private')));
+  });
+
+  test('conflict apply failure exposes a stable domain code', () async {
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 7,
+      items: [_pulledItem(serverVersion: 7)],
+    );
+    adapter.applyError = const SyncConflictChangedException();
+
+    final result = await coordinator.run(direction: SyncRunDirection.pull);
+
+    expect(result.failure?.reason, SyncFailureReason.applyFailed);
+    expect(result.failure?.diagnosticCode, 'conflict-changed');
   });
 
   test('conflict is explicit and never advances cursor', () async {

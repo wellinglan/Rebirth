@@ -7,6 +7,7 @@ import 'package:rebirth/features/account/domain/account_boundary.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/sync/data/dto/sync_dto.dart';
 import 'package:rebirth/features/sync/data/sync_api_data_source.dart';
+import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_adapter.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/domain/sync_exception.dart';
@@ -551,6 +552,12 @@ final class SyncCoordinator {
   static String? _diagnosticCodeFor(Object error) {
     if (error is SqliteException) {
       return 'sqlite-${error.extendedResultCode}';
+    }
+    if (error is SyncConflictNotFoundException) return 'conflict-not-found';
+    if (error is SyncConflictNotReadyException) return 'conflict-not-ready';
+    if (error is SyncConflictChangedException) return 'conflict-changed';
+    if (error is SyncConflictResolutionException) {
+      return 'conflict-resolution';
     }
     if (error is StateError) return 'state';
     if (error is FormatException) return 'format';
