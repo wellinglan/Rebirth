@@ -9,16 +9,16 @@ manual matrix into PASS.
   `153985f203f5918fc3b03951ea8f019468031b0d`
 - Sprint 13A.1 baseline:
   `153985f203f5918fc3b03951ea8f019468031b0d`
-- Implementation commit: pending
+- Implementation commit:
+  `f9ac726bc4ad2c665dabf3e5842876f7d7ea7aef`
+- CI fixture correction:
+  `7bbeb3e980b02416b9915d7bfc4dcdf839771f8b`
 - Flutter schemaVersion: 9
 - Server API Version: 1
 - Sync Protocol: 2
 - Beijing Alpha deployment: NOT PERFORMED
 
 ## Local Evidence
-
-Final command results will be recorded after the implementation worktree is
-complete:
 
 | Verification | Status |
 |---|---|
@@ -34,17 +34,37 @@ complete:
 | Windows secure-storage user lifecycle | NOT EXECUTED, manual matrix |
 | Android split release build | PASS, three ABI APKs |
 | Android arm64 startup/secure-storage lifecycle | NOT EXECUTED, manual matrix |
-| PostgreSQL marker and concurrent refresh | CI REQUIRED |
-| Multi-worker auth verification | CI REQUIRED |
+| PostgreSQL marker and concurrent refresh | PASS in GitHub Quality |
+| Multi-worker auth verification | PASS in GitHub Quality, 2 workers |
 
 ## GitHub Evidence
 
 | Workflow | Run | Status |
 |---|---|---|
-| Quality | pending | NOT RUN |
-| Publish Alpha Images | pending | NOT RUN |
+| Quality | [30524655900](https://github.com/wellinglan/Rebirth/actions/runs/30524655900) | PASS |
+| Publish Alpha Images | [30524655917](https://github.com/wellinglan/Rebirth/actions/runs/30524655917) | PASS |
 
-Image tags and digest remain pending until the implementation commit is pushed.
+Quality passed Flutter analyze and test, Android Debug build, Server SQLite,
+Alembic upgrade, all 10 selected PostgreSQL tests, and the two-worker
+verification. The first implementation run
+([30524162801](https://github.com/wellinglan/Rebirth/actions/runs/30524162801))
+correctly rejected one pre-existing short PostgreSQL test secret. The fixture
+was corrected without changing product behavior, and the final run above passed.
+
+Published API image tags:
+
+- `ghcr.io/wellinglan/rebirth-api:7bbeb3e980b02416b9915d7bfc4dcdf839771f8b`
+- `ghcr.io/wellinglan/rebirth-api:7bbeb3e9`
+- `ghcr.io/wellinglan/rebirth-api:alpha-latest`
+
+API digest:
+`sha256:c7c15cc230945a658e573f6cd4769f599f5509b2a810f0bef1eb461aa4af97ce`
+
+Mirrored PostgreSQL image:
+`ghcr.io/wellinglan/rebirth-postgres:17-alpine`
+
+PostgreSQL digest:
+`sha256:f7b22dedcd41ec51e5a1abd50e81616ca0a1b317bdddde2722721aae53bf614e`
 
 ## Manual Gates
 
