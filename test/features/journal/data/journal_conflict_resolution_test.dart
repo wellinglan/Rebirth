@@ -144,6 +144,68 @@ void main() {
       SyncConflictResolutionStatus.resolvedAdoptRemote,
     );
   });
+
+  test(
+    'Adopt Remote converges while another Journal conflict remains active',
+    () async {
+      final recordId = await createConflictedJournal();
+      final target = await createConflict(recordId);
+      await service.requestAdoptRemote(scope: scope, conflictId: target.id);
+      final otherRepository = JournalRepositoryImpl(
+        database: database,
+        dateTimeService: DateTimeService(now: () => DateTime(2026, 7, 29, 8)),
+      );
+      final otherEntry = await otherRepository.saveTodayEntry(
+        const JournalSaveData(learning: 'Other local Journal'),
+      );
+      final other = await (database.select(
+        database.journalEntries,
+      )..where((row) => row.id.equals(otherEntry.id))).getSingle();
+      final adapter = JournalSyncAdapter(
+        database,
+        conflicts,
+        () async => scope,
+      );
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [
+          SyncChange(
+            entityType: SyncEntityType.journal,
+            operation: SyncOperation.upsert,
+            recordId: recordId,
+            payload: _remotePayload,
+            updatedAt: 900,
+            deletedAt: null,
+            originDeviceId: _remoteOriginId,
+            serverVersion: 6,
+          ),
+          SyncChange(
+            entityType: SyncEntityType.journal,
+            operation: SyncOperation.upsert,
+            recordId: other.id,
+            payload: _payloadFromRow(other),
+            updatedAt: 901,
+            deletedAt: null,
+            originDeviceId: _remoteOriginId,
+            serverVersion: 7,
+          ),
+        ],
+        syncedAt: 1_000,
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      );
+
+      expect(result.status, SyncEntityStatus.conflict);
+      expect(result.pulledCount, 1);
+      expect(result.conflictCount, 1);
+      expect(
+        (await conflicts.getConflict(scope, target.id)).resolutionStatus,
+        SyncConflictResolutionStatus.resolvedAdoptRemote,
+      );
+      final active = await conflicts.listActiveConflicts(scope);
+      expect(active, hasLength(1));
+      expect(active.single.recordId, other.id);
+    },
+  );
 }
 
 DateTime _fixedNow() => DateTime(2026, 7, 28, 8);

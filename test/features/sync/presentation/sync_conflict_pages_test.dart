@@ -334,6 +334,28 @@ void main() {
     expect(find.text('标题：Local title'), findsOneWidget);
   });
 
+  testWidgets('non-throwing pull failure is not reported as completed', (
+    tester,
+  ) async {
+    final handler = _RecordingConflictHandler(
+      SyncEntityType.today,
+      result: _failedHandlerResult(SyncEntityType.today),
+    );
+    await _pumpDetails(
+      tester,
+      details: _awaitingTodayDetails(),
+      handlerRegistry: SyncConflictResolutionHandlerRegistry([handler]),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('retryConflictHydrationButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('操作未完成，本地 Today 内容已保留'), findsOneWidget);
+    expect(find.text('冲突操作已完成'), findsNothing);
+  });
+
   for (final width in [320.0, 360.0, 412.0, 720.0, 840.0, 1200.0]) {
     testWidgets('conflict details have no overflow at width $width', (
       tester,
@@ -485,12 +507,13 @@ Future<void> _pumpDetails(
 }
 
 final class _RecordingConflictHandler implements SyncConflictResolutionHandler {
-  _RecordingConflictHandler(this.entityType);
+  _RecordingConflictHandler(this.entityType, {this._result});
 
   @override
   final SyncEntityType entityType;
 
   final List<String> calls = [];
+  final SyncRunResult? _result;
 
   @override
   bool get isBusy => false;
@@ -501,25 +524,25 @@ final class _RecordingConflictHandler implements SyncConflictResolutionHandler {
   @override
   Future<SyncRunResult> adoptRemote(String conflictId) async {
     calls.add('adopt');
-    return _handlerResult(entityType);
+    return _result ?? _handlerResult(entityType);
   }
 
   @override
   Future<SyncRunResult> keepLocal(String conflictId) async {
     calls.add('keep');
-    return _handlerResult(entityType);
+    return _result ?? _handlerResult(entityType);
   }
 
   @override
   Future<SyncRunResult> retryHydration(String conflictId) async {
     calls.add('hydrate');
-    return _handlerResult(entityType);
+    return _result ?? _handlerResult(entityType);
   }
 
   @override
   Future<SyncRunResult> retryRequestedResolution(String conflictId) async {
     calls.add('retry');
-    return _handlerResult(entityType);
+    return _result ?? _handlerResult(entityType);
   }
 }
 
@@ -536,6 +559,28 @@ SyncRunResult _handlerResult(SyncEntityType entityType) {
     ],
     startedAt: 1,
     completedAt: 2,
+  );
+}
+
+SyncRunResult _failedHandlerResult(SyncEntityType entityType) {
+  return SyncRunResult(
+    direction: SyncRunDirection.pull,
+    phases: const [SyncRunPhase.failed],
+    entityResults: [
+      SyncEntityResult(
+        entityType: entityType,
+        status: SyncEntityStatus.failed,
+        message: '后端返回了倒退的同步游标。',
+      ),
+    ],
+    startedAt: 1,
+    completedAt: 2,
+    failure: SyncFailure(
+      reason: SyncFailureReason.pullFailed,
+      phase: SyncRunPhase.pull,
+      message: '后端返回了倒退的同步游标。',
+      entityType: entityType,
+    ),
   );
 }
 
@@ -585,6 +630,38 @@ SyncConflictDetails _todayDetails() {
       detectedAt: 900,
       lastSeenAt: 900,
       resolutionStatus: SyncConflictResolutionStatus.unresolved,
+      resolvedAt: null,
+    ),
+    currentLocalSnapshot: null,
+    localSnapshotChanged: false,
+  );
+}
+
+SyncConflictDetails _awaitingTodayDetails() {
+  return SyncConflictDetails(
+    record: SyncConflictRecord(
+      id: _conflictId,
+      scope: _scope,
+      entityType: SyncEntityType.today,
+      recordId: _recordId,
+      localSnapshot: SyncConflictSnapshot(
+        payload: _todayPayload(mood: 4, note: 'Local'),
+        updatedAt: 700,
+        deletedAt: null,
+        serverVersion: 5,
+        originDeviceId: null,
+      ),
+      remoteSnapshot: const SyncConflictSnapshot(
+        payload: null,
+        updatedAt: null,
+        deletedAt: null,
+        serverVersion: 6,
+        originDeviceId: null,
+      ),
+      remoteOperation: SyncConflictOperation.unknownPendingPull,
+      detectedAt: 900,
+      lastSeenAt: 900,
+      resolutionStatus: SyncConflictResolutionStatus.awaitingRemoteSnapshot,
       resolvedAt: null,
     ),
     currentLocalSnapshot: null,

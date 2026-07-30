@@ -256,6 +256,63 @@ void main() {
     expect(resolved.localSnapshot.payload, isA<TodaySyncPayload>());
   });
 
+  test(
+    'adopt remote converges while another Today conflict remains active',
+    () async {
+      final local = await createLocalToday();
+      final target = await createConflict(
+        local: local,
+        remoteRecordId: _remoteId,
+      );
+      await service.requestAdoptRemote(scope: scope, conflictId: target.id);
+      final otherRepository = TodayRepositoryImpl(
+        database: database,
+        dateTimeService: DateTimeService(now: () => DateTime(2026, 7, 29, 8)),
+      );
+      final otherEntry = await otherRepository.saveToday(
+        TodaySaveData(dailyNote: 'Other local Today'),
+      );
+      final other = (await today(otherEntry.id))!;
+      final adapter = TodaySyncAdapter(
+        database,
+        conflictRepository,
+        () async => scope,
+      );
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [
+          _remoteChange(),
+          SyncChange(
+            entityType: SyncEntityType.today,
+            operation: SyncOperation.upsert,
+            recordId: other.id,
+            payload: _localPayload(other),
+            updatedAt: 901,
+            deletedAt: null,
+            originDeviceId: _remoteOriginId,
+            serverVersion: 7,
+          ),
+        ],
+        syncedAt: 1_000,
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      );
+
+      expect(result.status, SyncEntityStatus.conflict);
+      expect(result.pulledCount, 1);
+      expect(result.conflictCount, 1);
+      expect(
+        (await conflictRepository.getConflict(
+          scope,
+          target.id,
+        )).resolutionStatus,
+        SyncConflictResolutionStatus.resolvedAdoptRemote,
+      );
+      final active = await conflictRepository.listActiveConflicts(scope);
+      expect(active, hasLength(1));
+      expect(active.single.recordId, other.id);
+    },
+  );
+
   test('full pull hydrates an awaiting conflict without changing local data', () async {
     final local = await createLocalToday();
     final conflict = await conflictRepository.upsertDetectedConflict(

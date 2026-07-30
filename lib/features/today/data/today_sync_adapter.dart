@@ -390,16 +390,6 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                 const db.TodayRecordsCompanion(syncStatus: Value('conflict')),
               );
         }
-        return SyncEntityResult(
-          entityType: entityType,
-          status: SyncEntityStatus.conflict,
-          message: '检测到 ${conflicts.length} 个 Today 冲突，本地内容未被覆盖',
-          ignoredCount: ignored,
-          conflictCount: conflicts.length,
-          serverVersion: conflicts
-              .map((item) => item.change.serverVersion)
-              .reduce((left, right) => left > right ? left : right),
-        );
       }
 
       _validateProjectedDates(
@@ -568,18 +558,26 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
 
       return SyncEntityResult(
         entityType: entityType,
-        status: applied == 0
+        status: conflicts.isNotEmpty
+            ? SyncEntityStatus.conflict
+            : applied == 0
             ? SyncEntityStatus.noChanges
             : SyncEntityStatus.succeeded,
-        message: applied == 0 ? '没有新的 Today 更新' : 'Today 已更新',
+        message: conflicts.isNotEmpty
+            ? '已应用 $applied 个 Today 更新，仍有 ${conflicts.length} 个冲突'
+            : applied == 0
+            ? '没有新的 Today 更新'
+            : 'Today 已更新',
         pulledCount: applied,
         deletedCount: deleted,
         ignoredCount: ignored,
-        serverVersion: applicable.isEmpty
+        conflictCount: conflicts.length,
+        serverVersion: applicable.isEmpty && conflicts.isEmpty
             ? null
-            : applicable
-                  .map((change) => change.serverVersion)
-                  .reduce((left, right) => left > right ? left : right),
+            : [
+                ...applicable.map((change) => change.serverVersion),
+                ...conflicts.map((item) => item.change.serverVersion),
+              ].reduce((left, right) => left > right ? left : right),
       );
     });
   }

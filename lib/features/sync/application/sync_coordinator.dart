@@ -412,7 +412,8 @@ final class SyncCoordinator {
         ),
         accessToken: session.accessToken,
       );
-      if (response.serverVersion < cursor.serverVersion) {
+      if (pullMode == SyncPullMode.incremental &&
+          response.serverVersion < cursor.serverVersion) {
         throw const _SyncPhaseException(
           reason: SyncFailureReason.pullFailed,
           phase: SyncRunPhase.pull,
@@ -461,7 +462,9 @@ final class SyncCoordinator {
         endpoint: cursor.endpoint,
         cloudUserId: cursor.cloudUserId,
         scope: cursor.scope.wireName,
-        serverVersion: page.serverVersion,
+        serverVersion: page.serverVersion < cursor.serverVersion
+            ? cursor.serverVersion
+            : page.serverVersion,
       );
     }
 

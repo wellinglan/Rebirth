@@ -70,7 +70,7 @@ real Alpha account only when the release artifacts are ready.
 | D8 | Pull count is accurate | NOT EXECUTED |
 | D9 | Delete count is accurate | NOT EXECUTED |
 | D10 | Conflict count is accurate | NOT EXECUTED |
-| D11 | Failed-item wording is accurate | NOT EXECUTED |
+| D11 | Failed-item wording is accurate | FAIL |
 | D12 | Journal exposes no sixth technical module | NOT EXECUTED |
 
 ## E. Sync All Order
@@ -99,7 +99,7 @@ real Alpha account only when the release artifacts are ready.
 | F4 | Conflict does not block later modules | NOT EXECUTED |
 | F5 | Partial state is clear | NOT EXECUTED |
 | F6 | Local data is not lost | NOT EXECUTED |
-| F7 | Failed module can be retried independently | NOT EXECUTED |
+| F7 | Failed module can be retried independently | FAIL |
 | F8 | Conflict is not resolved automatically | NOT EXECUTED |
 
 Leave fault-injection rows `NOT EXECUTED` when no safe product operation exists.
@@ -130,7 +130,7 @@ Leave fault-injection rows `NOT EXECUTED` when no safe product operation exists.
 | H6 | Health filter | NOT EXECUTED |
 | H7 | Journal configuration conflict is grouped into Journal | NOT EXECUTED |
 | H8 | Journal entry conflict is grouped into Journal | NOT EXECUTED |
-| H9 | Count refreshes after resolution | NOT EXECUTED |
+| H9 | Count refreshes after resolution | FAIL |
 | H10 | List leaks no body text or UUID | NOT EXECUTED |
 
 ## I. Account Boundary
@@ -176,8 +176,34 @@ Leave fault-injection rows `NOT EXECUTED` when no safe product operation exists.
 | Result | Count |
 |---|---:|
 | PASS | 0 |
-| FAIL | 0 |
-| NOT EXECUTED | 113 |
+| FAIL | 3 |
+| NOT EXECUTED | 110 |
+
+## Android Conflict Recovery Blocker
+
+Observed on 2026-07-30 after creating concurrent Today, Journal, and Health
+updates on two devices:
+
+- Health exposed both explicit resolution actions and converged.
+- Today remained at `awaiting remote snapshot`. Retrying reported that the
+  conflict operation completed, but the remote snapshot and resolution actions
+  did not appear and the conflict count did not change.
+- Journal had a remote snapshot, but Continue Processing reported success
+  without changing the state or conflict count.
+- Local Today and Journal content remained intact.
+
+The automated fix candidate:
+
+- permits conflict-recovery full pulls to read a server version below a stale
+  local cursor without moving that cursor backwards;
+- applies the explicitly requested Today or Journal resolution while preserving
+  other unresolved conflicts;
+- no longer reports a non-throwing pull failure as a completed operation.
+
+The Android arm64 release candidate must be installed over the existing app.
+Retest the existing Today and Journal conflicts without clearing app data.
+Keep D11, F7, and H9 as `FAIL` until both records converge and the conflict
+count decreases.
 
 ## Gates
 

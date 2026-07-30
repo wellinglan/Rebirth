@@ -10,6 +10,7 @@ import 'package:rebirth/features/profile/domain/profile_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
+import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/today/domain/today_sync_payload.dart';
 
 import 'sync_conflict_resolution_handlers.dart';
@@ -132,7 +133,13 @@ class SyncConflictDetailPage extends ConsumerWidget {
     Future<Object?> Function() action,
   ) async {
     try {
-      await action();
+      final result = await action();
+      if (result case final SyncRunResult syncResult) {
+        final failure = syncResult.failure;
+        if (failure != null && failure.reason != SyncFailureReason.conflict) {
+          throw StateError(failure.message);
+        }
+      }
       ref.invalidate(syncConflictDetailsProvider(conflictId));
       ref.invalidate(activeSyncConflictListProvider);
       await ref.read(syncCenterControllerProvider.notifier).refresh();

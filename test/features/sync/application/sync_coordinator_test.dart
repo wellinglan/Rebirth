@@ -435,7 +435,7 @@ void main() {
   test('conflict resolution full-pulls without clearing the cursor', () async {
     cursorStore.value = 12;
     remote.pullResponse = SyncPullResponseDto(
-      serverVersion: 12,
+      serverVersion: 10,
       items: [_pulledItem(serverVersion: 7)],
     );
 
@@ -449,6 +449,21 @@ void main() {
     expect(adapter.lastPullMode, SyncPullMode.preferRemoteConflictResolution);
     expect(cursorStore.value, 12);
     expect(cursorStore.writeCalls, 1);
+  });
+
+  test('incremental pull still rejects a server cursor regression', () async {
+    cursorStore.value = 12;
+    remote.pullResponse = SyncPullResponseDto(
+      serverVersion: 10,
+      items: [_pulledItem(serverVersion: 7)],
+    );
+
+    final result = await coordinator.run(direction: SyncRunDirection.pull);
+
+    expect(result.failure?.reason, SyncFailureReason.pullFailed);
+    expect(adapter.applyCalls, 0);
+    expect(cursorStore.value, 12);
+    expect(cursorStore.writeCalls, 0);
   });
 
   test('conflict resolution mode rejects push and two-way runs', () {
