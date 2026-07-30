@@ -8,6 +8,8 @@
   `5402613917be09bb8691965f8ff074b60a92b8ec`
 - Sprint 13A.2 actual baseline:
   `5402613917be09bb8691965f8ff074b60a92b8ec`
+- Sprint 13A.2 implementation commit:
+  `9599f68b42c7f6e5b6369200f8bf39e3d1fa6452`
 - Sprint 13A.1 manual result: 67 PASS / 0 FAIL / 12 NOT EXECUTED
 
 ## Automated Coverage
@@ -46,13 +48,23 @@ Build and GitHub results are recorded only after they finish:
 | Alpha Android split release | PASS, three ABI artifacts |
 | Production Android split release | PASS, three ABI artifacts |
 | Windows startup smoke | PASS, Alpha and Production |
-| GitHub Quality | PENDING |
-| Publish Alpha Images | Expected NOT RUN |
+| GitHub Quality | PASS, run 30542128606 |
+| Flutter Analyze And Test job | PASS |
+| Android Debug Build job | PASS |
+| Server SQLite job | PASS |
+| Server PostgreSQL, Alembic, multiprocess and multiworker job | PASS |
+| Publish Alpha Images | NOT RUN |
 
 Build artifacts were separated under ignored `build/verified/sprint13a2/`
 environment directories. Alpha and Production `app.so` and arm64 APK SHA-256
 values differ, confirming that evidence did not reuse one environment artifact.
 No APK or Windows build output is committed.
+
+Quality evidence:
+https://github.com/wellinglan/Rebirth/actions/runs/30542128606
+
+The Quality run emitted only the existing GitHub Actions Node.js 20
+deprecation advisory. It did not fail or skip a quality job.
 
 ## Manual Gate
 
