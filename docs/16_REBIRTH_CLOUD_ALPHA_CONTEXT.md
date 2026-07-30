@@ -796,7 +796,7 @@ Profile Unified Sync UX, and Account Boundary Isolation gates are
 
 ## Sprint 13A.1 Authentication Foundation
 
-Sprint 13A.1 adds an undeployed, production-shaped authentication protocol:
+Sprint 13A.1 adds a production-shaped authentication protocol:
 password identities with Argon2id credentials, database-backed sessions,
 short-lived access JWTs, rotating opaque refresh tokens, reuse detection,
 database login throttling, and controlled legacy-token migration.
@@ -808,9 +808,19 @@ Android/Windows secure storage and keeps access tokens in memory under a
 single-flight `AuthSessionManager`.
 
 API Version remains 1, Sync Protocol remains 2, and Flutter schemaVersion remains
-9. The Server gains an additive Alembic revision. The Beijing Alpha Server has not
-been updated, migrated, restarted, or otherwise modified by this Sprint. Future
-deployment must configure the four separate authentication secrets, upgrade
-Alembic, deploy the compatible Server before the client, and explicitly control
-the legacy migration deadline. See
+9. The Server gains an additive Alembic revision. The matching API image was
+subsequently deployed to Beijing Alpha for user acceptance with the existing
+PostgreSQL volume and four separate authentication secrets.
+
+On 2026-07-30, user acceptance recorded 67 PASS, 0 FAIL, and 12 NOT EXECUTED.
+The retained rows are A8, C6-C8, and F1-F8. They are capability or fixture
+limitations rather than failures or automated PASS results.
+
+After acceptance, `REBIRTH_ACCESS_TOKEN_MINUTES` was restored from 30 to 15.
+Only the API container was recreated with the same image digest
+`sha256:c7c15cc230945a658e573f6cd4769f599f5509b2a810f0bef1eb461aa4af97ce`.
+PostgreSQL and other services were not restarted, no image was pulled or built,
+and aggregate business-data counts were unchanged. The API startup hook invoked
+`alembic upgrade head` as a no-op; revision `20260730_0003` did not change.
+Health and all authentication routes passed. See
 `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.

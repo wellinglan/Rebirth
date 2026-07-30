@@ -772,3 +772,8 @@ This is not yet the public login product. Registration/login screens, account
 recovery, MFA, WeChat login, automatic synchronization, and session management UI
 remain deferred. Existing local-first data and the five manual sync modules retain
 their current product semantics.
+
+Sprint 13A.1 manual acceptance recorded 67 PASS, 0 FAIL, and 12 NOT EXECUTED.
+Public username/password registration and login, production hiding of development
+authentication, and the remaining public authentication gates continue in Sprint
+13A.2. Password recovery, MFA, and WeChat authentication remain deferred.

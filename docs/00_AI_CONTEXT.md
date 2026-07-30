@@ -576,6 +576,9 @@ Flutter 的 refresh credential 只进入 Android/Windows 安全存储，access t
 endpoint 绑定、离线态和明确失效；不会删除本地业务数据，也不改变五模块手动
 同步、OCC、cursor 或 Sync Protocol 2。
 
-本 Sprint 不提供公开注册/登录页面，不实现找回密码、MFA 或微信认证，不部署
-北京 Alpha。Flutter schemaVersion 保持 9，Server API 保持 1。详见
+Sprint 13A.1 不提供公开注册/登录页面，不实现找回密码、MFA 或微信认证。
+其人工验收结果为 67 PASS / 0 FAIL / 12 NOT EXECUTED；Refresh Token
+Rotation、Development Account Upgrade 与 Account Boundary Isolation Gate 已
+关闭，其余公开认证体验 Gate 转入 Sprint 13A.2。Flutter schemaVersion 保持
+9，Server API 保持 1。详见
 `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`。

@@ -16,7 +16,7 @@ manual matrix into PASS.
 - Flutter schemaVersion: 9
 - Server API Version: 1
 - Sync Protocol: 2
-- Beijing Alpha deployment: NOT PERFORMED
+- Beijing Alpha acceptance deployment: completed after implementation
 
 ## Local Evidence
 
@@ -69,4 +69,17 @@ PostgreSQL digest:
 ## Manual Gates
 
 See `docs/manual_tests/40_authentication_protocol_and_secure_session.md`.
-All new manual checks remain `NOT EXECUTED`.
+User acceptance on 2026-07-30 recorded 67 PASS, 0 FAIL, and 12 NOT EXECUTED.
+The retained rows are A8, C6-C8, and F1-F8; automated evidence does not replace
+their manual status.
+
+## Alpha Runtime Normalization
+
+After acceptance, the legacy runtime setting `REBIRTH_ACCESS_TOKEN_MINUTES` was
+restored from 30 to 15. Only the API container was recreated. Its image digest
+remained
+`sha256:c7c15cc230945a658e573f6cd4769f599f5509b2a810f0bef1eb461aa4af97ce`.
+The PostgreSQL container, its start time, aggregate business-data counts, API
+Version 1, and Sync Protocol 2 remained unchanged. No image pull or build was
+performed. The existing API startup hook executed `alembic upgrade head` as a
+no-op; the revision remained `20260730_0003`.

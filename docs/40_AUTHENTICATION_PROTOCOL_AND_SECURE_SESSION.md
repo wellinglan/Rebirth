@@ -184,8 +184,13 @@ purposes and must not reuse database passwords or provider keys. Rotating an HMA
 key invalidates the corresponding tokens/identity lookup, so rotation needs an
 explicit migration plan.
 
-No Sprint 13A.1 task deploys to Beijing Alpha, modifies remote Compose, runs remote
-Alembic, pulls an image, restarts API/PostgreSQL, or deletes a volume.
+The implementation phase did not deploy to Beijing Alpha. The matching API image
+was deployed later for user acceptance with the existing PostgreSQL volume. On
+2026-07-30, the post-acceptance operation restored the legacy runtime setting
+`REBIRTH_ACCESS_TOKEN_MINUTES` from 30 to 15 and recreated only the API
+container. The image digest and PostgreSQL container remained unchanged. The
+container's existing startup hook ran `alembic upgrade head` as a no-op at
+revision `20260730_0003`.
 
 ## Privacy And Account Boundary
 
@@ -201,11 +206,19 @@ private module content.
 
 ## Gates
 
-- Authentication Protocol Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
-- Password Credential Security Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
-- Refresh Token Rotation Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
-- Secure Client Storage Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
-- Development Account Upgrade Gate: OPEN / MANUAL ACCEPTANCE REQUIRED
+- Authentication Protocol Gate: OPEN / CARRIED TO SPRINT 13A.2
+- Password Credential Security Gate: OPEN / CARRIED TO SPRINT 13A.2
+- Refresh Token Rotation Gate: CLOSED / ACCEPTED
+- Secure Client Storage Gate: OPEN / CARRIED TO SPRINT 13A.2
+- Development Account Upgrade Gate: CLOSED / ACCEPTED
 - Account Boundary Isolation Gate: CLOSED / ACCEPTED
 - Public Login Experience Gate: OPEN / DEFERRED TO SPRINT 13A.2
 - Public Account Recovery Gate: OPEN / DEFERRED
+- WeChat Login And Binding Gate: OPEN / DEFERRED TO SPRINT 13B
+
+## Manual Acceptance
+
+User acceptance on 2026-07-30 recorded 67 PASS, 0 FAIL, and 12 NOT EXECUTED.
+The retained rows are A8, C6-C8, and F1-F8. They remain honest capability or
+fixture limitations and are not converted from automated coverage. See
+`docs/manual_tests/40_authentication_protocol_and_secure_session.md`.
