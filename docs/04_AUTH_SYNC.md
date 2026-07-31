@@ -1,6 +1,6 @@
 # Rebirth Auth & Sync Architecture
 
-> Status: Sprint 13B.3 WeChat OAuth transaction security foundation
+> Status: Sprint 13B.4 step-up reauthentication and OAuth callback contract
 > Scope: Auth Gate, account-bound manual sync, and extensible login identities
 
 ## 目标
@@ -355,3 +355,39 @@ Authorized manual acceptance closed both WeChat foundation gates: Sprint
 `24 PASS / 0 FAIL / 0 NOT EXECUTED`. These results validate the identity and
 OAuth transaction security foundations only; real WeChat login remains
 unsupported.
+
+## Sprint 13B.4 Step-up Reauthentication and Callback Contract
+
+Sensitive identity binding now requires a short-lived, one-time
+`ReauthenticationProof`. The proof is issued only after the current
+session-backed user re-enters the existing password, or uses the existing
+developer identity in development/test. Developer reauthentication returns
+`404` in production. Proofs contain only a SHA-256 digest and security metadata
+in PostgreSQL; passwords, raw proofs, JWTs, authorization codes, and provider
+tokens are not persisted.
+
+Proof ownership is bound to the JWT-derived cloud user, current AuthSession,
+and `wechat_bind` purpose. Expiration, consumption, logout, revocation, wrong
+account, wrong session, and replay all fail closed. Proof consumption and OAuth
+transaction creation are atomic. OAuth transactions are also session-bound;
+legacy transactions without a session cannot continue.
+
+The authenticated
+`POST /auth/identities/wechat/bind/callback` contract now delegates provider
+exchange to the provider-neutral Adapter and identity binding to the existing
+Identity Service. Stable errors are `invalid_transaction`,
+`expired_transaction`, `already_consumed`, `provider_error`, and
+`binding_conflict`. Concurrent PostgreSQL exchange has one winner and existing
+`UNIQUE(provider, provider_subject)` ownership remains authoritative.
+
+Flutter may collect the current password in an ephemeral Account Security
+dialog. It does not persist the credential or proof and still exposes no WeChat
+login entry, SDK, or QR flow. The default Server still registers no real WeChat
+Adapter and remains fail closed.
+
+Flutter schema remains `9`, API Version remains `1`, Sync Protocol remains `2`,
+and business synchronization is unchanged. The Step-up Reauthentication Gate
+and OAuth Callback Contract Gate remain open pending the manual matrix in
+`docs/manual_tests/45_step_up_reauthentication.md`.
+
+See `docs/45_STEP_UP_REAUTHENTICATION.md`.

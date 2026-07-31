@@ -911,6 +911,23 @@ The table does not store plaintext state or nonce, authorization code, provider
 access/refresh token, provider response, App ID, or AppSecret. It references the
 existing `cloud_users` table and never duplicates `auth_identities`.
 
+## Sprint 13B.4 Server Step-up Reauthentication
+
+Flutter Drift is unchanged and `schemaVersion` remains `9`. Server Alembic
+revision `20260731_0006` adds `reauthentication_proofs` and session-binds new
+OAuth transactions.
+
+`reauthentication_proofs` stores an opaque ID, JWT-derived cloud user ID,
+AuthSession ID, `wechat_bind` purpose, SHA-256 proof hash, monotonic status, and
+creation/expiration/consumption timestamps. It never stores plaintext proof,
+password, JWT, authorization code, provider token, or provider response.
+
+The migration changes existing OAuth purpose `bind` to `wechat_bind` and adds
+a nullable `session_id` foreign key so existing rows can migrate without data
+loss. New service operations always require a non-null active session; migrated
+legacy transactions cannot be completed. Upgrade, downgrade, and re-upgrade
+remain supported for SQLite and PostgreSQL validation.
+
 The Server adds an Alembic revision with `auth_credentials`, `auth_sessions`,
 `auth_refresh_tokens`, `auth_login_throttles`, and
 `legacy_refresh_migrations`. The migration is additive, references existing

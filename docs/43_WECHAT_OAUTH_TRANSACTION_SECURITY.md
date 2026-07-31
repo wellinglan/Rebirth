@@ -167,3 +167,11 @@ A later Sprint must independently implement and review:
 - WeChat login and session issuance.
 
 Nothing in Sprint 13B.3 should be interpreted as supported WeChat login.
+
+## Sprint 13B.4 Continuation
+
+Sprint 13B.4 implements the previously deferred production reauthentication
+proof boundary and authenticated callback contract. OAuth purpose is now
+`wechat_bind`, and new transactions are bound to the current AuthSession.
+Provider HTTP exchange, SDK integration, real credentials, and real WeChat
+login remain deferred. See `docs/45_STEP_UP_REAUTHENTICATION.md`.
