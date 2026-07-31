@@ -1,6 +1,6 @@
 # Rebirth Auth & Sync Architecture
 
-> Status: Sprint 13B.1 multi-identity authentication foundation
+> Status: Sprint 13B.2 WeChat identity provider foundation
 > Scope: Auth Gate, account-bound manual sync, and extensible login identities
 
 ## 目标
@@ -282,3 +282,38 @@ conflicts, tombstones, and all business payloads are unchanged.
 
 See `docs/40_IDENTITY_FOUNDATION.md` and
 `docs/manual_tests/42_multi_identity_foundation.md`.
+
+## Sprint 13B.2 WeChat Identity Provider Foundation
+
+WeChat is now the first modeled external identity provider. The server uses one
+provider registry for password, developer, and WeChat identities, including
+display metadata, capabilities, and enabled state. WeChat declares future login
+and binding capabilities but remains disabled because this Sprint does not
+configure an AppID, SDK, OAuth callback, or provider token exchange.
+
+The existing `auth_identities` table remains the only identity store.
+Server-verified WeChat identity data uses `unionid:<unionid>` when an eligible
+Union ID exists, otherwise `openid:<app-id>:<openid>`. The existing global
+`UNIQUE(provider, provider_subject)` constraint prevents the same external
+identity from belonging to two cloud users. Nickname and avatar are never
+identity keys.
+
+The trusted binding service requires an authenticated Rebirth user,
+reauthentication proof, and a server-verified provider result. The public
+authenticated `POST /auth/identities/wechat/bind/start` endpoint accepts no
+trusted account or provider identity fields and currently returns a structured
+`provider_unavailable` response. It never transfers an identity, merges
+accounts, or reveals the owner of a duplicate identity.
+
+Flutter Account Security displays WeChat as bound or unbound using only safe
+metadata. Online authenticated users may enter the binding foundation flow;
+offline and signed-out users cannot. No provider subject, private provider
+identifier, token, secret, or cloud user ID is shown.
+
+No database migration was required. Flutter schema remains `9`, API Version
+remains `1`, and Sync Protocol remains `2`. Account Boundary, local Profile
+ownership, sessions, password/developer login, cursor, OCC, conflicts,
+tombstones, and manual synchronization are unchanged.
+
+See `docs/43_WECHAT_IDENTITY_FOUNDATION.md` and
+`docs/manual_tests/43_wechat_identity_foundation.md`.
