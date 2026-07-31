@@ -28,6 +28,7 @@ AUTH_TABLES = {
     "auth_login_throttles",
     "legacy_refresh_migrations",
     "oauth_transactions",
+    "reauthentication_proofs",
 }
 
 

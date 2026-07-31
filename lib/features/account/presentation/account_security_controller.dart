@@ -45,7 +45,10 @@ class AccountSecurityController extends AsyncNotifier<AccountSecurityState> {
     await future;
   }
 
-  Future<WechatBindingStartResult> startWechatBinding() async {
+  Future<WechatBindingStartResult> startWechatBinding({
+    required ReauthenticationMethod method,
+    required String credential,
+  }) async {
     final current = state.value;
     final auth = ref.read(appAuthStateProvider).value;
     if (current == null ||
@@ -57,7 +60,14 @@ class AccountSecurityController extends AsyncNotifier<AccountSecurityState> {
 
     state = AsyncData(current.copyWith(isStartingWechatBinding: true));
     try {
-      return await ref.read(identityRepositoryProvider).startWechatBinding();
+      final repository = ref.read(identityRepositoryProvider);
+      final proof = await repository.reauthenticate(
+        method: method,
+        credential: credential,
+      );
+      return await repository.startWechatBinding(
+        reauthenticationProof: proof.value,
+      );
     } finally {
       final latest = state.value;
       if (latest != null) {

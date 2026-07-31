@@ -48,3 +48,17 @@ final class WechatBindingStartResult {
 
   bool get isProviderUnavailable => status == 'provider_unavailable';
 }
+
+enum ReauthenticationMethod { password, developer }
+
+final class ReauthenticationProof {
+  const ReauthenticationProof({
+    required this.value,
+    required this.expiresAt,
+    required this.method,
+  });
+
+  final String value;
+  final int expiresAt;
+  final ReauthenticationMethod method;
+}

@@ -19,10 +19,30 @@ final class IdentityRepositoryImpl implements IdentityRepository {
   }
 
   @override
-  Future<WechatBindingStartResult> startWechatBinding() {
+  Future<ReauthenticationProof> reauthenticate({
+    required ReauthenticationMethod method,
+    required String credential,
+  }) {
     return _sessionManager.runAuthorized(
-      (accessToken) =>
-          _remoteDataSource.startWechatBinding(accessToken: accessToken),
+      (accessToken) => _remoteDataSource.reauthenticate(
+        accessToken: accessToken,
+        method: method,
+        credential: credential,
+      ),
+      canReplay: false,
+    );
+  }
+
+  @override
+  Future<WechatBindingStartResult> startWechatBinding({
+    required String reauthenticationProof,
+  }) {
+    return _sessionManager.runAuthorized(
+      (accessToken) => _remoteDataSource.startWechatBinding(
+        accessToken: accessToken,
+        reauthenticationProof: reauthenticationProof,
+      ),
+      canReplay: false,
     );
   }
 }

@@ -131,10 +131,25 @@ class _IdentityList extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
+    final useDeveloper = !state.identities.any(
+      (identity) => identity.provider == AuthIdentityProvider.password,
+    );
+    final credential = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) =>
+          _ReauthenticationDialog(useDeveloper: useDeveloper),
+    );
+    if (credential == null || credential.isEmpty || !context.mounted) return;
+
     try {
       final result = await ref
           .read(accountSecurityControllerProvider.notifier)
-          .startWechatBinding();
+          .startWechatBinding(
+            method: useDeveloper
+                ? ReauthenticationMethod.developer
+                : ReauthenticationMethod.password,
+            credential: credential,
+          );
       if (!context.mounted) return;
       final message = result.isProviderUnavailable
           ? '当前版本尚未配置微信绑定'
@@ -148,6 +163,66 @@ class _IdentityList extends ConsumerWidget {
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('无法启动微信绑定，请稍后再试')));
     }
+  }
+}
+
+class _ReauthenticationDialog extends StatefulWidget {
+  const _ReauthenticationDialog({required this.useDeveloper});
+
+  final bool useDeveloper;
+
+  @override
+  State<_ReauthenticationDialog> createState() =>
+      _ReauthenticationDialogState();
+}
+
+class _ReauthenticationDialogState extends State<_ReauthenticationDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      key: const ValueKey('reauthenticationDialog'),
+      title: const Text('重新确认身份'),
+      content: TextField(
+        key: const ValueKey('reauthenticationCredentialField'),
+        controller: _controller,
+        obscureText: true,
+        autofocus: true,
+        maxLength: 128,
+        autofillHints: widget.useDeveloper
+            ? null
+            : const [AutofillHints.password],
+        decoration: InputDecoration(
+          labelText: widget.useDeveloper ? '开发验证密钥' : '当前密码',
+          helperText: widget.useDeveloper ? '仅限 Alpha 开发身份' : '请输入密码以继续',
+        ),
+        onSubmitted: (value) {
+          if (value.isNotEmpty) Navigator.of(context).pop(value);
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          key: const ValueKey('submitReauthenticationButton'),
+          onPressed: () {
+            if (_controller.text.isNotEmpty) {
+              Navigator.of(context).pop(_controller.text);
+            }
+          },
+          child: const Text('确认'),
+        ),
+      ],
+    );
   }
 }
 

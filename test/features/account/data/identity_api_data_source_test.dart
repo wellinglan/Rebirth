@@ -43,25 +43,46 @@ void main() {
   });
 
   test(
-    'starts WeChat binding with bearer token and no identity data',
+    'reauthenticates in memory and starts binding with one-time proof',
     () async {
       final api = _IdentityApiClient(
         const {},
-        postResponse: {
-          'status': 'provider_unavailable',
-          'provider': 'wechat',
-          'requires_reauthentication': true,
-          'message': 'WeChat binding is not configured in this release.',
-        },
+        postResponses: [
+          {
+            'status': 'proof_created',
+            'purpose': 'wechat_bind',
+            'method': 'password',
+            'proof': 'one-time-proof',
+            'expires_at': 5000,
+          },
+          {
+            'status': 'provider_unavailable',
+            'provider': 'wechat',
+            'requires_reauthentication': true,
+            'message': 'WeChat binding is not configured in this release.',
+          },
+        ],
       );
 
-      final result = await IdentityApiDataSource(
-        api,
-      ).startWechatBinding(accessToken: 'access-token');
+      final dataSource = IdentityApiDataSource(api);
+      final proof = await dataSource.reauthenticate(
+        accessToken: 'access-token',
+        method: ReauthenticationMethod.password,
+        credential: 'private password',
+      );
+      final result = await dataSource.startWechatBinding(
+        accessToken: 'access-token',
+        reauthenticationProof: proof.value,
+      );
 
       expect(api.path, '/auth/identities/wechat/bind/start');
       expect(api.accessToken, 'access-token');
-      expect(api.body, isEmpty);
+      expect(api.bodies.first, {
+        'password': 'private password',
+        'purpose': 'wechat_bind',
+      });
+      expect(api.body, {'reauthentication_proof': 'one-time-proof'});
+      expect(proof.expiresAt, 5000);
       expect(result.provider, AuthIdentityProvider.wechat);
       expect(result.requiresReauthentication, isTrue);
       expect(result.isProviderUnavailable, isTrue);
@@ -71,26 +92,31 @@ void main() {
   test('rejects malformed WeChat binding responses', () async {
     final api = _IdentityApiClient(
       const {},
-      postResponse: {'status': 'provider_unavailable'},
+      postResponses: [
+        {'status': 'provider_unavailable'},
+      ],
     );
 
     await expectLater(
-      IdentityApiDataSource(
-        api,
-      ).startWechatBinding(accessToken: 'access-token'),
+      IdentityApiDataSource(api).startWechatBinding(
+        accessToken: 'access-token',
+        reauthenticationProof: 'proof',
+      ),
       throwsA(isA<ApiException>()),
     );
   });
 }
 
 final class _IdentityApiClient implements ApiClient {
-  _IdentityApiClient(this.response, {this.postResponse});
+  _IdentityApiClient(this.response, {this.postResponses = const []});
 
   final Map<String, Object?> response;
-  final Map<String, Object?>? postResponse;
+  final List<Map<String, Object?>> postResponses;
   String? path;
   String? accessToken;
   Map<String, Object?>? body;
+  final List<Map<String, Object?>> bodies = [];
+  int postCalls = 0;
 
   @override
   Future<Map<String, Object?>> getJson(
@@ -112,7 +138,11 @@ final class _IdentityApiClient implements ApiClient {
   }) async {
     this.path = path;
     this.body = body;
+    bodies.add(body);
     this.accessToken = accessToken;
-    return postResponse ?? response;
+    if (postCalls < postResponses.length) {
+      return postResponses[postCalls++];
+    }
+    return response;
   }
 }

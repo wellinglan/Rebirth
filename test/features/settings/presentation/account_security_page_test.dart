@@ -83,7 +83,15 @@ void main() {
     tester,
   ) async {
     final controller = _FakeAccountSecurityController(
-      const AccountSecurityState(identities: []),
+      const AccountSecurityState(
+        identities: [
+          AuthIdentity(
+            provider: AuthIdentityProvider.password,
+            createdAt: 100,
+            lastUsedAt: 200,
+          ),
+        ],
+      ),
     );
     await _pump(tester, controller.value, controller: controller);
 
@@ -92,8 +100,23 @@ void main() {
     expect(find.text('绑定微信'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('confirmWechatBindingButton')));
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('reauthenticationDialog')),
+      findsOneWidget,
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reauthenticationCredentialField')),
+      'private password',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('submitReauthenticationButton')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
 
     expect(controller.bindingCalls, 1);
+    expect(controller.lastCredential, 'private password');
     expect(find.text('当前版本尚未配置微信绑定'), findsOneWidget);
   });
 
@@ -142,13 +165,19 @@ final class _FakeAccountSecurityController extends AccountSecurityController {
 
   final AccountSecurityState value;
   int bindingCalls = 0;
+  String? lastCredential;
 
   @override
   Future<AccountSecurityState> build() async => value;
 
   @override
-  Future<WechatBindingStartResult> startWechatBinding() async {
+  Future<WechatBindingStartResult> startWechatBinding({
+    required ReauthenticationMethod method,
+    required String credential,
+  }) async {
     bindingCalls += 1;
+    lastCredential = credential;
+    expect(method, ReauthenticationMethod.password);
     return const WechatBindingStartResult(
       status: 'provider_unavailable',
       provider: AuthIdentityProvider.wechat,

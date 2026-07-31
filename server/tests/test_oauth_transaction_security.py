@@ -77,14 +77,15 @@ def test_start_creates_hashed_persistent_transaction(oauth_client: object) -> No
     body = response.json()
     assert body["status"] == "transaction_created"
     assert body["provider"] == "wechat"
-    assert body["purpose"] == "bind"
-    assert body["requires_reauthentication"] is True
+    assert body["purpose"] == "wechat_bind"
+    assert body["requires_reauthentication"] is False
     with client.app.state.database.session_factory() as session:
         transaction = session.get_one(
             OAuthTransaction,
             body["transaction_id"],
         )
         assert transaction.cloud_user_id == account["user"]["id"]
+        assert transaction.session_id == account["session_id"]
         assert transaction.status == "created"
         assert transaction.state_hash != body["state"]
         assert transaction.nonce_hash != body["nonce"]
@@ -105,17 +106,17 @@ def test_state_mismatch_is_rejected_without_destroying_valid_flow(
             _exchange(
                 service,
                 started,
-                account["user"]["id"],
+                account,
                 state="wrong-state",
                 authorization_code="valid-code-a",
             )
-        assert rejected.value.code == "oauth_transaction_unavailable"
+        assert rejected.value.code == "invalid_transaction"
 
     with client.app.state.database.session_factory() as session:
         result = _exchange(
             _service(client, session),
             started,
-            account["user"]["id"],
+            account,
             authorization_code="valid-code-a",
         )
         assert result.status == "completed"
@@ -131,17 +132,17 @@ def test_nonce_mismatch_and_replay_are_rejected(oauth_client: object) -> None:
             _exchange(
                 _service(client, session),
                 started,
-                account["user"]["id"],
+                account,
                 nonce="wrong-nonce",
                 authorization_code="valid-code-a",
             )
-        assert rejected.value.code == "oauth_transaction_unavailable"
+        assert rejected.value.code == "invalid_transaction"
 
     with client.app.state.database.session_factory() as session:
         _exchange(
             _service(client, session),
             started,
-            account["user"]["id"],
+            account,
             authorization_code="valid-code-a",
         )
     with client.app.state.database.session_factory() as session:
@@ -149,10 +150,10 @@ def test_nonce_mismatch_and_replay_are_rejected(oauth_client: object) -> None:
             _exchange(
                 _service(client, session),
                 started,
-                account["user"]["id"],
+                account,
                 authorization_code="valid-code-a",
             )
-        assert replay.value.code == "oauth_transaction_unavailable"
+        assert replay.value.code == "already_consumed"
         transaction = session.get_one(
             OAuthTransaction,
             started["transaction_id"],
@@ -172,10 +173,10 @@ def test_expired_transaction_cannot_continue(oauth_client: object) -> None:
             _exchange(
                 _service(client, session),
                 started,
-                account["user"]["id"],
+                account,
                 authorization_code="valid-code-a",
             )
-        assert expired.value.code == "oauth_transaction_expired"
+        assert expired.value.code == "expired_transaction"
     with client.app.state.database.session_factory() as session:
         transaction = session.get_one(
             OAuthTransaction,
@@ -197,10 +198,10 @@ def test_account_cannot_exchange_another_accounts_transaction(
             _exchange(
                 _service(client, session),
                 started,
-                account_b["user"]["id"],
+                account_b,
                 authorization_code="valid-code-a",
             )
-        assert rejected.value.code == "oauth_transaction_unavailable"
+        assert rejected.value.code == "invalid_transaction"
     with client.app.state.database.session_factory() as session:
         transaction = session.get_one(
             OAuthTransaction,
@@ -228,7 +229,7 @@ def test_same_provider_identity_cannot_bind_two_cloud_users(
         _exchange(
             _service(client, session),
             first,
-            account_a["user"]["id"],
+            account_a,
             authorization_code="shared-code",
         )
     with client.app.state.database.session_factory() as session:
@@ -236,10 +237,10 @@ def test_same_provider_identity_cannot_bind_two_cloud_users(
             _exchange(
                 _service(client, session),
                 second,
-                account_b["user"]["id"],
+                account_b,
                 authorization_code="shared-code",
             )
-        assert duplicate.value.code == "identity_binding_unavailable"
+        assert duplicate.value.code == "binding_conflict"
 
     with client.app.state.database.session_factory() as session:
         identity = session.scalar(
@@ -254,23 +255,26 @@ def test_same_provider_identity_cannot_bind_two_cloud_users(
         assert rejected.status == "rejected"
 
 
-def test_reauthentication_is_required_before_provider_exchange(
+def test_reauthentication_proof_is_required_before_transaction_start(
     oauth_client: object,
 ) -> None:
     client, _ = oauth_client
     account = _register(client, "oauth-reauth")
-    started = _start(client, account["access_token"]).json()
 
-    with client.app.state.database.session_factory() as session:
-        with pytest.raises(OAuthTransactionError) as rejected:
-            _exchange(
-                _service(client, session),
-                started,
-                account["user"]["id"],
-                authorization_code="valid-code-a",
-                reauthentication_verified=False,
-            )
-        assert rejected.value.code == "reauthentication_required"
+    missing = client.post(
+        "/auth/identities/wechat/bind/start",
+        headers={"Authorization": f"Bearer {account['access_token']}"},
+        json={},
+    )
+    invalid = client.post(
+        "/auth/identities/wechat/bind/start",
+        headers={"Authorization": f"Bearer {account['access_token']}"},
+        json={"reauthentication_proof": "not-a-proof"},
+    )
+
+    assert missing.status_code == 422
+    assert invalid.status_code == 403
+    assert invalid.json()["detail"]["code"] == "reauthentication_proof_invalid"
 
 
 def test_provider_failure_is_terminal_and_does_not_create_identity(
@@ -285,10 +289,10 @@ def test_provider_failure_is_terminal_and_does_not_create_identity(
             _exchange(
                 _service(client, session),
                 started,
-                account["user"]["id"],
+                account,
                 authorization_code="invalid-code",
             )
-        assert rejected.value.code == "oauth_provider_rejected"
+        assert rejected.value.code == "provider_error"
     with client.app.state.database.session_factory() as session:
         transaction = session.get_one(
             OAuthTransaction,
@@ -380,6 +384,7 @@ def test_oauth_table_has_no_code_token_or_secret_columns() -> None:
         "provider",
         "purpose",
         "cloud_user_id",
+        "session_id",
         "state_hash",
         "nonce_hash",
         "status",
@@ -411,8 +416,10 @@ def test_oauth_migration_upgrades_downgrades_and_preserves_user(
 
     command.upgrade(config, "head")
     assert "oauth_transactions" in inspect(engine).get_table_names()
-    command.downgrade(config, "20260731_0004")
-    assert "oauth_transactions" not in inspect(engine).get_table_names()
+    assert "reauthentication_proofs" in inspect(engine).get_table_names()
+    command.downgrade(config, "20260731_0005")
+    assert "oauth_transactions" in inspect(engine).get_table_names()
+    assert "reauthentication_proofs" not in inspect(engine).get_table_names()
     with engine.connect() as connection:
         assert connection.scalar(
             text("SELECT display_name FROM cloud_users WHERE id='preserved-user'")
@@ -436,22 +443,21 @@ def _service(client: TestClient, session: object) -> OAuthTransactionService:
 def _exchange(
     service: OAuthTransactionService,
     started: dict[str, object],
-    user_id: str,
+    account: dict[str, object],
     *,
     state: str | None = None,
     nonce: str | None = None,
     authorization_code: str,
-    reauthentication_verified: bool = True,
 ):
     return service.exchange(
         transaction_id=str(started["transaction_id"]),
         provider="wechat",
-        purpose=OAuthPurpose.BIND,
-        cloud_user_id=user_id,
+        purpose=OAuthPurpose.WECHAT_BIND,
+        cloud_user_id=str(account["user"]["id"]),
+        session_id=str(account["session_id"]),
         state=state or str(started["state"]),
         nonce=nonce or str(started["nonce"]),
         authorization_code=authorization_code,
-        reauthentication_verified=reauthentication_verified,
     )
 
 
@@ -468,8 +474,17 @@ def _register(client: TestClient, username: str) -> dict[str, object]:
 
 
 def _start(client: TestClient, access_token: str):
+    proof = client.post(
+        "/auth/reauthenticate/password",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "password": "correct horse battery staple",
+            "purpose": "wechat_bind",
+        },
+    )
+    assert proof.status_code == 200
     return client.post(
         "/auth/identities/wechat/bind/start",
         headers={"Authorization": f"Bearer {access_token}"},
-        json={},
+        json={"reauthentication_proof": proof.json()["proof"]},
     )

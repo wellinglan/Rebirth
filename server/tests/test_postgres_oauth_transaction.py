@@ -68,12 +68,22 @@ def test_postgres_concurrent_oauth_exchange_has_one_winner() -> None:
                     "password": "correct horse battery staple",
                 },
             ).json()
+            proof = client.post(
+                "/auth/reauthenticate/password",
+                headers={
+                    "Authorization": f"Bearer {registered['access_token']}"
+                },
+                json={
+                    "password": "correct horse battery staple",
+                    "purpose": "wechat_bind",
+                },
+            ).json()
             started = client.post(
                 "/auth/identities/wechat/bind/start",
                 headers={
                     "Authorization": f"Bearer {registered['access_token']}"
                 },
-                json={},
+                json={"reauthentication_proof": proof["proof"]},
             ).json()
 
             def exchange() -> str:
@@ -89,12 +99,12 @@ def test_postgres_concurrent_oauth_exchange_has_one_winner() -> None:
                         service.exchange(
                             transaction_id=started["transaction_id"],
                             provider="wechat",
-                            purpose=OAuthPurpose.BIND,
+                            purpose=OAuthPurpose.WECHAT_BIND,
                             cloud_user_id=registered["user"]["id"],
+                            session_id=registered["session_id"],
                             state=started["state"],
                             nonce=started["nonce"],
                             authorization_code="concurrent-code",
-                            reauthentication_verified=True,
                         )
                         return "completed"
                     except OAuthTransactionError as error:
@@ -104,8 +114,8 @@ def test_postgres_concurrent_oauth_exchange_has_one_winner() -> None:
                 results = list(executor.map(lambda _: exchange(), range(2)))
 
             assert sorted(results) == [
+                "already_consumed",
                 "completed",
-                "oauth_transaction_unavailable",
             ]
             with app.state.database.session_factory() as session:
                 transaction = session.get_one(

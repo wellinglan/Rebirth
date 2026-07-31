@@ -25,6 +25,10 @@ class OAuthProviderAdapter(Protocol):
     ) -> VerifiedProviderIdentity: ...
 
 
+class WechatIdentityProvider(OAuthProviderAdapter, Protocol):
+    """WeChat code exchange only; account binding stays in IdentityService."""
+
+
 class OAuthProviderRegistry:
     def __init__(
         self,

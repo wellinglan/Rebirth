@@ -59,7 +59,7 @@ class OAuthTransaction(Base):
         UniqueConstraint("state_hash", name="uq_oauth_transaction_state_hash"),
         UniqueConstraint("nonce_hash", name="uq_oauth_transaction_nonce_hash"),
         CheckConstraint(
-            "purpose IN ('bind')",
+            "purpose IN ('wechat_bind')",
             name="ck_oauth_transaction_purpose",
         ),
         CheckConstraint(
@@ -84,12 +84,61 @@ class OAuthTransaction(Base):
         ForeignKey("cloud_users.id"),
         nullable=False,
     )
+    session_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("auth_sessions.id"),
+        nullable=True,
+        index=True,
+    )
     state_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     nonce_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(24), nullable=False)
     created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     consumed_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+
+class ReauthenticationProof(Base):
+    __tablename__ = "reauthentication_proofs"
+    __table_args__ = (
+        UniqueConstraint(
+            "proof_hash",
+            name="uq_reauthentication_proof_hash",
+        ),
+        CheckConstraint(
+            "purpose IN ('wechat_bind')",
+            name="ck_reauthentication_proof_purpose",
+        ),
+        CheckConstraint(
+            "status IN ('created', 'consumed', 'expired', 'rejected')",
+            name="ck_reauthentication_proof_status",
+        ),
+        Index(
+            "ix_reauthentication_proofs_user_session_status",
+            "cloud_user_id",
+            "session_id",
+            "status",
+        ),
+        Index("ix_reauthentication_proofs_expiry", "expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    cloud_user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("cloud_users.id"),
+        nullable=False,
+    )
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("auth_sessions.id"),
+        nullable=False,
+    )
+    purpose: Mapped[str] = mapped_column(String(24), nullable=False)
+    proof_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    consumed_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
 
 
 class AuthCredential(Base):

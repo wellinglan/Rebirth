@@ -7,8 +7,15 @@ abstract interface class IdentityRemoteDataSource {
     required String accessToken,
   });
 
+  Future<ReauthenticationProof> reauthenticate({
+    required String accessToken,
+    required ReauthenticationMethod method,
+    required String credential,
+  });
+
   Future<WechatBindingStartResult> startWechatBinding({
     required String accessToken,
+    required String reauthenticationProof,
   });
 }
 
@@ -59,12 +66,56 @@ final class IdentityApiDataSource implements IdentityRemoteDataSource {
   }
 
   @override
+  Future<ReauthenticationProof> reauthenticate({
+    required String accessToken,
+    required ReauthenticationMethod method,
+    required String credential,
+  }) async {
+    final isDeveloper = method == ReauthenticationMethod.developer;
+    final json = await _apiClient.postJson(
+      isDeveloper
+          ? '/auth/reauthenticate/developer'
+          : '/auth/reauthenticate/password',
+      body: {
+        isDeveloper ? 'dev_user_key' : 'password': credential,
+        'purpose': 'wechat_bind',
+      },
+      accessToken: accessToken,
+    );
+    try {
+      final status = json['status'];
+      final purpose = json['purpose'];
+      final responseMethod = json['method'];
+      final proof = json['proof'];
+      final expiresAt = json['expires_at'];
+      if (status != 'proof_created' ||
+          purpose != 'wechat_bind' ||
+          responseMethod != (isDeveloper ? 'developer' : 'password') ||
+          proof is! String ||
+          proof.isEmpty ||
+          expiresAt is! int) {
+        throw const FormatException('Invalid reauthentication response.');
+      }
+      return ReauthenticationProof(
+        value: proof,
+        expiresAt: expiresAt,
+        method: method,
+      );
+    } on FormatException catch (error) {
+      throw ApiException(message: '服务器返回了无法识别的重新认证状态。', cause: error);
+    } on TypeError catch (error) {
+      throw ApiException(message: '服务器返回了无法识别的重新认证状态。', cause: error);
+    }
+  }
+
+  @override
   Future<WechatBindingStartResult> startWechatBinding({
     required String accessToken,
+    required String reauthenticationProof,
   }) async {
     final json = await _apiClient.postJson(
       '/auth/identities/wechat/bind/start',
-      body: const {},
+      body: {'reauthentication_proof': reauthenticationProof},
       accessToken: accessToken,
     );
     try {

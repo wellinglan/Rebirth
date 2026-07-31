@@ -443,6 +443,37 @@ class AuthIdentitiesResponse(BaseModel):
     identities: list[AuthIdentitySummaryResponse]
 
 
+StepUpPurpose = Literal["wechat_bind"]
+
+
+class PasswordReauthenticationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    password: str = Field(min_length=1, max_length=128)
+    purpose: StepUpPurpose
+
+
+class DeveloperReauthenticationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    dev_user_key: str = Field(min_length=1, max_length=128)
+    purpose: StepUpPurpose
+
+
+class ReauthenticationProofResponse(BaseModel):
+    status: Literal["proof_created"] = "proof_created"
+    purpose: StepUpPurpose
+    method: Literal["password", "developer"]
+    proof: str
+    expires_at: int
+
+
+class WeChatBindingStartRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reauthentication_proof: str = Field(min_length=1, max_length=256)
+
+
 class WeChatBindingStartResponse(BaseModel):
     status: Literal["provider_unavailable"] = "provider_unavailable"
     provider: Literal["wechat"] = "wechat"
@@ -453,13 +484,28 @@ class WeChatBindingStartResponse(BaseModel):
 class WeChatBindingTransactionResponse(BaseModel):
     status: Literal["transaction_created"] = "transaction_created"
     provider: Literal["wechat"] = "wechat"
-    purpose: Literal["bind"] = "bind"
-    requires_reauthentication: Literal[True] = True
+    purpose: Literal["wechat_bind"] = "wechat_bind"
+    requires_reauthentication: Literal[False] = False
     message: str = "WeChat authorization transaction created."
     transaction_id: str
     state: str
     nonce: str
     expires_at: int
+
+
+class WeChatBindingCallbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    transaction_id: str = Field(min_length=1, max_length=36)
+    state: str = Field(min_length=1, max_length=256)
+    nonce: str = Field(min_length=1, max_length=256)
+    authorization_code: str = Field(min_length=1, max_length=4096)
+
+
+class WeChatBindingCallbackResponse(BaseModel):
+    status: Literal["completed"] = "completed"
+    provider: Literal["wechat"] = "wechat"
+    transaction_id: str
 
 
 class TokenResponse(BaseModel):

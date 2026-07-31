@@ -148,12 +148,15 @@ def test_identity_list_preserves_jwt_user_isolation_and_hides_subject(
 def test_wechat_binding_start_requires_authentication(
     client: TestClient,
 ) -> None:
-    response = client.post("/auth/identities/wechat/bind/start", json={})
+    response = client.post(
+        "/auth/identities/wechat/bind/start",
+        json={"reauthentication_proof": "not-authorized"},
+    )
 
     assert response.status_code == 401
 
 
-def test_authenticated_binding_start_is_safe_and_does_not_trust_body(
+def test_authenticated_binding_start_rejects_client_identity_fields(
     client: TestClient,
 ) -> None:
     registered = _register(client, "wechat-start").json()
@@ -168,13 +171,8 @@ def test_authenticated_binding_start_is_safe_and_does_not_trust_body(
         },
     )
 
-    assert response.status_code == 200
-    assert response.json() == {
-        "status": "provider_unavailable",
-        "provider": "wechat",
-        "requires_reauthentication": True,
-        "message": "WeChat binding is not configured in this release.",
-    }
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "invalid_request"
     serialized = response.text.lower()
     for forbidden in (
         "attacker-selected-user",

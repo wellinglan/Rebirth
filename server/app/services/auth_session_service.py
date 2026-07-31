@@ -243,6 +243,92 @@ def login_password_user(
     return pair
 
 
+def reauthenticate_password_user(
+    session: Session,
+    *,
+    user_id: str,
+    session_id: str,
+    password: str,
+    settings: Settings,
+) -> None:
+    bucket = _rate_limit_bucket(
+        user_id,
+        session_id,
+        "password_reauthentication",
+        settings,
+    )
+    now = _utc_milliseconds()
+    _check_rate_limit(session, bucket, now)
+    identity = IdentityRepository(session).find_for_user_provider(
+        user_id,
+        PASSWORD_PROVIDER,
+    )
+    credential = None
+    if identity is not None:
+        credential = session.scalar(
+            select(AuthCredential).where(
+                AuthCredential.identity_id == identity.id,
+                AuthCredential.credential_type == "password",
+                AuthCredential.disabled_at.is_(None),
+            )
+        )
+    if not _verify_password(
+        password,
+        credential.password_hash if credential is not None else None,
+        settings,
+    ):
+        _record_login_failure(session, bucket, now, settings)
+        raise AuthProtocolError(
+            "reauthentication_failed",
+            "The current login could not be verified.",
+            403,
+        )
+    if credential is None:
+        raise AuthProtocolError(
+            "reauthentication_failed",
+            "The current login could not be verified.",
+            403,
+        )
+    if _password_hasher(settings).check_needs_rehash(credential.password_hash):
+        credential.password_hash = _password_hasher(settings).hash(password)
+        credential.updated_at = now
+    session.execute(
+        delete(AuthLoginThrottle).where(AuthLoginThrottle.bucket_key == bucket)
+    )
+
+
+def reauthenticate_developer_user(
+    session: Session,
+    *,
+    user_id: str,
+    identity_id: str,
+    dev_user_key: str,
+    settings: Settings,
+) -> None:
+    if settings.environment not in {"development", "test"}:
+        raise AuthProtocolError(
+            "reauthentication_unavailable",
+            "The reauthentication method is unavailable.",
+            404,
+        )
+    identity = session.get(AuthIdentity, identity_id)
+    expected = _hmac_hex(
+        settings.auth_dev_identity_hmac_key,
+        dev_user_key.strip(),
+    )
+    if (
+        identity is None
+        or identity.user_id != user_id
+        or identity.provider != DEV_PROVIDER
+        or not hmac.compare_digest(identity.provider_subject, expected)
+    ):
+        raise AuthProtocolError(
+            "reauthentication_failed",
+            "The current login could not be verified.",
+            403,
+        )
+
+
 def dev_login(
     session: Session,
     *,

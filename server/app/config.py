@@ -37,6 +37,7 @@ class Settings:
     wechat_app_id: str | None = field(default=None, repr=False)
     wechat_app_secret: str | None = field(default=None, repr=False)
     wechat_oauth_transaction_minutes: int = 10
+    reauthentication_proof_minutes: int = 5
     ai_provider: str = "disabled"
     openai_api_key: str | None = field(default=None, repr=False)
     ai_model: str | None = None
@@ -216,6 +217,10 @@ def load_settings(
         wechat_oauth_transaction_minutes=_positive_int(
             "REBIRTH_WECHAT_OAUTH_TRANSACTION_MINUTES",
             "10",
+        ),
+        reauthentication_proof_minutes=_positive_int(
+            "REBIRTH_REAUTHENTICATION_PROOF_MINUTES",
+            "5",
         ),
         ai_provider=resolved_ai_provider,
         openai_api_key=resolved_api_key,

@@ -121,7 +121,10 @@ void main() {
       accountSecurityControllerProvider.notifier,
     );
 
-    final first = controller.startWechatBinding();
+    final first = controller.startWechatBinding(
+      method: ReauthenticationMethod.password,
+      credential: 'password',
+    );
     await Future<void>.delayed(Duration.zero);
     expect(
       container
@@ -130,11 +133,18 @@ void main() {
           ?.isStartingWechatBinding,
       isTrue,
     );
-    await expectLater(controller.startWechatBinding(), throwsStateError);
+    await expectLater(
+      controller.startWechatBinding(
+        method: ReauthenticationMethod.password,
+        credential: 'password',
+      ),
+      throwsStateError,
+    );
     completer.complete(_unavailableResult);
 
     expect((await first).isProviderUnavailable, isTrue);
     expect(repository.bindingCalls, 1);
+    expect(repository.reauthenticationCalls, 1);
     expect(
       container
           .read(accountSecurityControllerProvider)
@@ -161,7 +171,10 @@ void main() {
     await expectLater(
       container
           .read(accountSecurityControllerProvider.notifier)
-          .startWechatBinding(),
+          .startWechatBinding(
+            method: ReauthenticationMethod.password,
+            credential: 'password',
+          ),
       throwsStateError,
     );
     expect(repository.bindingCalls, 0);
@@ -186,6 +199,7 @@ final class _FakeIdentityRepository implements IdentityRepository {
   final Completer<WechatBindingStartResult>? bindingCompleter;
   int calls = 0;
   int bindingCalls = 0;
+  int reauthenticationCalls = 0;
 
   @override
   Future<List<AuthIdentity>> getCurrentIdentities() async {
@@ -200,8 +214,24 @@ final class _FakeIdentityRepository implements IdentityRepository {
   }
 
   @override
-  Future<WechatBindingStartResult> startWechatBinding() {
+  Future<ReauthenticationProof> reauthenticate({
+    required ReauthenticationMethod method,
+    required String credential,
+  }) async {
+    reauthenticationCalls += 1;
+    return ReauthenticationProof(
+      value: 'one-time-proof',
+      expiresAt: 1000,
+      method: method,
+    );
+  }
+
+  @override
+  Future<WechatBindingStartResult> startWechatBinding({
+    required String reauthenticationProof,
+  }) {
     bindingCalls += 1;
+    expect(reauthenticationProof, 'one-time-proof');
     return bindingCompleter?.future ?? Future.value(_unavailableResult);
   }
 }

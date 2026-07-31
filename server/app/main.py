@@ -28,6 +28,7 @@ def create_app(
     wechat_app_secret: str | None = None,
     wechat_provider_adapter: OAuthProviderAdapter | None = None,
     oauth_clock: Callable[[], int] | None = None,
+    reauthentication_clock: Callable[[], int] | None = None,
     ai_provider: str | None = None,
     openai_api_key: str | None = None,
     ai_model: str | None = None,
@@ -72,6 +73,7 @@ def create_app(
         ),
     )
     application.state.oauth_clock = oauth_clock
+    application.state.reauthentication_clock = reauthentication_clock
     provider = build_provider(settings, openai_client=openai_client)
     application.state.ai_generation_service = (
         AiGenerationService(settings=settings, provider=provider)

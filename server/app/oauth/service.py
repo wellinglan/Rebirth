@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.identity import IdentityBindingError
-from app.models import CloudUser, OAuthTransaction
+from app.models import AuthSession, CloudUser, OAuthTransaction
 from app.oauth.providers import OAuthProviderError, OAuthProviderRegistry
 from app.repositories.oauth_transaction_repository import (
     OAuthTransactionRepository,
@@ -21,7 +21,7 @@ from app.services.identity_service import IdentityService
 
 
 class OAuthPurpose(StrEnum):
-    BIND = "bind"
+    WECHAT_BIND = "wechat_bind"
 
 
 class OAuthTransactionStatus(StrEnum):
@@ -114,42 +114,48 @@ class OAuthTransactionService:
         provider: str,
         purpose: OAuthPurpose,
         cloud_user_id: str,
+        session_id: str,
+        commit: bool = True,
     ) -> OAuthTransactionStart:
         self._require_user(cloud_user_id)
+        self._require_active_session(cloud_user_id, session_id)
         self._require_provider(provider)
         now = self._clock()
-        for _ in range(3):
-            state = secrets.token_urlsafe(32)
-            nonce = secrets.token_urlsafe(32)
-            transaction = OAuthTransaction(
-                transaction_id=str(uuid.uuid4()),
-                provider=provider,
-                purpose=purpose.value,
-                cloud_user_id=cloud_user_id,
-                state_hash=_hash_secret(state),
-                nonce_hash=_hash_secret(nonce),
-                status=OAuthTransactionStatus.CREATED.value,
-                created_at=now,
-                expires_at=now + self._transaction_milliseconds,
-                consumed_at=None,
-            )
-            try:
-                self._repository.add(transaction)
+        state = secrets.token_urlsafe(32)
+        nonce = secrets.token_urlsafe(32)
+        transaction = OAuthTransaction(
+            transaction_id=str(uuid.uuid4()),
+            provider=provider,
+            purpose=purpose.value,
+            cloud_user_id=cloud_user_id,
+            session_id=session_id,
+            state_hash=_hash_secret(state),
+            nonce_hash=_hash_secret(nonce),
+            status=OAuthTransactionStatus.CREATED.value,
+            created_at=now,
+            expires_at=now + self._transaction_milliseconds,
+            consumed_at=None,
+        )
+        try:
+            self._repository.add(transaction)
+            if commit:
                 self._session.commit()
-                return OAuthTransactionStart(
-                    transaction_id=transaction.transaction_id,
-                    provider=provider,
-                    purpose=purpose.value,
-                    state=state,
-                    nonce=nonce,
-                    expires_at=transaction.expires_at,
-                )
-            except IntegrityError:
-                self._session.rollback()
-        raise OAuthTransactionError(
-            "oauth_transaction_unavailable",
-            "The OAuth transaction could not be created.",
-            503,
+            else:
+                self._session.flush()
+        except IntegrityError as error:
+            self._session.rollback()
+            raise OAuthTransactionError(
+                "invalid_transaction",
+                "The OAuth transaction could not be created.",
+                503,
+            ) from error
+        return OAuthTransactionStart(
+            transaction_id=transaction.transaction_id,
+            provider=provider,
+            purpose=purpose.value,
+            state=state,
+            nonce=nonce,
+            expires_at=transaction.expires_at,
         )
 
     def exchange(
@@ -159,28 +165,30 @@ class OAuthTransactionService:
         provider: str,
         purpose: OAuthPurpose,
         cloud_user_id: str,
+        session_id: str,
         state: str,
         nonce: str,
         authorization_code: str,
-        reauthentication_verified: bool,
     ) -> OAuthTransactionCompletion:
-        if not reauthentication_verified:
-            raise OAuthTransactionError(
-                "reauthentication_required",
-                "Please confirm the current login before binding.",
-                403,
-            )
         adapter = self._require_provider(provider)
         transaction = self._repository.get_for_update(transaction_id)
         if (
             transaction is None
             or transaction.cloud_user_id != cloud_user_id
+            or transaction.session_id != session_id
             or transaction.provider != provider
             or transaction.purpose != purpose.value
         ):
-            raise _transaction_unavailable()
+            raise _invalid_transaction()
+        if transaction.status == OAuthTransactionStatus.CONSUMED.value:
+            raise OAuthTransactionError(
+                "already_consumed",
+                "The OAuth transaction has already been consumed.",
+                409,
+            )
         if transaction.status != OAuthTransactionStatus.CREATED.value:
-            raise _transaction_unavailable()
+            raise _invalid_transaction()
+        self._require_active_session(cloud_user_id, session_id)
         now = self._clock()
         if transaction.expires_at <= now:
             OAuthTransactionStateMachine.transition(
@@ -189,7 +197,7 @@ class OAuthTransactionService:
             )
             self._session.commit()
             raise OAuthTransactionError(
-                "oauth_transaction_expired",
+                "expired_transaction",
                 "The OAuth transaction has expired.",
                 410,
             )
@@ -200,7 +208,7 @@ class OAuthTransactionService:
             transaction.nonce_hash,
             _hash_secret(nonce),
         ):
-            raise _transaction_unavailable()
+            raise _invalid_transaction()
 
         try:
             verified_identity = adapter.exchange(
@@ -241,23 +249,23 @@ class OAuthTransactionService:
             )
             self._session.commit()
             raise OAuthTransactionError(
-                error.code,
-                error.message,
-                409,
+                "provider_error",
+                "The provider could not verify this request.",
+                502,
             ) from error
         except IdentityBindingError as error:
             self._session.rollback()
             self._reject_after_rollback(transaction_id, cloud_user_id, now)
             raise OAuthTransactionError(
-                error.code,
-                error.message,
-                error.status_code,
+                "binding_conflict",
+                "The login method cannot be bound.",
+                409,
             ) from error
         except IntegrityError as error:
             self._session.rollback()
             self._reject_after_rollback(transaction_id, cloud_user_id, now)
             raise OAuthTransactionError(
-                "identity_binding_unavailable",
+                "binding_conflict",
                 "The login method cannot be bound.",
                 409,
             ) from error
@@ -276,6 +284,16 @@ class OAuthTransactionService:
                 "Authentication is required.",
                 401,
             )
+
+    def _require_active_session(self, user_id: str, session_id: str) -> None:
+        auth_session = self._session.get(AuthSession, session_id)
+        if (
+            auth_session is None
+            or auth_session.user_id != user_id
+            or auth_session.revoked_at is not None
+            or auth_session.absolute_expires_at <= self._clock()
+        ):
+            raise _invalid_transaction()
 
     def _require_provider(self, provider: str):
         try:
@@ -312,9 +330,9 @@ def _hash_secret(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def _transaction_unavailable() -> OAuthTransactionError:
+def _invalid_transaction() -> OAuthTransactionError:
     return OAuthTransactionError(
-        "oauth_transaction_unavailable",
+        "invalid_transaction",
         "The OAuth transaction cannot continue.",
         409,
     )
