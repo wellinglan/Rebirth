@@ -1,6 +1,7 @@
 # Step-up Reauthentication and OAuth Callback Contract
 
-> Status: Sprint 13B.4 implementation complete; manual acceptance pending
+> Status: Sprint 13B.4 implementation complete; normal Alpha manual acceptance
+> recorded with controlled callback scenarios pending
 > Scope: short-lived reauthentication proofs and the authenticated WeChat
 > binding callback contract
 
@@ -135,8 +136,10 @@ The OAuth Callback Contract Gate requires stable non-disclosing errors,
 provider isolation, one-winner concurrent exchange, identity uniqueness,
 fail-closed production behavior, CI PASS, and manual acceptance.
 
-Both gates remain `OPEN` until
-`docs/manual_tests/45_step_up_reauthentication.md` is executed and recorded.
+Normal Alpha manual acceptance records `24 PASS / 0 FAIL / 12 NOT EXECUTED`.
+The remaining cases require proof delay/cross-session injection or a controlled
+Fake Provider environment that the normal Alpha deployment intentionally does
+not expose. Both gates therefore remain `OPEN` pending those controlled cases.
 
 ## Deferred Work
 

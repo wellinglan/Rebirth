@@ -391,3 +391,11 @@ and OAuth Callback Contract Gate remain open pending the manual matrix in
 `docs/manual_tests/45_step_up_reauthentication.md`.
 
 See `docs/45_STEP_UP_REAUTHENTICATION.md`.
+
+Authorized normal Alpha acceptance for Sprint 13B.4 records
+`24 PASS / 0 FAIL / 12 NOT EXECUTED`. Password step-up, account isolation,
+authentication regression, privacy checks, and Windows/Android accessibility
+passed. Proof delay/cross-session injection and controlled callback cases were
+not executed because the normal Alpha deployment intentionally exposes neither
+raw proofs nor a Fake/real WeChat Provider. Both Sprint 13B.4 gates remain open
+for those controlled scenarios.
