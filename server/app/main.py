@@ -9,6 +9,8 @@ from app.ai.providers import build_provider
 from app.ai.service import AiGenerationService
 from app.config import load_settings
 from app.database import Database
+from app.identity import WECHAT_PROVIDER
+from app.oauth.providers import OAuthProviderAdapter, OAuthProviderRegistry
 from app.routers import ai, auth, devices, health, sync
 
 
@@ -22,6 +24,10 @@ def create_app(
     auth_rate_limit_hmac_key: str | None = None,
     auth_legacy_token_migration_enabled: bool | None = None,
     auth_legacy_token_migration_deadline: str | None = None,
+    wechat_app_id: str | None = None,
+    wechat_app_secret: str | None = None,
+    wechat_provider_adapter: OAuthProviderAdapter | None = None,
+    oauth_clock: Callable[[], int] | None = None,
     ai_provider: str | None = None,
     openai_api_key: str | None = None,
     ai_model: str | None = None,
@@ -41,6 +47,8 @@ def create_app(
         auth_legacy_token_migration_deadline=(
             auth_legacy_token_migration_deadline
         ),
+        wechat_app_id=wechat_app_id,
+        wechat_app_secret=wechat_app_secret,
         ai_provider=ai_provider,
         openai_api_key=openai_api_key,
         ai_model=ai_model,
@@ -51,6 +59,19 @@ def create_app(
     application = FastAPI(title="Rebirth API", version="0.1.0-dev")
     application.state.settings = settings
     application.state.database = database
+    application.state.oauth_provider_registry = OAuthProviderRegistry(
+        adapters=(
+            [wechat_provider_adapter]
+            if wechat_provider_adapter is not None
+            else []
+        ),
+        configured_provider_ids=(
+            {WECHAT_PROVIDER}
+            if settings.wechat_provider_configured
+            else set()
+        ),
+    )
+    application.state.oauth_clock = oauth_clock
     provider = build_provider(settings, openai_client=openai_client)
     application.state.ai_generation_service = (
         AiGenerationService(settings=settings, provider=provider)

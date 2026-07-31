@@ -34,6 +34,9 @@ class Settings:
     auth_login_max_failures: int
     auth_login_window_minutes: int
     auth_login_block_minutes: int
+    wechat_app_id: str | None = field(default=None, repr=False)
+    wechat_app_secret: str | None = field(default=None, repr=False)
+    wechat_oauth_transaction_minutes: int = 10
     ai_provider: str = "disabled"
     openai_api_key: str | None = field(default=None, repr=False)
     ai_model: str | None = None
@@ -48,6 +51,10 @@ class Settings:
     def is_development(self) -> bool:
         return self.environment == "development"
 
+    @property
+    def wechat_provider_configured(self) -> bool:
+        return bool(self.wechat_app_id and self.wechat_app_secret)
+
 
 def load_settings(
     *,
@@ -59,6 +66,8 @@ def load_settings(
     auth_rate_limit_hmac_key: str | None = None,
     auth_legacy_token_migration_enabled: bool | None = None,
     auth_legacy_token_migration_deadline: str | None = None,
+    wechat_app_id: str | None = None,
+    wechat_app_secret: str | None = None,
     ai_provider: str | None = None,
     openai_api_key: str | None = None,
     ai_model: str | None = None,
@@ -104,6 +113,16 @@ def load_settings(
         raise RuntimeError(
             "AUTH_LEGACY_TOKEN_MIGRATION_DEADLINE is required when legacy "
             "token migration is enabled."
+        )
+
+    resolved_wechat_app_id = wechat_app_id or os.getenv("REBIRTH_WECHAT_APP_ID")
+    resolved_wechat_app_secret = wechat_app_secret or os.getenv(
+        "REBIRTH_WECHAT_APP_SECRET"
+    )
+    if bool(resolved_wechat_app_id) != bool(resolved_wechat_app_secret):
+        raise RuntimeError(
+            "REBIRTH_WECHAT_APP_ID and REBIRTH_WECHAT_APP_SECRET must be "
+            "configured together."
         )
 
     database_path = Path(__file__).resolve().parents[1] / "rebirth_dev.sqlite"
@@ -191,6 +210,12 @@ def load_settings(
         auth_login_block_minutes=_positive_int(
             "AUTH_LOGIN_BLOCK_MINUTES",
             "15",
+        ),
+        wechat_app_id=resolved_wechat_app_id,
+        wechat_app_secret=resolved_wechat_app_secret,
+        wechat_oauth_transaction_minutes=_positive_int(
+            "REBIRTH_WECHAT_OAUTH_TRANSACTION_MINUTES",
+            "10",
         ),
         ai_provider=resolved_ai_provider,
         openai_api_key=resolved_api_key,

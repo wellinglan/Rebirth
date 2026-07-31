@@ -75,6 +75,13 @@ class IdentitySummary:
 
 
 @dataclass(frozen=True)
+class VerifiedProviderIdentity:
+    provider: str
+    provider_subject: str
+    provider_union_id: str | None = None
+
+
+@dataclass(frozen=True)
 class VerifiedWechatIdentity:
     app_id: str
     open_id: str
@@ -98,6 +105,13 @@ class VerifiedWechatIdentity:
                 409,
             )
         return f"openid:{app_id}:{open_id}"
+
+    def as_provider_identity(self) -> VerifiedProviderIdentity:
+        return VerifiedProviderIdentity(
+            provider=WECHAT_PROVIDER,
+            provider_subject=self.provider_subject,
+            provider_union_id=self.normalized_union_id,
+        )
 
 
 @dataclass(frozen=True)

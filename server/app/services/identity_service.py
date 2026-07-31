@@ -10,8 +10,8 @@ from app.identity import (
     IdentityBindingError,
     IdentityCapability,
     IdentitySummary,
+    VerifiedProviderIdentity,
     VerifiedWechatIdentity,
-    WECHAT_PROVIDER,
     provider_metadata,
     public_provider_name,
 )
@@ -68,6 +68,24 @@ class IdentityService:
         verified_identity: VerifiedWechatIdentity,
         reauthentication_verified: bool,
         now: int,
+        commit: bool = True,
+    ) -> AuthIdentity:
+        return self.bind_verified_provider_identity(
+            user_id=user_id,
+            verified_identity=verified_identity.as_provider_identity(),
+            reauthentication_verified=reauthentication_verified,
+            now=now,
+            commit=commit,
+        )
+
+    def bind_verified_provider_identity(
+        self,
+        *,
+        user_id: str,
+        verified_identity: VerifiedProviderIdentity,
+        reauthentication_verified: bool,
+        now: int,
+        commit: bool = True,
     ) -> AuthIdentity:
         if not reauthentication_verified:
             raise IdentityBindingError(
@@ -82,10 +100,17 @@ class IdentityService:
                 "Authentication is required.",
                 401,
             )
+        metadata = provider_metadata(verified_identity.provider)
+        if IdentityCapability.BIND not in metadata.capabilities:
+            raise IdentityBindingError(
+                "identity_binding_unavailable",
+                "The login method cannot be bound.",
+                409,
+            )
         subject = verified_identity.provider_subject
         if (
             self._repository.find_by_provider_subject(
-                WECHAT_PROVIDER,
+                verified_identity.provider,
                 subject,
                 for_update=True,
             )
@@ -99,9 +124,9 @@ class IdentityService:
         identity = AuthIdentity(
             id=str(uuid.uuid4()),
             user_id=user_id,
-            provider=WECHAT_PROVIDER,
+            provider=verified_identity.provider,
             provider_subject=subject,
-            provider_union_id=verified_identity.normalized_union_id,
+            provider_union_id=verified_identity.provider_union_id,
             created_at=now,
             updated_at=now,
             last_used_at=None,
@@ -109,10 +134,12 @@ class IdentityService:
         try:
             self._repository.add(identity)
             self._session.flush()
-            self._session.commit()
+            if commit:
+                self._session.commit()
             return identity
         except IntegrityError as error:
-            self._session.rollback()
+            if commit:
+                self._session.rollback()
             raise IdentityBindingError(
                 "identity_binding_unavailable",
                 "The login method cannot be bound.",

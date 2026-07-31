@@ -27,6 +27,7 @@ AUTH_TABLES = {
     "auth_refresh_tokens",
     "auth_login_throttles",
     "legacy_refresh_migrations",
+    "oauth_transactions",
 }
 
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_session
-from app.identity import IdentityBindingError, WECHAT_PROVIDER
+from app.identity import WECHAT_PROVIDER
 from app.models import AuthSession, CloudUser
 from app.schemas import (
     AuthIdentitiesResponse,
@@ -20,12 +20,18 @@ from app.schemas import (
     RefreshTokenRequest,
     TokenResponse,
     WeChatBindingStartResponse,
+    WeChatBindingTransactionResponse,
     WeChatMobileRequest,
 )
 from app.security import (
     AuthContext,
     optional_logout_auth_context,
     require_auth_context,
+)
+from app.oauth.service import (
+    OAuthPurpose,
+    OAuthTransactionError,
+    OAuthTransactionService,
 )
 from app.services.auth_session_service import (
     AuthProtocolError,
@@ -192,33 +198,40 @@ def current_identities(
 
 @router.post(
     "/identities/wechat/bind/start",
-    response_model=WeChatBindingStartResponse,
+    response_model=(
+        WeChatBindingStartResponse | WeChatBindingTransactionResponse
+    ),
 )
 def start_wechat_binding(
+    request: Request,
     context: AuthContext = Depends(require_auth_context),
     session: Session = Depends(get_session),
-) -> WeChatBindingStartResponse:
+) -> WeChatBindingStartResponse | WeChatBindingTransactionResponse:
     try:
-        availability = IdentityService(session).binding_availability(
-            user_id=context.user_id,
+        result = OAuthTransactionService(
+            session,
+            providers=request.app.state.oauth_provider_registry,
+            transaction_minutes=(
+                request.app.state.settings.wechat_oauth_transaction_minutes
+            ),
+            clock=request.app.state.oauth_clock,
+        ).start(
             provider=WECHAT_PROVIDER,
+            purpose=OAuthPurpose.BIND,
+            cloud_user_id=context.user_id,
         )
-    except IdentityBindingError as error:
+    except OAuthTransactionError as error:
+        if error.code == "oauth_provider_unavailable":
+            return WeChatBindingStartResponse()
         raise HTTPException(
             status_code=error.status_code,
             detail={"code": error.code, "message": error.message},
         ) from error
-    if availability.available:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={
-                "code": "identity_provider_not_configured",
-                "message": "The login method is unavailable.",
-            },
-        )
-    return WeChatBindingStartResponse(
-        provider=availability.provider,
-        requires_reauthentication=availability.requires_reauthentication,
+    return WeChatBindingTransactionResponse(
+        transaction_id=result.transaction_id,
+        state=result.state,
+        nonce=result.nonce,
+        expires_at=result.expires_at,
     )
 
 

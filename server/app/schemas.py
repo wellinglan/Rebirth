@@ -450,6 +450,18 @@ class WeChatBindingStartResponse(BaseModel):
     message: str = "WeChat binding is not configured in this release."
 
 
+class WeChatBindingTransactionResponse(BaseModel):
+    status: Literal["transaction_created"] = "transaction_created"
+    provider: Literal["wechat"] = "wechat"
+    purpose: Literal["bind"] = "bind"
+    requires_reauthentication: Literal[True] = True
+    message: str = "WeChat authorization transaction created."
+    transaction_id: str
+    state: str
+    nonce: str
+    expires_at: int
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str

@@ -53,6 +53,45 @@ class AuthIdentity(Base):
     last_used_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
 
+class OAuthTransaction(Base):
+    __tablename__ = "oauth_transactions"
+    __table_args__ = (
+        UniqueConstraint("state_hash", name="uq_oauth_transaction_state_hash"),
+        UniqueConstraint("nonce_hash", name="uq_oauth_transaction_nonce_hash"),
+        CheckConstraint(
+            "purpose IN ('bind')",
+            name="ck_oauth_transaction_purpose",
+        ),
+        CheckConstraint(
+            "status IN ('created', 'provider_verified', 'completed', "
+            "'expired', 'consumed', 'rejected')",
+            name="ck_oauth_transaction_status",
+        ),
+        Index(
+            "ix_oauth_transactions_user_provider_status",
+            "cloud_user_id",
+            "provider",
+            "status",
+        ),
+        Index("ix_oauth_transactions_expiry", "expires_at"),
+    )
+
+    transaction_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(24), nullable=False)
+    cloud_user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("cloud_users.id"),
+        nullable=False,
+    )
+    state_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    nonce_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
+    created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    consumed_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+
 class AuthCredential(Base):
     __tablename__ = "auth_credentials"
     __table_args__ = (
