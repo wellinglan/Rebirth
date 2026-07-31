@@ -7,7 +7,7 @@ import 'package:rebirth/features/account/presentation/account_security_state.dar
 import 'package:rebirth/features/settings/presentation/account_security_page.dart';
 
 void main() {
-  testWidgets('shows bound identities and disabled future WeChat entry', (
+  testWidgets('shows bound identities and online WeChat binding entry', (
     tester,
   ) async {
     await _pump(
@@ -27,14 +27,8 @@ void main() {
     expect(find.text('用户名密码'), findsOneWidget);
     expect(find.text('已绑定'), findsOneWidget);
     expect(find.text('微信'), findsOneWidget);
-    expect(find.text('后续版本开放'), findsOneWidget);
-    final wechat = tester.widget<ListTile>(
-      find.descendant(
-        of: find.byKey(const ValueKey('wechatIdentityTile')),
-        matching: find.byType(ListTile),
-      ),
-    );
-    expect(wechat.enabled, isFalse);
+    expect(find.text('未绑定'), findsOneWidget);
+    expect(find.byKey(const ValueKey('bindWechatButton')), findsOneWidget);
   });
 
   testWidgets('offline snapshot is clearly identified', (tester) async {
@@ -57,6 +51,50 @@ void main() {
       find.byKey(const ValueKey('accountSecurityOfflineNote')),
       findsOneWidget,
     );
+    expect(find.text('当前离线，无法绑定'), findsOneWidget);
+    final button = tester.widget<TextButton>(
+      find.byKey(const ValueKey('bindWechatButton')),
+    );
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('bound WeChat identity has no duplicate binding action', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const AccountSecurityState(
+        identities: [
+          AuthIdentity(
+            provider: AuthIdentityProvider.wechat,
+            createdAt: 100,
+            lastUsedAt: null,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('微信'), findsOneWidget);
+    expect(find.text('已绑定'), findsOneWidget);
+    expect(find.byKey(const ValueKey('bindWechatButton')), findsNothing);
+  });
+
+  testWidgets('confirmed WeChat entry calls controller and shows result', (
+    tester,
+  ) async {
+    final controller = _FakeAccountSecurityController(
+      const AccountSecurityState(identities: []),
+    );
+    await _pump(tester, controller.value, controller: controller);
+
+    await tester.tap(find.byKey(const ValueKey('bindWechatButton')));
+    await tester.pumpAndSettle();
+    expect(find.text('绑定微信'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('confirmWechatBindingButton')));
+    await tester.pumpAndSettle();
+
+    expect(controller.bindingCalls, 1);
+    expect(find.text('当前版本尚未配置微信绑定'), findsOneWidget);
   });
 
   testWidgets('does not render private identity metadata', (tester) async {
@@ -76,15 +114,21 @@ void main() {
     expect(find.textContaining('provider_subject'), findsNothing);
     expect(find.textContaining('cloud-user'), findsNothing);
     expect(find.textContaining('token'), findsNothing);
+    expect(find.textContaining('openid'), findsNothing);
+    expect(find.textContaining('unionid'), findsNothing);
   });
 }
 
-Future<void> _pump(WidgetTester tester, AccountSecurityState state) async {
+Future<void> _pump(
+  WidgetTester tester,
+  AccountSecurityState state, {
+  _FakeAccountSecurityController? controller,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         accountSecurityControllerProvider.overrideWith(
-          () => _FakeAccountSecurityController(state),
+          () => controller ?? _FakeAccountSecurityController(state),
         ),
       ],
       child: const MaterialApp(home: AccountSecurityPage()),
@@ -97,7 +141,19 @@ final class _FakeAccountSecurityController extends AccountSecurityController {
   _FakeAccountSecurityController(this.value);
 
   final AccountSecurityState value;
+  int bindingCalls = 0;
 
   @override
   Future<AccountSecurityState> build() async => value;
+
+  @override
+  Future<WechatBindingStartResult> startWechatBinding() async {
+    bindingCalls += 1;
+    return const WechatBindingStartResult(
+      status: 'provider_unavailable',
+      provider: AuthIdentityProvider.wechat,
+      requiresReauthentication: true,
+      message: 'WeChat binding is not configured in this release.',
+    );
+  }
 }

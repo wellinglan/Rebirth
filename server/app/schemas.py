@@ -443,6 +443,13 @@ class AuthIdentitiesResponse(BaseModel):
     identities: list[AuthIdentitySummaryResponse]
 
 
+class WeChatBindingStartResponse(BaseModel):
+    status: Literal["provider_unavailable"] = "provider_unavailable"
+    provider: Literal["wechat"] = "wechat"
+    requires_reauthentication: Literal[True] = True
+    message: str = "WeChat binding is not configured in this release."
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str

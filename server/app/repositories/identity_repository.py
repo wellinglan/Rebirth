@@ -19,6 +19,9 @@ class IdentityRepository:
             )
         )
 
+    def add(self, identity: AuthIdentity) -> None:
+        self._session.add(identity)
+
     def find_by_provider_subject(
         self,
         provider: str,

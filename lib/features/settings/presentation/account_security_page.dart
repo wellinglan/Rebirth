@@ -32,14 +32,15 @@ class AccountSecurityPage extends ConsumerWidget {
   }
 }
 
-class _IdentityList extends StatelessWidget {
+class _IdentityList extends ConsumerWidget {
   const _IdentityList({required this.state});
 
   final AccountSecurityState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final providers = state.identities.map((item) => item.provider).toSet();
+    final hasWechat = providers.contains(AuthIdentityProvider.wechat);
     return ListView(
       key: const ValueKey('accountSecurityData'),
       padding: AppLayout.pagePadding,
@@ -65,12 +66,31 @@ class _IdentityList extends StatelessWidget {
                   subtitle: '已绑定',
                   isBound: true,
                 ),
-              const _IdentityTile(
+              _IdentityTile(
                 key: ValueKey('wechatIdentityTile'),
                 icon: Icons.chat_bubble_outline,
                 title: '微信',
-                subtitle: '后续版本开放',
-                isBound: false,
+                subtitle: hasWechat
+                    ? '已绑定'
+                    : state.isOfflineSnapshot
+                    ? '当前离线，无法绑定'
+                    : '未绑定',
+                isBound: hasWechat,
+                enabled: hasWechat || !state.isOfflineSnapshot,
+                trailing: hasWechat
+                    ? const Icon(Icons.check_circle_outline)
+                    : state.isStartingWechatBinding
+                    ? const SizedBox.square(
+                        dimension: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : TextButton(
+                        key: const ValueKey('bindWechatButton'),
+                        onPressed: state.isOfflineSnapshot
+                            ? null
+                            : () => _startWechatBinding(context, ref),
+                        child: const Text('绑定'),
+                      ),
               ),
             ],
           ),
@@ -86,6 +106,49 @@ class _IdentityList extends StatelessWidget {
       ],
     );
   }
+
+  Future<void> _startWechatBinding(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('绑定微信'),
+        content: const Text(
+          '绑定第三方登录方式前，需要重新确认当前登录并由服务端验证身份。'
+          '当前版本尚未接入真实微信授权。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            key: const ValueKey('confirmWechatBindingButton'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('继续'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final result = await ref
+          .read(accountSecurityControllerProvider.notifier)
+          .startWechatBinding();
+      if (!context.mounted) return;
+      final message = result.isProviderUnavailable
+          ? '当前版本尚未配置微信绑定'
+          : '微信绑定流程已启动';
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('无法启动微信绑定，请稍后再试')));
+    }
+  }
 }
 
 class _IdentityTile extends StatelessWidget {
@@ -94,6 +157,8 @@ class _IdentityTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.isBound,
+    this.enabled = true,
+    this.trailing,
     super.key,
   });
 
@@ -101,15 +166,18 @@ class _IdentityTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isBound;
+  final bool enabled;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      enabled: isBound,
+      enabled: enabled,
       leading: Icon(icon),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: Icon(isBound ? Icons.check_circle_outline : Icons.add),
+      trailing:
+          trailing ?? Icon(isBound ? Icons.check_circle_outline : Icons.add),
     );
   }
 }

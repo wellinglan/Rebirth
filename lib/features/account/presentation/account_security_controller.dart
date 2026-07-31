@@ -44,4 +44,25 @@ class AccountSecurityController extends AsyncNotifier<AccountSecurityState> {
     ref.invalidateSelf();
     await future;
   }
+
+  Future<WechatBindingStartResult> startWechatBinding() async {
+    final current = state.value;
+    final auth = ref.read(appAuthStateProvider).value;
+    if (current == null ||
+        current.isStartingWechatBinding ||
+        auth == null ||
+        auth.status != AppAuthStatus.authenticated) {
+      throw StateError('An online authenticated session is required.');
+    }
+
+    state = AsyncData(current.copyWith(isStartingWechatBinding: true));
+    try {
+      return await ref.read(identityRepositoryProvider).startWechatBinding();
+    } finally {
+      final latest = state.value;
+      if (latest != null) {
+        state = AsyncData(latest.copyWith(isStartingWechatBinding: false));
+      }
+    }
+  }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
@@ -100,6 +102,70 @@ void main() {
       throwsStateError,
     );
   });
+
+  test('online account can start WeChat binding once at a time', () async {
+    final completer = Completer<WechatBindingStartResult>();
+    final repository = _FakeIdentityRepository(bindingCompleter: completer);
+    final container = _container(
+      repository: repository,
+      auth: const AppAuthState(
+        status: AppAuthStatus.authenticated,
+        cloudUserId: 'cloud-a',
+        localUserId: 'local-a',
+        identityProvider: 'password_username',
+      ),
+    );
+    addTearDown(container.dispose);
+    await container.read(accountSecurityControllerProvider.future);
+    final controller = container.read(
+      accountSecurityControllerProvider.notifier,
+    );
+
+    final first = controller.startWechatBinding();
+    await Future<void>.delayed(Duration.zero);
+    expect(
+      container
+          .read(accountSecurityControllerProvider)
+          .value
+          ?.isStartingWechatBinding,
+      isTrue,
+    );
+    await expectLater(controller.startWechatBinding(), throwsStateError);
+    completer.complete(_unavailableResult);
+
+    expect((await first).isProviderUnavailable, isTrue);
+    expect(repository.bindingCalls, 1);
+    expect(
+      container
+          .read(accountSecurityControllerProvider)
+          .value
+          ?.isStartingWechatBinding,
+      isFalse,
+    );
+  });
+
+  test('offline account cannot start WeChat binding', () async {
+    final repository = _FakeIdentityRepository();
+    final container = _container(
+      repository: repository,
+      auth: const AppAuthState(
+        status: AppAuthStatus.authenticatedOffline,
+        cloudUserId: 'cloud-a',
+        localUserId: 'local-a',
+        identityProvider: 'password_username',
+      ),
+    );
+    addTearDown(container.dispose);
+    await container.read(accountSecurityControllerProvider.future);
+
+    await expectLater(
+      container
+          .read(accountSecurityControllerProvider.notifier)
+          .startWechatBinding(),
+      throwsStateError,
+    );
+    expect(repository.bindingCalls, 0);
+  });
 }
 
 ProviderContainer _container({
@@ -115,7 +181,11 @@ ProviderContainer _container({
 }
 
 final class _FakeIdentityRepository implements IdentityRepository {
+  _FakeIdentityRepository({this.bindingCompleter});
+
+  final Completer<WechatBindingStartResult>? bindingCompleter;
   int calls = 0;
+  int bindingCalls = 0;
 
   @override
   Future<List<AuthIdentity>> getCurrentIdentities() async {
@@ -127,6 +197,12 @@ final class _FakeIdentityRepository implements IdentityRepository {
         lastUsedAt: 200,
       ),
     ];
+  }
+
+  @override
+  Future<WechatBindingStartResult> startWechatBinding() {
+    bindingCalls += 1;
+    return bindingCompleter?.future ?? Future.value(_unavailableResult);
   }
 }
 
@@ -142,3 +218,10 @@ final class _SwitchingAppAuthController extends AppAuthController {
     state = AsyncData(value);
   }
 }
+
+const _unavailableResult = WechatBindingStartResult(
+  status: 'provider_unavailable',
+  provider: AuthIdentityProvider.wechat,
+  requiresReauthentication: true,
+  message: 'WeChat binding is not configured in this release.',
+);

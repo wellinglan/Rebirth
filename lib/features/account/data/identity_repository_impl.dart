@@ -17,4 +17,12 @@ final class IdentityRepositoryImpl implements IdentityRepository {
           _remoteDataSource.getCurrentIdentities(accessToken: accessToken),
     );
   }
+
+  @override
+  Future<WechatBindingStartResult> startWechatBinding() {
+    return _sessionManager.runAuthorized(
+      (accessToken) =>
+          _remoteDataSource.startWechatBinding(accessToken: accessToken),
+    );
+  }
 }

@@ -6,6 +6,10 @@ abstract interface class IdentityRemoteDataSource {
   Future<List<AuthIdentity>> getCurrentIdentities({
     required String accessToken,
   });
+
+  Future<WechatBindingStartResult> startWechatBinding({
+    required String accessToken,
+  });
 }
 
 final class IdentityApiDataSource implements IdentityRemoteDataSource {
@@ -51,6 +55,39 @@ final class IdentityApiDataSource implements IdentityRemoteDataSource {
       throw ApiException(message: '服务器返回了无法识别的登录方式数据。', cause: error);
     } on TypeError catch (error) {
       throw ApiException(message: '服务器返回了无法识别的登录方式数据。', cause: error);
+    }
+  }
+
+  @override
+  Future<WechatBindingStartResult> startWechatBinding({
+    required String accessToken,
+  }) async {
+    final json = await _apiClient.postJson(
+      '/auth/identities/wechat/bind/start',
+      body: const {},
+      accessToken: accessToken,
+    );
+    try {
+      final status = json['status'];
+      final provider = json['provider'];
+      final requiresReauthentication = json['requires_reauthentication'];
+      final message = json['message'];
+      if (status is! String ||
+          provider is! String ||
+          requiresReauthentication is! bool ||
+          message is! String) {
+        throw const FormatException('Invalid binding response.');
+      }
+      return WechatBindingStartResult(
+        status: status,
+        provider: AuthIdentityProvider.fromWire(provider),
+        requiresReauthentication: requiresReauthentication,
+        message: message,
+      );
+    } on FormatException catch (error) {
+      throw ApiException(message: '服务器返回了无法识别的绑定状态。', cause: error);
+    } on TypeError catch (error) {
+      throw ApiException(message: '服务器返回了无法识别的绑定状态。', cause: error);
     }
   }
 }

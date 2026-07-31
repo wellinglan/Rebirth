@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_session
+from app.identity import IdentityBindingError, WECHAT_PROVIDER
 from app.models import AuthSession, CloudUser
 from app.schemas import (
     AuthIdentitiesResponse,
@@ -18,9 +19,9 @@ from app.schemas import (
     PasswordRegisterRequest,
     RefreshTokenRequest,
     TokenResponse,
+    WeChatBindingStartResponse,
     WeChatMobileRequest,
 )
-from app.services.identity_service import IdentityService
 from app.security import (
     AuthContext,
     optional_logout_auth_context,
@@ -39,6 +40,7 @@ from app.services.auth_session_service import (
     revoke_session,
     rotate_refresh_token,
 )
+from app.services.identity_service import IdentityService
 from app.services.wechat_auth_service import wechat_not_implemented
 
 
@@ -185,6 +187,38 @@ def current_identities(
             )
             for identity in identities
         ]
+    )
+
+
+@router.post(
+    "/identities/wechat/bind/start",
+    response_model=WeChatBindingStartResponse,
+)
+def start_wechat_binding(
+    context: AuthContext = Depends(require_auth_context),
+    session: Session = Depends(get_session),
+) -> WeChatBindingStartResponse:
+    try:
+        availability = IdentityService(session).binding_availability(
+            user_id=context.user_id,
+            provider=WECHAT_PROVIDER,
+        )
+    except IdentityBindingError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={"code": error.code, "message": error.message},
+        ) from error
+    if availability.available:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "identity_provider_not_configured",
+                "message": "The login method is unavailable.",
+            },
+        )
+    return WeChatBindingStartResponse(
+        provider=availability.provider,
+        requires_reauthentication=availability.requires_reauthentication,
     )
 
 
