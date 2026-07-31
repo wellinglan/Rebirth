@@ -317,3 +317,35 @@ tombstones, and manual synchronization are unchanged.
 
 See `docs/43_WECHAT_IDENTITY_FOUNDATION.md` and
 `docs/manual_tests/43_wechat_identity_foundation.md`.
+
+## Sprint 13B.3 WeChat OAuth Transaction Security
+
+Server Alembic revision `20260731_0005` adds a provider-neutral
+`oauth_transactions` table. It binds each transaction to the JWT-derived cloud
+user, provider, and purpose, and persists only SHA-256 state/nonce digests plus
+monotonic lifecycle metadata. Plaintext nonce, authorization code, provider
+token, provider response, App ID, and AppSecret are not stored.
+
+The transaction lifecycle is `created -> provider_verified -> completed ->
+consumed`, with terminal `expired` and `rejected` branches. PostgreSQL row locks
+ensure that concurrent exchanges have one winner. Expired, consumed, rejected,
+wrong-account, wrong-state, and wrong-nonce transactions cannot continue.
+
+OAuth core depends on `OAuthProviderAdapter`, not WeChat implementation details.
+`FakeWechatProvider` exists only for deterministic automated tests. The default
+application registers no real WeChat Adapter, so the existing authenticated
+`/auth/identities/wechat/bind/start` endpoint remains fail closed unless both
+server configuration and an injected Adapter are present.
+
+The internal exchange service requires a verified reauthentication boundary
+before calling the Adapter and the existing Identity Service. No public
+exchange/callback endpoint is enabled in this Sprint because real provider
+verification and production reauthentication do not yet exist.
+
+Flutter remains presentation-only for provider readiness. Flutter schema stays
+`9`, API Version stays `1`, Sync Protocol stays `2`, and no Account Boundary,
+Profile ownership, session, business sync, cursor, OCC, conflict, or tombstone
+semantics change.
+
+See `docs/43_WECHAT_OAUTH_TRANSACTION_SECURITY.md` and
+`docs/manual_tests/44_wechat_oauth_transaction_security.md`.

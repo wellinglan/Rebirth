@@ -3,6 +3,8 @@
 > Baseline: `69f12c5b044615e347684f902309c25d0c2b6a15`
 > Automation is not manual evidence. All rows remain `NOT EXECUTED` until
 > performed on the stated target.
+> Current execution state: `SUSPENDED`; the rows remain `NOT EXECUTED`, not
+> PASS or FAIL, until the authorized tester resumes the matrix.
 
 ## Preconditions
 
@@ -75,5 +77,5 @@
 - PASS: 0
 - FAIL: 0
 - NOT EXECUTED: 30
-- WeChat Identity Foundation Gate: OPEN pending Windows, Android, A/B account,
-  offline, privacy, and controlled duplicate-identity evidence.
+- WeChat Identity Foundation Gate: `OPEN / SUSPENDED` pending Windows, Android,
+  A/B account, offline, privacy, and controlled duplicate-identity evidence.

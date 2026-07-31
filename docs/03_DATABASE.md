@@ -899,6 +899,18 @@ Flutter `schemaVersion` 为 `9`。新增三张表：
 
 Sprint 13A.1 does not change Flutter Drift; `schemaVersion` remains `9`.
 
+## Sprint 13B.3 Server OAuth Transaction Security
+
+Flutter Drift is unchanged and `schemaVersion` remains `9`. Server Alembic
+revision `20260731_0005` adds `oauth_transactions` for short-lived OAuth replay
+protection. The table stores transaction ID, provider, purpose, JWT-derived
+cloud user ID, SHA-256 state/nonce hashes, monotonic status, creation/expiration
+times, and optional consumption time.
+
+The table does not store plaintext state or nonce, authorization code, provider
+access/refresh token, provider response, App ID, or AppSecret. It references the
+existing `cloud_users` table and never duplicates `auth_identities`.
+
 The Server adds an Alembic revision with `auth_credentials`, `auth_sessions`,
 `auth_refresh_tokens`, `auth_login_throttles`, and
 `legacy_refresh_migrations`. The migration is additive, references existing

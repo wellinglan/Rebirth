@@ -1,6 +1,6 @@
 # WeChat Identity Provider Foundation
 
-> Status: Sprint 13B.2 implementation complete; manual acceptance pending
+> Status: Sprint 13B.2 implementation complete; manual acceptance suspended
 > Scope: provider metadata, trusted identity binding boundary, and safe Flutter entry
 
 ## Purpose
