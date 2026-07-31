@@ -1,6 +1,6 @@
 # WeChat Identity Provider Foundation
 
-> Status: Sprint 13B.2 implementation complete; manual acceptance suspended
+> Status: Sprint 13B.2 complete; manual acceptance passed
 > Scope: provider metadata, trusted identity binding boundary, and safe Flutter entry
 
 ## Purpose
@@ -156,7 +156,8 @@ A later Sprint must separately design and review:
 - WeChat Open Platform configuration and secret management;
 - Android/iOS SDK integration;
 - desktop or web authorization entry;
-- OAuth callback, state, nonce, and replay protection;
+- real provider callbacks and redirects built on the Sprint 13B.3 transaction,
+  state, nonce, and replay-protection foundation;
 - reauthentication user experience;
 - session issuance through WeChat;
 - operational monitoring and provider outage behavior.

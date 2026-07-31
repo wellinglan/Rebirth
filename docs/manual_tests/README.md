@@ -19,8 +19,8 @@ become manual PASS.
 | Authentication Protocol and Secure Session (67 PASS / 0 FAIL / 12 NOT EXECUTED) | `40_authentication_protocol_and_secure_session.md` |
 | Public Username/Password Login (107 PASS / 0 FAIL / 7 NOT EXECUTED) | `41_public_username_password_login.md` |
 | Multi Identity Authentication Foundation (0 PASS / 0 FAIL / 38 NOT EXECUTED) | `42_multi_identity_foundation.md` |
-| WeChat Identity Provider Foundation (0 PASS / 0 FAIL / 30 SUSPENDED) | `43_wechat_identity_foundation.md` |
-| WeChat OAuth Transaction Security (0 PASS / 0 FAIL / 24 SUSPENDED) | `44_wechat_oauth_transaction_security.md` |
+| WeChat Identity Provider Foundation (30 PASS / 0 FAIL / 0 NOT EXECUTED) | `43_wechat_identity_foundation.md` |
+| WeChat OAuth Transaction Security (24 PASS / 0 FAIL / 0 NOT EXECUTED) | `44_wechat_oauth_transaction_security.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.

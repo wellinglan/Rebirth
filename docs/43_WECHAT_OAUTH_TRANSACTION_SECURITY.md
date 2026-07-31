@@ -1,6 +1,6 @@
 # WeChat OAuth Transaction Security Foundation
 
-> Status: Sprint 13B.3 implementation complete; manual acceptance suspended
+> Status: Sprint 13B.3 complete; manual acceptance passed
 > Scope: durable OAuth transactions, replay protection, and provider adapters
 
 ## Purpose

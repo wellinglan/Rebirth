@@ -1,6 +1,6 @@
 # Rebirth Auth & Sync Architecture
 
-> Status: Sprint 13B.2 WeChat identity provider foundation
+> Status: Sprint 13B.3 WeChat OAuth transaction security foundation
 > Scope: Auth Gate, account-bound manual sync, and extensible login identities
 
 ## 目标
@@ -349,3 +349,9 @@ semantics change.
 
 See `docs/43_WECHAT_OAUTH_TRANSACTION_SECURITY.md` and
 `docs/manual_tests/44_wechat_oauth_transaction_security.md`.
+
+Authorized manual acceptance closed both WeChat foundation gates: Sprint
+13B.2 recorded `30 PASS / 0 FAIL / 0 NOT EXECUTED`, and Sprint 13B.3 recorded
+`24 PASS / 0 FAIL / 0 NOT EXECUTED`. These results validate the identity and
+OAuth transaction security foundations only; real WeChat login remains
+unsupported.
