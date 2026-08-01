@@ -11,6 +11,7 @@ from app.ai.schemas import (
     AiDailyGenerateResponse,
     AiErrorResponse,
     AiRequestStatusResponse,
+    AiUsageResponse,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
 )
@@ -28,6 +29,18 @@ def capabilities(
 ) -> AiCapabilitiesResponse:
     del user_id
     return request.app.state.ai_generation_service.capabilities()
+
+
+@router.get("/usage/me", response_model=AiUsageResponse)
+def current_usage(
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiUsageResponse:
+    return request.app.state.ai_generation_service.current_usage(
+        user_id=user_id,
+        session=session,
+    )
 
 
 @router.post(

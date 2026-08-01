@@ -136,6 +136,30 @@ def main() -> int:
         if final_body["status"] != "completed":
             raise RuntimeError("The multi-worker request did not complete.")
 
+        def read_usage() -> tuple[int, dict[str, object]]:
+            response = httpx.get(
+                f"{base_url}/ai/usage/me",
+                headers=headers,
+                timeout=20,
+            )
+            return response.status_code, response.json()
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            usage_responses = list(executor.map(lambda _: read_usage(), range(8)))
+        expected_usage = {
+            "status": "available",
+            "daily_limit": 10,
+            "used": 1,
+            "remaining": 9,
+            "reset_timezone": "UTC",
+        }
+        if any(
+            status != 200
+            or any(body.get(key) != value for key, value in expected_usage.items())
+            for status, body in usage_responses
+        ):
+            raise RuntimeError("Multi-worker AI usage reads were inconsistent.")
+
         engine = create_engine(args.database_url)
         try:
             with engine.connect() as connection:
@@ -185,6 +209,10 @@ def main() -> int:
                     "final_status": final_body["status"],
                     "ledger_row_count": row_count,
                     "provider_call_started_count": provider_started,
+                    "usage_read_count": len(usage_responses),
+                    "usage_used_values": sorted(
+                        {body["used"] for _, body in usage_responses}
+                    ),
                     "concurrent_refresh_statuses": sorted(
                         status for status, _ in refresh_responses
                     ),

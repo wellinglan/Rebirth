@@ -14,6 +14,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_manual_generation_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_manual_generation_view_state.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_request_preview_controller.dart';
@@ -297,6 +298,11 @@ final class DelayedAiGenerationGateway implements AiGenerationGateway {
   @override
   Future<AiGenerationCapabilities> getCapabilities() async {
     return FakeAiGenerationGateway().capabilities;
+  }
+
+  @override
+  Future<AiUsageSnapshot> getUsage() async {
+    return FakeAiGenerationGateway().usage;
   }
 
   @override

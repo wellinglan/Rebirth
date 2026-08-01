@@ -41,11 +41,18 @@ The Server reads:
 All endpoints require the existing Rebirth JWT:
 
 - `GET /ai/capabilities`
+- `GET /ai/usage/me`
 - `POST /ai/reports/daily/generate`
 - `POST /ai/reports/weekly/generate`
 - `GET /ai/requests/{request_id}`
 
 The generate request contains a UUID `request_id`, lowercase SHA-256 `input_hash`, and a report-specific Canonical Input payload. Daily requires one explicit natural date and only Today, Health, or Journal scopes; Weekly requires seven inclusive dates and may also use Growth. The Server rejects extra fields, invalid periods, cross-paired report/prompt identities, unsupported scopes, and data that does not exactly match selected scopes.
+
+The usage endpoint derives identity only from JWT and returns only the current
+user's enabled state, personal daily limit, used/remaining reservation counts,
+and next UTC reset. It never returns deployment-global or concurrency limits,
+another user's data, secrets, prompt/input content, or report output. See
+`47_AI_USAGE_TRANSPARENCY_AND_OPERATIONAL_SAFETY.md`.
 
 The Server sorts map keys recursively, scopes, sources, and dated rows, serializes compact UTF-8 JSON with preserved `null`/`0`/JSON scalar types, and recomputes SHA-256. A mismatch blocks Provider invocation. Dart and Python verify `test/fixtures/ai_weekly_input_v1.json` against the same expected hash.
 

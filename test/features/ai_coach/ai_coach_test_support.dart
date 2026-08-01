@@ -10,6 +10,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_selection.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_mode.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_contract.dart';
@@ -17,6 +18,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_report.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 
 final class FakeAiConsentRepository implements AiConsentRepository {
   FakeAiConsentRepository({required this.authorization});
@@ -267,29 +269,59 @@ final class FakeAiReportRepository implements AiReportRepository {
 }
 
 final class FakeAiGenerationGateway implements AiGenerationGateway {
-  FakeAiGenerationGateway({AiGenerationCapabilities? capabilities})
-    : capabilities =
-          capabilities ??
-          AiGenerationCapabilities(
-            enabled: true,
-            provider: 'fake',
-            providerLabel: 'Development Fake',
-            model: 'deterministic-test-provider',
-            supportedReportTypes: const ['weekly_report'],
-            promptVersions: const ['weekly-report-v1'],
-            inputSchemaVersion: 1,
-            outputSchemaVersion: 1,
-            streaming: false,
-            responseStorageRequested: false,
-          );
+  FakeAiGenerationGateway({
+    AiGenerationCapabilities? capabilities,
+    AiUsageSnapshot? usage,
+  }) : capabilities =
+           capabilities ??
+           AiGenerationCapabilities(
+             enabled: true,
+             provider: 'fake',
+             providerLabel: 'Development Fake',
+             model: 'deterministic-test-provider',
+             supportedReportTypes: const ['weekly_report'],
+             promptVersions: const ['weekly-report-v1'],
+             reportContracts: [
+               AiGenerationReportContract(
+                 reportType: 'weekly_report',
+                 promptVersions: const ['weekly-report-v1'],
+                 inputSchemaVersion: 1,
+                 outputSchemaVersion: 1,
+                 periodKind: AiReportPeriodKind.sevenDays,
+                 supportedScopes: const [
+                   'growth_summary',
+                   'today_metrics',
+                   'health_metrics',
+                   'journal_reflections',
+                 ],
+               ),
+             ],
+             inputSchemaVersion: 1,
+             outputSchemaVersion: 1,
+             streaming: false,
+             responseStorageRequested: false,
+           ),
+       usage =
+           usage ??
+           const AiUsageSnapshot(
+             availability: AiUsageAvailability.available,
+             enabled: true,
+             dailyLimit: 10,
+             used: 2,
+             remaining: 8,
+             resetsAtUtcMilliseconds: 1784246400000,
+           );
 
   AiGenerationCapabilities capabilities;
+  AiUsageSnapshot usage;
   Object? capabilitiesError;
+  Object? usageError;
   Object? generationError;
   Object? statusError;
   AiRemoteRequestResult? statusResult;
   Completer<AiRemoteRequestResult>? statusCompleter;
   int capabilitiesCalls = 0;
+  int usageCalls = 0;
   int generationCalls = 0;
   int weeklyGenerationCalls = 0;
   int dailyGenerationCalls = 0;
@@ -302,6 +334,13 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
     capabilitiesCalls += 1;
     if (capabilitiesError case final error?) throw error;
     return capabilities;
+  }
+
+  @override
+  Future<AiUsageSnapshot> getUsage() async {
+    usageCalls += 1;
+    if (usageError case final error?) throw error;
+    return usage;
   }
 
   @override

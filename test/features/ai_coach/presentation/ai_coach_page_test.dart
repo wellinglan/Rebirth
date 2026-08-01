@@ -14,6 +14,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
 
@@ -562,6 +563,93 @@ void main() {
     expect(gateway.generationCalls, 0);
   });
 
+  testWidgets(
+    'current usage is visible and a reached limit disables generate',
+    (tester) async {
+      final gateway = FakeAiGenerationGateway(
+        usage: const AiUsageSnapshot(
+          availability: AiUsageAvailability.limitReached,
+          enabled: true,
+          dailyLimit: 10,
+          used: 10,
+          remaining: 0,
+          resetsAtUtcMilliseconds: 1785628800000,
+        ),
+      );
+      await _pumpAiCoach(
+        tester,
+        consent: _enabledConsent(),
+        assembler: FakeAiCoachInputAssembler(),
+        reports: FakeAiReportRepository(),
+        gateway: gateway,
+      );
+      await _buildGrowthPreview(tester);
+
+      expect(find.byKey(const ValueKey('aiUsageSummary')), findsOneWidget);
+      final generate = tester.widget<FilledButton>(
+        find.byKey(const ValueKey('generateWeeklyReportButton')),
+      );
+      expect(generate.onPressed, isNull);
+      expect(gateway.usageCalls, 1);
+      expect(gateway.generationCalls, 0);
+    },
+  );
+
+  testWidgets('usage failure has a safe unknown fallback', (tester) async {
+    final gateway = FakeAiGenerationGateway()
+      ..usageError = StateError('offline');
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: FakeAiReportRepository(),
+      gateway: gateway,
+    );
+    await _buildGrowthPreview(tester);
+
+    expect(find.byKey(const ValueKey('aiUsageUnknown')), findsOneWidget);
+    final generate = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('generateWeeklyReportButton')),
+    );
+    expect(generate.onPressed, isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('generation rechecks usage before opening confirmation', (
+    tester,
+  ) async {
+    final gateway = FakeAiGenerationGateway();
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: FakeAiReportRepository(),
+      gateway: gateway,
+    );
+    await _buildGrowthPreview(tester);
+    gateway.usage = const AiUsageSnapshot(
+      availability: AiUsageAvailability.limitReached,
+      enabled: true,
+      dailyLimit: 10,
+      used: 10,
+      remaining: 0,
+      resetsAtUtcMilliseconds: 1785628800000,
+    );
+
+    await _tapAfterScrolling(
+      tester,
+      find.byKey(const ValueKey('generateWeeklyReportButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(gateway.usageCalls, 2);
+    expect(gateway.generationCalls, 0);
+    expect(
+      find.byKey(const ValueKey('aiGenerationConfirmationDialog')),
+      findsNothing,
+    );
+  });
+
   testWidgets('usage limit failure remains readable at 320px and 2x text', (
     tester,
   ) async {
@@ -793,4 +881,16 @@ Future<void> _tapAfterScrolling(WidgetTester tester, Finder finder) async {
   await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(finder);
+}
+
+Future<void> _buildGrowthPreview(WidgetTester tester) async {
+  await _tapAfterScrolling(
+    tester,
+    find.byKey(const ValueKey('aiScope-growth_summary')),
+  );
+  await _tapAfterScrolling(
+    tester,
+    find.byKey(const ValueKey('buildAiPreviewButton')),
+  );
+  await tester.pumpAndSettle();
 }

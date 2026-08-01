@@ -1,6 +1,7 @@
 import 'ai_coach_input_bundle.dart';
 import 'ai_generation_report_contract.dart';
 import 'ai_report_status.dart';
+import 'ai_usage_snapshot.dart';
 
 final class AiGenerationCapabilities {
   AiGenerationCapabilities({
@@ -130,6 +131,8 @@ final class AiGenerationException implements Exception {
 
 abstract interface class AiGenerationGateway {
   Future<AiGenerationCapabilities> getCapabilities();
+
+  Future<AiUsageSnapshot> getUsage();
 
   Future<AiRemoteRequestResult> generateWeekly({
     required String requestId,

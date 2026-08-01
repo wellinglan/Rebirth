@@ -81,6 +81,13 @@ Quota reason counts, input/output bodies, Sources, report content, token values,
 credentials, and Provider response bodies are not logged. Normal CI invokes
 only Fake Providers and HTTP mocks, never a real paid Provider.
 
+Sprint 14A.2 adds an authenticated aggregate read at `GET /ai/usage/me`. The
+response contains only the current user's personal reservation count and UTC
+reset metadata. It does not add a prompt/content log event and never exposes
+global allowance, concurrency ceilings, credentials, Authorization values, or
+another user's information. Provider failures and timeouts remain counted
+reservations; requests rejected before reservation do not count.
+
 ## Remaining Reliability Boundary
 
 The durable Ledger remains an at-most-once ownership mechanism for a retained request ID, not exactly-once. Provider return and the completed database commit are not atomic. A crash in that interval can become `outcome_unknown`; logs and maintenance do not remove this crash gap.

@@ -7,6 +7,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 
 final class RemoteAiGenerationGateway implements AiGenerationGateway {
   const RemoteAiGenerationGateway({
@@ -26,6 +27,49 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
         (token) => apiClient.getJson('/ai/capabilities', accessToken: token),
       );
       return _decodeCapabilities(json);
+    } on ApiException catch (error) {
+      throw AiGenerationException(_failureCode(error));
+    } on FormatException {
+      throw const AiGenerationException(AiReportFailureCode.responseInvalid);
+    } on TypeError {
+      throw const AiGenerationException(AiReportFailureCode.responseInvalid);
+    }
+  }
+
+  @override
+  Future<AiUsageSnapshot> getUsage() async {
+    try {
+      final json = await sessionManager.runAuthorized(
+        (token) => apiClient.getJson('/ai/usage/me', accessToken: token),
+      );
+      final availability = switch (json['status']) {
+        'available' => AiUsageAvailability.available,
+        'disabled' => AiUsageAvailability.disabled,
+        'limit_reached' => AiUsageAvailability.limitReached,
+        _ => throw const FormatException('Unknown AI usage status.'),
+      };
+      final enabled = json['enabled'] as bool;
+      final dailyLimit = json['daily_limit'] as int;
+      final used = json['used'] as int;
+      final remaining = json['remaining'] as int;
+      final resetsAt = json['resets_at'] as int;
+      if (dailyLimit <= 0 ||
+          used < 0 ||
+          remaining < 0 ||
+          remaining != (dailyLimit - used).clamp(0, dailyLimit) ||
+          resetsAt <= 0 ||
+          json['reset_timezone'] != 'UTC' ||
+          (availability == AiUsageAvailability.disabled) != !enabled) {
+        throw const FormatException('Invalid AI usage response.');
+      }
+      return AiUsageSnapshot(
+        availability: availability,
+        enabled: enabled,
+        dailyLimit: dailyLimit,
+        used: used,
+        remaining: remaining,
+        resetsAtUtcMilliseconds: resetsAt,
+      );
     } on ApiException catch (error) {
       throw AiGenerationException(_failureCode(error));
     } on FormatException {

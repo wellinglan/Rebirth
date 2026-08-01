@@ -22,6 +22,16 @@ class AiUsageReservation:
     record_id: str
 
 
+@dataclass(frozen=True)
+class AiUsageSnapshot:
+    status: str
+    enabled: bool
+    daily_limit: int
+    used: int
+    remaining: int
+    resets_at: int
+
+
 class AiUsageGuard:
     """Atomically reserves provider capacity without storing AI content."""
 
@@ -110,6 +120,52 @@ class AiUsageGuard:
             session.rollback()
             raise UsageLimitReachedError() from None
         return AiUsageReservation(record_id=record.id)
+
+    def snapshot(
+        self,
+        session: Session,
+        *,
+        user_id: str,
+        provider_enabled: bool,
+        now: int,
+    ) -> AiUsageSnapshot:
+        day_start = (now // _DAY_MS) * _DAY_MS
+        day_end = day_start + _DAY_MS
+        user_count = self._count(
+            session,
+            AiUsageRecord.user_id == user_id,
+            AiUsageRecord.created_at >= day_start,
+            AiUsageRecord.created_at < day_end,
+        )
+        global_count = self._count(
+            session,
+            AiUsageRecord.created_at >= day_start,
+            AiUsageRecord.created_at < day_end,
+        )
+        active_count = self._count(
+            session,
+            AiUsageRecord.status == "processing",
+            AiUsageRecord.lease_expires_at > now,
+        )
+        remaining = max(self._settings.ai_daily_user_limit - user_count, 0)
+        if not provider_enabled:
+            status = "disabled"
+        elif (
+            remaining == 0
+            or global_count >= self._settings.ai_daily_global_limit
+            or active_count >= self._settings.ai_max_concurrent_requests
+        ):
+            status = "limit_reached"
+        else:
+            status = "available"
+        return AiUsageSnapshot(
+            status=status,
+            enabled=provider_enabled,
+            daily_limit=self._settings.ai_daily_user_limit,
+            used=user_count,
+            remaining=remaining,
+            resets_at=day_end,
+        )
 
     def mark_completed(
         self,

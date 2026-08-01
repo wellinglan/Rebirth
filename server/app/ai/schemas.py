@@ -318,6 +318,16 @@ class AiCapabilitiesResponse(StrictModel):
     exactly_once_guaranteed: Literal[False] = False
 
 
+class AiUsageResponse(StrictModel):
+    enabled: bool
+    status: Literal["available", "disabled", "limit_reached"]
+    daily_limit: int = Field(gt=0)
+    used: int = Field(ge=0)
+    remaining: int = Field(ge=0)
+    resets_at: int = Field(gt=0)
+    reset_timezone: Literal["UTC"] = "UTC"
+
+
 class AiWeeklyGenerateResponse(StrictModel):
     request_id: UUID
     report_type: Literal["weekly_report"] = "weekly_report"

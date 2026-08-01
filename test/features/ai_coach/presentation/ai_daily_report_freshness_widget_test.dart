@@ -10,6 +10,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_daily_insight_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
@@ -131,6 +132,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(harness.gateway.dailyGenerationCalls, 1);
+    expect(harness.gateway.usageCalls, 3);
     expect(harness.reports.createPendingCalls, 1);
     expect(harness.reports.reports, hasLength(2));
     expect(
@@ -141,6 +143,34 @@ void main() {
       find.byKey(const ValueKey('dailyReportFreshnessCurrent')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('failed generation refreshes usage and keeps controlled state', (
+    tester,
+  ) async {
+    final harness = _Harness(stale: true);
+    addTearDown(harness.dispose);
+    await harness.pumpRouter(tester);
+    await _openRefreshedPreview(tester);
+
+    await _scrollTap(
+      tester,
+      find.byKey(const ValueKey('generateDailyInsightButton')),
+    );
+    await tester.pumpAndSettle();
+    harness.gateway.generationError = const AiGenerationException(
+      AiReportFailureCode.providerTimeout,
+    );
+    await tester.tap(find.byKey(const ValueKey('confirmAiGenerationButton')));
+    await tester.pumpAndSettle();
+
+    expect(harness.gateway.dailyGenerationCalls, 1);
+    expect(harness.gateway.usageCalls, 3);
+    expect(
+      find.byKey(const ValueKey('aiGenerationFailureMessage')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   for (final width in [320.0, 360.0]) {

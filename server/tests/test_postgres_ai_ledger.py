@@ -277,6 +277,31 @@ def test_postgres_global_concurrency_reservation_is_atomic() -> None:
     assert results.count("reserved") == 5
     assert results.count("limited") == 3
 
+    database = Database(_database_url())
+    try:
+        settings = replace(
+            load_settings(
+                database_url=_database_url(),
+                environment="test",
+                jwt_secret="postgres-multiprocess-test-secret",
+            ),
+            ai_daily_user_limit=100,
+            ai_daily_global_limit=100,
+            ai_max_concurrent_requests=5,
+        )
+        with database.session_factory() as session:
+            snapshot = AiUsageGuard(settings).snapshot(
+                session,
+                user_id=user_id,
+                provider_enabled=True,
+                now=_NOW,
+            )
+            assert snapshot.used == 5
+            assert snapshot.remaining == 95
+            assert snapshot.status == "limit_reached"
+    finally:
+        database.engine.dispose()
+
 
 def test_daily_four_processes_have_exactly_one_claim_owner() -> None:
     _upgrade()

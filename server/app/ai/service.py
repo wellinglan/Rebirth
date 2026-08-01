@@ -29,6 +29,7 @@ from app.ai.schemas import (
     AiGenerateResponse,
     AiReportContractResponse,
     AiRequestStatusResponse,
+    AiUsageResponse,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
 )
@@ -75,6 +76,27 @@ class AiGenerationService:
             result_retention_hours=self.settings.ai_result_retention_hours,
             dedupe_retention_days=self.settings.ai_dedupe_retention_days,
             processing_lease_minutes=self.settings.ai_processing_lease_minutes,
+        )
+
+    def current_usage(
+        self,
+        *,
+        user_id: str,
+        session: Session,
+    ) -> AiUsageResponse:
+        snapshot = self.usage.snapshot(
+            session,
+            user_id=user_id,
+            provider_enabled=self.provider.enabled,
+            now=self.clock(),
+        )
+        return AiUsageResponse(
+            enabled=snapshot.enabled,
+            status=snapshot.status,
+            daily_limit=snapshot.daily_limit,
+            used=snapshot.used,
+            remaining=snapshot.remaining,
+            resets_at=snapshot.resets_at,
         )
 
     async def generate_weekly(

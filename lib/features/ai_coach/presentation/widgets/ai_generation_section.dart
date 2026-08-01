@@ -4,11 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 
 import '../ai_manual_generation_controller.dart';
 import '../ai_manual_generation_view_state.dart';
+import '../ai_usage_controller.dart';
 import '../models/ai_insight_request_context.dart';
 import 'ai_generation_confirmation_dialog.dart';
+import 'ai_usage_summary.dart';
 
 class AiGenerationSection extends ConsumerWidget {
   const AiGenerationSection({
@@ -25,6 +28,7 @@ class AiGenerationSection extends ConsumerWidget {
     final generation = ref.watch(
       aiManualGenerationControllerFamily(requestContext),
     );
+    final usage = ref.watch(aiUsageControllerProvider);
     return Card(
       key: const ValueKey('aiGenerationSection'),
       child: Padding(
@@ -48,7 +52,19 @@ class AiGenerationSection extends ConsumerWidget {
                 )
                 .reloadCapabilities(),
           ),
-          data: (state) => _content(context, ref, state),
+          data: (state) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AiUsageSummary(
+                loading: usage.isLoading,
+                usage: usage.asData?.value,
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              _content(context, ref, state, usage.asData?.value),
+            ],
+          ),
         ),
       ),
     );
@@ -58,6 +74,7 @@ class AiGenerationSection extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AiManualGenerationViewState state,
+    AiUsageSnapshot? usage,
   ) {
     switch (state.phase) {
       case AiManualGenerationPhase.signedOut:
@@ -146,7 +163,9 @@ class AiGenerationSection extends ConsumerWidget {
             const SizedBox(height: 12),
             FilledButton.icon(
               key: _generateButtonKey,
-              onPressed: () => _confirmAndSubmit(context, ref),
+              onPressed: usage?.preventsGeneration == true
+                  ? null
+                  : () => _confirmAndSubmit(context, ref),
               icon: const Icon(Icons.auto_awesome_outlined),
               label: Text(requestContext.isDaily ? '生成每日洞察' : '生成每周回顾'),
             ),
@@ -162,6 +181,8 @@ class AiGenerationSection extends ConsumerWidget {
   );
 
   Future<void> _confirmAndSubmit(BuildContext context, WidgetRef ref) async {
+    final usage = await ref.read(aiUsageControllerProvider.notifier).refresh();
+    if (usage.preventsGeneration || !context.mounted) return;
     final controller = ref.read(
       aiManualGenerationControllerFamily(requestContext).notifier,
     );
@@ -174,6 +195,7 @@ class AiGenerationSection extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
     final outcome = await controller.submit(bundle);
+    await ref.read(aiUsageControllerProvider.notifier).refresh();
     if (!context.mounted || outcome == null) return;
     if (outcome.completed) {
       await context.push(RoutePaths.aiCoachReport(outcome.reportId));

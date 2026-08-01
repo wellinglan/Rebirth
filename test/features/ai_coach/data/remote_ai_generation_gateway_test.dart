@@ -11,6 +11,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 
 import '../ai_coach_test_support.dart';
 
@@ -58,6 +59,92 @@ void main() {
     );
     expect(api.lastAccessToken, 'access-token');
     expect(api.lastPath, '/ai/capabilities');
+  });
+
+  test(
+    'usage is authenticated and decoded from the safe user endpoint',
+    () async {
+      api.getResponse = {
+        'enabled': true,
+        'status': 'available',
+        'daily_limit': 10,
+        'used': 3,
+        'remaining': 7,
+        'resets_at': 1785628800000,
+        'reset_timezone': 'UTC',
+      };
+
+      final usage = await gateway.getUsage();
+
+      expect(usage.availability, AiUsageAvailability.available);
+      expect(usage.enabled, isTrue);
+      expect(usage.dailyLimit, 10);
+      expect(usage.used, 3);
+      expect(usage.remaining, 7);
+      expect(usage.resetsAtUtcMilliseconds, 1785628800000);
+      expect(api.lastPath, '/ai/usage/me');
+      expect(api.lastAccessToken, 'access-token');
+    },
+  );
+
+  test('usage requires a current Rebirth session', () async {
+    sessions.session = null;
+
+    await expectLater(
+      gateway.getUsage(),
+      throwsA(
+        isA<AiGenerationException>().having(
+          (error) => error.code,
+          'code',
+          AiReportFailureCode.authenticationRequired,
+        ),
+      ),
+    );
+    expect(api.getCalls, 0);
+  });
+
+  test('usage rejects inconsistent or expanded response values', () async {
+    for (final response in <Map<String, Object?>>[
+      {
+        'enabled': true,
+        'status': 'future_status',
+        'daily_limit': 10,
+        'used': 3,
+        'remaining': 7,
+        'resets_at': 1785628800000,
+        'reset_timezone': 'UTC',
+      },
+      {
+        'enabled': true,
+        'status': 'available',
+        'daily_limit': 10,
+        'used': 3,
+        'remaining': 8,
+        'resets_at': 1785628800000,
+        'reset_timezone': 'UTC',
+      },
+      {
+        'enabled': false,
+        'status': 'available',
+        'daily_limit': 10,
+        'used': 0,
+        'remaining': 10,
+        'resets_at': 1785628800000,
+        'reset_timezone': 'UTC',
+      },
+    ]) {
+      api.getResponse = response;
+      await expectLater(
+        gateway.getUsage(),
+        throwsA(
+          isA<AiGenerationException>().having(
+            (error) => error.code,
+            'code',
+            AiReportFailureCode.responseInvalid,
+          ),
+        ),
+      );
+    }
   });
 
   test('generation sends typed payload and hash exactly once', () async {

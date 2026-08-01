@@ -945,3 +945,11 @@ atomic UTC-day user/global quotas, active request leases, and safe token-count
 auditing. The usage ledger stores no prompt, Context DTO, Journal/Health content,
 Provider response body, report content, API key, or token. Existing sync tables,
 API Version `1`, and Sync Protocol `2` are unchanged.
+
+## Sprint 14A.2 AI Usage Transparency
+
+No database migration is added. `GET /ai/usage/me` performs authenticated,
+aggregate reads from the existing `ai_usage_records` and `ai_usage_controls`.
+It does not persist prompts, user正文, Provider responses, or client telemetry.
+Flutter Drift remains `schemaVersion = 9`; Server API Version `1` and Sync
+Protocol `2` remain unchanged.
