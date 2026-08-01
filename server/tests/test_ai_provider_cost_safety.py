@@ -19,7 +19,7 @@ from app.ai.prompts import get_prompt
 from app.ai.providers import DeepSeekProvider, FakeAiProvider, ProviderPromptPayload
 from app.ai.service import AiGenerationService
 from app.config import load_settings
-from app.models import AiUsageRecord, CloudUser
+from app.models import AiGenerationRequest, AiUsageRecord, CloudUser
 from tests.test_ai_gateway import request_body
 
 
@@ -208,6 +208,147 @@ def test_deepseek_errors_are_controlled(
     assert getattr(raised.value, "status_code", None) == status
 
 
+def test_deepseek_success_is_charged_once_and_replayed_from_ledger(
+    client: TestClient,
+) -> None:
+    remote = _DeepSeekClient()
+    settings = replace(
+        client.app.state.settings,
+        ai_provider="deepseek",
+        deepseek_api_key="deepseek-test-secret",
+        ai_model="deepseek-chat",
+    )
+    client.app.state.ai_generation_service = AiGenerationService(
+        settings,
+        DeepSeekProvider(settings, client=remote),
+    )
+    headers = _headers(client, "ai-operations-success")
+    body = _request_with_new_id()
+
+    first = client.post(
+        "/ai/reports/weekly/generate",
+        headers=headers,
+        json=body,
+    )
+    replay = client.post(
+        "/ai/reports/weekly/generate",
+        headers=headers,
+        json=body,
+    )
+
+    assert first.status_code == replay.status_code == 200
+    assert first.json() == replay.json()
+    assert remote.calls == 1
+    with client.app.state.database.session_factory() as session:
+        generation = session.scalar(
+            select(AiGenerationRequest).where(
+                AiGenerationRequest.request_id == body["request_id"]
+            )
+        )
+        usage = session.scalar(
+            select(AiUsageRecord).where(
+                AiUsageRecord.request_id == body["request_id"]
+            )
+        )
+        assert generation is not None
+        assert generation.status == "completed"
+        assert generation.provider == "deepseek"
+        assert generation.model == "deepseek-chat"
+        assert generation.lease_expires_at is None
+        assert usage is not None
+        assert usage.status == "completed"
+        assert usage.provider == "deepseek"
+        assert usage.model == "deepseek-chat"
+        assert usage.input_tokens == 31
+        assert usage.output_tokens == 17
+        assert usage.total_tokens == 48
+        assert usage.lease_expires_at is None
+
+
+@pytest.mark.parametrize(
+    ("remote", "code", "status"),
+    [
+        (_DeepSeekClient(status_code=401), "provider_auth_failed", 502),
+        (
+            _DeepSeekClient(
+                error=httpx.ReadTimeout(
+                    "timeout",
+                    request=httpx.Request("POST", "https://api.deepseek.com"),
+                )
+            ),
+            "provider_timeout",
+            504,
+        ),
+        (
+            _DeepSeekClient(
+                error=httpx.ConnectError(
+                    "unavailable",
+                    request=httpx.Request("POST", "https://api.deepseek.com"),
+                )
+            ),
+            "provider_unavailable",
+            503,
+        ),
+    ],
+)
+def test_deepseek_incidents_are_terminal_release_leases_and_replay_once(
+    client: TestClient,
+    remote: _DeepSeekClient,
+    code: str,
+    status: int,
+) -> None:
+    settings = replace(
+        client.app.state.settings,
+        ai_provider="deepseek",
+        deepseek_api_key="deepseek-test-secret",
+        ai_model="deepseek-chat",
+    )
+    client.app.state.ai_generation_service = AiGenerationService(
+        settings,
+        DeepSeekProvider(settings, client=remote),
+    )
+    headers = _headers(client, f"ai-operations-{code}")
+    body = _request_with_new_id()
+
+    first = client.post(
+        "/ai/reports/weekly/generate",
+        headers=headers,
+        json=body,
+    )
+    replay = client.post(
+        "/ai/reports/weekly/generate",
+        headers=headers,
+        json=body,
+    )
+
+    assert first.status_code == replay.status_code == status
+    assert first.json()["detail"]["code"] == code
+    assert replay.json()["detail"]["code"] == code
+    assert remote.calls == 1
+    with client.app.state.database.session_factory() as session:
+        generation = session.scalar(
+            select(AiGenerationRequest).where(
+                AiGenerationRequest.request_id == body["request_id"]
+            )
+        )
+        usage = session.scalar(
+            select(AiUsageRecord).where(
+                AiUsageRecord.request_id == body["request_id"]
+            )
+        )
+        assert generation is not None
+        assert generation.status == "failed"
+        assert generation.error_code == code
+        assert generation.lease_expires_at is None
+        assert usage is not None
+        assert usage.status == "failed"
+        assert usage.lease_expires_at is None
+        assert usage.completed_at is not None
+        assert usage.input_tokens is None
+        assert usage.output_tokens is None
+        assert usage.total_tokens is None
+
+
 def test_kill_switch_returns_ai_disabled_without_usage(
     client: TestClient,
     auth_headers: dict[str, str],
@@ -220,6 +361,10 @@ def test_kill_switch_returns_ai_disabled_without_usage(
     assert response.status_code == 503
     assert response.json()["detail"]["code"] == "ai_disabled"
     with client.app.state.database.session_factory() as session:
+        assert (
+            session.scalar(select(func.count()).select_from(AiGenerationRequest))
+            == 0
+        )
         assert session.scalar(select(func.count()).select_from(AiUsageRecord)) == 0
 
 

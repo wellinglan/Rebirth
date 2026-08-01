@@ -3,7 +3,7 @@
 ## 1. Purpose And Boundary
 
 This runbook operates the Server-side AI Provider, generation ledger, and usage
-ledger introduced through Sprint 14A.3. It does not add an AI product feature,
+ledger introduced through Sprint 14A.4. It does not add an AI product feature,
 public administration API, background generation, or client-controlled AI
 configuration.
 
@@ -135,6 +135,14 @@ Restoring AI does not retry failed, expired, or `outcome_unknown` requests.
 6. After recovery, restore AI through Section 7. Never automatically replay an
    `outcome_unknown` request because the Provider may already have charged it.
 
+A Provider-confirmed timeout is a terminal `provider_timeout` failure. Its
+generation and usage leases are released and an identical `request_id` replays
+the same failure without another Provider call. This is different from a client
+network interruption after the Server accepted a request: that outcome may stay
+pending until status recovery determines `completed`, `failed`, or
+`outcome_unknown`. Do not turn a Provider timeout into pending recovery, and do
+not resend an `outcome_unknown` request automatically.
+
 ## 9. Budget Exhaustion
 
 `AI_USAGE_LIMIT_WARNING` means a configured percentage threshold has been
@@ -176,7 +184,35 @@ PostgreSQL and SQLite use the same ORM queries. Production operation should use
 PostgreSQL backups and access controls. SQLite remains suitable for isolated
 development diagnostics, not a substitute for the deployed database.
 
-## 11. Rollback
+## 11. Rotate A Provider Secret
+
+Use an approved maintenance window and the Server's restricted secret storage.
+Do not pass a secret on a command line, print it with `cat`, include it in a
+Compose diff, or retain it in shell history.
+
+1. Record the active image tag/digest, Provider, model, and safe configuration
+   values. Back up the environment file through the restricted backup process.
+2. Create the replacement credential in the Provider console without revoking
+   the current credential yet. Limit its permissions and budget where the
+   Provider supports those controls.
+3. Replace only the matching Server environment value using a non-echoing
+   editor or secret-management workflow.
+4. Recreate only the API service. Do not restart PostgreSQL, delete volumes,
+   run an undocumented migration, or change business data.
+5. Verify `/health`, then run `config-check`. Confirm readiness without looking
+   for or recording the secret value.
+6. Perform one approved low-cost generation and verify one generation row, one
+   usage row, expected Provider/model metadata, and non-negative token totals.
+7. Run `monitor` and `ledger-check`. If every check passes, revoke the old
+   credential in the Provider console.
+8. If verification fails before revocation, restore the protected previous
+   environment file, recreate only the API, and keep the old credential active.
+   If the old credential was already revoked, disable AI until a reviewed new
+   credential is available.
+9. Record only rotation time, operator, Provider, outcome, and safe image/config
+   metadata. Never record either credential.
+
+## 12. Rollback
 
 1. Disable AI if continuing Provider calls are unsafe.
 2. Restore the previous reviewed environment file without printing secrets.
@@ -187,7 +223,7 @@ development diagnostics, not a substitute for the deployed database.
 6. Verify `/health`, `config-check`, `audit`, and `ledger-check`.
 7. Keep AI disabled if any health or consistency check fails.
 
-## 12. Incident Log Location And Privacy
+## 13. Incident Log Location And Privacy
 
 Application AI safety events use the `rebirth.ai` JSON logger. Container logs can
 be filtered by the exact event names without displaying environment secrets:
@@ -202,10 +238,33 @@ warning/critical severity, and environment only. Audit output contains aggregate
 token counts because they are required for cost accounting, but never credential
 tokens or source content.
 
-## 13. Release Gates
+## 14. Sprint 14A.4 Acceptance Drill
+
+Use `docs/manual_tests/49_ai_operations_acceptance.md`. The intended Alpha
+deployment image is:
+
+```text
+ghcr.io/wellinglan/rebirth-api:5932964873e7ae1f4495b431929d65429f05f29b
+```
+
+Only the API container may be recreated for the drill. Do not delete the
+PostgreSQL volume, edit ledger rows, or inject failures by changing production
+network or database infrastructure. Provider authentication and kill-switch
+drills require a protected environment-file backup and immediate rollback.
+Timeout and unavailable behavior may use the checked automated adapter fixtures
+when the real Provider has no safe sandbox fault injection.
+
+Before and after every configuration drill, verify the API image digest,
+PostgreSQL container identity, `/health`, API Version `1`, Sync Protocol `2`, and
+`ledger-check`. Stop and restore the previous API configuration if health or
+readiness fails.
+
+## 15. Release Gates
 
 The AI Usage Audit Gate closes only when audit, safe config inspection, budget
-alerts, ledger diagnostics, CI, and manual acceptance pass. The AI Operation
-Safety Gate additionally requires kill-switch, incident response, privacy, and
-rollback acceptance. Until manual execution is recorded, both gates remain
-open.
+alerts, ledger diagnostics, CI, and every applicable manual acceptance item
+passes. The AI Operation Safety Gate additionally requires kill-switch,
+incident response, privacy, secret rotation walkthrough, and rollback
+acceptance. Automated evidence may replace only the fault injection rows that
+the matrix explicitly marks as automated. Until execution is recorded, both
+gates remain open.

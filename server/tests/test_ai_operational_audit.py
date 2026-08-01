@@ -405,6 +405,31 @@ def test_operations_add_no_api_flutter_schema_or_migration() -> None:
     )
 
 
+def test_operations_acceptance_docs_preserve_incident_boundaries() -> None:
+    repository = Path(__file__).resolve().parents[2]
+    runbook = (repository / "docs/44_AI_OPERATOR_RUNBOOK.md").read_text(
+        encoding="utf-8"
+    )
+    matrix = (
+        repository
+        / "docs/manual_tests/49_ai_operations_acceptance.md"
+    ).read_text(encoding="utf-8")
+    normalized_runbook = " ".join(runbook.split())
+
+    assert "Rotate A Provider Secret" in runbook
+    assert "Provider-confirmed timeout is a terminal" in normalized_runbook
+    assert "client network interruption" in normalized_runbook
+    assert "do not change Alpha firewall or DNS" in matrix
+    assert (
+        "ghcr.io/wellinglan/rebirth-api:"
+        "5932964873e7ae1f4495b431929d65429f05f29b"
+        in matrix
+    )
+    assert matrix.count("| NOT EXECUTED |") == 72
+    assert "AI Usage Audit Gate: `OPEN`" in matrix
+    assert "AI Operation Safety Gate: `OPEN`" in matrix
+
+
 def test_cli_database_failure_does_not_print_connection_details(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

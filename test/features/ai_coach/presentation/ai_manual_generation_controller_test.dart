@@ -112,6 +112,34 @@ void main() {
     );
   });
 
+  test('terminal provider failure allows an explicit retry', () async {
+    final bundle = await _buildPreview(container);
+    gateway.generationError = const AiGenerationException(
+      AiReportFailureCode.providerUnavailable,
+    );
+    await container.read(aiManualGenerationControllerProvider.future);
+
+    final first = await container
+        .read(aiManualGenerationControllerProvider.notifier)
+        .submit(bundle);
+    gateway.generationError = null;
+    final retry = await container
+        .read(aiManualGenerationControllerProvider.notifier)
+        .submit(bundle);
+
+    expect(first?.completed, isFalse);
+    expect(retry?.completed, isTrue);
+    expect(reports.createPendingCalls, 2);
+    expect(reports.markFailedCalls, 1);
+    expect(reports.markCompletedCalls, 1);
+    expect(gateway.generationCalls, 2);
+    expect(bindings.values, isEmpty);
+    expect(
+      container.read(aiManualGenerationControllerProvider).requireValue.phase,
+      AiManualGenerationPhase.success,
+    );
+  });
+
   test('usage limit is shown as a controlled terminal state', () async {
     final bundle = await _buildPreview(container);
     gateway.generationError = const AiGenerationException(
