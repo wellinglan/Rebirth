@@ -23,6 +23,12 @@ AI_LOG_EVENTS = frozenset(
         "ai_result_purged",
         "ai_tombstone_deleted",
         "ai_status_recovered",
+        "AI_USAGE_LIMIT_WARNING",
+        "AI_USAGE_LIMIT_EXCEEDED",
+        "AI_PROVIDER_FAILURE_RATE_HIGH",
+        "AI_PROVIDER_TIMEOUT_RATE_HIGH",
+        "AI_EXPIRED_GENERATION_DETECTED",
+        "AI_PROCESSING_LEASE_BACKLOG",
     }
 )
 
@@ -40,6 +46,11 @@ _ALLOWED_FIELDS = frozenset(
         "result_purge_count",
         "tombstone_delete_count",
         "environment",
+        "timestamp",
+        "metric",
+        "value",
+        "threshold",
+        "severity",
     }
 )
 

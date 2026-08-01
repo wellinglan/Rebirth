@@ -953,3 +953,11 @@ aggregate reads from the existing `ai_usage_records` and `ai_usage_controls`.
 It does not persist prompts, user正文, Provider responses, or client telemetry.
 Flutter Drift remains `schemaVersion = 9`; Server API Version `1` and Sync
 Protocol `2` remain unchanged.
+
+## Sprint 14A.3 AI Operational Audit
+
+No database migration is added. Server-only audit, monitoring, and consistency
+diagnostics read the existing `ai_generation_requests`, `ai_usage_records`, and
+`ai_usage_controls` tables. They do not repair rows, add accounting tables, or
+touch sync/business data. Flutter Drift remains `schemaVersion = 9`; Server API
+Version `1` and Sync Protocol `2` remain unchanged.

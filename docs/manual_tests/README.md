@@ -24,6 +24,7 @@ become manual PASS.
 | Step-up Reauthentication and OAuth Callback (24 PASS / 0 FAIL / 12 NOT EXECUTED) | `45_step_up_reauthentication.md` |
 | Real AI Provider and Cost Safety (32 PASS / 0 FAIL / 0 NOT EXECUTED) | `46_real_ai_provider_and_cost_safety.md` |
 | AI Usage Transparency and Operational Safety (36 PASS / 0 FAIL / 0 NOT EXECUTED) | `47_ai_usage_transparency_and_operational_safety.md` |
+| AI Usage Audit and Operations (0 PASS / 0 FAIL / 34 NOT EXECUTED) | `48_ai_usage_audit_and_operations.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.

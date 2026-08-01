@@ -604,3 +604,19 @@ MFA、微信登录与绑定继续延期。Flutter schemaVersion 保持 9，API V
 H1-H7 因不存在可安全使用的未绑定旧数据环境而诚实保留为 NOT EXECUTED。
 Public Login Experience、Authentication Protocol、Password Credential
 Security 与 Secure Client Storage Gate 已 `CLOSED / ACCEPTED`。
+
+# 二十四、AI 生产运维审计边界
+
+Sprint 14A.3 在现有 `AiGenerationRequest` 与 `AiUsageRecord` 上增加 Server-only
+只读运维查询和 CLI。审计按 UTC 日期、Provider、Model 与 Request Type 聚合请求、
+成功、失败、超时、过期和 token 数量；配置检查只输出非敏感设置；预算、Provider
+失败率与 stale lease 只生成字段白名单内的安全事件。
+
+运维工具不公开普通用户 API，不输出完整 user ID、Prompt、Journal/Health 正文、
+报告正文、Authorization、API Key、Secret 或数据库 URL，也没有自动修复模式。
+月度全局额度是运维告警阈值，不改变现有每日用户/全局硬限制。AI kill switch
+继续由 Server 的 `REBIRTH_AI_PROVIDER=disabled` 控制，客户端无权修改。
+
+本 Sprint 不修改 Server 业务表或 Alembic revision，不修改 Flutter；
+`schemaVersion` 保持 9，API Version 保持 1，Sync Protocol 保持 2。详见
+`docs/44_AI_OPERATOR_RUNBOOK.md`。

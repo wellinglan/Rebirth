@@ -15,6 +15,7 @@ from sqlalchemy import func, select, text
 
 from app.ai.canonical import input_hash
 from app.ai.ledger import AiRequestLedger
+from app.ai.operations import audit_usage, check_ledger_consistency
 from app.ai.providers import FakeAiProvider
 from app.ai.schemas import (
     AiDailyGenerateRequest,
@@ -204,6 +205,29 @@ def _usage_reservation_worker(
                 queue.put("reserved")
             except UsageLimitReachedError:
                 queue.put("limited")
+    finally:
+        database.engine.dispose()
+
+
+def _operations_read_worker(
+    database_url: str,
+    barrier: Any,
+    queue: Any,
+) -> None:
+    database = Database(database_url)
+    try:
+        barrier.wait(timeout=20)
+        with database.session_factory() as session:
+            audit = audit_usage(session, days=7, now=_NOW)
+            consistency = check_ledger_consistency(session, days=7, now=_NOW)
+            queue.put(
+                (
+                    audit["totals"],
+                    consistency["generation_count"],
+                    consistency["usage_count"],
+                    consistency["status"],
+                )
+            )
     finally:
         database.engine.dispose()
 
@@ -491,3 +515,13 @@ def test_postgres_cleanup_dry_run_and_execution() -> None:
             assert session.get(AiGenerationRequest, row_id).report_content is None
     finally:
         database.engine.dispose()
+
+
+def test_postgres_operation_reads_are_consistent_across_processes() -> None:
+    _upgrade()
+    results = _run_processes(
+        _operations_read_worker,
+        [(_database_url(),) for _ in range(_PROCESS_COUNT)],
+    )
+    assert len(results) == _PROCESS_COUNT
+    assert all(result == results[0] for result in results)

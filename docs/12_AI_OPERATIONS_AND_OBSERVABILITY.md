@@ -88,6 +88,32 @@ global allowance, concurrency ceilings, credentials, Authorization values, or
 another user's information. Provider failures and timeouts remain counted
 reservations; requests rejected before reservation do not count.
 
+## Sprint 14A.3 Operator Diagnostics
+
+The Server now provides four internal commands:
+
+```text
+python -m app.maintenance.rebirth_ai audit --days 7
+python -m app.maintenance.rebirth_ai config-check
+python -m app.maintenance.rebirth_ai monitor --window-minutes 60
+python -m app.maintenance.rebirth_ai ledger-check --days 7
+```
+
+They are not HTTP endpoints. Audit groups existing usage reservations by UTC
+date, Provider, model, and request type. Monitor checks daily/monthly aggregate
+thresholds, failure/timeout rates, expired reservations, and unique stale
+processing requests. Ledger check reports missing, duplicate, status, expiry,
+and token arithmetic inconsistencies without repairing them.
+
+The new allowlisted events are `AI_USAGE_LIMIT_WARNING`,
+`AI_USAGE_LIMIT_EXCEEDED`, `AI_PROVIDER_FAILURE_RATE_HIGH`,
+`AI_PROVIDER_TIMEOUT_RATE_HIGH`, `AI_EXPIRED_GENERATION_DETECTED`, and
+`AI_PROCESSING_LEASE_BACKLOG`. Their fields are limited to timestamp, Provider,
+metric, value, threshold, warning/critical severity, and environment. They
+contain no request content, user ID, credential, or database address. Full
+operation procedures are in
+`docs/44_AI_OPERATOR_RUNBOOK.md`.
+
 ## Remaining Reliability Boundary
 
 The durable Ledger remains an at-most-once ownership mechanism for a retained request ID, not exactly-once. Provider return and the completed database commit are not atomic. A crash in that interval can become `outcome_unknown`; logs and maintenance do not remove this crash gap.

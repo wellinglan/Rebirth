@@ -127,6 +127,19 @@ Cleanup uses the same rules as request-entry lazy cleanup:
 .\.venv\Scripts\python.exe -m app.maintenance.ai_ledger_cleanup
 ```
 
+Read-only AI production operations use the existing ledgers:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai config-check
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai audit --days 7
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai monitor --window-minutes 60
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai ledger-check --days 7
+```
+
+The commands expose no HTTP route and do not repair data. The complete deployment,
+kill-switch, incident, privacy, and rollback procedure is in
+`../docs/44_AI_OPERATOR_RUNBOOK.md`.
+
 GitHub Actions runs Server SQLite, PostgreSQL multiprocessing/multi-worker, Flutter analyze/test, and Android debug build jobs. A checked-in workflow is not evidence of a CI PASS until GitHub executes it.
 
 ## Sync Identity and Versioning
@@ -192,7 +205,12 @@ field, Alembic revision, or PostgreSQL schema changed in Sprint 10B.
 | `REBIRTH_AI_PROCESSING_LEASE_MINUTES` | `5` | Processing ownership lease |
 | `REBIRTH_AI_DAILY_USER_LIMIT` | `10` | Per-user UTC-day Provider reservations |
 | `REBIRTH_AI_DAILY_GLOBAL_LIMIT` | `100` | Deployment UTC-day Provider reservations |
+| `REBIRTH_AI_MONTHLY_GLOBAL_LIMIT` | `3000` | UTC-month operational alert threshold |
 | `REBIRTH_AI_MAX_CONCURRENT_REQUESTS` | `5` | Active Provider reservations |
+| `REBIRTH_AI_BUDGET_WARNING_PERCENT` | `80` | Daily/monthly budget warning percentage |
+| `REBIRTH_AI_FAILURE_RATE_WARNING_PERCENT` | `25` | Provider failure-rate warning percentage |
+| `REBIRTH_AI_TIMEOUT_RATE_WARNING_PERCENT` | `10` | Provider timeout-rate warning percentage |
+| `REBIRTH_AI_PROCESSING_BACKLOG_WARNING` | `1` | Unique stale processing request threshold |
 
 Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Weekly manual flow is documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`; the developer-only Daily contract is documented in `docs/manual_tests/21_daily_insight_contract.md`.
 

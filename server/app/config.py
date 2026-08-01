@@ -50,7 +50,12 @@ class Settings:
     ai_processing_lease_minutes: int = 5
     ai_daily_user_limit: int = 10
     ai_daily_global_limit: int = 100
+    ai_monthly_global_limit: int = 3000
     ai_max_concurrent_requests: int = 5
+    ai_budget_warning_percent: int = 80
+    ai_failure_rate_warning_percent: int = 25
+    ai_timeout_rate_warning_percent: int = 10
+    ai_processing_backlog_warning: int = 1
 
     @property
     def is_development(self) -> bool:
@@ -77,6 +82,7 @@ def load_settings(
     openai_api_key: str | None = None,
     deepseek_api_key: str | None = None,
     ai_model: str | None = None,
+    validate_ai_provider_configuration: bool = True,
 ) -> Settings:
     resolved_environment = (
         environment or os.getenv("REBIRTH_ENV", "development")
@@ -154,12 +160,12 @@ def load_settings(
         "test",
     }:
         raise RuntimeError("The fake AI provider is development/test only.")
-    if resolved_ai_provider == "openai":
+    if validate_ai_provider_configuration and resolved_ai_provider == "openai":
         if not resolved_openai_api_key:
             raise RuntimeError("OPENAI_API_KEY is required for the OpenAI provider.")
         if not resolved_ai_model:
             raise RuntimeError("REBIRTH_AI_MODEL is required for the OpenAI provider.")
-    if resolved_ai_provider == "deepseek":
+    if validate_ai_provider_configuration and resolved_ai_provider == "deepseek":
         if not resolved_deepseek_api_key:
             raise RuntimeError(
                 "DEEPSEEK_API_KEY is required for the DeepSeek provider."
@@ -182,8 +188,23 @@ def load_settings(
     )
     daily_user_limit = _positive_int("REBIRTH_AI_DAILY_USER_LIMIT", "10")
     daily_global_limit = _positive_int("REBIRTH_AI_DAILY_GLOBAL_LIMIT", "100")
+    monthly_global_limit = _positive_int(
+        "REBIRTH_AI_MONTHLY_GLOBAL_LIMIT", "3000"
+    )
     max_concurrent_requests = _positive_int(
         "REBIRTH_AI_MAX_CONCURRENT_REQUESTS", "5"
+    )
+    budget_warning_percent = _percentage_int(
+        "REBIRTH_AI_BUDGET_WARNING_PERCENT", "80"
+    )
+    failure_rate_warning_percent = _percentage_int(
+        "REBIRTH_AI_FAILURE_RATE_WARNING_PERCENT", "25"
+    )
+    timeout_rate_warning_percent = _percentage_int(
+        "REBIRTH_AI_TIMEOUT_RATE_WARNING_PERCENT", "10"
+    )
+    processing_backlog_warning = _positive_int(
+        "REBIRTH_AI_PROCESSING_BACKLOG_WARNING", "1"
     )
     result_retention_seconds = result_retention_hours * 60 * 60
     dedupe_retention_seconds = dedupe_retention_days * 24 * 60 * 60
@@ -258,7 +279,12 @@ def load_settings(
         ai_processing_lease_minutes=processing_lease_minutes,
         ai_daily_user_limit=daily_user_limit,
         ai_daily_global_limit=daily_global_limit,
+        ai_monthly_global_limit=monthly_global_limit,
         ai_max_concurrent_requests=max_concurrent_requests,
+        ai_budget_warning_percent=budget_warning_percent,
+        ai_failure_rate_warning_percent=failure_rate_warning_percent,
+        ai_timeout_rate_warning_percent=timeout_rate_warning_percent,
+        ai_processing_backlog_warning=processing_backlog_warning,
     )
 
 
@@ -279,6 +305,13 @@ def _positive_float(name: str, default: str) -> float:
         raise RuntimeError(f"{name} must be a finite positive number.") from None
     if not math.isfinite(value) or value <= 0:
         raise RuntimeError(f"{name} must be a finite positive number.")
+    return value
+
+
+def _percentage_int(name: str, default: str) -> int:
+    value = _positive_int(name, default)
+    if value >= 100:
+        raise RuntimeError(f"{name} must be between 1 and 99.")
     return value
 
 
