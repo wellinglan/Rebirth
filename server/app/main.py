@@ -31,8 +31,10 @@ def create_app(
     reauthentication_clock: Callable[[], int] | None = None,
     ai_provider: str | None = None,
     openai_api_key: str | None = None,
+    deepseek_api_key: str | None = None,
     ai_model: str | None = None,
     openai_client: object | None = None,
+    deepseek_client: object | None = None,
     ai_clock: Callable[[], int] | None = None,
 ) -> FastAPI:
     settings = load_settings(
@@ -52,6 +54,7 @@ def create_app(
         wechat_app_secret=wechat_app_secret,
         ai_provider=ai_provider,
         openai_api_key=openai_api_key,
+        deepseek_api_key=deepseek_api_key,
         ai_model=ai_model,
     )
     database = Database(settings.database_url)
@@ -74,7 +77,11 @@ def create_app(
     )
     application.state.oauth_clock = oauth_clock
     application.state.reauthentication_clock = reauthentication_clock
-    provider = build_provider(settings, openai_client=openai_client)
+    provider = build_provider(
+        settings,
+        openai_client=openai_client,
+        deepseek_client=deepseek_client,
+    )
     application.state.ai_generation_service = (
         AiGenerationService(settings=settings, provider=provider)
         if ai_clock is None

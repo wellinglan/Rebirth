@@ -220,6 +220,26 @@ void main() {
     expect(api.postCalls, 1);
   });
 
+  for (final entry in {
+    'ai_disabled': AiReportFailureCode.aiDisabled,
+    'usage_limit_reached': AiReportFailureCode.usageLimitReached,
+    'provider_auth_failed': AiReportFailureCode.providerAuthFailed,
+  }.entries) {
+    test('${entry.key} maps to a controlled failed result', () async {
+      api.postError = ApiException(
+        message: 'controlled',
+        statusCode: entry.key == 'usage_limit_reached' ? 429 : 503,
+        errorCode: entry.key,
+      );
+      final result = await gateway.generateWeekly(
+        requestId: 'local-report-id',
+        bundle: buildAiBundle(),
+      );
+      expect(result.status, AiRemoteRequestStatus.failed);
+      expect(result.failureCode, entry.value);
+    });
+  }
+
   test(
     'status GET validates identity and decodes completed recovery',
     () async {

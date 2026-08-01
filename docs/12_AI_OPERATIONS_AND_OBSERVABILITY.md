@@ -31,6 +31,7 @@ The `rebirth.ai` logger emits JSON events:
 - `ai_provider_started`
 - `ai_provider_completed`
 - `ai_provider_failed`
+- `ai_usage_rejected`
 - `ai_result_purged`
 - `ai_tombstone_deleted`
 - `ai_status_recovered`
@@ -74,7 +75,11 @@ The multiprocessing suite uses four spawned processes with independent SQLAlchem
 
 `.github/workflows/quality.yml` defines four required jobs: Server SQLite, Server PostgreSQL multiprocessing/multi-worker, Flutter analyze/test, and Android debug build. Flutter is pinned to stable `3.44.4`. Normal CI never configures or invokes real OpenAI.
 
-Sprint 9A keeps the same event allowlist for Daily and Weekly. `report_type`, input/output bodies, Sources, and report content are not added to logs; existing request identity, controlled status, Provider metadata, truncated hash, and latency fields remain sufficient for operations.
+Sprint 14A.1 adds only `ai_usage_rejected`; it carries the same safe request,
+pseudonymous user, Provider metadata, status, and controlled error fields.
+Quota reason counts, input/output bodies, Sources, report content, token values,
+credentials, and Provider response bodies are not logged. Normal CI invokes
+only Fake Providers and HTTP mocks, never a real paid Provider.
 
 ## Remaining Reliability Boundary
 

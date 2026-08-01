@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.ai.canonical import input_hash
 from app.ai.errors import (
     AiGatewayError,
+    GatewayDisabledError,
     IdempotencyConflictError,
     InputHashMismatchError,
     UnsupportedContractError,
@@ -19,6 +20,7 @@ from app.ai.ledger import AiRequestLedger
 from app.ai.observability import log_ai_event
 from app.ai.prompts import get_prompt, report_definitions
 from app.ai.providers import AiProvider, ProviderPromptPayload, safety_identifier
+from app.ai.usage import AiUsageGuard, AiUsageReservation
 from app.ai.schemas import (
     AiCapabilitiesResponse,
     AiDailyGenerateRequest,
@@ -47,6 +49,10 @@ class AiGenerationService:
     @property
     def ledger(self) -> AiRequestLedger:
         return AiRequestLedger(self.settings)
+
+    @property
+    def usage(self) -> AiUsageGuard:
+        return AiUsageGuard(self.settings)
 
     def capabilities(self) -> AiCapabilitiesResponse:
         definitions = report_definitions()
@@ -96,6 +102,8 @@ class AiGenerationService:
         user_id: str,
         session: Session,
     ) -> AiGenerateResponse | AiRequestStatusResponse:
+        if not self.provider.enabled:
+            raise GatewayDisabledError()
         now = self.clock()
         self.ledger.cleanup(session, now=now)
         existing = self.ledger.find(
@@ -143,6 +151,38 @@ class AiGenerationService:
             status="processing",
         )
 
+        try:
+            usage_reservation = self.usage.reserve(
+                session,
+                user_id=user_id,
+                request_id=str(request.request_id),
+                provider=self.provider.name,
+                model=self.provider.model or "unconfigured",
+                request_type=request.payload.report_type,
+                now=self.clock(),
+            )
+        except AiGatewayError as error:
+            log_ai_event(
+                "ai_usage_rejected",
+                environment=self.settings.environment,
+                user_id=user_id,
+                request_id=str(request.request_id),
+                input_hash=verified_hash,
+                provider=self.provider.name,
+                model=self.provider.model,
+                status="failed",
+                error_code=error.code,
+            )
+            self.ledger.mark_failed(
+                session,
+                claim.row,
+                error,
+                provider=self.provider.name,
+                model=self.provider.model,
+                now=self.clock(),
+            )
+            raise
+
         provider_payload = _provider_payload(request)
         provider_started = time.perf_counter_ns()
         log_ai_event(
@@ -177,7 +217,22 @@ class AiGenerationService:
                 report_content=prompt.renderer(structured),
                 structured_output=structured,
             )
+            self.usage.mark_completed(
+                session,
+                usage_reservation,
+                model=generation.model,
+                input_tokens=generation.input_tokens,
+                output_tokens=generation.output_tokens,
+                total_tokens=generation.total_tokens,
+                now=self.clock(),
+            )
         except AiGatewayError as error:
+            _mark_usage_failed(
+                self.usage,
+                session,
+                usage_reservation,
+                now=self.clock(),
+            )
             latency_ms = (time.perf_counter_ns() - provider_started) // 1_000_000
             log_ai_event(
                 "ai_provider_failed",
@@ -202,6 +257,12 @@ class AiGenerationService:
             raise
         except Exception:
             controlled = AiGatewayError("request_failed")
+            _mark_usage_failed(
+                self.usage,
+                session,
+                usage_reservation,
+                now=self.clock(),
+            )
             latency_ms = (time.perf_counter_ns() - provider_started) // 1_000_000
             log_ai_event(
                 "ai_provider_failed",
@@ -370,12 +431,27 @@ class AiGenerationService:
 
 def _failure_status(code: str) -> int:
     return {
+        "ai_disabled": 503,
+        "usage_limit_reached": 429,
         "provider_rate_limited": 429,
         "provider_timeout": 504,
         "provider_unavailable": 503,
         "provider_refused": 422,
         "result_expired": 410,
     }.get(code, 502)
+
+
+def _mark_usage_failed(
+    usage: AiUsageGuard,
+    session: Session,
+    reservation: AiUsageReservation,
+    *,
+    now: int,
+) -> None:
+    try:
+        usage.mark_failed(session, reservation, now=now)
+    except Exception:
+        session.rollback()
 
 
 def _provider_payload(request: AiGenerateRequest) -> ProviderPromptPayload:

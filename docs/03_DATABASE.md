@@ -936,3 +936,12 @@ Raw passwords, raw refresh tokens, Dev User Keys, usernames used for throttling,
 and client IP addresses are not persisted in these tables.
 
 See `docs/40_AUTHENTICATION_PROTOCOL_AND_SECURE_SESSION.md`.
+
+## Sprint 14A.1 Server AI Usage Ledger
+
+Flutter Drift is unchanged and `schemaVersion` remains `9`. Server Alembic
+revision `20260801_0007` adds `ai_usage_controls` and `ai_usage_records` for
+atomic UTC-day user/global quotas, active request leases, and safe token-count
+auditing. The usage ledger stores no prompt, Context DTO, Journal/Health content,
+Provider response body, report content, API key, or token. Existing sync tables,
+API Version `1`, and Sync Protocol `2` are unchanged.

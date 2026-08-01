@@ -159,7 +159,7 @@ class _SettingsContent extends StatelessWidget {
               SettingsTile(
                 key: const ValueKey('aiCoachSettingsTile'),
                 title: 'AI 数据与隐私',
-                subtitle: '当前不进行真实 AI 分析，也不会自动发送数据',
+                subtitle: '仅在确认生成时发送所选汇总数据，不会自动发送',
                 icon: Icons.shield_outlined,
                 onTap: () => context.push(RoutePaths.aiCoach),
               ),

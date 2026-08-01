@@ -10,7 +10,12 @@ class AiGatewayError(Exception):
 
 class GatewayDisabledError(AiGatewayError):
     def __init__(self) -> None:
-        super().__init__("gateway_disabled", status_code=503)
+        super().__init__("ai_disabled", status_code=503)
+
+
+class UsageLimitReachedError(AiGatewayError):
+    def __init__(self) -> None:
+        super().__init__("usage_limit_reached", status_code=429)
 
 
 class InputHashMismatchError(AiGatewayError):

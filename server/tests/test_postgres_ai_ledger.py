@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import uuid
 from copy import deepcopy
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -21,10 +22,12 @@ from app.ai.schemas import (
     AiWeeklyPayload,
 )
 from app.ai.service import AiGenerationService
+from app.ai.errors import UsageLimitReachedError
+from app.ai.usage import AiUsageGuard
 from app.config import load_settings
 from app.database import Database
 from app.main import create_app
-from app.models import AiGenerationRequest, CloudUser
+from app.models import AiGenerationRequest, AiUsageRecord, CloudUser
 from tests.test_ai_gateway import request_body
 from tests.test_ai_daily_insight import daily_request_body
 
@@ -167,6 +170,44 @@ def _run_processes(target: Any, arguments: list[tuple[Any, ...]]) -> list[Any]:
     return results
 
 
+def _usage_reservation_worker(
+    database_url: str,
+    user_id: str,
+    request_id: str,
+    barrier: Any,
+    queue: Any,
+) -> None:
+    settings = replace(
+        load_settings(
+            database_url=database_url,
+            environment="test",
+            jwt_secret="postgres-multiprocess-test-secret",
+        ),
+        ai_daily_user_limit=100,
+        ai_daily_global_limit=100,
+        ai_max_concurrent_requests=5,
+    )
+    database = Database(database_url)
+    try:
+        barrier.wait(timeout=20)
+        with database.session_factory() as session:
+            try:
+                AiUsageGuard(settings).reserve(
+                    session,
+                    user_id=user_id,
+                    request_id=request_id,
+                    provider="fake",
+                    model="deterministic-test-provider",
+                    request_type="weekly_report",
+                    now=_NOW,
+                )
+                queue.put("reserved")
+            except UsageLimitReachedError:
+                queue.put("limited")
+    finally:
+        database.engine.dispose()
+
+
 def test_postgres_version_and_migration() -> None:
     _upgrade()
     database = Database(_database_url())
@@ -212,6 +253,29 @@ def test_four_processes_have_exactly_one_claim_owner() -> None:
             ) == 1
     finally:
         database.engine.dispose()
+
+
+def test_postgres_global_concurrency_reservation_is_atomic() -> None:
+    _upgrade()
+    user_id = str(uuid.uuid4())
+    _seed_users(user_id)
+    database = Database(_database_url())
+    try:
+        with database.session_factory() as session:
+            session.query(AiUsageRecord).delete()
+            session.commit()
+    finally:
+        database.engine.dispose()
+
+    results = _run_processes(
+        _usage_reservation_worker,
+        [
+            (_database_url(), user_id, str(uuid.uuid4()))
+            for _ in range(8)
+        ],
+    )
+    assert results.count("reserved") == 5
+    assert results.count("limited") == 3
 
 
 def test_daily_four_processes_have_exactly_one_claim_owner() -> None:

@@ -5,6 +5,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+import httpx
 from pydantic import ValidationError
 
 from app.ai.canonical import canonical_json
@@ -36,6 +37,9 @@ class ProviderGeneration:
     provider: str
     model: str
     structured_output: dict[str, Any]
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
 
 
 class AiProvider(Protocol):
@@ -183,10 +187,134 @@ class OpenAiResponsesProvider:
         except (AttributeError, TypeError, json.JSONDecodeError, ValidationError):
             raise AiGatewayError("response_invalid") from None
         actual_model = getattr(response, "model", None) or self.model
+        usage = getattr(response, "usage", None)
         return ProviderGeneration(
             provider=self.name,
             model=str(actual_model),
             structured_output=structured.model_dump(mode="json"),
+            input_tokens=_optional_nonnegative_int(
+                getattr(usage, "input_tokens", None)
+            ),
+            output_tokens=_optional_nonnegative_int(
+                getattr(usage, "output_tokens", None)
+            ),
+            total_tokens=_optional_nonnegative_int(
+                getattr(usage, "total_tokens", None)
+            ),
+        )
+
+
+class DeepSeekProvider:
+    name = "deepseek"
+    label = "DeepSeek"
+    enabled = True
+
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        client: httpx.AsyncClient | Any | None = None,
+    ) -> None:
+        self.model = settings.ai_model
+        self._api_key = settings.deepseek_api_key
+        self._timeout = settings.ai_timeout_seconds
+        self._max_output_tokens = settings.ai_max_output_tokens
+        self._client = client
+
+    async def generate(
+        self,
+        *,
+        payload: ProviderPromptPayload,
+        prompt: PromptDefinition,
+        safety_identifier: str,
+    ) -> ProviderGeneration:
+        del safety_identifier
+        request_body = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        f"{prompt.developer_instructions}\n"
+                        "Return only one valid JSON object matching this JSON "
+                        f"Schema: {canonical_json(prompt.output_schema)}"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": canonical_json(payload.to_json_value()),
+                },
+            ],
+            "response_format": {"type": "json_object"},
+            "stream": False,
+            "max_tokens": self._max_output_tokens,
+        }
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        try:
+            if self._client is None:
+                async with httpx.AsyncClient(
+                    base_url="https://api.deepseek.com",
+                    timeout=self._timeout,
+                ) as client:
+                    response = await client.post(
+                        "/chat/completions",
+                        headers=headers,
+                        json=request_body,
+                    )
+            else:
+                response = await self._client.post(
+                    "/chat/completions",
+                    headers=headers,
+                    json=request_body,
+                    timeout=self._timeout,
+                )
+        except httpx.TimeoutException:
+            raise AiGatewayError("provider_timeout", status_code=504) from None
+        except httpx.RequestError:
+            raise AiGatewayError("provider_unavailable", status_code=503) from None
+        except Exception:
+            raise AiGatewayError("request_failed") from None
+
+        status_code = int(getattr(response, "status_code", 0))
+        if status_code in {401, 403}:
+            raise AiGatewayError("provider_auth_failed", status_code=502)
+        if status_code == 429:
+            raise AiGatewayError("provider_rate_limited", status_code=429)
+        if status_code >= 500:
+            raise AiGatewayError("provider_unavailable", status_code=503)
+        if status_code < 200 or status_code >= 300:
+            raise AiGatewayError("request_failed")
+
+        try:
+            response_body = response.json()
+            choice = response_body["choices"][0]
+            if choice.get("finish_reason") != "stop":
+                raise ValueError
+            decoded = json.loads(choice["message"]["content"])
+            structured = prompt.output_model.model_validate(decoded)
+            actual_model = response_body.get("model") or self.model
+            usage = response_body.get("usage") or {}
+        except (
+            KeyError,
+            IndexError,
+            TypeError,
+            ValueError,
+            json.JSONDecodeError,
+            ValidationError,
+        ):
+            raise AiGatewayError("response_invalid") from None
+        return ProviderGeneration(
+            provider=self.name,
+            model=str(actual_model),
+            structured_output=structured.model_dump(mode="json"),
+            input_tokens=_optional_nonnegative_int(usage.get("prompt_tokens")),
+            output_tokens=_optional_nonnegative_int(
+                usage.get("completion_tokens")
+            ),
+            total_tokens=_optional_nonnegative_int(usage.get("total_tokens")),
         )
 
 
@@ -195,11 +323,18 @@ def safety_identifier(user_id: str, environment: str) -> str:
     return hashlib.sha256(source).hexdigest()
 
 
-def build_provider(settings: Settings, *, openai_client: Any | None = None) -> AiProvider:
+def build_provider(
+    settings: Settings,
+    *,
+    openai_client: Any | None = None,
+    deepseek_client: Any | None = None,
+) -> AiProvider:
     if settings.ai_provider == "disabled":
         return DisabledAiProvider()
     if settings.ai_provider == "fake":
         return FakeAiProvider(settings.ai_fake_scenario)
+    if settings.ai_provider == "deepseek":
+        return DeepSeekProvider(settings, client=deepseek_client)
     return OpenAiResponsesProvider(settings, client=openai_client)
 
 
@@ -279,7 +414,7 @@ def _map_openai_error(error: Exception) -> AiGatewayError:
         )
 
         if isinstance(error, AuthenticationError):
-            return AiGatewayError("provider_authentication_failed", status_code=502)
+            return AiGatewayError("provider_auth_failed", status_code=502)
         if isinstance(error, RateLimitError):
             return AiGatewayError("provider_rate_limited", status_code=429)
         if isinstance(error, APITimeoutError):
@@ -291,3 +426,9 @@ def _map_openai_error(error: Exception) -> AiGatewayError:
     except ImportError:
         pass
     return AiGatewayError("request_failed")
+
+
+def _optional_nonnegative_int(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value

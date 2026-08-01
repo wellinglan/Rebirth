@@ -525,6 +525,76 @@ void main() {
     },
   );
 
+  testWidgets('disabled provider has an explicit UI state', (tester) async {
+    final gateway = FakeAiGenerationGateway(
+      capabilities: AiGenerationCapabilities(
+        enabled: false,
+        provider: 'disabled',
+        providerLabel: 'Disabled',
+        model: null,
+        supportedReportTypes: const ['weekly_report'],
+        promptVersions: const ['weekly-report-v1'],
+        inputSchemaVersion: 1,
+        outputSchemaVersion: 1,
+        streaming: false,
+        responseStorageRequested: false,
+      ),
+    );
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: FakeAiReportRepository(),
+      gateway: gateway,
+    );
+
+    await _tapAfterScrolling(
+      tester,
+      find.byKey(const ValueKey('aiScope-growth_summary')),
+    );
+    await _tapAfterScrolling(
+      tester,
+      find.byKey(const ValueKey('buildAiPreviewButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('当前服务器未启用 AI 生成'), findsOneWidget);
+    expect(gateway.generationCalls, 0);
+  });
+
+  testWidgets('usage limit failure remains readable at 320px and 2x text', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(320, 800));
+    final gateway = FakeAiGenerationGateway()
+      ..capabilitiesError = const AiGenerationException(
+        AiReportFailureCode.usageLimitReached,
+      );
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: FakeAiReportRepository(),
+      gateway: gateway,
+      textScale: 2,
+    );
+
+    await _tapAfterScrolling(
+      tester,
+      find.byKey(const ValueKey('aiScope-growth_summary')),
+    );
+    await _tapAfterScrolling(
+      tester,
+      find.byKey(const ValueKey('buildAiPreviewButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('AI 使用额度'), findsOneWidget);
+    expect(gateway.generationCalls, 0);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'responsive layouts avoid overflow at target widths and 2x text',
     (tester) async {

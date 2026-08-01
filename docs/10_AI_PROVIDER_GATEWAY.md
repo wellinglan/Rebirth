@@ -2,7 +2,7 @@
 
 ## Scope
 
-The user-visible flows are explicit, synchronous, non-streaming `weekly_report` and `daily_insight` requests. Sprint 9B exposes the existing typed Daily contract through local Preview and final confirmation. There is still no chat, tools, automatic/background generation, server report history, AIReport sync, or source-record mutation. Flutter database `schemaVersion` remains 3.
+The user-visible flows are explicit, synchronous, non-streaming `weekly_report` and `daily_insight` requests. Sprint 9B exposes the existing typed Daily contract through local Preview and final confirmation. There is still no chat, tools, automatic/background generation, server report history, AIReport sync, or source-record mutation. Flutter database `schemaVersion` remains 9.
 
 The flow is:
 
@@ -23,14 +23,18 @@ The Server reads:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `REBIRTH_AI_PROVIDER` | `disabled` | `disabled`, `fake`, or `openai` |
+| `REBIRTH_AI_PROVIDER` | `disabled` | `disabled`, `fake`, `deepseek`, or legacy `openai` |
 | `OPENAI_API_KEY` | none | OpenAI credential, Server only |
+| `DEEPSEEK_API_KEY` | none | DeepSeek credential, Server only |
 | `REBIRTH_AI_MODEL` | none | Deployment-selected model ID |
 | `REBIRTH_AI_TIMEOUT_SECONDS` | `90` | Provider request timeout |
 | `REBIRTH_AI_MAX_OUTPUT_TOKENS` | `1600` | Conservative output limit |
 | `REBIRTH_AI_FAKE_SCENARIO` | `success` | Development Fake scenario |
+| `REBIRTH_AI_DAILY_USER_LIMIT` | `10` | Provider reservations per user and UTC day |
+| `REBIRTH_AI_DAILY_GLOBAL_LIMIT` | `100` | Deployment reservations per UTC day |
+| `REBIRTH_AI_MAX_CONCURRENT_REQUESTS` | `5` | Active Provider reservation ceiling |
 
-`openai` requires a key and model. `fake` is rejected outside development/test. The key uses a `repr=False` Settings field and is never returned by health/capabilities/errors. Flutter, SharedPreferences, Drift, logs, fixtures, and source control must never contain it.
+`openai` and `deepseek` require their Server-only key and a model. `fake` is rejected outside development/test. Keys use `repr=False` Settings fields and are never returned by health/capabilities/errors. Flutter, SharedPreferences, Drift, logs, fixtures, and source control must never contain them.
 
 ## Server Contract
 
@@ -63,11 +67,27 @@ The adapter uses the official Python SDK Responses API with the configured model
 
 `store=false` requests that Provider response application state not be stored; it does not promise absolute zero retention. Production use still needs provider-policy, privacy, cost, logging, and legal review.
 
+## DeepSeek Adapter And Cost Safety
+
+The DeepSeek adapter uses the non-streaming Chat Completions JSON Output mode,
+the configured model, a finite timeout, a maximum output-token limit, and no
+automatic retry. The same strict Pydantic result model validates the decoded
+JSON before the existing server renderer accepts it.
+
+Before any enabled Provider call, the Server atomically reserves capacity in
+the metadata-only `ai_usage_records` ledger. Per-user UTC-day, global UTC-day,
+and active concurrency limits fail with `usage_limit_reached` before the
+Provider is called. `REBIRTH_AI_PROVIDER=disabled` fails immediately with
+`ai_disabled`. See `46_REAL_AI_PROVIDER_AND_COST_SAFETY.md`.
+
 ## Output and Errors
 
 Weekly output schema v1 requires `title`, `summary`, up to five observations, up to three suggestions, and `data_limitations`. Daily output schema v1 requires `title`, `summary`, up to four observations, up to three caveated possible factors, up to three optional tomorrow adjustments, and `data_limitations`. Nested and top-level models reject additional fields. The Server selects output schema and deterministic Markdown renderer through the typed report/prompt registry. Arbitrary Provider text is never accepted as report content.
 
-Controlled errors are: `gateway_disabled`, `authentication_required`, `invalid_request`, `invalid_input`, `input_hash_mismatch`, `idempotency_conflict`, `unsupported_report_type`, `unsupported_prompt_version`, `unsupported_scope`, `provider_authentication_failed`, `provider_rate_limited`, `provider_timeout`, `provider_unavailable`, `provider_refused`, `response_invalid`, `request_failed`, `outcome_unknown`, `result_expired`, `not_found`, and `unknown`.
+Controlled errors include `ai_disabled`, `usage_limit_reached`,
+`provider_auth_failed`, `provider_rate_limited`, `provider_timeout`,
+`provider_unavailable`, `provider_refused`, `response_invalid`, and the
+existing input, idempotency, recovery, and historical compatibility codes.
 
 After confirmation, a failure marks the local pending report failed with only one controlled text code. Timeout is never retried automatically because another call can incur cost. A crash can leave `pending`; Sprint 8C displays it as-is and does not recover/resend it.
 

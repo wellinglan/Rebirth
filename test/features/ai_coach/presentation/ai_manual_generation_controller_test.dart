@@ -111,6 +111,26 @@ void main() {
     );
   });
 
+  test('usage limit is shown as a controlled terminal state', () async {
+    final bundle = await _buildPreview(container);
+    gateway.generationError = const AiGenerationException(
+      AiReportFailureCode.usageLimitReached,
+    );
+    await container.read(aiManualGenerationControllerProvider.future);
+
+    final result = await container
+        .read(aiManualGenerationControllerProvider.notifier)
+        .submit(bundle);
+
+    expect(result?.completed, isFalse);
+    expect(reports.lastFailureCode, 'usage_limit_reached');
+    expect(gateway.generationCalls, 1);
+    expect(
+      container.read(aiManualGenerationControllerProvider).requireValue.phase,
+      AiManualGenerationPhase.failure,
+    );
+  });
+
   test(
     'binding save failure blocks POST and marks controlled failure',
     () async {

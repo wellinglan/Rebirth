@@ -23,10 +23,7 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
   Future<AiGenerationCapabilities> getCapabilities() async {
     try {
       final json = await sessionManager.runAuthorized(
-        (token) => apiClient.getJson(
-          '/ai/capabilities',
-          accessToken: token,
-        ),
+        (token) => apiClient.getJson('/ai/capabilities', accessToken: token),
       );
       return _decodeCapabilities(json);
     } on ApiException catch (error) {
@@ -106,10 +103,8 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
   }) async {
     try {
       final json = await sessionManager.runAuthorized(
-        (token) => apiClient.getJson(
-          '/ai/requests/$requestId',
-          accessToken: token,
-        ),
+        (token) =>
+            apiClient.getJson('/ai/requests/$requestId', accessToken: token),
       );
       return _decodeRemoteResult(
         json,
@@ -267,7 +262,10 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
       AiReportFailureCode.outcomeUnknown =>
         AiRemoteRequestStatus.outcomeUnknown,
       AiReportFailureCode.resultExpired => AiRemoteRequestStatus.resultExpired,
+      AiReportFailureCode.aiDisabled ||
+      AiReportFailureCode.usageLimitReached ||
       AiReportFailureCode.providerAuthenticationFailed ||
+      AiReportFailureCode.providerAuthFailed ||
       AiReportFailureCode.providerRateLimited ||
       AiReportFailureCode.providerTimeout ||
       AiReportFailureCode.providerUnavailable ||

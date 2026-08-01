@@ -74,9 +74,12 @@ abstract final class AiCoachFormatters {
   static String failureCode(String? code) {
     return switch (code) {
       'provider_unavailable' => '生成服务暂不可用',
+      'ai_disabled' => '服务器已关闭 AI 生成',
       'gateway_disabled' => '服务器未启用 AI 生成',
+      'usage_limit_reached' => 'AI 使用额度已达到上限',
       'authentication_required' => '需要重新登录',
       'provider_authentication_failed' => '服务器无法认证 AI Provider',
+      'provider_auth_failed' => '服务器无法认证 AI Provider',
       'provider_rate_limited' => 'AI Provider 请求受限',
       'provider_timeout' => '生成请求超时',
       'provider_refused' => 'AI Provider 拒绝生成',

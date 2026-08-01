@@ -376,6 +376,7 @@ class AiGenerationRequest(Base):
             "'input_hash_mismatch', 'unsupported_report_type', "
             "'unsupported_prompt_version', 'unsupported_scope', "
             "'provider_authentication_failed', 'provider_rate_limited', "
+            "'ai_disabled', 'usage_limit_reached', 'provider_auth_failed', "
             "'provider_timeout', 'provider_unavailable', 'provider_refused', "
             "'response_invalid', 'request_failed', 'unknown')",
             name="ck_ai_generation_request_error_code",
@@ -411,3 +412,63 @@ class AiGenerationRequest(Base):
     result_expires_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     dedupe_expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     result_purged_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+
+class AiUsageControl(Base):
+    __tablename__ = "ai_usage_controls"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
+class AiUsageRecord(Base):
+    __tablename__ = "ai_usage_records"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('processing', 'completed', 'failed', 'expired')",
+            name="ck_ai_usage_record_status",
+        ),
+        CheckConstraint(
+            "input_tokens IS NULL OR input_tokens >= 0",
+            name="ck_ai_usage_record_input_tokens",
+        ),
+        CheckConstraint(
+            "output_tokens IS NULL OR output_tokens >= 0",
+            name="ck_ai_usage_record_output_tokens",
+        ),
+        CheckConstraint(
+            "total_tokens IS NULL OR total_tokens >= 0",
+            name="ck_ai_usage_record_total_tokens",
+        ),
+        Index("ix_ai_usage_records_created_at", "created_at"),
+        Index(
+            "ix_ai_usage_records_user_created_at",
+            "user_id",
+            "created_at",
+        ),
+        Index(
+            "ix_ai_usage_records_active_lease",
+            "status",
+            "lease_expires_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("cloud_users.id"),
+        nullable=False,
+        index=True,
+    )
+    request_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    model: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
+    created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    lease_expires_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    completed_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

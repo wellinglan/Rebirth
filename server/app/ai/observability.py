@@ -19,6 +19,7 @@ AI_LOG_EVENTS = frozenset(
         "ai_provider_started",
         "ai_provider_completed",
         "ai_provider_failed",
+        "ai_usage_rejected",
         "ai_result_purged",
         "ai_tombstone_deleted",
         "ai_status_recovered",

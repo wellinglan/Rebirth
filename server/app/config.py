@@ -40,6 +40,7 @@ class Settings:
     reauthentication_proof_minutes: int = 5
     ai_provider: str = "disabled"
     openai_api_key: str | None = field(default=None, repr=False)
+    deepseek_api_key: str | None = field(default=None, repr=False)
     ai_model: str | None = None
     ai_timeout_seconds: float = 90.0
     ai_max_output_tokens: int = 1600
@@ -47,6 +48,9 @@ class Settings:
     ai_result_retention_hours: int = 24
     ai_dedupe_retention_days: int = 30
     ai_processing_lease_minutes: int = 5
+    ai_daily_user_limit: int = 10
+    ai_daily_global_limit: int = 100
+    ai_max_concurrent_requests: int = 5
 
     @property
     def is_development(self) -> bool:
@@ -71,6 +75,7 @@ def load_settings(
     wechat_app_secret: str | None = None,
     ai_provider: str | None = None,
     openai_api_key: str | None = None,
+    deepseek_api_key: str | None = None,
     ai_model: str | None = None,
 ) -> Settings:
     resolved_environment = (
@@ -135,9 +140,14 @@ def load_settings(
     resolved_ai_provider = (
         ai_provider or os.getenv("REBIRTH_AI_PROVIDER", "disabled")
     ).lower()
-    if resolved_ai_provider not in {"disabled", "fake", "openai"}:
-        raise RuntimeError("REBIRTH_AI_PROVIDER must be disabled, fake, or openai.")
-    resolved_api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+    if resolved_ai_provider not in {"disabled", "fake", "openai", "deepseek"}:
+        raise RuntimeError(
+            "REBIRTH_AI_PROVIDER must be disabled, fake, openai, or deepseek."
+        )
+    resolved_openai_api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+    resolved_deepseek_api_key = deepseek_api_key or os.getenv(
+        "DEEPSEEK_API_KEY"
+    )
     resolved_ai_model = ai_model or os.getenv("REBIRTH_AI_MODEL")
     if resolved_ai_provider == "fake" and resolved_environment not in {
         "development",
@@ -145,10 +155,19 @@ def load_settings(
     }:
         raise RuntimeError("The fake AI provider is development/test only.")
     if resolved_ai_provider == "openai":
-        if not resolved_api_key:
+        if not resolved_openai_api_key:
             raise RuntimeError("OPENAI_API_KEY is required for the OpenAI provider.")
         if not resolved_ai_model:
             raise RuntimeError("REBIRTH_AI_MODEL is required for the OpenAI provider.")
+    if resolved_ai_provider == "deepseek":
+        if not resolved_deepseek_api_key:
+            raise RuntimeError(
+                "DEEPSEEK_API_KEY is required for the DeepSeek provider."
+            )
+        if not resolved_ai_model:
+            raise RuntimeError(
+                "REBIRTH_AI_MODEL is required for the DeepSeek provider."
+            )
 
     ai_timeout_seconds = _positive_float("REBIRTH_AI_TIMEOUT_SECONDS", "90")
     ai_max_output_tokens = _positive_int("REBIRTH_AI_MAX_OUTPUT_TOKENS", "1600")
@@ -160,6 +179,11 @@ def load_settings(
     )
     processing_lease_minutes = _positive_int(
         "REBIRTH_AI_PROCESSING_LEASE_MINUTES", "5"
+    )
+    daily_user_limit = _positive_int("REBIRTH_AI_DAILY_USER_LIMIT", "10")
+    daily_global_limit = _positive_int("REBIRTH_AI_DAILY_GLOBAL_LIMIT", "100")
+    max_concurrent_requests = _positive_int(
+        "REBIRTH_AI_MAX_CONCURRENT_REQUESTS", "5"
     )
     result_retention_seconds = result_retention_hours * 60 * 60
     dedupe_retention_seconds = dedupe_retention_days * 24 * 60 * 60
@@ -223,7 +247,8 @@ def load_settings(
             "5",
         ),
         ai_provider=resolved_ai_provider,
-        openai_api_key=resolved_api_key,
+        openai_api_key=resolved_openai_api_key,
+        deepseek_api_key=resolved_deepseek_api_key,
         ai_model=resolved_ai_model,
         ai_timeout_seconds=ai_timeout_seconds,
         ai_max_output_tokens=ai_max_output_tokens,
@@ -231,6 +256,9 @@ def load_settings(
         ai_result_retention_hours=result_retention_hours,
         ai_dedupe_retention_days=dedupe_retention_days,
         ai_processing_lease_minutes=processing_lease_minutes,
+        ai_daily_user_limit=daily_user_limit,
+        ai_daily_global_limit=daily_global_limit,
+        ai_max_concurrent_requests=max_concurrent_requests,
     )
 
 

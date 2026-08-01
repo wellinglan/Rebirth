@@ -2,7 +2,7 @@
 
 Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, manual canonical Profile sync, and manual Plan sync. It is not a production-safe cloud deployment.
 
-Sprint 8D added a durable, JWT-user-isolated AI request ledger to the explicit Weekly generation gateway. Sprint 9A adds a typed Daily Insight foundation on the same ledger, without a user-facing Daily action or database migration. Provider defaults to `disabled`; `fake` is development/test only; `openai` uses the official Python SDK Responses API. Flutter never receives or stores `OPENAI_API_KEY`.
+Sprint 8D added a durable, JWT-user-isolated AI request ledger to the explicit Weekly generation gateway. Sprint 9A adds a typed Daily Insight foundation on the same ledger. Sprint 14A.1 adds a DeepSeek JSON adapter and database-backed cost safety. Provider defaults to `disabled`; `fake` is development/test only. Flutter never receives or stores Provider API keys.
 
 AI endpoints:
 
@@ -14,6 +14,11 @@ AI endpoints:
 Capabilities expose typed `report_contracts`: Daily uses `daily_insight`, `daily-insight-v1`, one local date, and Today/Health/Journal scopes; Weekly uses `weekly_report`, `weekly-report-v1`, seven local dates, and may also include Growth. Daily rejects Growth and Goals. Selected missing records are `[]`, unselected scopes are absent, and `null` remains distinct from `0`.
 
 OpenAI requires `OPENAI_API_KEY` and `REBIRTH_AI_MODEL`. Calls use strict structured output, `store=false`, no streaming/tools/background mode, and no automatic SDK retry. `store=false` is not an absolute zero-retention promise. The Server verifies canonical SHA-256 and strips sources/identities before Provider forwarding.
+
+DeepSeek requires `DEEPSEEK_API_KEY` and `REBIRTH_AI_MODEL`. Calls use
+non-streaming JSON Output, the same validated report schemas, and no automatic
+retry. User/global UTC-day quotas and active concurrency are reserved before
+the external call.
 
 The `ai_generation_requests` ledger provides at-most-once Provider ownership for one JWT user and request ID. It stores minimal request identity and temporarily stores only validated output for recovery. It never stores the input payload, canonical JSON, sources, Journal text, Provider request body, raw Provider response, token, or API key. Defaults are 24 hours for recoverable output, 30 days for the dedupe tombstone, and 5 minutes for a processing lease. Cleanup is lazy on AI request entry. This is not exactly-once: a crash after Provider return but before the completed update becomes `outcome_unknown` after lease expiry and is never automatically retried.
 
@@ -176,14 +181,18 @@ field, Alembic revision, or PostgreSQL schema changed in Sprint 10B.
 | `AUTH_SESSION_ABSOLUTE_DAYS` | `90` | Absolute session lifetime |
 | `AUTH_LEGACY_TOKEN_MIGRATION_ENABLED` | `false` | Controlled legacy JWT exchange |
 | `AUTH_LEGACY_TOKEN_MIGRATION_DEADLINE` | none | Required UTC cutoff when enabled |
-| `REBIRTH_AI_PROVIDER` | `disabled` | `disabled`, development `fake`, or `openai` |
+| `REBIRTH_AI_PROVIDER` | `disabled` | `disabled`, development `fake`, `deepseek`, or `openai` |
 | `OPENAI_API_KEY` | none | Server-only Provider secret |
-| `REBIRTH_AI_MODEL` | none | Configured OpenAI model ID |
+| `DEEPSEEK_API_KEY` | none | Server-only DeepSeek secret |
+| `REBIRTH_AI_MODEL` | none | Configured Provider model ID |
 | `REBIRTH_AI_TIMEOUT_SECONDS` | `90` | Provider timeout |
 | `REBIRTH_AI_MAX_OUTPUT_TOKENS` | `1600` | Provider output limit |
 | `REBIRTH_AI_RESULT_RETENTION_HOURS` | `24` | Recoverable validated result TTL |
 | `REBIRTH_AI_DEDUPE_RETENTION_DAYS` | `30` | Minimal request tombstone TTL |
 | `REBIRTH_AI_PROCESSING_LEASE_MINUTES` | `5` | Processing ownership lease |
+| `REBIRTH_AI_DAILY_USER_LIMIT` | `10` | Per-user UTC-day Provider reservations |
+| `REBIRTH_AI_DAILY_GLOBAL_LIMIT` | `100` | Deployment UTC-day Provider reservations |
+| `REBIRTH_AI_MAX_CONCURRENT_REQUESTS` | `5` | Active Provider reservations |
 
 Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test requires `REBIRTH_RUN_OPENAI_SMOKE=1`, a key, and a model, and may incur cost. Weekly manual flow is documented in `docs/manual_tests/18_ai_manual_weekly_generation.md`; the developer-only Daily contract is documented in `docs/manual_tests/21_daily_insight_contract.md`.
 

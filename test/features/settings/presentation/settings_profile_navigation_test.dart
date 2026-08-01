@@ -64,7 +64,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     expect(find.text('设置'), findsOneWidget);
-    expect(find.text('当前不进行真实 AI 分析，也不会自动发送数据'), findsOneWidget);
+    expect(find.text('仅在确认生成时发送所选汇总数据，不会自动发送'), findsOneWidget);
     final aiCoachTile = find.byKey(const ValueKey('aiCoachSettingsTile'));
     await tester.ensureVisible(aiCoachTile);
     await tester.pumpAndSettle();

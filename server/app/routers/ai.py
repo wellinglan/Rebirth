@@ -50,7 +50,10 @@ def capabilities(
             "model": AiErrorResponse,
             "description": "Invalid input or unsupported AI contract.",
         },
-        429: {"model": AiErrorResponse, "description": "Provider rate limited."},
+        429: {
+            "model": AiErrorResponse,
+            "description": "Provider or local AI usage limit reached.",
+        },
         502: {
             "model": AiErrorResponse,
             "description": "Provider, request, or response failure.",
@@ -102,7 +105,10 @@ async def generate_weekly(
             "model": AiErrorResponse,
             "description": "Invalid input or unsupported AI contract.",
         },
-        429: {"model": AiErrorResponse, "description": "Provider rate limited."},
+        429: {
+            "model": AiErrorResponse,
+            "description": "Provider or local AI usage limit reached.",
+        },
         502: {
             "model": AiErrorResponse,
             "description": "Provider, request, or response failure.",
@@ -176,11 +182,14 @@ def _error_response(code: str, *, status_code: int) -> JSONResponse:
 
 def _message(code: str) -> str:
     messages = {
+        "ai_disabled": "AI generation is disabled on this server.",
         "gateway_disabled": "AI generation is disabled on this server.",
+        "usage_limit_reached": "The AI usage limit has been reached.",
         "input_hash_mismatch": "The AI input hash does not match the payload.",
         "unsupported_report_type": "The report type is not supported.",
         "unsupported_prompt_version": "The prompt version is not supported.",
         "unsupported_scope": "One or more scopes are not supported.",
+        "provider_auth_failed": "The AI provider could not authenticate.",
         "provider_authentication_failed": "The AI provider could not authenticate.",
         "provider_rate_limited": "The AI provider rate limit was reached.",
         "provider_timeout": "The AI provider request timed out.",

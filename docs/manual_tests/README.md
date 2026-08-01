@@ -22,6 +22,7 @@ become manual PASS.
 | WeChat Identity Provider Foundation (30 PASS / 0 FAIL / 0 NOT EXECUTED) | `43_wechat_identity_foundation.md` |
 | WeChat OAuth Transaction Security (24 PASS / 0 FAIL / 0 NOT EXECUTED) | `44_wechat_oauth_transaction_security.md` |
 | Step-up Reauthentication and OAuth Callback (24 PASS / 0 FAIL / 12 NOT EXECUTED) | `45_step_up_reauthentication.md` |
+| Real AI Provider and Cost Safety (0 PASS / 0 FAIL / 32 NOT EXECUTED) | `46_real_ai_provider_and_cost_safety.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.

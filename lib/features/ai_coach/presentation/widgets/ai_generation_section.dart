@@ -194,12 +194,15 @@ class AiGenerationSection extends ConsumerWidget {
 
   String _failureMessage(AiReportFailureCode? code) => switch (code) {
     AiReportFailureCode.authenticationRequired => '请先登录 Rebirth 云账号。',
+    AiReportFailureCode.aiDisabled => '当前服务器已关闭 AI 生成功能。',
     AiReportFailureCode.gatewayDisabled => '当前服务器未启用 AI 生成。',
+    AiReportFailureCode.usageLimitReached => '今日 AI 使用额度或当前并发额度已用完，请稍后再试。',
     AiReportFailureCode.providerTimeout => '生成请求超时；为避免重复费用，系统不会自动重试。',
     AiReportFailureCode.providerRateLimited => 'AI Provider 当前请求较多，请稍后手动重试。',
     AiReportFailureCode.providerRefused => 'AI Provider 拒绝了本次生成请求。',
     AiReportFailureCode.providerAuthenticationFailed =>
       '服务器暂时无法认证 AI Provider。',
+    AiReportFailureCode.providerAuthFailed => '服务器暂时无法认证 AI Provider。',
     AiReportFailureCode.responseInvalid => 'AI Provider 返回内容未通过结构校验。',
     AiReportFailureCode.outcomeUnknown => '无法确定 Provider 是否产生过结果或费用；不会自动重试。',
     AiReportFailureCode.resultExpired => '服务器临时结果已过保留期，无法恢复正文。',
