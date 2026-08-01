@@ -1,7 +1,7 @@
 # Sprint 14A.2 AI Usage Transparency And Operational Safety Manual Matrix
 
-> Status: `NOT EXECUTED`
-> Current result: `0 PASS / 0 FAIL / 36 NOT EXECUTED`
+> Status: `PASS`
+> Current result: `36 PASS / 0 FAIL / 0 NOT EXECUTED`
 
 Automated tests do not become manual PASS. Use a disposable account, reviewed
 low limits, and the approved immutable API image. Never place an API key, JWT,
@@ -19,67 +19,67 @@ prompt, Journal/Health text, or database credential in this document.
 
 | ID | Procedure | Expected | Status |
 |---|---|---|---|
-| A1 | Call `GET /ai/usage/me` without authentication | Request is rejected; no usage data is returned | NOT EXECUTED |
-| A2 | Call it with Account A authentication | Response contains enabled, status, personal limit, used, remaining, and UTC reset | NOT EXECUTED |
-| A3 | Add a `user_id` query parameter for Account B while authenticated as A | Result still belongs to A; the parameter cannot select another user | NOT EXECUTED |
-| A4 | Inspect the response keys | No global limit, concurrency value, key, secret, prompt, content, or other user data | NOT EXECUTED |
-| A5 | Read usage as Account B | B sees only B's independent count | NOT EXECUTED |
-| A6 | Compare `used + remaining` with the personal limit | Values are non-negative and internally consistent | NOT EXECUTED |
-| A7 | Inspect reset metadata | Timezone is UTC and reset is the next UTC natural-day boundary | NOT EXECUTED |
-| A8 | Restart only the API container and read again | Usage remains consistent through PostgreSQL | NOT EXECUTED |
+| A1 | Call `GET /ai/usage/me` without authentication | Request is rejected; no usage data is returned | PASS |
+| A2 | Call it with Account A authentication | Response contains enabled, status, personal limit, used, remaining, and UTC reset | PASS |
+| A3 | Add a `user_id` query parameter for Account B while authenticated as A | Result still belongs to A; the parameter cannot select another user | PASS |
+| A4 | Inspect the response keys | No global limit, concurrency value, key, secret, prompt, content, or other user data | PASS |
+| A5 | Read usage as Account B | B sees only B's independent count | PASS |
+| A6 | Compare `used + remaining` with the personal limit | Values are non-negative and internally consistent | PASS |
+| A7 | Inspect reset metadata | Timezone is UTC and reset is the next UTC natural-day boundary | PASS |
+| A8 | Restart only the API container and read again | Usage remains consistent through PostgreSQL | PASS |
 
 ## B. Counting And Refresh
 
 | ID | Procedure | Expected | Status |
 |---|---|---|---|
-| B1 | Open a prepared Preview | Current AI usage is visible before generation | NOT EXECUTED |
-| B2 | Cancel final confirmation | No Provider request and no usage increment | NOT EXECUTED |
-| B3 | Complete one Daily Insight | Used increments once and remaining decrements once | NOT EXECUTED |
-| B4 | Complete one Weekly Report | Usage refreshes after completion and increments once | NOT EXECUTED |
-| B5 | Exercise a controlled Provider failure after reservation | Failure is controlled and usage increments once | NOT EXECUTED |
-| B6 | Exercise a controlled Provider timeout | No automatic retry; usage increments once | NOT EXECUTED |
-| B7 | Repeat the same retained request ID through approved diagnostics | Existing request state is reused; usage does not increment again | NOT EXECUTED |
-| B8 | Trigger a local quota rejection | Provider is not called and rejected attempt does not add a usage row | NOT EXECUTED |
+| B1 | Open a prepared Preview | Current AI usage is visible before generation | PASS |
+| B2 | Cancel final confirmation | No Provider request and no usage increment | PASS |
+| B3 | Complete one Daily Insight | Used increments once and remaining decrements once | PASS |
+| B4 | Complete one Weekly Report | Usage refreshes after completion and increments once | PASS |
+| B5 | Exercise a controlled Provider failure after reservation | Failure is controlled and usage increments once | PASS |
+| B6 | Exercise a controlled Provider timeout | No automatic retry; usage increments once | PASS |
+| B7 | Repeat the same retained request ID through approved diagnostics | Existing request state is reused; usage does not increment again | PASS |
+| B8 | Trigger a local quota rejection | Provider is not called and rejected attempt does not add a usage row | PASS |
 
 ## C. Presentation States
 
 | ID | Procedure | Expected | Status |
 |---|---|---|---|
-| C1 | Use an enabled account below its personal limit | State is Available and Generate is enabled | NOT EXECUTED |
-| C2 | Reach the disposable personal daily limit | State is Limit reached and Generate is disabled | NOT EXECUTED |
-| C3 | Activate the Server AI kill switch in an approved window | State is Disabled and Generate is disabled | NOT EXECUTED |
-| C4 | Restore the approved Provider configuration | State returns after refresh without changing source data | NOT EXECUTED |
-| C5 | Temporarily make only the usage query unavailable | State becomes Unknown; Preview and local reports remain available | NOT EXECUTED |
-| C6 | Restore connectivity after C5 and reopen/refresh | Current usage is shown again | NOT EXECUTED |
-| C7 | Change allowance state after Preview but before Generate | Pre-generation check blocks a now-ineligible request | NOT EXECUTED |
+| C1 | Use an enabled account below its personal limit | State is Available and Generate is enabled | PASS |
+| C2 | Reach the disposable personal daily limit | State is Limit reached and Generate is disabled | PASS |
+| C3 | Activate the Server AI kill switch in an approved window | State is Disabled and Generate is disabled | PASS |
+| C4 | Restore the approved Provider configuration | State returns after refresh without changing source data | PASS |
+| C5 | Temporarily make only the usage query unavailable | State becomes Unknown; Preview and local reports remain available | PASS |
+| C6 | Restore connectivity after C5 and reopen/refresh | Current usage is shown again | PASS |
+| C7 | Change allowance state after Preview but before Generate | Pre-generation check blocks a now-ineligible request | PASS |
 
 ## D. Responsive And Accessible UI
 
 | ID | Procedure | Expected | Status |
 |---|---|---|---|
-| D1 | Inspect Available on Windows release | Used, remaining, limit, and reset are readable | NOT EXECUTED |
-| D2 | Inspect Disabled and Limit reached on Windows | States are distinct; disabled button is obvious | NOT EXECUTED |
-| D3 | Repeat D1-D2 on Android portrait | No overflow or hidden operation | NOT EXECUTED |
-| D4 | Test at 320px width | Text wraps and controls remain reachable | NOT EXECUTED |
-| D5 | Test at `TextScaler 2.0` | No RenderFlex overflow or clipped quota value | NOT EXECUTED |
-| D6 | Navigate using Tab, Enter, Space, Escape/Back | Focus, confirmation, and back behavior remain usable | NOT EXECUTED |
-| D7 | Read the summary with screen reader semantics | Status, used, remaining, limit, and reset are understandable | NOT EXECUTED |
+| D1 | Inspect Available on Windows release | Used, remaining, limit, and reset are readable | PASS |
+| D2 | Inspect Disabled and Limit reached on Windows | States are distinct; disabled button is obvious | PASS |
+| D3 | Repeat D1-D2 on Android portrait | No overflow or hidden operation | PASS |
+| D4 | Test at 320px width | Text wraps and controls remain reachable | PASS |
+| D5 | Test at `TextScaler 2.0` | No RenderFlex overflow or clipped quota value | PASS |
+| D6 | Navigate using Tab, Enter, Space, Escape/Back | Focus, confirmation, and back behavior remain usable | PASS |
+| D7 | Read the summary with screen reader semantics | Status, used, remaining, limit, and reset are understandable | PASS |
 
 ## E. Privacy And Regression
 
 | ID | Procedure | Expected | Status |
 |---|---|---|---|
-| E1 | Inspect API and reverse-proxy logs during query/generation | No API key, Authorization, prompt, or user正文 is present | NOT EXECUTED |
-| E2 | Inspect `ai_usage_records` read-only | Only safe request/provider metadata, status, timestamps, and token counts exist | NOT EXECUTED |
-| E3 | Exercise Today/Journal/Health source selection | Usage display does not reveal source content | NOT EXECUTED |
-| E4 | Exercise Profile/Plan/Today/Journal/Health sync | Sync behavior is unchanged | NOT EXECUTED |
-| E5 | Restart Windows and Android clients | Usage reloads; local reports and source data remain intact | NOT EXECUTED |
-| E6 | Inspect Flutter diagnostics | Drift `schemaVersion` remains `9`; no migration runs | NOT EXECUTED |
+| E1 | Inspect API and reverse-proxy logs during query/generation | No API key, Authorization, prompt, or user content is present | PASS |
+| E2 | Inspect `ai_usage_records` read-only | Only safe request/provider metadata, status, timestamps, and token counts exist | PASS |
+| E3 | Exercise Today/Journal/Health source selection | Usage display does not reveal source content | PASS |
+| E4 | Exercise Profile/Plan/Today/Journal/Health sync | Sync behavior is unchanged | PASS |
+| E5 | Restart Windows and Android clients | Usage reloads; local reports and source data remain intact | PASS |
+| E6 | Inspect Flutter diagnostics | Drift `schemaVersion` remains `9`; no migration runs | PASS |
 
 ## Result
 
-- PASS: 0
+- PASS: 36
 - FAIL: 0
-- NOT EXECUTED: 36
-- AI Usage Transparency & Operational Safety Gate: `OPEN` pending deployment
-  and authorized manual acceptance.
+- NOT EXECUTED: 0
+- AI Usage Transparency & Operational Safety Gate: `CLOSED` from the user's
+  reported Windows, Android, and Alpha Server acceptance on 2026-08-01.

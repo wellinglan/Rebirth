@@ -23,7 +23,7 @@ become manual PASS.
 | WeChat OAuth Transaction Security (24 PASS / 0 FAIL / 0 NOT EXECUTED) | `44_wechat_oauth_transaction_security.md` |
 | Step-up Reauthentication and OAuth Callback (24 PASS / 0 FAIL / 12 NOT EXECUTED) | `45_step_up_reauthentication.md` |
 | Real AI Provider and Cost Safety (32 PASS / 0 FAIL / 0 NOT EXECUTED) | `46_real_ai_provider_and_cost_safety.md` |
-| AI Usage Transparency and Operational Safety (0 PASS / 0 FAIL / 36 NOT EXECUTED) | `47_ai_usage_transparency_and_operational_safety.md` |
+| AI Usage Transparency and Operational Safety (36 PASS / 0 FAIL / 0 NOT EXECUTED) | `47_ai_usage_transparency_and_operational_safety.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.
