@@ -14,7 +14,8 @@ prompts, Journal/Health content, or other private data as evidence.
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
 | A1 | Sign in with an account that has never granted AI consent and open Settings. | Settings loads normally. | NOT EXECUTED |
-| A2 | Tap `AI 数据与隐私`. | `AI 数据与隐私` consent settings opens, not AI Coach. | NOT EXECUTED |
+| A2 | Confirm Settings shows separate `AI Coach` and `AI 数据与隐私` entries, then open `AI Coach`. | AI Coach opens and shows the consent gate; the primary AI Coach entry remains reachable. | NOT EXECUTED |
+| A2a | Return to Settings and tap `AI 数据与隐私`. | `AI 数据与隐私` consent settings opens, not AI Coach. | NOT EXECUTED |
 | A3 | Press Back. | Returns to Settings without changing consent. | NOT EXECUTED |
 | A4 | Open AI Coach while consent is disabled and tap `前往 AI 授权设置`. | The same consent settings page opens directly; there is no Settings/AI Coach loop. | NOT EXECUTED |
 | A5 | Press Back without granting. | Returns to AI Coach and generation remains unavailable. | NOT EXECUTED |
@@ -64,6 +65,6 @@ prompts, Journal/Health content, or other private data as evidence.
 - Sprint 14A.4 AI Usage Audit Gate: `OPEN`
 - Sprint 14A.4 AI Operation Safety Gate: `OPEN`
 
-Close the patch gate only after all 24 rows pass. Then resume the remaining
+Close the patch gate only after all 25 rows pass. Then resume the remaining
 manual execution in `49_ai_operations_acceptance.md`; this matrix alone does not
 close either Sprint 14A.4 operations gate.

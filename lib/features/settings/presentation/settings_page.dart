@@ -158,6 +158,13 @@ class _SettingsContent extends StatelessWidget {
               ),
               SettingsTile(
                 key: const ValueKey('aiCoachSettingsTile'),
+                title: 'AI Coach',
+                subtitle: '生成每周回顾并查看本地报告',
+                icon: Icons.auto_awesome_outlined,
+                onTap: () => context.push(RoutePaths.aiCoach),
+              ),
+              SettingsTile(
+                key: const ValueKey('aiDataPrivacySettingsTile'),
                 title: 'AI 数据与隐私',
                 subtitle: '仅在确认生成时发送所选汇总数据，不会自动发送',
                 icon: Icons.shield_outlined,
