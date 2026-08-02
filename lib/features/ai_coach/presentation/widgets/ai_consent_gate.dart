@@ -22,7 +22,7 @@ class AiConsentGate extends StatelessWidget {
               key: const ValueKey('openAiConsentSettingsButton'),
               onPressed: onOpenSettings,
               icon: const Icon(Icons.settings_outlined),
-              label: const Text('前往授权设置'),
+              label: const Text('前往 AI 授权设置'),
             ),
           ],
         ),

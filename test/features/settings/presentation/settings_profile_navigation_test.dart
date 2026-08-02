@@ -65,14 +65,15 @@ void main() {
     expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     expect(find.text('设置'), findsOneWidget);
     expect(find.text('仅在确认生成时发送所选汇总数据，不会自动发送'), findsOneWidget);
-    final aiCoachTile = find.byKey(const ValueKey('aiCoachSettingsTile'));
-    await tester.ensureVisible(aiCoachTile);
+    final aiPrivacyTile = find.byKey(const ValueKey('aiCoachSettingsTile'));
+    await tester.ensureVisible(aiPrivacyTile);
     await tester.pumpAndSettle();
-    await tester.tap(aiCoachTile);
+    await tester.tap(aiPrivacyTile);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('aiCoachPage')), findsOneWidget);
-    expect(find.byKey(const ValueKey('aiConsentGate')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiConsentSettingsPage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiDataPrivacyCard')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiCoachPage')), findsNothing);
     expect(find.byType(NavigationDestination), findsNothing);
     await tester.pageBack();
     await tester.pumpAndSettle();

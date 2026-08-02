@@ -161,7 +161,7 @@ class _SettingsContent extends StatelessWidget {
                 title: 'AI 数据与隐私',
                 subtitle: '仅在确认生成时发送所选汇总数据，不会自动发送',
                 icon: Icons.shield_outlined,
-                onTap: () => context.push(RoutePaths.aiCoach),
+                onTap: () => context.push(RoutePaths.settingsAiConsent),
               ),
             ],
           ),

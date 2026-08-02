@@ -17,6 +17,7 @@ abstract final class RouteNames {
   static const settings = 'settings';
   static const settingsAccount = 'settingsAccount';
   static const settingsAccountSecurity = 'settingsAccountSecurity';
+  static const settingsAiConsent = 'settingsAiConsent';
   static const settingsDeveloperOptions = 'settingsDeveloperOptions';
   static const syncCenter = 'syncCenter';
   static const settingsProfile = 'settingsProfile';
@@ -47,6 +48,7 @@ abstract final class RoutePaths {
   static const settings = '/settings';
   static const settingsAccount = '/settings/account';
   static const settingsAccountSecurity = '/settings/account/security';
+  static const settingsAiConsent = '/settings/ai-data-privacy';
   static const settingsDeveloperOptions = '/settings/developer-options';
   static const syncCenter = '/settings/sync-center';
   static const settingsProfile = '/settings/profile';

@@ -159,7 +159,7 @@ class _PreviewContent extends ConsumerWidget {
   }
 
   Future<void> _openSettings(BuildContext context, WidgetRef ref) async {
-    await context.push(RoutePaths.settings);
+    await context.push(RoutePaths.settingsAiConsent);
     if (!context.mounted) return;
     await ref
         .read(aiRequestPreviewControllerProvider.notifier)

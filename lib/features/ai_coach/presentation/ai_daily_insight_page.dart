@@ -89,7 +89,7 @@ class _DailyContent extends ConsumerWidget {
                 ? _AuthorizedDaily(state: state, requestContext: requestContext)
                 : AiConsentGate(
                     onOpenSettings: () async {
-                      await context.push(RoutePaths.settings);
+                      await context.push(RoutePaths.settingsAiConsent);
                       if (!context.mounted) return;
                       await ref
                           .read(

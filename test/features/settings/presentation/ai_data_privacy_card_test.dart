@@ -7,83 +7,110 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
+import 'package:rebirth/features/settings/presentation/ai_consent_settings_page.dart';
 import 'package:rebirth/features/settings/presentation/widgets/ai_data_privacy_card.dart';
 
 void main() {
-  testWidgets('disabled state exposes consent action and semantics', (tester) async {
+  testWidgets('disabled state exposes consent action and semantics', (
+    tester,
+  ) async {
     await _pumpCard(tester, _FakeConsentRepository());
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('aiDataPrivacyCard')), findsOneWidget);
     expect(find.text('未启用'), findsOneWidget);
-    expect(find.byKey(const ValueKey('enableAiDataSharingButton')), findsOneWidget);
-    expect(find.textContaining('不会向网络发送'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('enableAiDataSharingButton')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('发送到 Rebirth Server'), findsOneWidget);
     expect(find.bySemanticsLabel('AI 数据使用未启用'), findsOneWidget);
     final actionSemantics = tester.widget<Semantics>(
       find.byKey(const ValueKey('aiDataConsentActionSemantics')),
     );
-    expect(actionSemantics.properties.label, '启用 AI 数据使用');
+    expect(actionSemantics.properties.label, '允许 AI 使用个人数据');
     expect(actionSemantics.properties.button, isTrue);
     expect(actionSemantics.properties.enabled, isTrue);
   });
 
-  testWidgets('grant dialog requires explicit confirmation and states boundaries', (
+  testWidgets(
+    'grant dialog requires explicit confirmation and states boundaries',
+    (tester) async {
+      final repository = _FakeConsentRepository();
+      await _pumpCard(tester, repository);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('enableAiDataSharingButton')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('aiDataConsentDialog')), findsOneWidget);
+      expect(find.textContaining('主动生成时准备输入'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('aiDataConsentDialog')),
+          matching: find.textContaining('发送到 Rebirth Server'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('选择具体数据范围'), findsOneWidget);
+      expect(find.textContaining('Journal 文本不会自动包含'), findsOneWidget);
+      expect(find.textContaining('随时撤销'), findsOneWidget);
+      expect(find.textContaining('不会删除已有本地报告'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('cancelAiDataConsentButton')));
+      await tester.pumpAndSettle();
+      expect(repository.grantCalls, 0);
+      expect(find.text('未启用'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('enableAiDataSharingButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('confirmAiDataConsentButton')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.grantCalls, 1);
+      expect(find.text('已启用'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('aiDataConsentTimestamp')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'revoke dialog preserves consent timestamp and returns disabled state',
+    (tester) async {
+      final repository = _FakeConsentRepository(
+        authorization: AiDataAuthorization(enabled: true, consentAt: 1000),
+      );
+      await _pumpCard(tester, repository);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('revokeAiDataSharingButton')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('revokeAiDataConsentDialog')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('已有本地报告会保留'), findsOneWidget);
+      expect(find.textContaining('原始数据不受影响'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey('confirmRevokeAiDataConsentButton')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.revokeCalls, 1);
+      expect(find.text('未启用'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('aiDataConsentTimestamp')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('saving disables action and prevents duplicate grants', (
     tester,
   ) async {
-    final repository = _FakeConsentRepository();
-    await _pumpCard(tester, repository);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const ValueKey('enableAiDataSharingButton')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('aiDataConsentDialog')), findsOneWidget);
-    expect(find.textContaining('不会向网络发送数据'), findsOneWidget);
-    expect(find.textContaining('主动操作时准备输入'), findsOneWidget);
-    expect(find.textContaining('选择具体数据范围'), findsOneWidget);
-    expect(find.textContaining('Journal 文本不会自动包含'), findsOneWidget);
-    expect(find.textContaining('随时撤销'), findsOneWidget);
-    expect(find.textContaining('不会删除已有本地报告'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('cancelAiDataConsentButton')));
-    await tester.pumpAndSettle();
-    expect(repository.grantCalls, 0);
-    expect(find.text('未启用'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('enableAiDataSharingButton')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('confirmAiDataConsentButton')));
-    await tester.pumpAndSettle();
-
-    expect(repository.grantCalls, 1);
-    expect(find.text('已启用'), findsOneWidget);
-    expect(find.byKey(const ValueKey('aiDataConsentTimestamp')), findsOneWidget);
-  });
-
-  testWidgets('revoke dialog preserves consent timestamp and returns disabled state', (
-    tester,
-  ) async {
-    final repository = _FakeConsentRepository(
-      authorization: AiDataAuthorization(enabled: true, consentAt: 1000),
-    );
-    await _pumpCard(tester, repository);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const ValueKey('revokeAiDataSharingButton')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('revokeAiDataConsentDialog')), findsOneWidget);
-    expect(find.textContaining('已有本地报告会保留'), findsOneWidget);
-    expect(find.textContaining('原始数据不受影响'), findsOneWidget);
-    await tester.tap(
-      find.byKey(const ValueKey('confirmRevokeAiDataConsentButton')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(repository.revokeCalls, 1);
-    expect(find.text('未启用'), findsOneWidget);
-    expect(find.byKey(const ValueKey('aiDataConsentTimestamp')), findsOneWidget);
-  });
-
-  testWidgets('saving disables action and prevents duplicate grants', (tester) async {
     final gate = Completer<void>();
     final repository = _FakeConsentRepository(grantGate: gate);
     await _pumpCard(tester, repository);
@@ -113,9 +140,15 @@ void main() {
     await tester.pumpAndSettle();
 
     await _confirmGrant(tester);
-    expect(find.byKey(const ValueKey('aiDataConsentSaveError')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('aiDataConsentSaveError')),
+      findsOneWidget,
+    );
     expect(find.text('未启用'), findsOneWidget);
-    expect(find.byKey(const ValueKey('enableAiDataSharingButton')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('enableAiDataSharingButton')),
+      findsOneWidget,
+    );
 
     repository.grantError = null;
     await _confirmGrant(tester);
@@ -127,7 +160,10 @@ void main() {
     final repository = _FakeConsentRepository(readError: StateError('failed'));
     await _pumpCard(tester, repository);
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('aiDataConsentLoadError')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('aiDataConsentLoadError')),
+      findsOneWidget,
+    );
 
     repository.readError = null;
     await tester.tap(find.byKey(const ValueKey('retryAiDataConsentButton')));
@@ -142,35 +178,70 @@ void main() {
     await _pumpCard(tester, repository);
     await tester.pump();
 
-    expect(find.byKey(const ValueKey('aiDataConsentLoadingState')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('aiDataConsentLoadingState')),
+      findsOneWidget,
+    );
     gate.complete();
     await tester.pumpAndSettle();
     expect(find.text('未启用'), findsOneWidget);
   });
 
-  test('AI privacy Widget has no Drift, database, or implementation import', () {
-    final source = File(
-      'lib/features/settings/presentation/widgets/ai_data_privacy_card.dart',
-    ).readAsStringSync();
-    expect(source, isNot(contains('package:drift')));
-    expect(source, isNot(contains('app_database')));
-    expect(source, isNot(contains('RepositoryImpl')));
-    expect(source, isNot(contains('local_ai_')));
-    expect(source, isNot(contains('DateTime.now')));
+  testWidgets('consent settings page is responsive at supported widths', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    for (final width in [320.0, 360.0, 412.0, 1200.0]) {
+      await tester.binding.setSurfaceSize(Size(width, 1000));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            aiConsentRepositoryProvider.overrideWithValue(
+              _FakeConsentRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: const AiConsentSettingsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('aiConsentSettingsPage')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull, reason: 'width $width');
+    }
   });
+
+  test(
+    'AI privacy Widget has no Drift, database, or implementation import',
+    () {
+      final source = File(
+        'lib/features/settings/presentation/widgets/ai_data_privacy_card.dart',
+      ).readAsStringSync();
+      expect(source, isNot(contains('package:drift')));
+      expect(source, isNot(contains('app_database')));
+      expect(source, isNot(contains('RepositoryImpl')));
+      expect(source, isNot(contains('local_ai_')));
+      expect(source, isNot(contains('DateTime.now')));
+    },
+  );
 }
 
-Future<void> _pumpCard(
-  WidgetTester tester,
-  AiConsentRepository repository,
-) {
+Future<void> _pumpCard(WidgetTester tester, AiConsentRepository repository) {
   return tester.pumpWidget(
     ProviderScope(
       overrides: [aiConsentRepositoryProvider.overrideWithValue(repository)],
       child: const MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(child: AiDataPrivacyCard()),
-        ),
+        home: Scaffold(body: SingleChildScrollView(child: AiDataPrivacyCard())),
       ),
     ),
   );

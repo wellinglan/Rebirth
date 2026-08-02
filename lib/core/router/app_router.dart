@@ -24,6 +24,7 @@ import '../../features/profile/presentation/profile_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/settings/presentation/account_details_page.dart';
 import '../../features/settings/presentation/account_security_page.dart';
+import '../../features/settings/presentation/ai_consent_settings_page.dart';
 import '../../features/settings/presentation/developer_options_page.dart';
 import '../../features/sync/presentation/sync_center_page.dart';
 import '../../features/sync/presentation/sync_conflict_detail_page.dart';
@@ -204,6 +205,11 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
                 builder: (context, state) => const AccountSecurityPage(),
               ),
             ],
+          ),
+          GoRoute(
+            path: 'ai-data-privacy',
+            name: RouteNames.settingsAiConsent,
+            builder: (context, state) => const AiConsentSettingsPage(),
           ),
           if (config.enableDevLogin)
             GoRoute(

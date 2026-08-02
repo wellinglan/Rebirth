@@ -13,6 +13,7 @@ import 'package:rebirth/features/personal_data/application/personal_data_aggrega
 import 'package:rebirth/features/personal_data/application/personal_data_providers.dart';
 import 'package:rebirth/features/profile/presentation/profile_controller.dart';
 import 'package:rebirth/features/settings/presentation/settings_controller.dart';
+import 'package:rebirth/features/settings/presentation/ai_data_consent_controller.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/data/sync_providers.dart';
 import 'package:rebirth/features/sync/data/sync_repository_provider.dart';
@@ -40,6 +41,7 @@ void invalidateAccountScopedProviders(Ref ref) {
   ref.invalidate(healthControllerProvider);
   ref.invalidate(growthControllerProvider);
   ref.invalidate(settingsControllerProvider);
+  ref.invalidate(aiDataConsentControllerProvider);
   ref.invalidate(profileSyncControllerProvider);
   ref.invalidate(planSyncControllerProvider);
   ref.invalidate(todaySyncControllerProvider);

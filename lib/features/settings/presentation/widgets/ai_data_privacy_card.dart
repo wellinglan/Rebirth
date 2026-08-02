@@ -28,9 +28,8 @@ class AiDataPrivacyCard extends ConsumerWidget {
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 key: const ValueKey('retryAiDataConsentButton'),
-                onPressed: () => ref
-                    .read(aiDataConsentControllerProvider.notifier)
-                    .reload(),
+                onPressed: () =>
+                    ref.read(aiDataConsentControllerProvider.notifier).reload(),
                 icon: const Icon(Icons.refresh),
                 label: const Text('重试'),
               ),
@@ -50,9 +49,7 @@ class AiDataPrivacyCard extends ConsumerWidget {
                 Semantics(
                   container: true,
                   excludeSemantics: true,
-                  label: authorization.enabled
-                      ? 'AI 数据使用已启用'
-                      : 'AI 数据使用未启用',
+                  label: authorization.enabled ? 'AI 数据使用已启用' : 'AI 数据使用未启用',
                   child: Row(
                     children: [
                       Icon(
@@ -72,9 +69,7 @@ class AiDataPrivacyCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  '当前版本只在本地、由你主动操作时准备所选数据；不会向网络发送，也不会自动生成报告。',
-                ),
+                const Text('只有你确认生成后，才会将所选汇总数据发送到 Rebirth Server；不会自动生成或后台发送。'),
                 if (authorization.consentAt case final consentAt?) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -87,7 +82,9 @@ class AiDataPrivacyCard extends ConsumerWidget {
                   Text(
                     message,
                     key: const ValueKey('aiDataConsentSaveError'),
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -96,9 +93,7 @@ class AiDataPrivacyCard extends ConsumerWidget {
                   button: true,
                   enabled: !state.isSaving,
                   excludeSemantics: true,
-                  label: authorization.enabled
-                      ? '撤销 AI 数据使用授权'
-                      : '启用 AI 数据使用',
+                  label: authorization.enabled ? '撤销 AI 授权' : '允许 AI 使用个人数据',
                   child: authorization.enabled
                       ? OutlinedButton.icon(
                           key: const ValueKey('revokeAiDataSharingButton'),
@@ -108,7 +103,7 @@ class AiDataPrivacyCard extends ConsumerWidget {
                           icon: state.isSaving
                               ? const _SavingIndicator()
                               : const Icon(Icons.block_outlined),
-                          label: Text(state.isSaving ? '保存中...' : '撤销授权'),
+                          label: Text(state.isSaving ? '保存中...' : '撤销 AI 授权'),
                         )
                       : FilledButton.icon(
                           key: const ValueKey('enableAiDataSharingButton'),
@@ -118,7 +113,9 @@ class AiDataPrivacyCard extends ConsumerWidget {
                           icon: state.isSaving
                               ? const _SavingIndicator()
                               : const Icon(Icons.lock_open_outlined),
-                          label: Text(state.isSaving ? '保存中...' : '启用 AI 数据使用'),
+                          label: Text(
+                            state.isSaving ? '保存中...' : '允许 AI 使用个人数据',
+                          ),
                         ),
                 ),
               ],
@@ -134,10 +131,11 @@ class AiDataPrivacyCard extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         key: const ValueKey('aiDataConsentDialog'),
-        title: const Text('启用 AI 数据使用？'),
+        title: const Text('允许 AI 使用个人数据？'),
         content: const Text(
-          '当前版本不会向网络发送数据。启用后，只允许 App 在你主动操作时准备输入；'
-          '每次生成仍需选择具体数据范围，Journal 文本不会自动包含。你可以随时撤销，'
+          '启用后，App 只会在你主动生成时准备输入，并将你确认的汇总数据发送到 Rebirth Server；'
+          '每次生成仍需选择具体数据范围，Journal 文本不会自动包含。不会自动生成或后台发送。'
+          '你可以随时撤销，'
           '撤销不会删除已有本地报告或 Today、Journal、Health、Plan 等原始记录。',
         ),
         actions: [

@@ -17,6 +17,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
+import 'package:rebirth/features/settings/presentation/ai_consent_settings_page.dart';
 
 import '../ai_coach_test_support.dart';
 
@@ -41,6 +42,102 @@ void main() {
     expect(find.textContaining('只有最终确认后'), findsOneWidget);
     expect(assembler.buildCalls, 0);
     expect(consent.grantCalls, 0);
+  });
+
+  testWidgets(
+    'consent gate opens consent settings and grant unlocks AI Coach',
+    (tester) async {
+      final consent = FakeAiConsentRepository(
+        authorization: const AiDataAuthorization.disabled(),
+      );
+      final router = GoRouter(
+        initialLocation: RoutePaths.aiCoach,
+        routes: [
+          GoRoute(
+            path: RoutePaths.aiCoach,
+            builder: (context, state) => const AiCoachPage(),
+          ),
+          GoRoute(
+            path: RoutePaths.settingsAiConsent,
+            builder: (context, state) => const AiConsentSettingsPage(),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await _pumpAiCoach(
+        tester,
+        consent: consent,
+        assembler: FakeAiCoachInputAssembler(),
+        reports: FakeAiReportRepository(),
+        router: router,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('openAiConsentSettingsButton')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('aiConsentSettingsPage')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('settingsPage')), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('enableAiDataSharingButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('confirmAiDataConsentButton')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('已启用'), findsOneWidget);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('aiConsentGate')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('buildAiPreviewButton')),
+        findsOneWidget,
+      );
+      expect(consent.grantCalls, 1);
+    },
+  );
+
+  testWidgets('revoking consent restores the AI Coach consent gate', (
+    tester,
+  ) async {
+    final consent = _enabledConsent();
+    final router = GoRouter(
+      initialLocation: RoutePaths.settingsAiConsent,
+      routes: [
+        GoRoute(
+          path: RoutePaths.aiCoach,
+          builder: (context, state) => const AiCoachPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.settingsAiConsent,
+          builder: (context, state) => const AiConsentSettingsPage(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await _pumpAiCoach(
+      tester,
+      consent: consent,
+      assembler: FakeAiCoachInputAssembler(),
+      reports: FakeAiReportRepository(),
+      router: router,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('revokeAiDataSharingButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('confirmRevokeAiDataConsentButton')),
+    );
+    await tester.pumpAndSettle();
+    router.go(RoutePaths.aiCoach);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('aiConsentGate')), findsOneWidget);
+    expect(consent.revokeCalls, 1);
   });
 
   testWidgets('authorized page starts empty with accessible unchecked scopes', (
