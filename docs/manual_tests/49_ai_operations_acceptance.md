@@ -1,6 +1,6 @@
 # Sprint 14A.4 AI Operations Acceptance And Incident Drill
 
-Status: `NOT EXECUTED`
+Status: `IN PROGRESS`
 
 Baseline: `5932964873e7ae1f4495b431929d65429f05f29b`
 
@@ -22,14 +22,14 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| A1 | Record current API image tag/digest and PostgreSQL container ID. | Safe rollback evidence exists; no secret is recorded. | NOT EXECUTED |
-| A2 | Back up the restricted environment file without displaying it. | A protected rollback copy exists. | NOT EXECUTED |
-| A3 | Pull the target image and verify its digest against the published GHCR result. | Exact target image is locally available. | NOT EXECUTED |
-| A4 | Update only the API image reference and recreate only `api`. | PostgreSQL is not restarted and its container ID is unchanged. | NOT EXECUTED |
-| A5 | Run `docker compose ... ps` and inspect API logs. | API is running/healthy with no startup traceback or secret. | NOT EXECUTED |
-| A6 | Call `/health`. | HTTP 200, API Version 1, Sync Protocol 2. | NOT EXECUTED |
-| A7 | Run Alembic current/head inspection only. | Existing database is current; no undocumented migration runs. | NOT EXECUTED |
-| A8 | Run `ledger-check --days 7`. | Exit 0 and `status=ok` before the drill. | NOT EXECUTED |
+| A1 | Record current API image tag/digest and PostgreSQL container ID. | Safe rollback evidence exists; no secret is recorded. | PASS |
+| A2 | Back up the restricted environment file without displaying it. | A protected rollback copy exists. | PASS |
+| A3 | Pull the target image and verify its digest against the published GHCR result. | Exact target image is locally available. | PASS |
+| A4 | Update only the API image reference and recreate only `api`. | PostgreSQL is not restarted and its container ID is unchanged. | PASS |
+| A5 | Run `docker compose ... ps` and inspect API logs. | API is running/healthy with no startup traceback or secret. | PASS |
+| A6 | Call `/health`. | HTTP 200, API Version 1, Sync Protocol 2. | PASS |
+| A7 | Run Alembic current/head inspection only. | Existing database is current; no undocumented migration runs. | PASS |
+| A8 | Run `ledger-check --days 7`. | Exit 0 and `status=ok` before the drill. | PASS |
 
 ## B. Real Provider And Usage
 
@@ -142,9 +142,9 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 ## Final Result
 
-- PASS: `0`
+- PASS: `8`
 - FAIL: `0`
-- NOT EXECUTED: `72`
+- NOT EXECUTED: `64`
 - AI Usage Audit Gate: `OPEN`
 - AI Operation Safety Gate: `OPEN`
 
