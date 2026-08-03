@@ -1,14 +1,15 @@
 # Sprint 14A.4 AI Operations Acceptance And Incident Drill
 
-Status: `IN PROGRESS`
+Status: `COMPLETE`
 
 Baseline: `5932964873e7ae1f4495b431929d65429f05f29b`
 
 Resumed: `2026-08-03`
 
-Progress: the user explicitly resumed Sprint 14A.4.2 from batch 2. The 23
-observed PASS results remain valid; the other 49 rows remain `NOT EXECUTED` and
-both release gates stay open until all applicable rows pass.
+Accepted commit: `764f52e12cada3e81703d3eacbe641e85d952223`
+
+Progress: all 72 applicable rows passed. The AI Usage Audit Gate and AI
+Operation Safety Gate are closed for the authorized Alpha environment.
 
 Batch 2 evidence (`2026-08-03`): 38 focused Server incident/ledger tests, 57
 focused Flutter recovery/responsive tests, and the full 267-test Server SQLite
@@ -22,6 +23,27 @@ failure now exposes a confirmed manual retry, and pending recovery opens the
 refreshed local-report tab without starting another generation. The CLI fixture
 executes `monitor` and `ledger-check` against an isolated SQLite incident ledger;
 it does not alter Alpha data, firewall, DNS, Provider credentials, or limits.
+
+Batch 4 evidence (`2026-08-03`): the user completed the kill-switch, disabled
+UI, non-AI regression, restore, and post-restore generation drill with all
+presented checks passing.
+
+Final evidence (`2026-08-03`): the real Provider, quota, account-isolation,
+privacy, schema, version, and recovery checks passed. A Growth-only weekly
+request exposed a client preflight defect because derived Growth data correctly
+has no source rows. Commit `764f52e` permits that supported derived scope while
+retaining the empty non-Growth guard; focused tests, the 1,138-test Flutter
+suite, Windows release build, and Windows real-Provider retest passed. A real
+invalid DeepSeek credential then produced one `provider_auth_failed` request,
+one failed generation/usage pair, no retry, and a controlled client message.
+The protected valid credential was restored by recreating only API; PostgreSQL
+and the API image stayed unchanged, and a new request completed. Developer
+entry created separate CloudUsers for the failure and recovery requests, so
+their displayed quotas remained isolated as designed. Final ledger state was
+9 completed plus 1 failed with zero anomalies. The intentional failure raised
+the expected rolling-window Provider failure warning without a backlog.
+Quality run `30809996652` passed Flutter, Android Debug, Server SQLite,
+PostgreSQL, Alembic, and multi-worker validation.
 
 Target API image:
 `ghcr.io/wellinglan/rebirth-api:5932964873e7ae1f4495b431929d65429f05f29b`
@@ -70,11 +92,11 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
 | C1 | Confirm the automated DeepSeek incident test covers HTTP 401/403. | `provider_auth_failed`, one Provider call, failed ledgers, cleared leases, and idempotent replay pass. | PASS |
-| C2 | In the approved Alpha window, replace only the Provider key with a known-invalid test value using a non-echoing editor, then recreate only API. | API remains healthy; PostgreSQL is unchanged. | NOT EXECUTED |
-| C3 | Attempt one approved generation. | Stable `provider_auth_failed`; no Provider body or Secret is shown. | NOT EXECUTED |
-| C4 | Inspect safe logs and usage audit. | One failed reservation is counted; no prompt, content, credential, or unbounded retry appears. | NOT EXECUTED |
-| C5 | Restore the protected valid configuration and recreate only API. | Provider readiness and one low-cost generation recover. | NOT EXECUTED |
-| C6 | Run `ledger-check --days 7`. | Exit 0 and no lease or status anomaly. | NOT EXECUTED |
+| C2 | In the approved Alpha window, replace only the Provider key with a known-invalid test value using a non-echoing editor, then recreate only API. | API remains healthy; PostgreSQL is unchanged. | PASS |
+| C3 | Attempt one approved generation. | Stable `provider_auth_failed`; no Provider body or Secret is shown. | PASS |
+| C4 | Inspect safe logs and usage audit. | One failed reservation is counted; no prompt, content, credential, or unbounded retry appears. | PASS |
+| C5 | Restore the protected valid configuration and recreate only API. | Provider readiness and one low-cost generation recover. | PASS |
+| C6 | Run `ledger-check --days 7`. | Exit 0 and no lease or status anomaly. | PASS |
 
 ## D. Timeout And Pending Recovery Semantics
 
@@ -101,14 +123,14 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| F1 | Record current Provider/model and protected configuration backup. | Rollback values are available without displaying credentials. | NOT EXECUTED |
-| F2 | Set only `REBIRTH_AI_PROVIDER=disabled` and recreate only API. | API is healthy; PostgreSQL is unchanged. | NOT EXECUTED |
-| F3 | Run `config-check`. | `provider=disabled`, `enabled=false`, `provider_ready=true`. | NOT EXECUTED |
-| F4 | Attempt Daily and Weekly generation. | Both return `ai_disabled`; no generation row, usage row, or external Provider call is created. | NOT EXECUTED |
-| F5 | Use non-AI app features on both clients. | They remain usable and sync behavior is unchanged. | NOT EXECUTED |
-| F6 | Restore the reviewed real Provider/model/config and recreate only API. | `/health` and `config-check` pass. | NOT EXECUTED |
-| F7 | Generate one approved low-cost request. | Real Provider works again; exactly one new usage record appears. | NOT EXECUTED |
-| F8 | Run `monitor` and `ledger-check`. | No failed/unknown request was automatically retried; consistency is `ok`. | NOT EXECUTED |
+| F1 | Record current Provider/model and protected configuration backup. | Rollback values are available without displaying credentials. | PASS |
+| F2 | Set only `REBIRTH_AI_PROVIDER=disabled` and recreate only API. | API is healthy; PostgreSQL is unchanged. | PASS |
+| F3 | Run `config-check`. | `provider=disabled`, `enabled=false`, `provider_ready=true`. | PASS |
+| F4 | Attempt Daily and Weekly generation. | Both return `ai_disabled`; no generation row, usage row, or external Provider call is created. | PASS |
+| F5 | Use non-AI app features on both clients. | They remain usable and sync behavior is unchanged. | PASS |
+| F6 | Restore the reviewed real Provider/model/config and recreate only API. | `/health` and `config-check` pass. | PASS |
+| F7 | Generate one approved low-cost request. | Real Provider works again; exactly one new usage record appears. | PASS |
+| F8 | Run `monitor` and `ledger-check`. | No failed/unknown request was automatically retried; consistency is `ok`. | PASS |
 
 ## G. Ledger And Cost Protection
 
@@ -116,23 +138,23 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 |---|---|---|---|
 | G1 | Confirm automated successful DeepSeek replay coverage. | One request ID creates one generation, one usage record, and one Provider call with matching token totals. | PASS |
 | G2 | Confirm automated duplicate request and PostgreSQL multi-process tests. | One claim owner and one charge across workers. | PASS |
-| G3 | Run `audit --days 7`, then `ledger-check --days 7`. | Aggregate counts are credible and consistency is `ok`. | NOT EXECUTED |
+| G3 | Run `audit --days 7`, then `ledger-check --days 7`. | Aggregate counts are credible and consistency is `ok`. | PASS |
 | G4 | Run the checked inconsistency fixture only; never corrupt Alpha data. | Diagnostic reports anomalies, exits 2, and performs no repair. | PASS |
-| G5 | Reach a safe per-user test limit in an approved account. | Excess request returns `usage_limit_reached` before Provider call and adds no reservation. | NOT EXECUTED |
-| G6 | Verify another authorized test user below its limit. | Per-user isolation remains effective. | NOT EXECUTED |
+| G5 | Reach a safe per-user test limit in an approved account. | Excess request returns `usage_limit_reached` before Provider call and adds no reservation. | PASS |
+| G6 | Verify another authorized test user below its limit. | Per-user isolation remains effective. | PASS |
 | G7 | Use automated budget warning/critical fixtures or an isolated reviewed threshold. | Warning and critical events contain only aggregate metric/threshold data. | PASS |
-| G8 | Verify non-AI and sync data before and after the limit drill. | No business row or sync state changes. | NOT EXECUTED |
+| G8 | Verify non-AI and sync data before and after the limit drill. | No business row or sync state changes. | PASS |
 
 ## H. Privacy And Secret Rotation Walkthrough
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| H1 | Inspect API logs for every drill by safe event name. | No API key, JWT, Authorization/Refresh token, prompt, Journal/Health text, or report body. | NOT EXECUTED |
-| H2 | Inspect controlled API error bodies. | Only stable codes/messages; no Provider body, Secret, stack trace, or user content. | NOT EXECUTED |
-| H3 | Inspect `ai_usage_records` schema and representative rows without exporting them. | Only accounting metadata/IDs/timestamps/leases/tokens/status; no source or generated content. | NOT EXECUTED |
-| H4 | Inspect generation ledger boundaries. | Request identity and temporary result metadata follow existing retention; no input contract or source content is stored. | NOT EXECUTED |
-| H5 | Walk through Runbook Section 11 without exposing a real credential. | Two-phase replacement, verification, old-key revocation, and rollback are executable. | NOT EXECUTED |
-| H6 | Confirm repository and evidence files contain no secrets. | No PAT, Provider key, JWT Secret, database password, or real user content is committed. | NOT EXECUTED |
+| H1 | Inspect API logs for every drill by safe event name. | No API key, JWT, Authorization/Refresh token, prompt, Journal/Health text, or report body. | PASS |
+| H2 | Inspect controlled API error bodies. | Only stable codes/messages; no Provider body, Secret, stack trace, or user content. | PASS |
+| H3 | Inspect `ai_usage_records` schema and representative rows without exporting them. | Only accounting metadata/IDs/timestamps/leases/tokens/status; no source or generated content. | PASS |
+| H4 | Inspect generation ledger boundaries. | Request identity and temporary result metadata follow existing retention; no input contract or source content is stored. | PASS |
+| H5 | Walk through Runbook Section 11 without exposing a real credential. | Two-phase replacement, verification, old-key revocation, and rollback are executable. | PASS |
+| H6 | Confirm repository and evidence files contain no secrets. | No PAT, Provider key, JWT Secret, database password, or real user content is committed. | PASS |
 
 ## I. Flutter Acceptance
 
@@ -142,8 +164,8 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 | I2 | Android: load AI page with real Provider available. | Same state is readable and usable. | PASS |
 | I3 | Observe generation in progress and tap repeatedly. | Loading is visible and duplicate submission is suppressed. | PASS |
 | I4 | Observe an approved controlled failure and retry. | Failure is readable; current input remains; explicit retry works. | PASS |
-| I5 | Observe disabled state during F2-F4. | AI unavailable state is explicit and generate action is disabled. | NOT EXECUTED |
-| I6 | Observe usage limit state during G5. | Remaining count is zero and generation is blocked. | NOT EXECUTED |
+| I5 | Observe disabled state during F2-F4. | AI unavailable state is explicit and generate action is disabled. | PASS |
+| I6 | Observe usage limit state during G5. | Remaining count is zero and generation is blocked. | PASS |
 | I7 | Test 320 px width. | No overflow or hidden operation. | PASS |
 | I8 | Test maximum supported text scaling, including 2.0. | Text, status, and actions remain readable without overflow. | PASS |
 | I9 | Android Back during normal, loading, failure, and result states. | Navigation is safe and no duplicate request starts. | PASS |
@@ -153,20 +175,19 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| J1 | Verify `/health` after all drills. | API Version remains 1 and Sync Protocol remains 2. | NOT EXECUTED |
-| J2 | Verify Flutter database source and migration history. | `schemaVersion` remains 9; no Sprint 14A.4 Drift migration. | NOT EXECUTED |
-| J3 | Compare Alembic heads and migration files with baseline. | No Sprint 14A.4 database migration or business-table change. | NOT EXECUTED |
-| J4 | Review Profile/Plan/Today/Journal/Health sync behavior. | No sync scope, payload, or algorithm changed. | NOT EXECUTED |
-| J5 | Confirm no new AI surface exists. | No chat, agent, tool calling, background generation, reminder, or AI report sync. | NOT EXECUTED |
+| J1 | Verify `/health` after all drills. | API Version remains 1 and Sync Protocol remains 2. | PASS |
+| J2 | Verify Flutter database source and migration history. | `schemaVersion` remains 9; no Sprint 14A.4 Drift migration. | PASS |
+| J3 | Compare Alembic heads and migration files with baseline. | No Sprint 14A.4 database migration or business-table change. | PASS |
+| J4 | Review Profile/Plan/Today/Journal/Health sync behavior. | No sync scope, payload, or algorithm changed. | PASS |
+| J5 | Confirm no new AI surface exists. | No chat, agent, tool calling, background generation, reminder, or AI report sync. | PASS |
 
 ## Final Result
 
-- PASS: `42`
+- PASS: `72`
 - FAIL: `0`
-- NOT EXECUTED: `30`
-- AI Usage Audit Gate: `OPEN`
-- AI Operation Safety Gate: `OPEN`
+- NOT EXECUTED: `0`
+- AI Usage Audit Gate: `CLOSED`
+- AI Operation Safety Gate: `CLOSED`
 
-Both gates remain `OPEN`. This matrix must be explicitly resumed and every
-applicable row recorded as PASS before either gate closes. Suspension is neither
-a failure nor release approval.
+Both gates are `CLOSED` for this authorized Alpha acceptance scope. This does
+not declare the AI product complete or authorize a production rollout.
