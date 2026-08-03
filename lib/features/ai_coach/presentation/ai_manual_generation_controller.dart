@@ -54,7 +54,7 @@ class AiManualGenerationController
     final gateway = ref.read(aiGenerationGatewayProvider);
     final reports = ref.read(aiReportRepositoryProvider);
     try {
-      if (!_bundleMatchesContext(bundle) || bundle.sources.isEmpty) {
+      if (!_bundleMatchesContext(bundle) || !_hasGeneratableData(bundle)) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
       }
       final preview = ref
@@ -139,7 +139,7 @@ class AiManualGenerationController
     String? pendingId;
     AiGenerationCapabilities? activeCapabilities;
     try {
-      if (!_bundleMatchesContext(bundle) || bundle.sources.isEmpty) {
+      if (!_bundleMatchesContext(bundle) || !_hasGeneratableData(bundle)) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
       }
       final preview = ref
@@ -488,6 +488,11 @@ class AiManualGenerationController
     if (!context.isDaily) return true;
     return bundle.periodStartDate == context.targetDate &&
         bundle.periodEndDate == context.targetDate;
+  }
+
+  bool _hasGeneratableData(AiCoachInputBundle bundle) {
+    return bundle.sources.isNotEmpty ||
+        bundle.selection.scopes.contains(AiDataScope.growthSummary);
   }
 
   Future<AiRemoteRequestResult> _generate({

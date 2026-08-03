@@ -670,7 +670,10 @@ void main() {
       );
     final reports = FakeAiReportRepository();
     final assembler = FakeAiCoachInputAssembler(
-      bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
+      bundle: buildAiBundle(
+        scopes: {AiDataScope.growthSummary},
+        sourceCount: 0,
+      ),
     );
     await _pumpAiCoach(
       tester,
@@ -683,6 +686,7 @@ void main() {
 
     await _submitWeeklyGeneration(tester);
 
+    expect(assembler.bundle.sources, isEmpty);
     expect(find.byKey(const ValueKey('aiRequestPreview')), findsOneWidget);
     expect(find.textContaining('生成请求超时'), findsOneWidget);
     expect(find.textContaining('不会自动重试'), findsOneWidget);
