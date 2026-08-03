@@ -1,8 +1,14 @@
 # Sprint 14A.4 AI Operations Acceptance And Incident Drill
 
-Status: `IN PROGRESS`
+Status: `SUSPENDED`
 
 Baseline: `5932964873e7ae1f4495b431929d65429f05f29b`
+
+Suspended: `2026-08-03`
+
+Reason: the user explicitly suspended all remaining Sprint 14A.4.2 acceptance
+batches. The 23 observed PASS results remain valid; the other 49 rows remain
+`NOT EXECUTED` and are not treated as failures. Both release gates stay open.
 
 Target API image:
 `ghcr.io/wellinglan/rebirth-api:5932964873e7ae1f4495b431929d65429f05f29b`
@@ -148,5 +154,6 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 - AI Usage Audit Gate: `OPEN`
 - AI Operation Safety Gate: `OPEN`
 
-Both gates remain `OPEN` until every applicable row is recorded as PASS. A
-failure must be documented and fixed before either gate closes.
+Both gates remain `OPEN`. This matrix must be explicitly resumed and every
+applicable row recorded as PASS before either gate closes. Suspension is neither
+a failure nor release approval.
