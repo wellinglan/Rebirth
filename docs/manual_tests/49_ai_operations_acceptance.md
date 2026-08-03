@@ -35,16 +35,16 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| B1 | Run `config-check` in the API container. | Real Provider is enabled and ready; model, timeout, token ceiling, and limits are correct. | NOT EXECUTED |
-| B2 | Review `config-check` output. | No key, Secret, credential, Authorization value, or database URL appears. | NOT EXECUTED |
-| B3 | Record the authenticated user's safe `/ai/usage/me` counts. | Enabled, daily limit, used, remaining, UTC reset time are readable. | NOT EXECUTED |
-| B4 | Generate one approved Daily Insight on Windows or Android. | Request completes through the real Provider. | NOT EXECUTED |
-| B5 | Inspect the Daily result metadata. | Provider and model match `config-check`; no raw request is exposed. | NOT EXECUTED |
-| B6 | Generate one approved Weekly Report. | Request completes through the real Provider. | NOT EXECUTED |
-| B7 | Inspect the Weekly result metadata. | Provider and model match `config-check`. | NOT EXECUTED |
-| B8 | Read `/ai/usage/me` again. | Used increases exactly twice and remaining decreases exactly twice. | NOT EXECUTED |
-| B9 | Run `audit --days 1`. | Daily and Weekly each add one successful aggregate request with non-negative token totals. | NOT EXECUTED |
-| B10 | Reopen both results, restart the client, and reopen again. | Local result recovery works without a new Provider call or extra usage. | NOT EXECUTED |
+| B1 | Run `config-check` in the API container. | Real Provider is enabled and ready; model, timeout, token ceiling, and limits are correct. | PASS |
+| B2 | Review `config-check` output. | No key, Secret, credential, Authorization value, or database URL appears. | PASS |
+| B3 | Record the authenticated user's safe `/ai/usage/me` counts. | Enabled, daily limit, used, remaining, UTC reset time are readable. | PASS |
+| B4 | Generate one approved Daily Insight on Windows or Android. | Request completes through the real Provider. | PASS |
+| B5 | Inspect the Daily result metadata. | Provider and model match `config-check`; no raw request is exposed. | PASS |
+| B6 | Generate one approved Weekly Report. | Request completes through the real Provider. | PASS |
+| B7 | Inspect the Weekly result metadata. | Provider and model match `config-check`. | PASS |
+| B8 | Read `/ai/usage/me` again. | Used increases exactly twice and remaining decreases exactly twice. | PASS |
+| B9 | Run `audit --days 1`. | Daily and Weekly each add one successful aggregate request with non-negative token totals. | PASS |
+| B10 | Reopen both results, restart the client, and reopen again. | Local result recovery works without a new Provider call or extra usage. | PASS |
 
 ## C. Provider Authentication Failure
 
@@ -119,16 +119,16 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| I1 | Windows: load AI page with real Provider available. | Usage status and generate controls load correctly. | NOT EXECUTED |
-| I2 | Android: load AI page with real Provider available. | Same state is readable and usable. | NOT EXECUTED |
-| I3 | Observe generation in progress and tap repeatedly. | Loading is visible and duplicate submission is suppressed. | NOT EXECUTED |
+| I1 | Windows: load AI page with real Provider available. | Usage status and generate controls load correctly. | PASS |
+| I2 | Android: load AI page with real Provider available. | Same state is readable and usable. | PASS |
+| I3 | Observe generation in progress and tap repeatedly. | Loading is visible and duplicate submission is suppressed. | PASS |
 | I4 | Observe an approved controlled failure and retry. | Failure is readable; current input remains; explicit retry works. | NOT EXECUTED |
 | I5 | Observe disabled state during F2-F4. | AI unavailable state is explicit and generate action is disabled. | NOT EXECUTED |
 | I6 | Observe usage limit state during G5. | Remaining count is zero and generation is blocked. | NOT EXECUTED |
 | I7 | Test 320 px width. | No overflow or hidden operation. | NOT EXECUTED |
 | I8 | Test maximum supported text scaling, including 2.0. | Text, status, and actions remain readable without overflow. | NOT EXECUTED |
-| I9 | Android Back during normal, loading, failure, and result states. | Navigation is safe and no duplicate request starts. | NOT EXECUTED |
-| I10 | Windows keyboard navigation with Tab, Enter, and Space. | Focus and activation remain predictable. | NOT EXECUTED |
+| I9 | Android Back during normal, loading, failure, and result states. | Navigation is safe and no duplicate request starts. | PASS |
+| I10 | Windows keyboard navigation with Tab, Enter, and Space. | Focus and activation remain predictable. | PASS |
 
 ## J. Version And Scope Invariants
 
@@ -142,9 +142,9 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 ## Final Result
 
-- PASS: `8`
+- PASS: `23`
 - FAIL: `0`
-- NOT EXECUTED: `64`
+- NOT EXECUTED: `49`
 - AI Usage Audit Gate: `OPEN`
 - AI Operation Safety Gate: `OPEN`
 
