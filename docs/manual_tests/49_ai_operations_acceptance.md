@@ -1,14 +1,19 @@
 # Sprint 14A.4 AI Operations Acceptance And Incident Drill
 
-Status: `SUSPENDED`
+Status: `IN PROGRESS`
 
 Baseline: `5932964873e7ae1f4495b431929d65429f05f29b`
 
-Suspended: `2026-08-03`
+Resumed: `2026-08-03`
 
-Reason: the user explicitly suspended all remaining Sprint 14A.4.2 acceptance
-batches. The 23 observed PASS results remain valid; the other 49 rows remain
-`NOT EXECUTED` and are not treated as failures. Both release gates stay open.
+Progress: the user explicitly resumed Sprint 14A.4.2 from batch 2. The 23
+observed PASS results remain valid; the other 49 rows remain `NOT EXECUTED` and
+both release gates stay open until all applicable rows pass.
+
+Batch 2 evidence (`2026-08-03`): 38 focused Server incident/ledger tests, 57
+focused Flutter recovery/responsive tests, and the full 267-test Server SQLite
+regression passed. PostgreSQL multi-process and multi-worker behavior is also
+required to pass in the Quality workflow for the recording commit.
 
 Target API image:
 `ghcr.io/wellinglan/rebirth-api:5932964873e7ae1f4495b431929d65429f05f29b`
@@ -56,7 +61,7 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| C1 | Confirm the automated DeepSeek incident test covers HTTP 401/403. | `provider_auth_failed`, one Provider call, failed ledgers, cleared leases, and idempotent replay pass. | NOT EXECUTED |
+| C1 | Confirm the automated DeepSeek incident test covers HTTP 401/403. | `provider_auth_failed`, one Provider call, failed ledgers, cleared leases, and idempotent replay pass. | PASS |
 | C2 | In the approved Alpha window, replace only the Provider key with a known-invalid test value using a non-echoing editor, then recreate only API. | API remains healthy; PostgreSQL is unchanged. | NOT EXECUTED |
 | C3 | Attempt one approved generation. | Stable `provider_auth_failed`; no Provider body or Secret is shown. | NOT EXECUTED |
 | C4 | Inspect safe logs and usage audit. | One failed reservation is counted; no prompt, content, credential, or unbounded retry appears. | NOT EXECUTED |
@@ -67,9 +72,9 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| D1 | Run the automated Provider timeout incident test. | `provider_timeout` is terminal failed, both leases clear, and identical request ID does not call Provider twice. | NOT EXECUTED |
-| D2 | Run the automated client-network uncertainty test. | Local report remains pending with its binding and no automatic POST retry. | NOT EXECUTED |
-| D3 | Run the automated stale generation lease test. | Stale processing changes once to `outcome_unknown`, including multi-worker coverage. | NOT EXECUTED |
+| D1 | Run the automated Provider timeout incident test. | `provider_timeout` is terminal failed, both leases clear, and identical request ID does not call Provider twice. | PASS |
+| D2 | Run the automated client-network uncertainty test. | Local report remains pending with its binding and no automatic POST retry. | PASS |
+| D3 | Run the automated stale generation lease test. | Stale processing changes once to `outcome_unknown`, including multi-worker coverage. | PASS |
 | D4 | Confirm the UI message for Provider timeout. | A controlled failure is shown and explicit retry is available. | NOT EXECUTED |
 | D5 | Confirm the UI message for client-network uncertainty. | Pending recovery is shown; status polling never starts a new generation. | NOT EXECUTED |
 | D6 | Run `monitor` and `ledger-check` against the test evidence. | Timeout aggregates are visible and consistency remains diagnosable. | NOT EXECUTED |
@@ -78,8 +83,8 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| E1 | Run the automated Provider unavailable incident test; do not change Alpha firewall or DNS. | `provider_unavailable`, failed ledgers, cleared leases, one Provider call. | NOT EXECUTED |
-| E2 | Repeat the same request ID in the automated fixture. | Same controlled failure is replayed without another Provider call or charge. | NOT EXECUTED |
+| E1 | Run the automated Provider unavailable incident test; do not change Alpha firewall or DNS. | `provider_unavailable`, failed ledgers, cleared leases, one Provider call. | PASS |
+| E2 | Repeat the same request ID in the automated fixture. | Same controlled failure is replayed without another Provider call or charge. | PASS |
 | E3 | Exercise the Flutter controlled unavailable state. | Existing form/preview remains intact and an explicit retry can succeed. | NOT EXECUTED |
 | E4 | Review error and log output. | No stack trace, Provider body, prompt, content, Secret, or token appears. | NOT EXECUTED |
 | E5 | Run `ledger-check --days 7`. | The simulated incident leaves no consistency anomaly. | NOT EXECUTED |
@@ -101,13 +106,13 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 | ID | Procedure | Expected | Result |
 |---|---|---|---|
-| G1 | Confirm automated successful DeepSeek replay coverage. | One request ID creates one generation, one usage record, and one Provider call with matching token totals. | NOT EXECUTED |
-| G2 | Confirm automated duplicate request and PostgreSQL multi-process tests. | One claim owner and one charge across workers. | NOT EXECUTED |
+| G1 | Confirm automated successful DeepSeek replay coverage. | One request ID creates one generation, one usage record, and one Provider call with matching token totals. | PASS |
+| G2 | Confirm automated duplicate request and PostgreSQL multi-process tests. | One claim owner and one charge across workers. | PASS |
 | G3 | Run `audit --days 7`, then `ledger-check --days 7`. | Aggregate counts are credible and consistency is `ok`. | NOT EXECUTED |
-| G4 | Run the checked inconsistency fixture only; never corrupt Alpha data. | Diagnostic reports anomalies, exits 2, and performs no repair. | NOT EXECUTED |
+| G4 | Run the checked inconsistency fixture only; never corrupt Alpha data. | Diagnostic reports anomalies, exits 2, and performs no repair. | PASS |
 | G5 | Reach a safe per-user test limit in an approved account. | Excess request returns `usage_limit_reached` before Provider call and adds no reservation. | NOT EXECUTED |
 | G6 | Verify another authorized test user below its limit. | Per-user isolation remains effective. | NOT EXECUTED |
-| G7 | Use automated budget warning/critical fixtures or an isolated reviewed threshold. | Warning and critical events contain only aggregate metric/threshold data. | NOT EXECUTED |
+| G7 | Use automated budget warning/critical fixtures or an isolated reviewed threshold. | Warning and critical events contain only aggregate metric/threshold data. | PASS |
 | G8 | Verify non-AI and sync data before and after the limit drill. | No business row or sync state changes. | NOT EXECUTED |
 
 ## H. Privacy And Secret Rotation Walkthrough
@@ -131,8 +136,8 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 | I4 | Observe an approved controlled failure and retry. | Failure is readable; current input remains; explicit retry works. | NOT EXECUTED |
 | I5 | Observe disabled state during F2-F4. | AI unavailable state is explicit and generate action is disabled. | NOT EXECUTED |
 | I6 | Observe usage limit state during G5. | Remaining count is zero and generation is blocked. | NOT EXECUTED |
-| I7 | Test 320 px width. | No overflow or hidden operation. | NOT EXECUTED |
-| I8 | Test maximum supported text scaling, including 2.0. | Text, status, and actions remain readable without overflow. | NOT EXECUTED |
+| I7 | Test 320 px width. | No overflow or hidden operation. | PASS |
+| I8 | Test maximum supported text scaling, including 2.0. | Text, status, and actions remain readable without overflow. | PASS |
 | I9 | Android Back during normal, loading, failure, and result states. | Navigation is safe and no duplicate request starts. | PASS |
 | I10 | Windows keyboard navigation with Tab, Enter, and Space. | Focus and activation remain predictable. | PASS |
 
@@ -148,9 +153,9 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 ## Final Result
 
-- PASS: `23`
+- PASS: `35`
 - FAIL: `0`
-- NOT EXECUTED: `49`
+- NOT EXECUTED: `37`
 - AI Usage Audit Gate: `OPEN`
 - AI Operation Safety Gate: `OPEN`
 

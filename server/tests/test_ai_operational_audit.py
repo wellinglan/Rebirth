@@ -425,9 +425,22 @@ def test_operations_acceptance_docs_preserve_incident_boundaries() -> None:
         "5932964873e7ae1f4495b431929d65429f05f29b"
         in matrix
     )
-    assert matrix.count("| NOT EXECUTED |") == 72
-    assert "AI Usage Audit Gate: `OPEN`" in matrix
-    assert "AI Operation Safety Gate: `OPEN`" in matrix
+    result_counts = {
+        result: matrix.count(f"| {result} |")
+        for result in ("PASS", "FAIL", "NOT EXECUTED")
+    }
+    assert sum(result_counts.values()) == 72
+    for result, count in result_counts.items():
+        assert f"- {result}: `{count}`" in matrix
+
+    all_passed = result_counts == {"PASS": 72, "FAIL": 0, "NOT EXECUTED": 0}
+    expected_gate = "CLOSED" if all_passed else "OPEN"
+    assert f"AI Usage Audit Gate: `{expected_gate}`" in matrix
+    assert f"AI Operation Safety Gate: `{expected_gate}`" in matrix
+    if all_passed:
+        assert "Status: `PASS`" in matrix
+    else:
+        assert "Status: `IN PROGRESS`" in matrix or "Status: `SUSPENDED`" in matrix
 
 
 def test_cli_database_failure_does_not_print_connection_details(
