@@ -10,6 +10,7 @@ import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
@@ -660,6 +661,154 @@ void main() {
     expect(gateway.generationCalls, 0);
   });
 
+  testWidgets('provider timeout keeps preview and exposes manual retry', (
+    tester,
+  ) async {
+    final gateway = FakeAiGenerationGateway()
+      ..generationError = const AiGenerationException(
+        AiReportFailureCode.providerTimeout,
+      );
+    final reports = FakeAiReportRepository();
+    final assembler = FakeAiCoachInputAssembler(
+      bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
+    );
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: assembler,
+      reports: reports,
+      gateway: gateway,
+    );
+    await _buildGrowthPreview(tester);
+
+    await _submitWeeklyGeneration(tester);
+
+    expect(find.byKey(const ValueKey('aiRequestPreview')), findsOneWidget);
+    expect(find.textContaining('生成请求超时'), findsOneWidget);
+    expect(find.textContaining('不会自动重试'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('retryAiGenerationButton')),
+      findsOneWidget,
+    );
+    expect(reports.lastFailureCode, 'provider_timeout');
+    expect(gateway.generationCalls, 1);
+  });
+
+  testWidgets(
+    'provider unavailable keeps preview and explicit retry can succeed',
+    (tester) async {
+      final gateway = FakeAiGenerationGateway()
+        ..generationError = const AiGenerationException(
+          AiReportFailureCode.providerUnavailable,
+        );
+      final reports = FakeAiReportRepository();
+      final assembler = FakeAiCoachInputAssembler(
+        bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
+      );
+      final router = GoRouter(
+        initialLocation: RoutePaths.aiCoach,
+        routes: [
+          GoRoute(
+            path: RoutePaths.aiCoach,
+            builder: (context, state) => const AiCoachPage(),
+            routes: [
+              GoRoute(
+                path: 'reports/:reportId',
+                builder: (context, state) => AiReportDetailPage(
+                  reportId: state.pathParameters['reportId'] ?? '',
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await _pumpAiCoach(
+        tester,
+        consent: _enabledConsent(),
+        assembler: assembler,
+        reports: reports,
+        gateway: gateway,
+        router: router,
+      );
+      await _buildGrowthPreview(tester);
+      await _submitWeeklyGeneration(tester);
+
+      expect(find.byKey(const ValueKey('aiRequestPreview')), findsOneWidget);
+      expect(find.textContaining('每周回顾暂时无法生成'), findsOneWidget);
+      expect(reports.lastFailureCode, 'provider_unavailable');
+
+      gateway.generationError = null;
+      await _tapAfterScrolling(
+        tester,
+        find.byKey(const ValueKey('retryAiGenerationButton')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('aiGenerationConfirmationDialog')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('confirmAiGenerationButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('aiReportDetailPage')), findsOneWidget);
+      expect(gateway.generationCalls, 2);
+      expect(reports.markFailedCalls, 1);
+      expect(reports.markCompletedCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'network uncertainty opens pending history without another generation',
+    (tester) async {
+      final gateway = FakeAiGenerationGateway()
+        ..generationError = const AiGenerationException(
+          AiReportFailureCode.networkOutcomeUnknown,
+        );
+      final reports = FakeAiReportRepository();
+      final assembler = FakeAiCoachInputAssembler(
+        bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
+      );
+      await _pumpAiCoach(
+        tester,
+        consent: _enabledConsent(),
+        assembler: assembler,
+        reports: reports,
+        gateway: gateway,
+      );
+      await _buildGrowthPreview(tester);
+      await _submitWeeklyGeneration(tester);
+
+      expect(find.byKey(const ValueKey('aiRequestPreview')), findsOneWidget);
+      expect(find.textContaining('网络响应中断或服务器仍在处理'), findsOneWidget);
+      expect(reports.reports.single.status, AiReportStatus.pending);
+      expect(gateway.generationCalls, 1);
+
+      await _tapAfterScrolling(
+        tester,
+        find.byKey(const ValueKey('openPendingAiReportsButton')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('aiReportCard-pending-1')),
+        findsOneWidget,
+      );
+
+      gateway.statusError = const AiGenerationException(
+        AiReportFailureCode.networkOutcomeUnknown,
+      );
+      await _tapAfterScrolling(
+        tester,
+        find.byKey(const ValueKey('checkAiRequestStatus-pending-1')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('不会自动重新生成'), findsOneWidget);
+      expect(gateway.statusCalls, 1);
+      expect(gateway.generationCalls, 1);
+      expect(reports.reports.single.status, AiReportStatus.pending);
+    },
+  );
+
   testWidgets(
     'current usage is visible and a reached limit disables generate',
     (tester) async {
@@ -989,5 +1138,15 @@ Future<void> _buildGrowthPreview(WidgetTester tester) async {
     tester,
     find.byKey(const ValueKey('buildAiPreviewButton')),
   );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _submitWeeklyGeneration(WidgetTester tester) async {
+  await _tapAfterScrolling(
+    tester,
+    find.byKey(const ValueKey('generateWeeklyReportButton')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('confirmAiGenerationButton')));
   await tester.pumpAndSettle();
 }

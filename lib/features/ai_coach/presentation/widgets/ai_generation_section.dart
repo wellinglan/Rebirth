@@ -108,7 +108,8 @@ class AiGenerationSection extends ConsumerWidget {
             const Text('网络响应中断或服务器仍在处理，请到本地报告中检查服务器状态。'),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: () => context.push(RoutePaths.aiCoach),
+              key: const ValueKey('openPendingAiReportsButton'),
+              onPressed: () => DefaultTabController.of(context).animateTo(1),
               icon: const Icon(Icons.history),
               label: const Text('查看本地报告'),
             ),
@@ -124,14 +125,23 @@ class AiGenerationSection extends ConsumerWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
             const SizedBox(height: 12),
-            if (state.reportId case final id?)
+            if (state.reportId case final id?) ...[
               OutlinedButton.icon(
                 key: const ValueKey('openFailedAiReportButton'),
                 onPressed: () => context.push(RoutePaths.aiCoachReport(id)),
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('查看失败记录'),
-              )
-            else
+              ),
+              if (_canRetry(state.failureCode)) ...[
+                const SizedBox(height: 8),
+                FilledButton.tonalIcon(
+                  key: const ValueKey('retryAiGenerationButton'),
+                  onPressed: () => _confirmAndSubmit(context, ref),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('手动重试'),
+                ),
+              ],
+            ] else
               OutlinedButton.icon(
                 onPressed: () => ref
                     .read(
@@ -236,6 +246,11 @@ class AiGenerationSection extends ConsumerWidget {
     AiReportFailureCode.inputHashMismatch => '服务器校验输入 Hash 失败。',
     _ => '${requestContext.isDaily ? '每日洞察' : '每周回顾'}暂时无法生成，请检查服务器后手动重试。',
   };
+
+  bool _canRetry(AiReportFailureCode? code) =>
+      code == AiReportFailureCode.providerTimeout ||
+      code == AiReportFailureCode.providerUnavailable ||
+      code == AiReportFailureCode.providerRateLimited;
 }
 
 class _RetryMessage extends StatelessWidget {

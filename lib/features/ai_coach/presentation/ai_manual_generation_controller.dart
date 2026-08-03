@@ -242,6 +242,7 @@ class AiManualGenerationController
         bundle: bundle,
       );
       if (remote.status == AiRemoteRequestStatus.processing) {
+        if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
         _setIfMounted(
           AiManualGenerationViewState(
             phase: AiManualGenerationPhase.pendingRecovery,
@@ -308,6 +309,7 @@ class AiManualGenerationController
     } on AiGenerationException catch (error) {
       if (pendingId != null &&
           error.code == AiReportFailureCode.networkOutcomeUnknown) {
+        if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
         _setIfMounted(
           AiManualGenerationViewState(
             phase: AiManualGenerationPhase.pendingRecovery,

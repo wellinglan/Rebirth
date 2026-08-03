@@ -15,6 +15,14 @@ focused Flutter recovery/responsive tests, and the full 267-test Server SQLite
 regression passed. PostgreSQL multi-process and multi-worker behavior is also
 required to pass in the Quality workflow for the recording commit.
 
+Batch 3 evidence (`2026-08-03`): 44 focused Flutter timeout, unavailable, retry,
+and pending-recovery tests plus 39 focused Server CLI, ledger, Provider failure,
+and privacy tests passed. Acceptance found and repaired two UI gaps: terminal
+failure now exposes a confirmed manual retry, and pending recovery opens the
+refreshed local-report tab without starting another generation. The CLI fixture
+executes `monitor` and `ledger-check` against an isolated SQLite incident ledger;
+it does not alter Alpha data, firewall, DNS, Provider credentials, or limits.
+
 Target API image:
 `ghcr.io/wellinglan/rebirth-api:5932964873e7ae1f4495b431929d65429f05f29b`
 
@@ -75,9 +83,9 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 | D1 | Run the automated Provider timeout incident test. | `provider_timeout` is terminal failed, both leases clear, and identical request ID does not call Provider twice. | PASS |
 | D2 | Run the automated client-network uncertainty test. | Local report remains pending with its binding and no automatic POST retry. | PASS |
 | D3 | Run the automated stale generation lease test. | Stale processing changes once to `outcome_unknown`, including multi-worker coverage. | PASS |
-| D4 | Confirm the UI message for Provider timeout. | A controlled failure is shown and explicit retry is available. | NOT EXECUTED |
-| D5 | Confirm the UI message for client-network uncertainty. | Pending recovery is shown; status polling never starts a new generation. | NOT EXECUTED |
-| D6 | Run `monitor` and `ledger-check` against the test evidence. | Timeout aggregates are visible and consistency remains diagnosable. | NOT EXECUTED |
+| D4 | Confirm the UI message for Provider timeout. | A controlled failure is shown and explicit retry is available. | PASS |
+| D5 | Confirm the UI message for client-network uncertainty. | Pending recovery is shown; status polling never starts a new generation. | PASS |
+| D6 | Run `monitor` and `ledger-check` against the test evidence. | Timeout aggregates are visible and consistency remains diagnosable. | PASS |
 
 ## E. Provider Unavailable
 
@@ -85,9 +93,9 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 |---|---|---|---|
 | E1 | Run the automated Provider unavailable incident test; do not change Alpha firewall or DNS. | `provider_unavailable`, failed ledgers, cleared leases, one Provider call. | PASS |
 | E2 | Repeat the same request ID in the automated fixture. | Same controlled failure is replayed without another Provider call or charge. | PASS |
-| E3 | Exercise the Flutter controlled unavailable state. | Existing form/preview remains intact and an explicit retry can succeed. | NOT EXECUTED |
-| E4 | Review error and log output. | No stack trace, Provider body, prompt, content, Secret, or token appears. | NOT EXECUTED |
-| E5 | Run `ledger-check --days 7`. | The simulated incident leaves no consistency anomaly. | NOT EXECUTED |
+| E3 | Exercise the Flutter controlled unavailable state. | Existing form/preview remains intact and an explicit retry can succeed. | PASS |
+| E4 | Review error and log output. | No stack trace, Provider body, prompt, content, Secret, or token appears. | PASS |
+| E5 | Run `ledger-check --days 7`. | The simulated incident leaves no consistency anomaly. | PASS |
 
 ## F. Kill Switch And Recovery
 
@@ -133,7 +141,7 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 | I1 | Windows: load AI page with real Provider available. | Usage status and generate controls load correctly. | PASS |
 | I2 | Android: load AI page with real Provider available. | Same state is readable and usable. | PASS |
 | I3 | Observe generation in progress and tap repeatedly. | Loading is visible and duplicate submission is suppressed. | PASS |
-| I4 | Observe an approved controlled failure and retry. | Failure is readable; current input remains; explicit retry works. | NOT EXECUTED |
+| I4 | Observe an approved controlled failure and retry. | Failure is readable; current input remains; explicit retry works. | PASS |
 | I5 | Observe disabled state during F2-F4. | AI unavailable state is explicit and generate action is disabled. | NOT EXECUTED |
 | I6 | Observe usage limit state during G5. | Remaining count is zero and generation is blocked. | NOT EXECUTED |
 | I7 | Test 320 px width. | No overflow or hidden operation. | PASS |
@@ -153,9 +161,9 @@ health, Provider readiness, or ledger consistency unexpectedly fails.
 
 ## Final Result
 
-- PASS: `35`
+- PASS: `42`
 - FAIL: `0`
-- NOT EXECUTED: `37`
+- NOT EXECUTED: `30`
 - AI Usage Audit Gate: `OPEN`
 - AI Operation Safety Gate: `OPEN`
 

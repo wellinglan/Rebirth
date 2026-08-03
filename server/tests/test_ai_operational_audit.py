@@ -369,6 +369,66 @@ def test_cli_audit_defaults_to_seven_days_and_config_is_safe(
     assert "database_url" not in config
 
 
+def test_cli_monitor_and_ledger_check_report_controlled_incidents(
+    tmp_path: object,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    database_file = tmp_path / "operations-incident-cli.sqlite"
+    database_url = f"sqlite:///{database_file.as_posix()}"
+    from app.database import Database
+
+    database = Database(database_url)
+    database.create_schema()
+    with database.session_factory() as session:
+        user_id = _seed_user(session)
+        _seed_pair(
+            session,
+            user_id=user_id,
+            generation_status="failed",
+            usage_status="failed",
+            error_code="provider_timeout",
+        )
+        _seed_pair(
+            session,
+            user_id=user_id,
+            generation_status="failed",
+            usage_status="failed",
+            error_code="provider_unavailable",
+        )
+        session.commit()
+    database.engine.dispose()
+
+    monkeypatch.setenv("REBIRTH_DATABASE_URL", database_url)
+    monkeypatch.setenv("REBIRTH_AI_PROVIDER", "fake")
+    monkeypatch.setenv("REBIRTH_AI_FAILURE_RATE_WARNING_PERCENT", "1")
+    monkeypatch.setenv("REBIRTH_AI_TIMEOUT_RATE_WARNING_PERCENT", "1")
+    monkeypatch.setattr(
+        "app.maintenance.rebirth_ai.utc_milliseconds", lambda: _NOW
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["rebirth_ai", "monitor", "--window-minutes", "60"],
+    )
+    assert operations_main() == 0
+    monitor = json.loads(capsys.readouterr().out)
+    assert {item["event"] for item in monitor["events"]} >= {
+        "AI_PROVIDER_FAILURE_RATE_HIGH",
+        "AI_PROVIDER_TIMEOUT_RATE_HIGH",
+    }
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["rebirth_ai", "ledger-check", "--days", "7"],
+    )
+    assert operations_main() == 0
+    ledger = json.loads(capsys.readouterr().out)
+    assert ledger["status"] == "ok"
+    assert ledger["read_only"] is True
+
+
 def test_operations_add_no_api_flutter_schema_or_migration() -> None:
     repository = Path(__file__).resolve().parents[2]
     router = (repository / "server/app/routers/ai.py").read_text(
