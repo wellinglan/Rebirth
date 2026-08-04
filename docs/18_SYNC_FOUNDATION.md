@@ -24,7 +24,8 @@ parallel sync service or a new endpoint.
 | Pull cursor | Client-applied position, separate from record version |
 
 The v2 transport schema allowlists `user_profiles`,
-`today_records`, `journal_entries`, `goals`, and `health_records`. Sprint 10A
+`today_records`, `journal_entries`, `goals`, `health_records`, and
+`ai_reports`. Sprint 10A
 did not narrow that existing Server contract. Sprint 10B registers
 `ProfileSyncAdapter` and `PlanSyncAdapter`. Today, Journal, and Health still
 have no client adapter and cannot enter a product sync run.

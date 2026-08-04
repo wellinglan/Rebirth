@@ -4,6 +4,10 @@
 > Status: Active  
 > Last Updated: 2026-07
 
+> Sprint 14C: `ai_reports` is a manual Sync Protocol 2 aggregate. Its immutable
+> versions travel only as children; payloads exclude prompts, inputs, runtime
+> metadata, credentials, usage, and tokens. Schema remains 10, API remains 1.
+
 ---
 
 # 一、文档定位

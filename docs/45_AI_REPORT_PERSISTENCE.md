@@ -4,8 +4,9 @@
 
 Sprint 14B establishes AI Report as a local, versioned domain aggregate. It
 adds persistence, lifecycle rules, account isolation, and read-only history UI.
-It does not add automatic generation, chat, agents, tool calling, cloud report
-storage, report synchronization, or editable AI conclusions.
+It does not add automatic generation, chat, agents, tool calling, or editable
+AI conclusions. Sprint 14C subsequently adds manual cross-device report sync;
+see `docs/46_AI_REPORT_CROSS_DEVICE_SYNC.md`.
 
 ## Aggregate And Version Model
 
@@ -65,7 +66,9 @@ Report content is highly sensitive local data:
 - session rejection cannot reach the protected report routes;
 - report content is not consumed by Growth or Personal Data Aggregation;
 - report content is not written into Journal or ordinary logs;
-- reports and versions are not registered as Sync entities;
+- reports synchronize only through the explicit Sprint 14C `ai_reports`
+  aggregate adapter; versions remain immutable children and are never separate
+  sync records;
 - UI never displays API keys, tokens, prompts, Provider secrets, raw model
   metadata, or full internal IDs.
 
@@ -83,7 +86,7 @@ Android, 320 px width, and TextScaler 2.0.
 - PostgreSQL/Alembic: unchanged.
 - API Version: `1`.
 - Sync Protocol: `2`.
-- AI Report cloud storage and cross-device sync: unsupported.
+- AI Report cross-device sync: manual aggregate sync supported from Sprint 14C.
 - Automatic downgrade remains unsupported; an older app must not write a
   schema 10 database.
 
