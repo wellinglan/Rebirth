@@ -120,6 +120,48 @@ void main() {
     expect(find.byKey(const ValueKey('todayEmptyState')), findsOneWidget);
   });
 
+  testWidgets('legacy AI Coach report deep link opens canonical detail', (
+    tester,
+  ) async {
+    final database = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(database.close);
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
+    final container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(database),
+        appAuthStateProvider.overrideWithValue(
+          AsyncData(
+            AppAuthState(
+              status: AppAuthStatus.authenticated,
+              localUserId: bootstrap.activeUserId,
+              cloudUserId: 'cloud-a',
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider);
+    router.go(RoutePaths.aiCoachReport('legacy-report'));
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const RebirthApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('aiReportDetailPage')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('aiReportDetailNotFound')),
+      findsOneWidget,
+    );
+    expect(router.state.matchedLocation, '/ai-reports/legacy-report');
+  });
+
   testWidgets('signed-out account cannot enter account security', (
     tester,
   ) async {

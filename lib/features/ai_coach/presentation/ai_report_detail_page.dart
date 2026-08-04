@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_version.dart';
 import 'package:rebirth/features/ai_coach/domain/daily_report_freshness.dart';
 
+import 'ai_coach_formatters.dart';
 import 'ai_daily_report_freshness_provider.dart';
 import 'ai_report_history_controller.dart';
 import 'ai_pending_recovery_controller.dart';
@@ -23,7 +25,7 @@ class AiReportDetailPage extends ConsumerWidget {
     final detail = ref.watch(aiReportDetailProvider(reportId));
     return Scaffold(
       key: const ValueKey('aiReportDetailPage'),
-      appBar: AppBar(title: const Text('本地报告详情')),
+      appBar: AppBar(title: const Text('AI 报告详情')),
       body: SafeArea(
         child: detail.when(
           loading: () => const Center(
@@ -81,9 +83,11 @@ class _DetailContent extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  detail.reportTypeLabel,
+                  detail.title,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
+                const SizedBox(height: 4),
+                Text(detail.reportTypeLabel),
                 if (freshness != null) ...[
                   const SizedBox(height: 12),
                   _DailyFreshnessCard(
@@ -150,7 +154,11 @@ class _DetailContent extends ConsumerWidget {
                   onCheckStatus: () => ref
                       .read(aiReportHistoryControllerProvider.notifier)
                       .checkPending(detail.id),
+                  onConfirmNotFound: () =>
+                      _confirmServerNotFound(context, ref, detail.id),
                 ),
+                const SizedBox(height: 16),
+                _VersionHistory(versions: detail.versions),
                 const SizedBox(height: 16),
                 if (detail.isDaily) ...[
                   Wrap(
@@ -260,6 +268,42 @@ class _DetailContent extends ConsumerWidget {
       ..showSnackBar(const SnackBar(content: Text('本地报告删除失败，请重试。')));
   }
 
+  Future<void> _confirmServerNotFound(
+    BuildContext context,
+    WidgetRef ref,
+    String reportId,
+  ) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('确认服务器无此请求'),
+            content: const Text('这只会将本地待处理报告标记为失败，不会重新生成，也不会删除任何源数据。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                key: const ValueKey('confirmServerNotFoundButton'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('标记为失败'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !context.mounted) return;
+    final updated = await ref
+        .read(aiReportHistoryControllerProvider.notifier)
+        .confirmServerNotFound(reportId);
+    if (!updated && context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('本地报告状态更新失败，请重试。')));
+    }
+  }
+
   Future<void> _openSource(
     BuildContext context,
     WidgetRef ref,
@@ -268,6 +312,51 @@ class _DetailContent extends ConsumerWidget {
     await context.push(location);
     if (!context.mounted) return;
     ref.invalidate(aiDailyReportFreshnessProvider(detail.id));
+  }
+}
+
+class _VersionHistory extends StatelessWidget {
+  const _VersionHistory({required this.versions});
+
+  final List<AiReportVersion> versions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const ValueKey('aiReportVersionHistory'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('版本历史', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        if (versions.isEmpty)
+          const Text('尚无已保存的报告版本。')
+        else
+          for (final version in versions) ...[
+            Card(
+              key: ValueKey('aiReportVersion-${version.version}'),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'v${version.version} · '
+                      '${AiCoachFormatters.reportStatus(version.status)}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    if (version.status == AiReportStatus.completed)
+                      SelectableText(version.content ?? '报告正文不可用。')
+                    else
+                      const Text('该版本未保存报告正文。'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+      ],
+    );
   }
 }
 
@@ -384,11 +473,13 @@ class _StatusContent extends StatelessWidget {
     required this.detail,
     required this.recoveryState,
     required this.onCheckStatus,
+    required this.onConfirmNotFound,
   });
 
   final AiReportDetailModel detail;
   final AiPendingRecoveryState? recoveryState;
   final VoidCallback onCheckStatus;
+  final VoidCallback onConfirmNotFound;
 
   @override
   Widget build(BuildContext context) {
@@ -418,6 +509,13 @@ class _StatusContent extends StatelessWidget {
                 icon: const Icon(Icons.sync),
                 label: const Text('检查服务器状态'),
               ),
+              if (recoveryState == AiPendingRecoveryState.serverNotFound)
+                TextButton.icon(
+                  key: const ValueKey('markServerNotFoundFailedDetailButton'),
+                  onPressed: onConfirmNotFound,
+                  icon: const Icon(Icons.report_outlined),
+                  label: const Text('将本地记录标记为失败'),
+                ),
             ],
           ),
           AiReportStatus.failed => Text(
@@ -442,6 +540,7 @@ class _StatusContent extends StatelessWidget {
 
   String _pendingMessage(AiPendingRecoveryState? state) => switch (state) {
     AiPendingRecoveryState.processing => '服务器仍在处理；这不代表请求必然会完成。',
+    AiPendingRecoveryState.networkUnknown => '网络中断，结果待确认。不会自动重新生成。',
     AiPendingRecoveryState.endpointMismatch => '请切回原服务器和账号检查状态。',
     AiPendingRecoveryState.accountMismatch => '请切回原服务器和账号检查状态。',
     AiPendingRecoveryState.missingBinding => '缺少请求绑定，无法自动确认。',

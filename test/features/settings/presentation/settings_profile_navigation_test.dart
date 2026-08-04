@@ -93,6 +93,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
+    final aiReportsTile = find.byKey(const ValueKey('aiReportsSettingsTile'));
+    await tester.ensureVisible(aiReportsTile);
+    await tester.pumpAndSettle();
+    await tester.tap(aiReportsTile);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('aiReportLibraryPage')), findsOneWidget);
+    expect(find.text('AI 报告库'), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiCoachPage')), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     final profileTile = find.byKey(const ValueKey('profileSettingsTile'));
     await tester.ensureVisible(profileTile);
     await tester.pumpAndSettle();

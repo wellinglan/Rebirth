@@ -18,10 +18,15 @@ final aiReportHistoryControllerProvider =
     >(AiReportHistoryController.new);
 
 final aiReportDetailProvider = FutureProvider.autoDispose
-    .family<AiReportDetailModel?, String>((ref, reportId) {
+    .family<AiReportDetailModel?, String>((ref, reportId) async {
       if (reportId.trim().isEmpty) return null;
-      final controller = ref.watch(aiReportHistoryControllerProvider.notifier);
-      return controller.getById(reportId);
+      final repository = ref.watch(aiReportRepositoryProvider);
+      final report = await repository.getById(reportId);
+      if (report == null) return null;
+      final versions = await repository.listVersions(reportId);
+      return ref
+          .watch(aiReportPresentationMapperProvider)
+          .toDetail(report, versions: versions);
     });
 
 class AiReportHistoryController
@@ -63,14 +68,6 @@ class AiReportHistoryController
         ),
       );
     }
-  }
-
-  Future<AiReportDetailModel?> getById(String reportId) async {
-    if (reportId.trim().isEmpty) return null;
-    final report = await ref.read(aiReportRepositoryProvider).getById(reportId);
-    return report == null
-        ? null
-        : ref.read(aiReportPresentationMapperProvider).toDetail(report);
   }
 
   Future<bool> deleteReport(String reportId) async {
@@ -211,7 +208,7 @@ class AiReportHistoryController
 
   Future<List<AiReportListItemModel>> _loadReports() async {
     final reports = [
-      ...await ref.read(aiReportRepositoryProvider).listRecent(),
+      ...await ref.read(aiReportRepositoryProvider).listRecent(limit: 100),
     ];
     reports.sort(
       (left, right) => right.requestedAt.compareTo(left.requestedAt),

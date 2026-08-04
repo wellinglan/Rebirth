@@ -109,9 +109,9 @@ class AiGenerationSection extends ConsumerWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               key: const ValueKey('openPendingAiReportsButton'),
-              onPressed: () => DefaultTabController.of(context).animateTo(1),
+              onPressed: () => context.push(RoutePaths.aiReports),
               icon: const Icon(Icons.history),
-              label: const Text('查看本地报告'),
+              label: const Text('打开 AI 报告库'),
             ),
           ],
         );
@@ -128,7 +128,7 @@ class AiGenerationSection extends ConsumerWidget {
             if (state.reportId case final id?) ...[
               OutlinedButton.icon(
                 key: const ValueKey('openFailedAiReportButton'),
-                onPressed: () => context.push(RoutePaths.aiCoachReport(id)),
+                onPressed: () => context.push(RoutePaths.aiReportsDetail(id)),
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('查看失败记录'),
               ),
@@ -160,7 +160,7 @@ class AiGenerationSection extends ConsumerWidget {
         return OutlinedButton.icon(
           onPressed: reportId == null
               ? null
-              : () => context.push(RoutePaths.aiCoachReport(reportId)),
+              : () => context.push(RoutePaths.aiReportsDetail(reportId)),
           icon: const Icon(Icons.open_in_new),
           label: const Text('查看已生成报告'),
         );
@@ -208,7 +208,7 @@ class AiGenerationSection extends ConsumerWidget {
     await ref.read(aiUsageControllerProvider.notifier).refresh();
     if (!context.mounted || outcome == null) return;
     if (outcome.completed) {
-      await context.push(RoutePaths.aiCoachReport(outcome.reportId));
+      await context.push(RoutePaths.aiReportsDetail(outcome.reportId));
     } else if (outcome.awaitingRecovery) {
       ScaffoldMessenger.of(
         context,

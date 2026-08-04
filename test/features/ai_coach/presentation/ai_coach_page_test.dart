@@ -18,6 +18,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
+import 'package:rebirth/features/ai_reports/presentation/ai_report_library_page.dart';
 import 'package:rebirth/features/settings/presentation/ai_consent_settings_page.dart';
 
 import '../ai_coach_test_support.dart';
@@ -244,14 +245,12 @@ void main() {
           GoRoute(
             path: '/ai-coach',
             builder: (context, state) => const AiCoachPage(),
-            routes: [
-              GoRoute(
-                path: 'reports/:reportId',
-                builder: (context, state) => AiReportDetailPage(
-                  reportId: state.pathParameters['reportId'] ?? '',
-                ),
-              ),
-            ],
+          ),
+          GoRoute(
+            path: '${RoutePaths.aiReports}/:reportId',
+            builder: (context, state) => AiReportDetailPage(
+              reportId: state.pathParameters['reportId'] ?? '',
+            ),
           ),
         ],
       );
@@ -316,15 +315,11 @@ void main() {
     },
   );
 
-  testWidgets('history uses text statuses and a complete soft-delete warning', (
+  testWidgets('local reports tab is only an entry to the canonical library', (
     tester,
   ) async {
     final reports = FakeAiReportRepository(
-      reports: [
-        buildAiReport(id: 'completed'),
-        buildAiReport(id: 'pending', status: AiReportStatus.pending),
-        buildAiReport(id: 'failed', status: AiReportStatus.failed),
-      ],
+      reports: [buildAiReport(id: 'completed')],
     );
     await _pumpAiCoach(
       tester,
@@ -335,69 +330,55 @@ void main() {
 
     await tester.tap(find.widgetWithText(Tab, '本地报告'));
     await tester.pumpAndSettle();
-    expect(find.text('已完成'), findsOneWidget);
-    expect(find.text('待处理'), findsOneWidget);
-    expect(find.text('生成失败'), findsOneWidget);
-    expect(find.text('检查服务器状态'), findsOneWidget);
-    expect(find.byTooltip('删除本地报告'), findsNWidgets(3));
     expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('aiReportCard-pending')),
-        matching: find.byType(CircularProgressIndicator),
-      ),
-      findsNothing,
-    );
-
-    await tester.tap(find.byKey(const ValueKey('deleteAiReport-completed')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('aiReportDeleteDialog')), findsOneWidget);
-    for (final source in ['Today', 'Journal', 'Health', 'Plan', 'Growth']) {
-      expect(find.textContaining(source), findsWidgets);
-    }
-    expect(find.textContaining('不会改变 AI 数据授权'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('cancelAiReportDeleteButton')));
-    await tester.pumpAndSettle();
-    expect(reports.deleteCalls, 0);
-  });
-
-  testWidgets('history mixes Daily single dates with Weekly ranges', (
-    tester,
-  ) async {
-    final reports = FakeAiReportRepository(
-      reports: [
-        buildAiReport(
-          id: 'daily',
-          reportType: AiReportType.dailyInsight,
-          targetDate: '2026-07-16',
-        ),
-        buildAiReport(id: 'weekly'),
-      ],
-    );
-    await _pumpAiCoach(
-      tester,
-      consent: _enabledConsent(),
-      assembler: FakeAiCoachInputAssembler(),
-      reports: reports,
-    );
-    await tester.tap(find.widgetWithText(Tab, '本地报告'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('每日洞察'), findsOneWidget);
-    expect(find.text('每周回顾'), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('aiReportCard-daily')),
-        matching: find.text('2026-07-16'),
-      ),
+      find.byKey(const ValueKey('aiReportLibraryEntryTab')),
       findsOneWidget,
     );
     expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('aiReportCard-daily')),
-        matching: find.textContaining('至'),
-      ),
-      findsNothing,
+      find.byKey(const ValueKey('openAiReportLibraryFromCoachButton')),
+      findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('aiReportLibraryList')), findsNothing);
+    expect(reports.listCalls, 0);
+  });
+
+  testWidgets('local reports entry navigates to the canonical library', (
+    tester,
+  ) async {
+    final reports = FakeAiReportRepository(
+      reports: [buildAiReport(id: 'weekly')],
+    );
+    final router = GoRouter(
+      initialLocation: RoutePaths.aiCoach,
+      routes: [
+        GoRoute(
+          path: RoutePaths.aiCoach,
+          builder: (_, _) => const AiCoachPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.aiReports,
+          builder: (_, _) => const AiReportLibraryPage(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await _pumpAiCoach(
+      tester,
+      consent: _enabledConsent(),
+      assembler: FakeAiCoachInputAssembler(),
+      reports: reports,
+      router: router,
+    );
+    await tester.tap(find.widgetWithText(Tab, '本地报告'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('openAiReportLibraryFromCoachButton')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('aiReportLibraryPage')), findsOneWidget);
+    expect(find.text('AI 报告库'), findsOneWidget);
+    expect(reports.listCalls, 1);
   });
 
   testWidgets(
@@ -715,14 +696,12 @@ void main() {
           GoRoute(
             path: RoutePaths.aiCoach,
             builder: (context, state) => const AiCoachPage(),
-            routes: [
-              GoRoute(
-                path: 'reports/:reportId',
-                builder: (context, state) => AiReportDetailPage(
-                  reportId: state.pathParameters['reportId'] ?? '',
-                ),
-              ),
-            ],
+          ),
+          GoRoute(
+            path: '${RoutePaths.aiReports}/:reportId',
+            builder: (context, state) => AiReportDetailPage(
+              reportId: state.pathParameters['reportId'] ?? '',
+            ),
           ),
         ],
       );
@@ -773,12 +752,35 @@ void main() {
       final assembler = FakeAiCoachInputAssembler(
         bundle: buildAiBundle(scopes: {AiDataScope.growthSummary}),
       );
+      final router = GoRouter(
+        initialLocation: RoutePaths.aiCoach,
+        routes: [
+          GoRoute(
+            path: RoutePaths.aiCoach,
+            builder: (_, _) => const AiCoachPage(),
+          ),
+          GoRoute(
+            path: RoutePaths.aiReports,
+            builder: (_, _) => const AiReportLibraryPage(),
+            routes: [
+              GoRoute(
+                path: ':reportId',
+                builder: (_, state) => AiReportDetailPage(
+                  reportId: state.pathParameters['reportId'] ?? '',
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
       await _pumpAiCoach(
         tester,
         consent: _enabledConsent(),
         assembler: assembler,
         reports: reports,
         gateway: gateway,
+        router: router,
       );
       await _buildGrowthPreview(tester);
       await _submitWeeklyGeneration(tester);
@@ -794,16 +796,20 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('aiReportCard-pending-1')),
+        find.byKey(const ValueKey('aiReportLibraryCard-pending-1')),
         findsOneWidget,
       );
 
       gateway.statusError = const AiGenerationException(
         AiReportFailureCode.networkOutcomeUnknown,
       );
+      await tester.tap(
+        find.byKey(const ValueKey('aiReportLibraryCard-pending-1')),
+      );
+      await tester.pumpAndSettle();
       await _tapAfterScrolling(
         tester,
-        find.byKey(const ValueKey('checkAiRequestStatus-pending-1')),
+        find.byKey(const ValueKey('checkAiRequestStatusDetailButton')),
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('不会自动重新生成'), findsOneWidget);
@@ -952,7 +958,7 @@ void main() {
     },
   );
 
-  testWidgets('pending recovery controls fit a narrow history view', (
+  testWidgets('canonical library entry fits a narrow local reports tab', (
     tester,
   ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -961,24 +967,14 @@ void main() {
       tester,
       consent: _enabledConsent(),
       assembler: FakeAiCoachInputAssembler(),
-      reports: FakeAiReportRepository(
-        reports: [buildAiReport(id: 'pending', status: AiReportStatus.pending)],
-      ),
+      reports: FakeAiReportRepository(),
       textScale: 2,
     );
     await tester.tap(find.widgetWithText(Tab, '本地报告'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('checkAiRequestStatus-pending')),
-      100,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('aiReportHistoryList')),
-        matching: find.byType(Scrollable),
-      ),
-    );
     expect(tester.takeException(), isNull);
     expect(
-      find.byKey(const ValueKey('checkAiRequestStatus-pending')),
+      find.byKey(const ValueKey('openAiReportLibraryFromCoachButton')),
       findsOneWidget,
     );
   });
@@ -1010,23 +1006,32 @@ void main() {
     final reports = FakeAiReportRepository(
       reports: [buildAiReport(id: 'pending', status: AiReportStatus.pending)],
     );
+    final router = GoRouter(
+      initialLocation: '/report',
+      routes: [
+        GoRoute(
+          path: '/report',
+          builder: (_, _) => const AiReportDetailPage(reportId: 'pending'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
     await _pumpAiCoach(
       tester,
       consent: _enabledConsent(),
       assembler: FakeAiCoachInputAssembler(),
       reports: reports,
+      router: router,
       gateway: gateway,
       bindings: bindings,
     );
 
-    await tester.tap(find.widgetWithText(Tab, '本地报告'));
-    await tester.pumpAndSettle();
     await tester.tap(
-      find.byKey(const ValueKey('checkAiRequestStatus-pending')),
+      find.byKey(const ValueKey('checkAiRequestStatusDetailButton')),
     );
     await tester.pumpAndSettle();
     final markFailed = find.byKey(
-      const ValueKey('markServerNotFoundFailed-pending'),
+      const ValueKey('markServerNotFoundFailedDetailButton'),
     );
     expect(markFailed, findsOneWidget);
 

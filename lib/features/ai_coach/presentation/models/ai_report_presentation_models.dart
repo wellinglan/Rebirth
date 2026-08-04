@@ -1,36 +1,35 @@
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_version.dart';
 
 final class AiReportListItemModel {
   const AiReportListItemModel({
     required this.id,
     required this.reportType,
     required this.reportTypeLabel,
+    required this.title,
     required this.periodStartDate,
     required this.periodEndDate,
     required this.status,
     required this.statusLabel,
-    required this.requestedAtLabel,
-    required this.generatedAtLabel,
-    required this.providerModelLabel,
-    required this.shortInputHash,
-    required this.hasInputSnapshot,
-    required this.contentPreview,
+    required this.createdAtLabel,
+    required this.updatedAtLabel,
+    required this.currentVersion,
+    required this.syncStatus,
   });
 
   final String id;
   final AiReportType reportType;
   final String reportTypeLabel;
+  final String title;
   final String periodStartDate;
   final String periodEndDate;
   final AiReportStatus status;
   final String statusLabel;
-  final String requestedAtLabel;
-  final String generatedAtLabel;
-  final String providerModelLabel;
-  final String shortInputHash;
-  final bool hasInputSnapshot;
-  final String? contentPreview;
+  final String createdAtLabel;
+  final String updatedAtLabel;
+  final int currentVersion;
+  final String syncStatus;
 
   bool get isDaily => reportType == AiReportType.dailyInsight;
 
@@ -43,6 +42,7 @@ final class AiReportDetailModel {
     required this.id,
     required this.reportType,
     required this.reportTypeLabel,
+    required this.title,
     required this.status,
     required this.statusLabel,
     required this.periodStartDate,
@@ -57,11 +57,13 @@ final class AiReportDetailModel {
     required this.hasStructuredOutput,
     required this.failureMessage,
     required this.hasInputSnapshot,
+    required this.versions,
   });
 
   final String id;
   final AiReportType reportType;
   final String reportTypeLabel;
+  final String title;
   final AiReportStatus status;
   final String statusLabel;
   final String periodStartDate;
@@ -76,12 +78,14 @@ final class AiReportDetailModel {
   final bool hasStructuredOutput;
   final String? failureMessage;
   final bool hasInputSnapshot;
+  final List<AiReportVersion> versions;
 
   AiReportDetailModel copyWith({AiReportStatus? status, String? statusLabel}) {
     return AiReportDetailModel(
       id: id,
       reportType: reportType,
       reportTypeLabel: reportTypeLabel,
+      title: title,
       status: status ?? this.status,
       statusLabel: statusLabel ?? this.statusLabel,
       periodStartDate: periodStartDate,
@@ -96,6 +100,7 @@ final class AiReportDetailModel {
       hasStructuredOutput: hasStructuredOutput,
       failureMessage: failureMessage,
       hasInputSnapshot: hasInputSnapshot,
+      versions: versions,
     );
   }
 

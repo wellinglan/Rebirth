@@ -281,7 +281,7 @@ class _Harness {
           ),
         ),
         GoRoute(
-          path: '/ai-coach/reports/:reportId',
+          path: '/ai-reports/:reportId',
           builder: (context, state) => AiReportDetailPage(
             reportId: state.pathParameters['reportId'] ?? '',
           ),

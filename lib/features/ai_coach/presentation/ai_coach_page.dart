@@ -11,7 +11,7 @@ import 'ai_request_preview_view_state.dart';
 import 'widgets/ai_consent_gate.dart';
 import 'widgets/ai_generation_section.dart';
 import 'widgets/ai_journal_scope_dialog.dart';
-import 'widgets/ai_report_history_tab.dart';
+import 'widgets/ai_report_library_entry_tab.dart';
 import 'widgets/ai_request_preview.dart';
 import 'widgets/ai_reusable_report_card.dart';
 import 'widgets/ai_scope_selector.dart';
@@ -40,7 +40,7 @@ class AiCoachPage extends StatelessWidget {
               _PageIntroduction(),
               Expanded(
                 child: TabBarView(
-                  children: [_RequestPreviewTab(), AiReportHistoryTab()],
+                  children: [_RequestPreviewTab(), AiReportLibraryEntryTab()],
                 ),
               ),
             ],
@@ -233,7 +233,7 @@ class _AuthorizedPreview extends ConsumerWidget {
           const SizedBox(height: 16),
           AiReusableReportCard(
             report: state.reusableCompletedReport,
-            onOpenReport: (id) => context.push(RoutePaths.aiCoachReport(id)),
+            onOpenReport: (id) => context.push(RoutePaths.aiReportsDetail(id)),
           ),
           if (state.reusableCompletedReport == null &&
               state.bundle != null) ...[

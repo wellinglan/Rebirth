@@ -180,7 +180,7 @@ class _AuthorizedDaily extends ConsumerWidget {
           const SizedBox(height: 16),
           AiReusableReportCard(
             report: state.reusableCompletedReport,
-            onOpenReport: (id) => context.push(RoutePaths.aiCoachReport(id)),
+            onOpenReport: (id) => context.push(RoutePaths.aiReportsDetail(id)),
           ),
           if (preview.sourceCount == 0)
             const _NoDailySources()

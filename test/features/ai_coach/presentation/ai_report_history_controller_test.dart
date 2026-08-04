@@ -63,8 +63,9 @@ void main() {
       '待处理',
       '生成失败',
     ]);
-    expect(state.reports.first.contentPreview, contains('本地保存'));
-    expect(state.reports.first.hasInputSnapshot, isTrue);
+    expect(state.reports.first.title, 'AI 报告');
+    expect(state.reports.first.currentVersion, 0);
+    expect(state.reports.first.syncStatus, 'local_only');
     expect(repository.listCalls, 1);
   });
 
@@ -98,7 +99,7 @@ void main() {
   );
 
   test(
-    'getById maps detail without exposing snapshot or structured JSON bodies',
+    'detail provider maps without exposing snapshot or structured JSON bodies',
     () async {
       repository = FakeAiReportRepository(
         reports: [
@@ -113,9 +114,9 @@ void main() {
       createContainer();
       await container.read(aiReportHistoryControllerProvider.future);
 
-      final detail = await container
-          .read(aiReportHistoryControllerProvider.notifier)
-          .getById('detail');
+      final detail = await container.read(
+        aiReportDetailProvider('detail').future,
+      );
 
       expect(detail?.reportContent, '这是本地保存的报告正文。');
       expect(detail?.providerLabel, '未记录');
@@ -238,12 +239,7 @@ void main() {
     createContainer();
     await container.read(aiReportHistoryControllerProvider.future);
 
-    expect(
-      await container
-          .read(aiReportHistoryControllerProvider.notifier)
-          .getById('  '),
-      isNull,
-    );
+    expect(await container.read(aiReportDetailProvider('  ').future), isNull);
     expect(repository.getCalls, 0);
   });
 }

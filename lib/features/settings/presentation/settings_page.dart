@@ -165,8 +165,8 @@ class _SettingsContent extends StatelessWidget {
               ),
               SettingsTile(
                 key: const ValueKey('aiReportsSettingsTile'),
-                title: 'AI 报告',
-                subtitle: '查看本地保存的报告与版本历史',
+                title: 'AI 报告库',
+                subtitle: '查看报告、版本历史、归档与同步状态',
                 icon: Icons.description_outlined,
                 onTap: () => context.push(RoutePaths.aiReports),
               ),

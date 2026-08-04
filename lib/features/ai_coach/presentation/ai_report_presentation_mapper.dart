@@ -1,5 +1,6 @@
 import 'package:rebirth/features/ai_coach/domain/ai_report.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_version.dart';
 
 import 'ai_coach_formatters.dart';
 import 'models/ai_report_presentation_models.dart';
@@ -12,26 +13,27 @@ final class AiReportPresentationMapper {
       id: report.id,
       reportType: report.reportType,
       reportTypeLabel: AiCoachFormatters.reportType(report.reportType),
+      title: report.title,
       periodStartDate: report.periodStartDate,
       periodEndDate: report.periodEndDate,
       status: report.status,
       statusLabel: AiCoachFormatters.reportStatus(report.status),
-      requestedAtLabel: AiCoachFormatters.timestamp(report.requestedAt),
-      generatedAtLabel: AiCoachFormatters.timestamp(report.generatedAt),
-      providerModelLabel: _providerModel(report.provider, report.model),
-      shortInputHash: AiCoachFormatters.shortHash(report.inputHash),
-      hasInputSnapshot: report.hasInputSnapshot,
-      contentPreview: report.status == AiReportStatus.completed
-          ? _contentPreview(report.reportContent)
-          : null,
+      createdAtLabel: AiCoachFormatters.timestamp(report.createdAt),
+      updatedAtLabel: AiCoachFormatters.timestamp(report.updatedAt),
+      currentVersion: report.currentVersion,
+      syncStatus: report.syncStatus,
     );
   }
 
-  AiReportDetailModel toDetail(AiReport report) {
+  AiReportDetailModel toDetail(
+    AiReport report, {
+    List<AiReportVersion>? versions,
+  }) {
     return AiReportDetailModel(
       id: report.id,
       reportType: report.reportType,
       reportTypeLabel: AiCoachFormatters.reportType(report.reportType),
+      title: report.title,
       status: report.status,
       statusLabel: AiCoachFormatters.reportStatus(report.status),
       periodStartDate: report.periodStartDate,
@@ -53,29 +55,12 @@ final class AiReportPresentationMapper {
           ? AiCoachFormatters.failureCode(report.errorCode)
           : null,
       hasInputSnapshot: report.hasInputSnapshot,
+      versions: versions ?? report.versions,
     );
-  }
-
-  String _providerModel(String? provider, String? model) {
-    final providerText = provider?.trim();
-    final modelText = model?.trim();
-    if ((providerText == null || providerText.isEmpty) &&
-        (modelText == null || modelText.isEmpty)) {
-      return '未记录';
-    }
-    if (providerText == null || providerText.isEmpty) return modelText!;
-    if (modelText == null || modelText.isEmpty) return providerText;
-    return '$providerText / $modelText';
   }
 
   String _nullableMetadata(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? '未记录' : trimmed;
-  }
-
-  String? _contentPreview(String? value) {
-    final text = value?.trim();
-    if (text == null || text.isEmpty) return null;
-    return text.length <= 120 ? text : '${text.substring(0, 120)}…';
   }
 }

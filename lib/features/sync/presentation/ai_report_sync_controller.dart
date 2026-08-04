@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rebirth/features/ai_reports/presentation/ai_report_library_controller.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/data/sync_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
@@ -161,7 +161,7 @@ class AiReportSyncController extends Notifier<AiReportSyncViewState> {
       lastResult: result,
       clearResolvingConflictId: clearResolving,
     );
-    if (result.isSuccessful) ref.invalidate(aiReportLibraryControllerProvider);
+    if (result.isSuccessful) ref.invalidate(aiReportHistoryControllerProvider);
   }
 
   Future<void> reloadConflictCount() async {
