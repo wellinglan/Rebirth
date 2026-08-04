@@ -49,3 +49,10 @@ or Sync Protocol change are made.
 See `docs/46_AI_REPORT_CROSS_DEVICE_SYNC.md` for the report aggregate transport
 contract and `docs/manual_tests/52_ai_report_lifecycle_conflict_readiness.md`
 for the release acceptance matrix.
+
+## Acceptance
+
+The Sprint 14D manual matrix closed on 2026-08-04 with 25 PASS, 0 FAIL, and
+0 NOT EXECUTED after the AI Report remote conflict snapshot hydration fix in
+commit `bbe96b4b1ea785630c072e863627ec9e3480b01d`. The AI Report Lifecycle and
+Conflict Readiness release gate is closed.
