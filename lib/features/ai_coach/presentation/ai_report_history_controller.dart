@@ -20,9 +20,8 @@ final aiReportHistoryControllerProvider =
 final aiReportDetailProvider = FutureProvider.autoDispose
     .family<AiReportDetailModel?, String>((ref, reportId) {
       if (reportId.trim().isEmpty) return null;
-      return ref
-          .watch(aiReportHistoryControllerProvider.notifier)
-          .getById(reportId);
+      final controller = ref.watch(aiReportHistoryControllerProvider.notifier);
+      return controller.getById(reportId);
     });
 
 class AiReportHistoryController
@@ -104,6 +103,45 @@ class AiReportHistoryController
         latest.copyWith(
           deletingReportIds: remaining,
           operationError: '本地报告删除失败，请重试。',
+        ),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> archiveReport(String reportId) async {
+    final current = state.asData?.value;
+    if (current == null ||
+        current.archivingReportIds.contains(reportId) ||
+        current.deletingReportIds.contains(reportId)) {
+      return false;
+    }
+    final report = await ref.read(aiReportRepositoryProvider).getById(reportId);
+    if (report == null || report.status != AiReportStatus.completed) {
+      return false;
+    }
+    final archiving = {...current.archivingReportIds, reportId};
+    state = AsyncData(
+      current.copyWith(
+        archivingReportIds: archiving,
+        clearOperationError: true,
+      ),
+    );
+    try {
+      await ref.read(aiReportRepositoryProvider).archive(reportId);
+      final reports = await _loadReports();
+      if (!ref.mounted) return false;
+      state = AsyncData(AiReportHistoryViewState(reports: reports));
+      ref.invalidate(aiReportDetailProvider(reportId));
+      return true;
+    } catch (_) {
+      if (!ref.mounted) return false;
+      final latest = state.asData?.value ?? current;
+      final remaining = {...latest.archivingReportIds}..remove(reportId);
+      state = AsyncData(
+        latest.copyWith(
+          archivingReportIds: remaining,
+          operationError: '归档报告失败，请稍后重试。',
         ),
       );
       return false;

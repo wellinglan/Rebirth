@@ -77,6 +77,28 @@ final class AiReportDetailModel {
   final String? failureMessage;
   final bool hasInputSnapshot;
 
+  AiReportDetailModel copyWith({AiReportStatus? status, String? statusLabel}) {
+    return AiReportDetailModel(
+      id: id,
+      reportType: reportType,
+      reportTypeLabel: reportTypeLabel,
+      status: status ?? this.status,
+      statusLabel: statusLabel ?? this.statusLabel,
+      periodStartDate: periodStartDate,
+      periodEndDate: periodEndDate,
+      promptVersion: promptVersion,
+      shortInputHash: shortInputHash,
+      requestedAtLabel: requestedAtLabel,
+      generatedAtLabel: generatedAtLabel,
+      providerLabel: providerLabel,
+      modelLabel: modelLabel,
+      reportContent: reportContent,
+      hasStructuredOutput: hasStructuredOutput,
+      failureMessage: failureMessage,
+      hasInputSnapshot: hasInputSnapshot,
+    );
+  }
+
   bool get isDaily => reportType == AiReportType.dailyInsight;
 
   String get periodLabel =>

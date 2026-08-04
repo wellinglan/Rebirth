@@ -52,11 +52,32 @@ void main() {
       );
     },
   );
+
+  test(
+    'remote archive changes aggregate state without rewriting versions',
+    () async {
+      await adapter.applyRemoteChanges(changes: [_change()], syncedAt: 99);
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [_change(status: AiReportStatus.archived, serverVersion: 2)],
+        syncedAt: 100,
+      );
+
+      final report = await database.select(database.aiReports).getSingle();
+      final versions = await database.select(database.aiReportVersions).get();
+      expect(result.status, SyncEntityStatus.succeeded);
+      expect(report.reportStatus, 'archived');
+      expect(report.reportContent, 'Safe report content');
+      expect(versions, hasLength(1));
+      expect(versions.single.content, 'Safe report content');
+    },
+  );
 }
 
 SyncChange _change({
   SyncOperation operation = SyncOperation.upsert,
   int serverVersion = 1,
+  AiReportStatus status = AiReportStatus.completed,
 }) => SyncChange(
   entityType: SyncEntityType.aiReport,
   operation: operation,
@@ -67,7 +88,7 @@ SyncChange _change({
           title: 'Weekly review',
           periodStartDate: '2026-08-01',
           periodEndDate: '2026-08-07',
-          status: AiReportStatus.completed,
+          status: status,
           createdAt: 10,
           generationSource: 'ai_coach',
           sensitivity: AiReportSensitivity.high,

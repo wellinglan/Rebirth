@@ -185,6 +185,54 @@ void main() {
     expect(repository.deleteCalls, 2);
   });
 
+  test('archive changes only the selected completed report status', () async {
+    final untouched = buildAiReport(id: 'untouched');
+    repository = FakeAiReportRepository(
+      reports: [
+        buildAiReport(id: 'archive-me'),
+        untouched,
+      ],
+    );
+    createContainer();
+    await container.read(aiReportHistoryControllerProvider.future);
+
+    final archived = await container
+        .read(aiReportHistoryControllerProvider.notifier)
+        .archiveReport('archive-me');
+
+    expect(archived, isTrue);
+    expect(repository.archiveCalls, 1);
+    expect(repository.lastArchivedId, 'archive-me');
+    expect(repository.reports.first.status, AiReportStatus.archived);
+    expect(repository.reports.first.reportContent, isNotNull);
+    expect(repository.reports.last, same(untouched));
+    expect(repository.deleteCalls, 0);
+  });
+
+  test('archive failure preserves the report and permits a retry', () async {
+    repository = FakeAiReportRepository(
+      reports: [buildAiReport(id: 'retry-archive')],
+    )..archiveError = StateError('private database detail');
+    createContainer();
+    await container.read(aiReportHistoryControllerProvider.future);
+    final controller = container.read(
+      aiReportHistoryControllerProvider.notifier,
+    );
+
+    expect(await controller.archiveReport('retry-archive'), isFalse);
+    var state = container.read(aiReportHistoryControllerProvider).requireValue;
+    expect(state.reports.single.status, AiReportStatus.completed);
+    expect(state.archivingReportIds, isEmpty);
+    expect(state.operationError, '归档报告失败，请稍后重试。');
+    expect(state.operationError, isNot(contains('database')));
+
+    repository.archiveError = null;
+    expect(await controller.archiveReport('retry-archive'), isTrue);
+    state = container.read(aiReportHistoryControllerProvider).requireValue;
+    expect(state.reports.single.status, AiReportStatus.archived);
+    expect(repository.archiveCalls, 2);
+  });
+
   test('invalid detail id returns null without a repository lookup', () async {
     repository = FakeAiReportRepository();
     createContainer();

@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -175,6 +175,10 @@ class AppDatabase extends _$AppDatabase {
         await _backfillAiReportVersions();
         await _createAiReportIndexes();
         await _createAiReportVersionIndexesAndGuards();
+      }
+      if (from < 11) {
+        await migrator.alterTable(TableMigration(syncConflicts));
+        await _createSyncConflictIndexes();
       }
     },
     beforeOpen: (details) async {

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 
 void main() {
-  test('v2 to v10 preserves goals and adds current tables', () async {
+  test('v2 to v11 preserves goals and adds current tables', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -33,7 +33,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 10);
+    expect(version.read<int>('user_version'), 11);
 
     final goal =
         await (migrated.select(migrated.goals)..where(
@@ -69,7 +69,7 @@ void main() {
 
     final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(migrated.close);
-    expect(migrated.schemaVersion, 10);
+    expect(migrated.schemaVersion, 11);
     final existing = await migrated.select(migrated.goals).getSingle();
     expect(existing.title, 'v1 普通目标');
     expect(existing.archivedAt, isNull);
@@ -100,7 +100,7 @@ void main() {
     );
   });
 
-  test('v3 to v10 preserves goals and creates conflict indexes', () async {
+  test('v3 to v11 preserves goals and creates conflict indexes', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -129,7 +129,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 10);
+    expect(version.read<int>('user_version'), 11);
     final goal = await migrated.select(migrated.goals).getSingle();
     expect(goal.id, '00000000-0000-4000-8000-000000000021');
     expect(goal.syncStatus, 'conflict');
@@ -154,7 +154,7 @@ void main() {
   });
 
   test(
-    'v4 to v10 preserves data and supersedes unhydrated legacy conflicts',
+    'v4 to v11 preserves data and supersedes unhydrated legacy conflicts',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -203,7 +203,7 @@ void main() {
 
       final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
       addTearDown(migrated.close);
-      expect(migrated.schemaVersion, 10);
+      expect(migrated.schemaVersion, 11);
       expect(await migrated.select(migrated.goals).get(), hasLength(1));
       expect(await migrated.select(migrated.userProfiles).get(), hasLength(1));
       expect(await migrated.select(migrated.appSettings).get(), hasLength(1));
@@ -228,7 +228,7 @@ void main() {
   );
 
   test(
-    'v5 to v10 backfills existing binding without claiming legacy data',
+    'v5 to v11 backfills existing binding without claiming legacy data',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -317,7 +317,7 @@ CREATE TABLE cloud_account_bindings_v5 (
   );
 
   test(
-    'v6 to v10 preserves legacy quarantine and business sync metadata',
+    'v6 to v11 preserves legacy quarantine and business sync metadata',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -392,7 +392,7 @@ CREATE TABLE cloud_account_bindings_v6 (
           .select(migrated.cloudAccountBindings)
           .getSingle();
       final profile = await migrated.select(migrated.userProfiles).getSingle();
-      expect(migrated.schemaVersion, 10);
+      expect(migrated.schemaVersion, 11);
       expect(binding.syncEligibilityStatus, 'legacy_review_required');
       expect(binding.verificationStatus, 'not_verified');
       expect(binding.verificationTime, isNull);
@@ -404,7 +404,7 @@ CREATE TABLE cloud_account_bindings_v6 (
     },
   );
 
-  test('v7 to v10 adds nullable remote identity and prompt schema', () async {
+  test('v7 to v11 adds nullable remote identity and prompt schema', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -449,13 +449,13 @@ CREATE TABLE cloud_account_bindings_v6 (
     addTearDown(migrated.close);
     final conflict = await migrated.select(migrated.syncConflicts).getSingle();
 
-    expect(migrated.schemaVersion, 10);
+    expect(migrated.schemaVersion, 11);
     expect(conflict.recordId, '70000000-0000-4000-8000-000000000081');
     expect(conflict.remoteRecordId, isNull);
   });
 
   test(
-    'v8 to v10 backfills prompt configuration and Journal snapshots',
+    'v8 to v11 backfills prompt configuration and Journal snapshots',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -497,7 +497,7 @@ CREATE TABLE cloud_account_bindings_v6 (
           .select(migrated.journalEntryPromptItems)
           .get();
 
-      expect(migrated.schemaVersion, 10);
+      expect(migrated.schemaVersion, 11);
       expect(configuration.userId, bootstrap.activeUserId);
       expect(configuration.logicalKey, 'default');
       expect(prompts, hasLength(5));
@@ -544,7 +544,7 @@ CREATE TABLE cloud_account_bindings_v6 (
     },
   );
 
-  test('v9 to v10 backfills immutable AI report version one', () async {
+  test('v9 to v11 backfills immutable AI report version one', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -604,7 +604,7 @@ CREATE TABLE cloud_account_bindings_v6 (
       migrated.aiReportVersions,
     )..where((row) => row.reportId.equals(failedReportId))).getSingle();
 
-    expect(migrated.schemaVersion, 10);
+    expect(migrated.schemaVersion, 11);
     expect(report.id, reportId);
     expect(report.title, '每周回顾');
     expect(report.currentVersion, 1);
@@ -623,7 +623,64 @@ CREATE TABLE cloud_account_bindings_v6 (
     );
   });
 
-  test('schema 10 refuses an automatic downgrade to schema 9', () async {
+  test(
+    'v10 to v11 preserves conflicts and permits AI report conflicts',
+    () async {
+      final fixture = await _createDatabaseFixture();
+      addTearDown(fixture.dispose);
+      final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      final bootstrap = await original.bootstrapDao.bootstrap(
+        createUnboundProfile: true,
+      );
+      await original
+          .into(original.syncConflicts)
+          .insert(
+            SyncConflictsCompanion.insert(
+              id: const Value('91000000-0000-4000-8000-000000000001'),
+              localUserId: bootstrap.activeUserId,
+              endpointKey: 'https://alpha.example.test',
+              cloudUserId: 'cloud-user-v10',
+              entityType: 'goals',
+              recordId: '91000000-0000-4000-8000-000000000002',
+              localUpdatedAt: 100,
+              remoteOperation: 'upsert',
+              remoteServerVersion: 4,
+              detectedAt: 100,
+              lastSeenAt: 100,
+              resolutionStatus: 'unresolved',
+            ),
+          );
+      await _replaceSyncConflictsWithVersionTenDefinition(original);
+      await original.close();
+
+      final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
+      addTearDown(migrated.close);
+      expect(migrated.schemaVersion, 11);
+      expect(await migrated.select(migrated.syncConflicts).get(), hasLength(1));
+
+      await migrated
+          .into(migrated.syncConflicts)
+          .insert(
+            SyncConflictsCompanion.insert(
+              id: const Value('91000000-0000-4000-8000-000000000003'),
+              localUserId: bootstrap.activeUserId,
+              endpointKey: 'https://alpha.example.test',
+              cloudUserId: 'cloud-user-v10',
+              entityType: 'ai_reports',
+              recordId: '91000000-0000-4000-8000-000000000004',
+              localUpdatedAt: 120,
+              remoteOperation: 'upsert',
+              remoteServerVersion: 5,
+              detectedAt: 120,
+              lastSeenAt: 120,
+              resolutionStatus: 'unresolved',
+            ),
+          );
+      expect(await migrated.select(migrated.syncConflicts).get(), hasLength(2));
+    },
+  );
+
+  test('schema 11 refuses an automatic downgrade to schema 9', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final current = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -699,6 +756,54 @@ CREATE TABLE ai_reports_v9 (
     );
     await database.customStatement('PRAGMA user_version = 9');
   });
+}
+
+Future<void> _replaceSyncConflictsWithVersionTenDefinition(
+  AppDatabase database,
+) async {
+  final schema = await database
+      .customSelect(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' "
+        "AND name = 'sync_conflicts'",
+      )
+      .getSingle();
+  final oldSql = schema
+      .read<String>('sql')
+      .replaceFirst(
+        'CREATE TABLE "sync_conflicts"',
+        'CREATE TABLE "sync_conflicts_v10"',
+      )
+      .replaceFirst(", 'ai_reports'", '');
+  const columns =
+      'id, local_user_id, endpoint_key, cloud_user_id, entity_type, '
+      'record_id, remote_record_id, local_payload_json, local_updated_at, '
+      'local_deleted_at, local_server_version, local_origin_device_id, '
+      'remote_payload_json, remote_operation, remote_updated_at, '
+      'remote_deleted_at, remote_server_version, remote_origin_device_id, '
+      'detected_at, last_seen_at, resolution_status, resolved_at';
+
+  await database.customStatement('PRAGMA foreign_keys = OFF');
+  await database.transaction(() async {
+    for (final indexName in const <String>[
+      'sync_conflicts_user_status_detected',
+      'sync_conflicts_endpoint_user_entity',
+      'sync_conflicts_entity_record',
+      'sync_conflicts_one_active',
+    ]) {
+      await database.customStatement('DROP INDEX $indexName');
+    }
+    await database.customStatement(oldSql);
+    await database.customStatement(
+      'INSERT INTO sync_conflicts_v10 ($columns) '
+      'SELECT $columns FROM sync_conflicts',
+    );
+    await database.customStatement('DROP TABLE sync_conflicts');
+    await database.customStatement(
+      'ALTER TABLE sync_conflicts_v10 RENAME TO sync_conflicts',
+    );
+    await database.customStatement('PRAGMA user_version = 10');
+  });
+  await database.customStatement('PRAGMA foreign_keys = ON');
 }
 
 Future<void> _replaceGoalsWithVersionTwoDefinition(AppDatabase database) {

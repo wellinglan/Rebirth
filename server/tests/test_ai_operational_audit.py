@@ -429,7 +429,7 @@ def test_cli_monitor_and_ledger_check_report_controlled_incidents(
     assert ledger["read_only"] is True
 
 
-def test_operations_add_no_api_flutter_schema_or_migration() -> None:
+def test_operations_add_no_api_or_server_migration() -> None:
     repository = Path(__file__).resolve().parents[2]
     router = (repository / "server/app/routers/ai.py").read_text(
         encoding="utf-8"
@@ -446,7 +446,7 @@ def test_operations_add_no_api_flutter_schema_or_migration() -> None:
     )
     assert "maintenance.rebirth_ai" not in router
     assert "usage/audit" not in router
-    assert "int get schemaVersion => 10;" in database
+    assert "int get schemaVersion => 11;" in database
     assert "20260801_0007_ai_provider_cost_safety.py" in versions
     assert not any("14a3" in name.lower() for name in versions)
     assert all(

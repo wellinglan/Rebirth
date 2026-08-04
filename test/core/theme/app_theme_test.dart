@@ -102,6 +102,6 @@ void main() {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(database.close);
 
-    expect(database.schemaVersion, 10);
+    expect(database.schemaVersion, 11);
   });
 }

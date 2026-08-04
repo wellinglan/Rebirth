@@ -8,13 +8,18 @@ VERSION_ID = "72222222-2222-4222-8222-222222222222"
 ORIGIN_ID = "73333333-3333-4333-8333-333333333333"
 
 
-def _payload(*, content: str = "A private report", version_id: str = VERSION_ID):
+def _payload(
+    *,
+    content: str = "A private report",
+    version_id: str = VERSION_ID,
+    status: str = "completed",
+):
     return {
         "report_type": "weekly_report",
         "title": "Weekly review",
         "period_start_date": "2026-08-01",
         "period_end_date": "2026-08-07",
-        "report_status": "completed",
+        "report_status": status,
         "created_at": 1_786_000_000_000,
         "generation_source": "ai_coach",
         "sensitivity": "high",
@@ -69,3 +74,45 @@ def test_ai_report_rejects_unsafe_fields_and_version_rewrite(
     rewritten = _payload(content="rewritten")
     response = _push(client, auth_headers, registered_device, payload=rewritten, client_version=version)
     assert response.status_code == 422
+
+
+def test_ai_report_archive_uses_occ_and_keeps_version_payload(
+    client: TestClient, auth_headers: dict[str, str], registered_device: str
+) -> None:
+    created = _push(client, auth_headers, registered_device)
+    first_version = created.json()["accepted"][0]["server_version"]
+
+    archived_payload = _payload(status="archived")
+    archived = _push(
+        client,
+        auth_headers,
+        registered_device,
+        payload=archived_payload,
+        client_version=first_version,
+    )
+    assert archived.status_code == 200
+    archived_version = archived.json()["accepted"][0]["server_version"]
+    assert archived_version > first_version
+
+    stale = _push(
+        client,
+        auth_headers,
+        registered_device,
+        client_version=first_version,
+    )
+    assert stale.status_code == 200
+    assert stale.json()["accepted"] == []
+    assert stale.json()["conflicts"][0]["reason"] == "stale_client"
+    assert stale.json()["conflicts"][0]["server_version"] == archived_version
+
+    pulled = client.post(
+        "/sync/pull",
+        headers=auth_headers,
+        json={
+            "device_id": registered_device,
+            "since_server_version": first_version,
+            "tables": ["ai_reports"],
+        },
+    )
+    assert pulled.status_code == 200
+    assert pulled.json()["items"][0]["payload"] == archived_payload

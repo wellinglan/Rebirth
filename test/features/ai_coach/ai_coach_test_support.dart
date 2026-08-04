@@ -115,14 +115,17 @@ class FakeAiReportRepository implements AiReportRepository {
   AiReport? reusable;
   Object? listError;
   Object? deleteError;
+  Object? archiveError;
   int findCalls = 0;
   int listCalls = 0;
   int getCalls = 0;
   int deleteCalls = 0;
+  int archiveCalls = 0;
   int createPendingCalls = 0;
   int markCompletedCalls = 0;
   int markFailedCalls = 0;
   String? lastDeletedId;
+  String? lastArchivedId;
   String? lastReusableHash;
   String? lastReusablePromptVersion;
   AiCoachInputBundle? lastPendingInput;
@@ -201,7 +204,19 @@ class FakeAiReportRepository implements AiReportRepository {
 
   @override
   Future<AiReport> archive(String reportId) async {
-    return _replace(reportId, status: AiReportStatus.archived);
+    archiveCalls += 1;
+    lastArchivedId = reportId;
+    if (archiveError case final error?) throw error;
+    final existing = reports.firstWhere((report) => report.id == reportId);
+    return _replace(
+      reportId,
+      status: AiReportStatus.archived,
+      reportContent: existing.reportContent,
+      structuredOutputJson: existing.structuredOutputJson,
+      provider: existing.provider,
+      model: existing.model,
+      errorCode: existing.errorCode,
+    );
   }
 
   @override
@@ -338,7 +353,9 @@ class FakeAiReportRepository implements AiReportRepository {
       hasInputSnapshot: existing.hasInputSnapshot,
       errorCode: errorCode,
       requestedAt: existing.requestedAt,
-      generatedAt: status == AiReportStatus.completed
+      generatedAt:
+          status == AiReportStatus.completed ||
+              status == AiReportStatus.archived
           ? existing.requestedAt + 1000
           : null,
       createdAt: existing.createdAt,

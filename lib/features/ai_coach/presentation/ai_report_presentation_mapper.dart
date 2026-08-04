@@ -42,7 +42,9 @@ final class AiReportPresentationMapper {
       generatedAtLabel: AiCoachFormatters.timestamp(report.generatedAt),
       providerLabel: _nullableMetadata(report.provider),
       modelLabel: _nullableMetadata(report.model),
-      reportContent: report.status == AiReportStatus.completed
+      reportContent:
+          report.status == AiReportStatus.completed ||
+              report.status == AiReportStatus.archived
           ? report.reportContent?.trim()
           : null,
       hasStructuredOutput:

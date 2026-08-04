@@ -178,6 +178,40 @@ void main() {
   );
 
   test(
+    'archive preserves content and immutable versions while marking sync pending',
+    () async {
+      final pending = await repository.createPending(input: _bundle());
+      await repository.markCompleted(
+        reportId: pending.id,
+        reportContent: 'preserved report body',
+      );
+      await (database.update(
+        database.aiReports,
+      )..where((row) => row.id.equals(pending.id))).write(
+        const AiReportsCompanion(
+          serverVersion: Value(7),
+          syncStatus: Value('synced'),
+        ),
+      );
+      currentTime = currentTime.add(const Duration(minutes: 5));
+
+      final archived = await repository.archive(pending.id);
+      final raw = await (database.select(
+        database.aiReports,
+      )..where((row) => row.id.equals(pending.id))).getSingle();
+      final versions = await repository.listVersions(pending.id);
+
+      expect(archived.status, AiReportStatus.archived);
+      expect(archived.reportContent, 'preserved report body');
+      expect(raw.reportStatus, 'archived');
+      expect(raw.syncStatus, 'pending');
+      expect(raw.updatedAt, currentTime.millisecondsSinceEpoch);
+      expect(versions, hasLength(1));
+      expect(versions.single.content, 'preserved report body');
+    },
+  );
+
+  test(
     'empty completed content is rejected and leaves pending intact',
     () async {
       final pending = await repository.createPending(input: _bundle());

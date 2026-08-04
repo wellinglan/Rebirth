@@ -55,7 +55,7 @@ class SyncConflicts extends Table with UuidPrimaryKey {
     "CHECK (entity_type IN ("
         "'user_profiles', 'today_records', 'journal_prompt_configurations', "
         "'journal_entries', "
-        "'goals', 'health_records'))",
+        "'goals', 'health_records', 'ai_reports'))",
     'CHECK (length(trim(record_id)) > 0)',
     'CHECK (remote_record_id IS NULL OR length(trim(remote_record_id)) > 0)',
     'CHECK (local_updated_at >= 0)',

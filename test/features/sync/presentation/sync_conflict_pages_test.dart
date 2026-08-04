@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_metadata.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_sync_payload.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
@@ -228,6 +232,37 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('confirmAdoptRemoteButton')));
       await tester.pumpAndSettle();
       expect(handler.calls, ['adopt']);
+    },
+  );
+
+  testWidgets(
+    'AI report conflict hides report content and keeps explicit recovery',
+    (tester) async {
+      final handler = _RecordingConflictHandler(SyncEntityType.aiReport);
+      await _pumpDetails(
+        tester,
+        details: _aiReportDetails(),
+        handlerRegistry: SyncConflictResolutionHandlerRegistry([handler]),
+      );
+
+      expect(find.text('Weekly reflection'), findsOneWidget);
+      expect(find.textContaining('2026-07-01 - 2026-07-07'), findsNWidgets(2));
+      expect(find.textContaining('archived'), findsOneWidget);
+      expect(
+        find.textContaining('AI report content is hidden'),
+        findsNWidgets(2),
+      );
+      expect(find.textContaining('Sensitive report body'), findsNothing);
+      expect(find.textContaining('private-generation-source'), findsNothing);
+      expect(find.byKey(const ValueKey('adoptRemoteButton')), findsOneWidget);
+      expect(find.byKey(const ValueKey('keepLocalButton')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('keepLocalButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('confirmKeepLocalButton')));
+      await tester.pumpAndSettle();
+
+      expect(handler.calls, ['keep']);
     },
   );
 
@@ -780,6 +815,67 @@ SyncConflictDetails _healthDetails() {
     ),
     currentLocalSnapshot: null,
     localSnapshotChanged: false,
+  );
+}
+
+SyncConflictDetails _aiReportDetails() {
+  return SyncConflictDetails(
+    record: SyncConflictRecord(
+      id: _conflictId,
+      scope: _scope,
+      entityType: SyncEntityType.aiReport,
+      recordId: _recordId,
+      localSnapshot: SyncConflictSnapshot(
+        payload: _aiReportPayload(status: AiReportStatus.completed),
+        updatedAt: 700,
+        deletedAt: null,
+        serverVersion: 5,
+        originDeviceId: null,
+      ),
+      remoteSnapshot: SyncConflictSnapshot(
+        payload: _aiReportPayload(status: AiReportStatus.archived),
+        updatedAt: 800,
+        deletedAt: null,
+        serverVersion: 6,
+        originDeviceId: null,
+      ),
+      remoteOperation: SyncConflictOperation.upsert,
+      detectedAt: 900,
+      lastSeenAt: 900,
+      resolutionStatus: SyncConflictResolutionStatus.unresolved,
+      resolvedAt: null,
+    ),
+    currentLocalSnapshot: null,
+    localSnapshotChanged: false,
+  );
+}
+
+AiReportSyncPayload _aiReportPayload({required AiReportStatus status}) {
+  return AiReportSyncPayload(
+    reportType: AiReportType.weeklyReport,
+    title: 'Weekly reflection',
+    periodStartDate: '2026-07-01',
+    periodEndDate: '2026-07-07',
+    status: status,
+    createdAt: 100,
+    generationSource: 'private-generation-source',
+    sensitivity: AiReportSensitivity.high,
+    quality: AiReportQuality.unreviewed,
+    currentVersion: 1,
+    versions: const [
+      AiReportVersionSyncPayload(
+        id: '00000000-0000-4000-8000-000000000044',
+        version: 1,
+        status: AiReportStatus.completed,
+        generationSource: 'private-generation-source',
+        content: 'Sensitive report body',
+        sensitivity: AiReportSensitivity.high,
+        quality: AiReportQuality.unreviewed,
+        errorCode: null,
+        createdAt: 100,
+        completedAt: 101,
+      ),
+    ],
   );
 }
 

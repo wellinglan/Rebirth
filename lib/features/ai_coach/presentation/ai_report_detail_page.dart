@@ -11,6 +11,7 @@ import 'ai_report_history_controller.dart';
 import 'ai_pending_recovery_controller.dart';
 import 'models/ai_report_presentation_models.dart';
 import 'widgets/ai_report_delete_dialog.dart';
+import 'widgets/ai_report_archive_dialog.dart';
 
 class AiReportDetailPage extends ConsumerWidget {
   const AiReportDetailPage({required this.reportId, super.key});
@@ -48,10 +49,25 @@ class _DetailContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(aiReportHistoryControllerProvider).asData?.value;
+    final originalDetail = this.detail;
+    var currentDetail = originalDetail;
+    if (history != null) {
+      for (final report in history.reports) {
+        if (report.id == originalDetail.id) {
+          currentDetail = originalDetail.copyWith(
+            status: report.status,
+            statusLabel: report.statusLabel,
+          );
+          break;
+        }
+      }
+    }
+    final detail = currentDetail;
     final freshness = detail.isDaily
         ? ref.watch(aiDailyReportFreshnessProvider(detail.id))
         : null;
     final deleting = history?.deletingReportIds.contains(detail.id) == true;
+    final archiving = history?.archivingReportIds.contains(detail.id) == true;
     return ListView(
       key: const ValueKey('aiReportDetailContent'),
       padding: AppLayout.pagePadding,
@@ -176,6 +192,22 @@ class _DetailContent extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (detail.status == AiReportStatus.completed) ...[
+                  FilledButton.tonalIcon(
+                    key: const ValueKey('archiveAiReportDetailButton'),
+                    onPressed: deleting || archiving
+                        ? null
+                        : () => _archive(context, ref),
+                    icon: archiving
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.archive_outlined),
+                    label: Text(archiving ? '归档中...' : '归档报告'),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 OutlinedButton.icon(
                   key: const ValueKey('deleteAiReportDetailButton'),
                   onPressed: deleting ? null : () => _delete(context, ref),
@@ -193,6 +225,23 @@ class _DetailContent extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _archive(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showAiReportArchiveDialog(context);
+    if (!confirmed || !context.mounted) return;
+    final archived = await ref
+        .read(aiReportHistoryControllerProvider.notifier)
+        .archiveReport(detail.id);
+    if (!context.mounted) return;
+    if (archived) {
+      ref.invalidate(aiReportDetailProvider(detail.id));
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(archived ? '报告已归档' : '归档报告失败，请稍后重试。')),
+      );
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
@@ -376,7 +425,16 @@ class _StatusContent extends StatelessWidget {
           ),
           AiReportStatus.draft => const Text('这份报告仍是草稿，尚未生成内容。'),
           AiReportStatus.generating => const Text('报告正在生成，已有历史版本不会被覆盖。'),
-          AiReportStatus.archived => const Text('这份报告已归档。'),
+          AiReportStatus.archived => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('这份报告已归档。', key: ValueKey('aiReportArchivedMessage')),
+              const SizedBox(height: 12),
+              Text('报告内容', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              SelectableText(detail.reportContent ?? '报告正文不可用。'),
+            ],
+          ),
         },
       ),
     );
