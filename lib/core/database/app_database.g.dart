@@ -9088,6 +9088,16 @@ class $AiReportsTable extends AiReports
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('AI 报告'),
+  );
   static const VerificationMeta _periodStartDateMeta = const VerificationMeta(
     'periodStartDate',
   );
@@ -9200,6 +9210,54 @@ class $AiReportsTable extends AiReports
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _generationSourceMeta = const VerificationMeta(
+    'generationSource',
+  );
+  @override
+  late final GeneratedColumn<String> generationSource = GeneratedColumn<String>(
+    'generation_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('legacy'),
+  );
+  static const VerificationMeta _sensitivityMeta = const VerificationMeta(
+    'sensitivity',
+  );
+  @override
+  late final GeneratedColumn<String> sensitivity = GeneratedColumn<String>(
+    'sensitivity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('high'),
+  );
+  static const VerificationMeta _qualityMeta = const VerificationMeta(
+    'quality',
+  );
+  @override
+  late final GeneratedColumn<String> quality = GeneratedColumn<String>(
+    'quality',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('unknown'),
+  );
+  static const VerificationMeta _currentVersionMeta = const VerificationMeta(
+    'currentVersion',
+  );
+  @override
+  late final GeneratedColumn<int> currentVersion = GeneratedColumn<int>(
+    'current_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _reportContentMeta = const VerificationMeta(
     'reportContent',
   );
@@ -9267,6 +9325,7 @@ class $AiReportsTable extends AiReports
     deletedAt,
     userId,
     reportType,
+    title,
     periodStartDate,
     periodEndDate,
     inputSourcesJson,
@@ -9277,6 +9336,10 @@ class $AiReportsTable extends AiReports
     model,
     generationMode,
     reportStatus,
+    generationSource,
+    sensitivity,
+    quality,
+    currentVersion,
     reportContent,
     structuredOutputJson,
     errorCode,
@@ -9365,6 +9428,12 @@ class $AiReportsTable extends AiReports
     } else if (isInserting) {
       context.missing(_reportTypeMeta);
     }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
     if (data.containsKey('period_start_date')) {
       context.handle(
         _periodStartDateMeta,
@@ -9451,6 +9520,39 @@ class $AiReportsTable extends AiReports
         reportStatus.isAcceptableOrUnknown(
           data['report_status']!,
           _reportStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('generation_source')) {
+      context.handle(
+        _generationSourceMeta,
+        generationSource.isAcceptableOrUnknown(
+          data['generation_source']!,
+          _generationSourceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sensitivity')) {
+      context.handle(
+        _sensitivityMeta,
+        sensitivity.isAcceptableOrUnknown(
+          data['sensitivity']!,
+          _sensitivityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('quality')) {
+      context.handle(
+        _qualityMeta,
+        quality.isAcceptableOrUnknown(data['quality']!, _qualityMeta),
+      );
+    }
+    if (data.containsKey('current_version')) {
+      context.handle(
+        _currentVersionMeta,
+        currentVersion.isAcceptableOrUnknown(
+          data['current_version']!,
+          _currentVersionMeta,
         ),
       );
     }
@@ -9547,6 +9649,10 @@ class $AiReportsTable extends AiReports
         DriftSqlType.string,
         data['${effectivePrefix}report_type'],
       )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
       periodStartDate: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}period_start_date'],
@@ -9586,6 +9692,22 @@ class $AiReportsTable extends AiReports
       reportStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}report_status'],
+      )!,
+      generationSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}generation_source'],
+      )!,
+      sensitivity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sensitivity'],
+      )!,
+      quality: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quality'],
+      )!,
+      currentVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_version'],
       )!,
       reportContent: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -9627,6 +9749,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
   final int? deletedAt;
   final String userId;
   final String reportType;
+  final String title;
   final String periodStartDate;
   final String periodEndDate;
   final String inputSourcesJson;
@@ -9637,6 +9760,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
   final String? model;
   final String generationMode;
   final String reportStatus;
+  final String generationSource;
+  final String sensitivity;
+  final String quality;
+  final int currentVersion;
   final String? reportContent;
   final String? structuredOutputJson;
   final String? errorCode;
@@ -9653,6 +9780,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     this.deletedAt,
     required this.userId,
     required this.reportType,
+    required this.title,
     required this.periodStartDate,
     required this.periodEndDate,
     required this.inputSourcesJson,
@@ -9663,6 +9791,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     this.model,
     required this.generationMode,
     required this.reportStatus,
+    required this.generationSource,
+    required this.sensitivity,
+    required this.quality,
+    required this.currentVersion,
     this.reportContent,
     this.structuredOutputJson,
     this.errorCode,
@@ -9690,6 +9822,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     }
     map['user_id'] = Variable<String>(userId);
     map['report_type'] = Variable<String>(reportType);
+    map['title'] = Variable<String>(title);
     map['period_start_date'] = Variable<String>(periodStartDate);
     map['period_end_date'] = Variable<String>(periodEndDate);
     map['input_sources_json'] = Variable<String>(inputSourcesJson);
@@ -9706,6 +9839,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     }
     map['generation_mode'] = Variable<String>(generationMode);
     map['report_status'] = Variable<String>(reportStatus);
+    map['generation_source'] = Variable<String>(generationSource);
+    map['sensitivity'] = Variable<String>(sensitivity);
+    map['quality'] = Variable<String>(quality);
+    map['current_version'] = Variable<int>(currentVersion);
     if (!nullToAbsent || reportContent != null) {
       map['report_content'] = Variable<String>(reportContent);
     }
@@ -9742,6 +9879,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
           : Value(deletedAt),
       userId: Value(userId),
       reportType: Value(reportType),
+      title: Value(title),
       periodStartDate: Value(periodStartDate),
       periodEndDate: Value(periodEndDate),
       inputSourcesJson: Value(inputSourcesJson),
@@ -9758,6 +9896,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
           : Value(model),
       generationMode: Value(generationMode),
       reportStatus: Value(reportStatus),
+      generationSource: Value(generationSource),
+      sensitivity: Value(sensitivity),
+      quality: Value(quality),
+      currentVersion: Value(currentVersion),
       reportContent: reportContent == null && nullToAbsent
           ? const Value.absent()
           : Value(reportContent),
@@ -9790,6 +9932,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       userId: serializer.fromJson<String>(json['userId']),
       reportType: serializer.fromJson<String>(json['reportType']),
+      title: serializer.fromJson<String>(json['title']),
       periodStartDate: serializer.fromJson<String>(json['periodStartDate']),
       periodEndDate: serializer.fromJson<String>(json['periodEndDate']),
       inputSourcesJson: serializer.fromJson<String>(json['inputSourcesJson']),
@@ -9802,6 +9945,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
       model: serializer.fromJson<String?>(json['model']),
       generationMode: serializer.fromJson<String>(json['generationMode']),
       reportStatus: serializer.fromJson<String>(json['reportStatus']),
+      generationSource: serializer.fromJson<String>(json['generationSource']),
+      sensitivity: serializer.fromJson<String>(json['sensitivity']),
+      quality: serializer.fromJson<String>(json['quality']),
+      currentVersion: serializer.fromJson<int>(json['currentVersion']),
       reportContent: serializer.fromJson<String?>(json['reportContent']),
       structuredOutputJson: serializer.fromJson<String?>(
         json['structuredOutputJson'],
@@ -9825,6 +9972,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'userId': serializer.toJson<String>(userId),
       'reportType': serializer.toJson<String>(reportType),
+      'title': serializer.toJson<String>(title),
       'periodStartDate': serializer.toJson<String>(periodStartDate),
       'periodEndDate': serializer.toJson<String>(periodEndDate),
       'inputSourcesJson': serializer.toJson<String>(inputSourcesJson),
@@ -9835,6 +9983,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
       'model': serializer.toJson<String?>(model),
       'generationMode': serializer.toJson<String>(generationMode),
       'reportStatus': serializer.toJson<String>(reportStatus),
+      'generationSource': serializer.toJson<String>(generationSource),
+      'sensitivity': serializer.toJson<String>(sensitivity),
+      'quality': serializer.toJson<String>(quality),
+      'currentVersion': serializer.toJson<int>(currentVersion),
       'reportContent': serializer.toJson<String?>(reportContent),
       'structuredOutputJson': serializer.toJson<String?>(structuredOutputJson),
       'errorCode': serializer.toJson<String?>(errorCode),
@@ -9854,6 +10006,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     Value<int?> deletedAt = const Value.absent(),
     String? userId,
     String? reportType,
+    String? title,
     String? periodStartDate,
     String? periodEndDate,
     String? inputSourcesJson,
@@ -9864,6 +10017,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     Value<String?> model = const Value.absent(),
     String? generationMode,
     String? reportStatus,
+    String? generationSource,
+    String? sensitivity,
+    String? quality,
+    int? currentVersion,
     Value<String?> reportContent = const Value.absent(),
     Value<String?> structuredOutputJson = const Value.absent(),
     Value<String?> errorCode = const Value.absent(),
@@ -9884,6 +10041,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     userId: userId ?? this.userId,
     reportType: reportType ?? this.reportType,
+    title: title ?? this.title,
     periodStartDate: periodStartDate ?? this.periodStartDate,
     periodEndDate: periodEndDate ?? this.periodEndDate,
     inputSourcesJson: inputSourcesJson ?? this.inputSourcesJson,
@@ -9896,6 +10054,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     model: model.present ? model.value : this.model,
     generationMode: generationMode ?? this.generationMode,
     reportStatus: reportStatus ?? this.reportStatus,
+    generationSource: generationSource ?? this.generationSource,
+    sensitivity: sensitivity ?? this.sensitivity,
+    quality: quality ?? this.quality,
+    currentVersion: currentVersion ?? this.currentVersion,
     reportContent: reportContent.present
         ? reportContent.value
         : this.reportContent,
@@ -9928,6 +10090,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
       reportType: data.reportType.present
           ? data.reportType.value
           : this.reportType,
+      title: data.title.present ? data.title.value : this.title,
       periodStartDate: data.periodStartDate.present
           ? data.periodStartDate.value
           : this.periodStartDate,
@@ -9952,6 +10115,16 @@ class AiReport extends DataClass implements Insertable<AiReport> {
       reportStatus: data.reportStatus.present
           ? data.reportStatus.value
           : this.reportStatus,
+      generationSource: data.generationSource.present
+          ? data.generationSource.value
+          : this.generationSource,
+      sensitivity: data.sensitivity.present
+          ? data.sensitivity.value
+          : this.sensitivity,
+      quality: data.quality.present ? data.quality.value : this.quality,
+      currentVersion: data.currentVersion.present
+          ? data.currentVersion.value
+          : this.currentVersion,
       reportContent: data.reportContent.present
           ? data.reportContent.value
           : this.reportContent,
@@ -9981,6 +10154,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
           ..write('deletedAt: $deletedAt, ')
           ..write('userId: $userId, ')
           ..write('reportType: $reportType, ')
+          ..write('title: $title, ')
           ..write('periodStartDate: $periodStartDate, ')
           ..write('periodEndDate: $periodEndDate, ')
           ..write('inputSourcesJson: $inputSourcesJson, ')
@@ -9991,6 +10165,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
           ..write('model: $model, ')
           ..write('generationMode: $generationMode, ')
           ..write('reportStatus: $reportStatus, ')
+          ..write('generationSource: $generationSource, ')
+          ..write('sensitivity: $sensitivity, ')
+          ..write('quality: $quality, ')
+          ..write('currentVersion: $currentVersion, ')
           ..write('reportContent: $reportContent, ')
           ..write('structuredOutputJson: $structuredOutputJson, ')
           ..write('errorCode: $errorCode, ')
@@ -10012,6 +10190,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     deletedAt,
     userId,
     reportType,
+    title,
     periodStartDate,
     periodEndDate,
     inputSourcesJson,
@@ -10022,6 +10201,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
     model,
     generationMode,
     reportStatus,
+    generationSource,
+    sensitivity,
+    quality,
+    currentVersion,
     reportContent,
     structuredOutputJson,
     errorCode,
@@ -10042,6 +10225,7 @@ class AiReport extends DataClass implements Insertable<AiReport> {
           other.deletedAt == this.deletedAt &&
           other.userId == this.userId &&
           other.reportType == this.reportType &&
+          other.title == this.title &&
           other.periodStartDate == this.periodStartDate &&
           other.periodEndDate == this.periodEndDate &&
           other.inputSourcesJson == this.inputSourcesJson &&
@@ -10052,6 +10236,10 @@ class AiReport extends DataClass implements Insertable<AiReport> {
           other.model == this.model &&
           other.generationMode == this.generationMode &&
           other.reportStatus == this.reportStatus &&
+          other.generationSource == this.generationSource &&
+          other.sensitivity == this.sensitivity &&
+          other.quality == this.quality &&
+          other.currentVersion == this.currentVersion &&
           other.reportContent == this.reportContent &&
           other.structuredOutputJson == this.structuredOutputJson &&
           other.errorCode == this.errorCode &&
@@ -10070,6 +10258,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
   final Value<int?> deletedAt;
   final Value<String> userId;
   final Value<String> reportType;
+  final Value<String> title;
   final Value<String> periodStartDate;
   final Value<String> periodEndDate;
   final Value<String> inputSourcesJson;
@@ -10080,6 +10269,10 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
   final Value<String?> model;
   final Value<String> generationMode;
   final Value<String> reportStatus;
+  final Value<String> generationSource;
+  final Value<String> sensitivity;
+  final Value<String> quality;
+  final Value<int> currentVersion;
   final Value<String?> reportContent;
   final Value<String?> structuredOutputJson;
   final Value<String?> errorCode;
@@ -10097,6 +10290,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     this.deletedAt = const Value.absent(),
     this.userId = const Value.absent(),
     this.reportType = const Value.absent(),
+    this.title = const Value.absent(),
     this.periodStartDate = const Value.absent(),
     this.periodEndDate = const Value.absent(),
     this.inputSourcesJson = const Value.absent(),
@@ -10107,6 +10301,10 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     this.model = const Value.absent(),
     this.generationMode = const Value.absent(),
     this.reportStatus = const Value.absent(),
+    this.generationSource = const Value.absent(),
+    this.sensitivity = const Value.absent(),
+    this.quality = const Value.absent(),
+    this.currentVersion = const Value.absent(),
     this.reportContent = const Value.absent(),
     this.structuredOutputJson = const Value.absent(),
     this.errorCode = const Value.absent(),
@@ -10125,6 +10323,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     this.deletedAt = const Value.absent(),
     required String userId,
     required String reportType,
+    this.title = const Value.absent(),
     required String periodStartDate,
     required String periodEndDate,
     this.inputSourcesJson = const Value.absent(),
@@ -10135,6 +10334,10 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     this.model = const Value.absent(),
     this.generationMode = const Value.absent(),
     this.reportStatus = const Value.absent(),
+    this.generationSource = const Value.absent(),
+    this.sensitivity = const Value.absent(),
+    this.quality = const Value.absent(),
+    this.currentVersion = const Value.absent(),
     this.reportContent = const Value.absent(),
     this.structuredOutputJson = const Value.absent(),
     this.errorCode = const Value.absent(),
@@ -10159,6 +10362,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     Expression<int>? deletedAt,
     Expression<String>? userId,
     Expression<String>? reportType,
+    Expression<String>? title,
     Expression<String>? periodStartDate,
     Expression<String>? periodEndDate,
     Expression<String>? inputSourcesJson,
@@ -10169,6 +10373,10 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     Expression<String>? model,
     Expression<String>? generationMode,
     Expression<String>? reportStatus,
+    Expression<String>? generationSource,
+    Expression<String>? sensitivity,
+    Expression<String>? quality,
+    Expression<int>? currentVersion,
     Expression<String>? reportContent,
     Expression<String>? structuredOutputJson,
     Expression<String>? errorCode,
@@ -10187,6 +10395,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (userId != null) 'user_id': userId,
       if (reportType != null) 'report_type': reportType,
+      if (title != null) 'title': title,
       if (periodStartDate != null) 'period_start_date': periodStartDate,
       if (periodEndDate != null) 'period_end_date': periodEndDate,
       if (inputSourcesJson != null) 'input_sources_json': inputSourcesJson,
@@ -10197,6 +10406,10 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
       if (model != null) 'model': model,
       if (generationMode != null) 'generation_mode': generationMode,
       if (reportStatus != null) 'report_status': reportStatus,
+      if (generationSource != null) 'generation_source': generationSource,
+      if (sensitivity != null) 'sensitivity': sensitivity,
+      if (quality != null) 'quality': quality,
+      if (currentVersion != null) 'current_version': currentVersion,
       if (reportContent != null) 'report_content': reportContent,
       if (structuredOutputJson != null)
         'structured_output_json': structuredOutputJson,
@@ -10218,6 +10431,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     Value<int?>? deletedAt,
     Value<String>? userId,
     Value<String>? reportType,
+    Value<String>? title,
     Value<String>? periodStartDate,
     Value<String>? periodEndDate,
     Value<String>? inputSourcesJson,
@@ -10228,6 +10442,10 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     Value<String?>? model,
     Value<String>? generationMode,
     Value<String>? reportStatus,
+    Value<String>? generationSource,
+    Value<String>? sensitivity,
+    Value<String>? quality,
+    Value<int>? currentVersion,
     Value<String?>? reportContent,
     Value<String?>? structuredOutputJson,
     Value<String?>? errorCode,
@@ -10246,6 +10464,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
       deletedAt: deletedAt ?? this.deletedAt,
       userId: userId ?? this.userId,
       reportType: reportType ?? this.reportType,
+      title: title ?? this.title,
       periodStartDate: periodStartDate ?? this.periodStartDate,
       periodEndDate: periodEndDate ?? this.periodEndDate,
       inputSourcesJson: inputSourcesJson ?? this.inputSourcesJson,
@@ -10256,6 +10475,10 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
       model: model ?? this.model,
       generationMode: generationMode ?? this.generationMode,
       reportStatus: reportStatus ?? this.reportStatus,
+      generationSource: generationSource ?? this.generationSource,
+      sensitivity: sensitivity ?? this.sensitivity,
+      quality: quality ?? this.quality,
+      currentVersion: currentVersion ?? this.currentVersion,
       reportContent: reportContent ?? this.reportContent,
       structuredOutputJson: structuredOutputJson ?? this.structuredOutputJson,
       errorCode: errorCode ?? this.errorCode,
@@ -10298,6 +10521,9 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     if (reportType.present) {
       map['report_type'] = Variable<String>(reportType.value);
     }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
     if (periodStartDate.present) {
       map['period_start_date'] = Variable<String>(periodStartDate.value);
     }
@@ -10327,6 +10553,18 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
     }
     if (reportStatus.present) {
       map['report_status'] = Variable<String>(reportStatus.value);
+    }
+    if (generationSource.present) {
+      map['generation_source'] = Variable<String>(generationSource.value);
+    }
+    if (sensitivity.present) {
+      map['sensitivity'] = Variable<String>(sensitivity.value);
+    }
+    if (quality.present) {
+      map['quality'] = Variable<String>(quality.value);
+    }
+    if (currentVersion.present) {
+      map['current_version'] = Variable<int>(currentVersion.value);
     }
     if (reportContent.present) {
       map['report_content'] = Variable<String>(reportContent.value);
@@ -10364,6 +10602,7 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
           ..write('deletedAt: $deletedAt, ')
           ..write('userId: $userId, ')
           ..write('reportType: $reportType, ')
+          ..write('title: $title, ')
           ..write('periodStartDate: $periodStartDate, ')
           ..write('periodEndDate: $periodEndDate, ')
           ..write('inputSourcesJson: $inputSourcesJson, ')
@@ -10374,11 +10613,800 @@ class AiReportsCompanion extends UpdateCompanion<AiReport> {
           ..write('model: $model, ')
           ..write('generationMode: $generationMode, ')
           ..write('reportStatus: $reportStatus, ')
+          ..write('generationSource: $generationSource, ')
+          ..write('sensitivity: $sensitivity, ')
+          ..write('quality: $quality, ')
+          ..write('currentVersion: $currentVersion, ')
           ..write('reportContent: $reportContent, ')
           ..write('structuredOutputJson: $structuredOutputJson, ')
           ..write('errorCode: $errorCode, ')
           ..write('requestedAt: $requestedAt, ')
           ..write('generatedAt: $generatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AiReportVersionsTable extends AiReportVersions
+    with TableInfo<$AiReportVersionsTable, AiReportVersionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiReportVersionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: databaseUuid.v4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _reportIdMeta = const VerificationMeta(
+    'reportId',
+  );
+  @override
+  late final GeneratedColumn<String> reportId = GeneratedColumn<String>(
+    'report_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ai_reports (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _generationSourceMeta = const VerificationMeta(
+    'generationSource',
+  );
+  @override
+  late final GeneratedColumn<String> generationSource = GeneratedColumn<String>(
+    'generation_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modelMetadataJsonMeta = const VerificationMeta(
+    'modelMetadataJson',
+  );
+  @override
+  late final GeneratedColumn<String> modelMetadataJson =
+      GeneratedColumn<String>(
+        'model_metadata_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sensitivityMeta = const VerificationMeta(
+    'sensitivity',
+  );
+  @override
+  late final GeneratedColumn<String> sensitivity = GeneratedColumn<String>(
+    'sensitivity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _qualityMeta = const VerificationMeta(
+    'quality',
+  );
+  @override
+  late final GeneratedColumn<String> quality = GeneratedColumn<String>(
+    'quality',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _errorCodeMeta = const VerificationMeta(
+    'errorCode',
+  );
+  @override
+  late final GeneratedColumn<String> errorCode = GeneratedColumn<String>(
+    'error_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<int> completedAt = GeneratedColumn<int>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    reportId,
+    version,
+    status,
+    generationSource,
+    modelMetadataJson,
+    content,
+    sensitivity,
+    quality,
+    errorCode,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_report_versions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiReportVersionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('report_id')) {
+      context.handle(
+        _reportIdMeta,
+        reportId.isAcceptableOrUnknown(data['report_id']!, _reportIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reportIdMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('generation_source')) {
+      context.handle(
+        _generationSourceMeta,
+        generationSource.isAcceptableOrUnknown(
+          data['generation_source']!,
+          _generationSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_generationSourceMeta);
+    }
+    if (data.containsKey('model_metadata_json')) {
+      context.handle(
+        _modelMetadataJsonMeta,
+        modelMetadataJson.isAcceptableOrUnknown(
+          data['model_metadata_json']!,
+          _modelMetadataJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    }
+    if (data.containsKey('sensitivity')) {
+      context.handle(
+        _sensitivityMeta,
+        sensitivity.isAcceptableOrUnknown(
+          data['sensitivity']!,
+          _sensitivityMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sensitivityMeta);
+    }
+    if (data.containsKey('quality')) {
+      context.handle(
+        _qualityMeta,
+        quality.isAcceptableOrUnknown(data['quality']!, _qualityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_qualityMeta);
+    }
+    if (data.containsKey('error_code')) {
+      context.handle(
+        _errorCodeMeta,
+        errorCode.isAcceptableOrUnknown(data['error_code']!, _errorCodeMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {reportId, version},
+  ];
+  @override
+  AiReportVersionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiReportVersionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      reportId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}report_id'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      generationSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}generation_source'],
+      )!,
+      modelMetadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_metadata_json'],
+      ),
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      ),
+      sensitivity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sensitivity'],
+      )!,
+      quality: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quality'],
+      )!,
+      errorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_code'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}completed_at'],
+      ),
+    );
+  }
+
+  @override
+  $AiReportVersionsTable createAlias(String alias) {
+    return $AiReportVersionsTable(attachedDatabase, alias);
+  }
+}
+
+class AiReportVersionRow extends DataClass
+    implements Insertable<AiReportVersionRow> {
+  final String id;
+  final int createdAt;
+  final int updatedAt;
+  final String reportId;
+  final int version;
+  final String status;
+  final String generationSource;
+  final String? modelMetadataJson;
+  final String? content;
+  final String sensitivity;
+  final String quality;
+  final String? errorCode;
+  final int? completedAt;
+  const AiReportVersionRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.reportId,
+    required this.version,
+    required this.status,
+    required this.generationSource,
+    this.modelMetadataJson,
+    this.content,
+    required this.sensitivity,
+    required this.quality,
+    this.errorCode,
+    this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    map['report_id'] = Variable<String>(reportId);
+    map['version'] = Variable<int>(version);
+    map['status'] = Variable<String>(status);
+    map['generation_source'] = Variable<String>(generationSource);
+    if (!nullToAbsent || modelMetadataJson != null) {
+      map['model_metadata_json'] = Variable<String>(modelMetadataJson);
+    }
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String>(content);
+    }
+    map['sensitivity'] = Variable<String>(sensitivity);
+    map['quality'] = Variable<String>(quality);
+    if (!nullToAbsent || errorCode != null) {
+      map['error_code'] = Variable<String>(errorCode);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<int>(completedAt);
+    }
+    return map;
+  }
+
+  AiReportVersionsCompanion toCompanion(bool nullToAbsent) {
+    return AiReportVersionsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      reportId: Value(reportId),
+      version: Value(version),
+      status: Value(status),
+      generationSource: Value(generationSource),
+      modelMetadataJson: modelMetadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modelMetadataJson),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
+      sensitivity: Value(sensitivity),
+      quality: Value(quality),
+      errorCode: errorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorCode),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+    );
+  }
+
+  factory AiReportVersionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiReportVersionRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      reportId: serializer.fromJson<String>(json['reportId']),
+      version: serializer.fromJson<int>(json['version']),
+      status: serializer.fromJson<String>(json['status']),
+      generationSource: serializer.fromJson<String>(json['generationSource']),
+      modelMetadataJson: serializer.fromJson<String?>(
+        json['modelMetadataJson'],
+      ),
+      content: serializer.fromJson<String?>(json['content']),
+      sensitivity: serializer.fromJson<String>(json['sensitivity']),
+      quality: serializer.fromJson<String>(json['quality']),
+      errorCode: serializer.fromJson<String?>(json['errorCode']),
+      completedAt: serializer.fromJson<int?>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'reportId': serializer.toJson<String>(reportId),
+      'version': serializer.toJson<int>(version),
+      'status': serializer.toJson<String>(status),
+      'generationSource': serializer.toJson<String>(generationSource),
+      'modelMetadataJson': serializer.toJson<String?>(modelMetadataJson),
+      'content': serializer.toJson<String?>(content),
+      'sensitivity': serializer.toJson<String>(sensitivity),
+      'quality': serializer.toJson<String>(quality),
+      'errorCode': serializer.toJson<String?>(errorCode),
+      'completedAt': serializer.toJson<int?>(completedAt),
+    };
+  }
+
+  AiReportVersionRow copyWith({
+    String? id,
+    int? createdAt,
+    int? updatedAt,
+    String? reportId,
+    int? version,
+    String? status,
+    String? generationSource,
+    Value<String?> modelMetadataJson = const Value.absent(),
+    Value<String?> content = const Value.absent(),
+    String? sensitivity,
+    String? quality,
+    Value<String?> errorCode = const Value.absent(),
+    Value<int?> completedAt = const Value.absent(),
+  }) => AiReportVersionRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    reportId: reportId ?? this.reportId,
+    version: version ?? this.version,
+    status: status ?? this.status,
+    generationSource: generationSource ?? this.generationSource,
+    modelMetadataJson: modelMetadataJson.present
+        ? modelMetadataJson.value
+        : this.modelMetadataJson,
+    content: content.present ? content.value : this.content,
+    sensitivity: sensitivity ?? this.sensitivity,
+    quality: quality ?? this.quality,
+    errorCode: errorCode.present ? errorCode.value : this.errorCode,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+  );
+  AiReportVersionRow copyWithCompanion(AiReportVersionsCompanion data) {
+    return AiReportVersionRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      reportId: data.reportId.present ? data.reportId.value : this.reportId,
+      version: data.version.present ? data.version.value : this.version,
+      status: data.status.present ? data.status.value : this.status,
+      generationSource: data.generationSource.present
+          ? data.generationSource.value
+          : this.generationSource,
+      modelMetadataJson: data.modelMetadataJson.present
+          ? data.modelMetadataJson.value
+          : this.modelMetadataJson,
+      content: data.content.present ? data.content.value : this.content,
+      sensitivity: data.sensitivity.present
+          ? data.sensitivity.value
+          : this.sensitivity,
+      quality: data.quality.present ? data.quality.value : this.quality,
+      errorCode: data.errorCode.present ? data.errorCode.value : this.errorCode,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiReportVersionRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('reportId: $reportId, ')
+          ..write('version: $version, ')
+          ..write('status: $status, ')
+          ..write('generationSource: $generationSource, ')
+          ..write('modelMetadataJson: $modelMetadataJson, ')
+          ..write('content: $content, ')
+          ..write('sensitivity: $sensitivity, ')
+          ..write('quality: $quality, ')
+          ..write('errorCode: $errorCode, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    reportId,
+    version,
+    status,
+    generationSource,
+    modelMetadataJson,
+    content,
+    sensitivity,
+    quality,
+    errorCode,
+    completedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiReportVersionRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.reportId == this.reportId &&
+          other.version == this.version &&
+          other.status == this.status &&
+          other.generationSource == this.generationSource &&
+          other.modelMetadataJson == this.modelMetadataJson &&
+          other.content == this.content &&
+          other.sensitivity == this.sensitivity &&
+          other.quality == this.quality &&
+          other.errorCode == this.errorCode &&
+          other.completedAt == this.completedAt);
+}
+
+class AiReportVersionsCompanion extends UpdateCompanion<AiReportVersionRow> {
+  final Value<String> id;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<String> reportId;
+  final Value<int> version;
+  final Value<String> status;
+  final Value<String> generationSource;
+  final Value<String?> modelMetadataJson;
+  final Value<String?> content;
+  final Value<String> sensitivity;
+  final Value<String> quality;
+  final Value<String?> errorCode;
+  final Value<int?> completedAt;
+  final Value<int> rowid;
+  const AiReportVersionsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.reportId = const Value.absent(),
+    this.version = const Value.absent(),
+    this.status = const Value.absent(),
+    this.generationSource = const Value.absent(),
+    this.modelMetadataJson = const Value.absent(),
+    this.content = const Value.absent(),
+    this.sensitivity = const Value.absent(),
+    this.quality = const Value.absent(),
+    this.errorCode = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiReportVersionsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    required String reportId,
+    required int version,
+    required String status,
+    required String generationSource,
+    this.modelMetadataJson = const Value.absent(),
+    this.content = const Value.absent(),
+    required String sensitivity,
+    required String quality,
+    this.errorCode = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : reportId = Value(reportId),
+       version = Value(version),
+       status = Value(status),
+       generationSource = Value(generationSource),
+       sensitivity = Value(sensitivity),
+       quality = Value(quality);
+  static Insertable<AiReportVersionRow> custom({
+    Expression<String>? id,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<String>? reportId,
+    Expression<int>? version,
+    Expression<String>? status,
+    Expression<String>? generationSource,
+    Expression<String>? modelMetadataJson,
+    Expression<String>? content,
+    Expression<String>? sensitivity,
+    Expression<String>? quality,
+    Expression<String>? errorCode,
+    Expression<int>? completedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (reportId != null) 'report_id': reportId,
+      if (version != null) 'version': version,
+      if (status != null) 'status': status,
+      if (generationSource != null) 'generation_source': generationSource,
+      if (modelMetadataJson != null) 'model_metadata_json': modelMetadataJson,
+      if (content != null) 'content': content,
+      if (sensitivity != null) 'sensitivity': sensitivity,
+      if (quality != null) 'quality': quality,
+      if (errorCode != null) 'error_code': errorCode,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiReportVersionsCompanion copyWith({
+    Value<String>? id,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<String>? reportId,
+    Value<int>? version,
+    Value<String>? status,
+    Value<String>? generationSource,
+    Value<String?>? modelMetadataJson,
+    Value<String?>? content,
+    Value<String>? sensitivity,
+    Value<String>? quality,
+    Value<String?>? errorCode,
+    Value<int?>? completedAt,
+    Value<int>? rowid,
+  }) {
+    return AiReportVersionsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      reportId: reportId ?? this.reportId,
+      version: version ?? this.version,
+      status: status ?? this.status,
+      generationSource: generationSource ?? this.generationSource,
+      modelMetadataJson: modelMetadataJson ?? this.modelMetadataJson,
+      content: content ?? this.content,
+      sensitivity: sensitivity ?? this.sensitivity,
+      quality: quality ?? this.quality,
+      errorCode: errorCode ?? this.errorCode,
+      completedAt: completedAt ?? this.completedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (reportId.present) {
+      map['report_id'] = Variable<String>(reportId.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (generationSource.present) {
+      map['generation_source'] = Variable<String>(generationSource.value);
+    }
+    if (modelMetadataJson.present) {
+      map['model_metadata_json'] = Variable<String>(modelMetadataJson.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (sensitivity.present) {
+      map['sensitivity'] = Variable<String>(sensitivity.value);
+    }
+    if (quality.present) {
+      map['quality'] = Variable<String>(quality.value);
+    }
+    if (errorCode.present) {
+      map['error_code'] = Variable<String>(errorCode.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<int>(completedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiReportVersionsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('reportId: $reportId, ')
+          ..write('version: $version, ')
+          ..write('status: $status, ')
+          ..write('generationSource: $generationSource, ')
+          ..write('modelMetadataJson: $modelMetadataJson, ')
+          ..write('content: $content, ')
+          ..write('sensitivity: $sensitivity, ')
+          ..write('quality: $quality, ')
+          ..write('errorCode: $errorCode, ')
+          ..write('completedAt: $completedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12932,6 +13960,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $JournalEntryPromptItemsTable(this);
   late final $HealthRecordsTable healthRecords = $HealthRecordsTable(this);
   late final $AiReportsTable aiReports = $AiReportsTable(this);
+  late final $AiReportVersionsTable aiReportVersions = $AiReportVersionsTable(
+    this,
+  );
   late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
   late final $InstallationInfoTable installationInfo = $InstallationInfoTable(
     this,
@@ -12954,6 +13985,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     journalEntryPromptItems,
     healthRecords,
     aiReports,
+    aiReportVersions,
     syncConflicts,
     installationInfo,
     cloudAccountBindings,
@@ -20139,6 +21171,7 @@ typedef $$AiReportsTableCreateCompanionBuilder =
       Value<int?> deletedAt,
       required String userId,
       required String reportType,
+      Value<String> title,
       required String periodStartDate,
       required String periodEndDate,
       Value<String> inputSourcesJson,
@@ -20149,6 +21182,10 @@ typedef $$AiReportsTableCreateCompanionBuilder =
       Value<String?> model,
       Value<String> generationMode,
       Value<String> reportStatus,
+      Value<String> generationSource,
+      Value<String> sensitivity,
+      Value<String> quality,
+      Value<int> currentVersion,
       Value<String?> reportContent,
       Value<String?> structuredOutputJson,
       Value<String?> errorCode,
@@ -20168,6 +21205,7 @@ typedef $$AiReportsTableUpdateCompanionBuilder =
       Value<int?> deletedAt,
       Value<String> userId,
       Value<String> reportType,
+      Value<String> title,
       Value<String> periodStartDate,
       Value<String> periodEndDate,
       Value<String> inputSourcesJson,
@@ -20178,6 +21216,10 @@ typedef $$AiReportsTableUpdateCompanionBuilder =
       Value<String?> model,
       Value<String> generationMode,
       Value<String> reportStatus,
+      Value<String> generationSource,
+      Value<String> sensitivity,
+      Value<String> quality,
+      Value<int> currentVersion,
       Value<String?> reportContent,
       Value<String?> structuredOutputJson,
       Value<String?> errorCode,
@@ -20204,6 +21246,26 @@ final class $$AiReportsTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$AiReportVersionsTable, List<AiReportVersionRow>>
+  _aiReportVersionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.aiReportVersions,
+    aliasName: 'ai_reports__id__ai_report_versions__report_id',
+  );
+
+  $$AiReportVersionsTableProcessedTableManager get aiReportVersionsRefs {
+    final manager = $$AiReportVersionsTableTableManager(
+      $_db,
+      $_db.aiReportVersions,
+    ).filter((f) => f.reportId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _aiReportVersionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
@@ -20262,6 +21324,11 @@ class $$AiReportsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get periodStartDate => $composableBuilder(
     column: $table.periodStartDate,
     builder: (column) => ColumnFilters(column),
@@ -20312,6 +21379,26 @@ class $$AiReportsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get generationSource => $composableBuilder(
+    column: $table.generationSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get currentVersion => $composableBuilder(
+    column: $table.currentVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get reportContent => $composableBuilder(
     column: $table.reportContent,
     builder: (column) => ColumnFilters(column),
@@ -20358,6 +21445,31 @@ class $$AiReportsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> aiReportVersionsRefs(
+    Expression<bool> Function($$AiReportVersionsTableFilterComposer f) f,
+  ) {
+    final $$AiReportVersionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aiReportVersions,
+      getReferencedColumn: (t) => t.reportId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportVersionsTableFilterComposer(
+            $db: $db,
+            $table: $db.aiReportVersions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -20415,6 +21527,11 @@ class $$AiReportsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get periodStartDate => $composableBuilder(
     column: $table.periodStartDate,
     builder: (column) => ColumnOrderings(column),
@@ -20462,6 +21579,26 @@ class $$AiReportsTableOrderingComposer
 
   ColumnOrderings<String> get reportStatus => $composableBuilder(
     column: $table.reportStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get generationSource => $composableBuilder(
+    column: $table.generationSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get currentVersion => $composableBuilder(
+    column: $table.currentVersion,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -20560,6 +21697,9 @@ class $$AiReportsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
   GeneratedColumn<String> get periodStartDate => $composableBuilder(
     column: $table.periodStartDate,
     builder: (column) => column,
@@ -20601,6 +21741,24 @@ class $$AiReportsTableAnnotationComposer
 
   GeneratedColumn<String> get reportStatus => $composableBuilder(
     column: $table.reportStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get generationSource => $composableBuilder(
+    column: $table.generationSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get quality =>
+      $composableBuilder(column: $table.quality, builder: (column) => column);
+
+  GeneratedColumn<int> get currentVersion => $composableBuilder(
+    column: $table.currentVersion,
     builder: (column) => column,
   );
 
@@ -20649,6 +21807,31 @@ class $$AiReportsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> aiReportVersionsRefs<T extends Object>(
+    Expression<T> Function($$AiReportVersionsTableAnnotationComposer a) f,
+  ) {
+    final $$AiReportVersionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aiReportVersions,
+      getReferencedColumn: (t) => t.reportId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportVersionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aiReportVersions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AiReportsTableTableManager
@@ -20664,7 +21847,7 @@ class $$AiReportsTableTableManager
           $$AiReportsTableUpdateCompanionBuilder,
           (AiReport, $$AiReportsTableReferences),
           AiReport,
-          PrefetchHooks Function({bool userId})
+          PrefetchHooks Function({bool userId, bool aiReportVersionsRefs})
         > {
   $$AiReportsTableTableManager(_$AppDatabase db, $AiReportsTable table)
     : super(
@@ -20689,6 +21872,7 @@ class $$AiReportsTableTableManager
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> userId = const Value.absent(),
                 Value<String> reportType = const Value.absent(),
+                Value<String> title = const Value.absent(),
                 Value<String> periodStartDate = const Value.absent(),
                 Value<String> periodEndDate = const Value.absent(),
                 Value<String> inputSourcesJson = const Value.absent(),
@@ -20699,6 +21883,10 @@ class $$AiReportsTableTableManager
                 Value<String?> model = const Value.absent(),
                 Value<String> generationMode = const Value.absent(),
                 Value<String> reportStatus = const Value.absent(),
+                Value<String> generationSource = const Value.absent(),
+                Value<String> sensitivity = const Value.absent(),
+                Value<String> quality = const Value.absent(),
+                Value<int> currentVersion = const Value.absent(),
                 Value<String?> reportContent = const Value.absent(),
                 Value<String?> structuredOutputJson = const Value.absent(),
                 Value<String?> errorCode = const Value.absent(),
@@ -20716,6 +21904,7 @@ class $$AiReportsTableTableManager
                 deletedAt: deletedAt,
                 userId: userId,
                 reportType: reportType,
+                title: title,
                 periodStartDate: periodStartDate,
                 periodEndDate: periodEndDate,
                 inputSourcesJson: inputSourcesJson,
@@ -20726,6 +21915,10 @@ class $$AiReportsTableTableManager
                 model: model,
                 generationMode: generationMode,
                 reportStatus: reportStatus,
+                generationSource: generationSource,
+                sensitivity: sensitivity,
+                quality: quality,
+                currentVersion: currentVersion,
                 reportContent: reportContent,
                 structuredOutputJson: structuredOutputJson,
                 errorCode: errorCode,
@@ -20745,6 +21938,7 @@ class $$AiReportsTableTableManager
                 Value<int?> deletedAt = const Value.absent(),
                 required String userId,
                 required String reportType,
+                Value<String> title = const Value.absent(),
                 required String periodStartDate,
                 required String periodEndDate,
                 Value<String> inputSourcesJson = const Value.absent(),
@@ -20755,6 +21949,10 @@ class $$AiReportsTableTableManager
                 Value<String?> model = const Value.absent(),
                 Value<String> generationMode = const Value.absent(),
                 Value<String> reportStatus = const Value.absent(),
+                Value<String> generationSource = const Value.absent(),
+                Value<String> sensitivity = const Value.absent(),
+                Value<String> quality = const Value.absent(),
+                Value<int> currentVersion = const Value.absent(),
                 Value<String?> reportContent = const Value.absent(),
                 Value<String?> structuredOutputJson = const Value.absent(),
                 Value<String?> errorCode = const Value.absent(),
@@ -20772,6 +21970,7 @@ class $$AiReportsTableTableManager
                 deletedAt: deletedAt,
                 userId: userId,
                 reportType: reportType,
+                title: title,
                 periodStartDate: periodStartDate,
                 periodEndDate: periodEndDate,
                 inputSourcesJson: inputSourcesJson,
@@ -20782,6 +21981,10 @@ class $$AiReportsTableTableManager
                 model: model,
                 generationMode: generationMode,
                 reportStatus: reportStatus,
+                generationSource: generationSource,
+                sensitivity: sensitivity,
+                quality: quality,
+                currentVersion: currentVersion,
                 reportContent: reportContent,
                 structuredOutputJson: structuredOutputJson,
                 errorCode: errorCode,
@@ -20797,7 +22000,520 @@ class $$AiReportsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({userId = false}) {
+          prefetchHooksCallback:
+              ({userId = false, aiReportVersionsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (aiReportVersionsRefs) db.aiReportVersions,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (userId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.userId,
+                                    referencedTable: $$AiReportsTableReferences
+                                        ._userIdTable(db),
+                                    referencedColumn: $$AiReportsTableReferences
+                                        ._userIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (aiReportVersionsRefs)
+                        await $_getPrefetchedData<
+                          AiReport,
+                          $AiReportsTable,
+                          AiReportVersionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AiReportsTableReferences
+                              ._aiReportVersionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AiReportsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).aiReportVersionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.reportId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$AiReportsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiReportsTable,
+      AiReport,
+      $$AiReportsTableFilterComposer,
+      $$AiReportsTableOrderingComposer,
+      $$AiReportsTableAnnotationComposer,
+      $$AiReportsTableCreateCompanionBuilder,
+      $$AiReportsTableUpdateCompanionBuilder,
+      (AiReport, $$AiReportsTableReferences),
+      AiReport,
+      PrefetchHooks Function({bool userId, bool aiReportVersionsRefs})
+    >;
+typedef $$AiReportVersionsTableCreateCompanionBuilder =
+    AiReportVersionsCompanion Function({
+      Value<String> id,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      required String reportId,
+      required int version,
+      required String status,
+      required String generationSource,
+      Value<String?> modelMetadataJson,
+      Value<String?> content,
+      required String sensitivity,
+      required String quality,
+      Value<String?> errorCode,
+      Value<int?> completedAt,
+      Value<int> rowid,
+    });
+typedef $$AiReportVersionsTableUpdateCompanionBuilder =
+    AiReportVersionsCompanion Function({
+      Value<String> id,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<String> reportId,
+      Value<int> version,
+      Value<String> status,
+      Value<String> generationSource,
+      Value<String?> modelMetadataJson,
+      Value<String?> content,
+      Value<String> sensitivity,
+      Value<String> quality,
+      Value<String?> errorCode,
+      Value<int?> completedAt,
+      Value<int> rowid,
+    });
+
+final class $$AiReportVersionsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AiReportVersionsTable,
+          AiReportVersionRow
+        > {
+  $$AiReportVersionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AiReportsTable _reportIdTable(_$AppDatabase db) =>
+      db.aiReports.createAlias('ai_report_versions__report_id__ai_reports__id');
+
+  $$AiReportsTableProcessedTableManager get reportId {
+    final $_column = $_itemColumn<String>('report_id')!;
+
+    final manager = $$AiReportsTableTableManager(
+      $_db,
+      $_db.aiReports,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_reportIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AiReportVersionsTableFilterComposer
+    extends Composer<_$AppDatabase, $AiReportVersionsTable> {
+  $$AiReportVersionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get generationSource => $composableBuilder(
+    column: $table.generationSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelMetadataJson => $composableBuilder(
+    column: $table.modelMetadataJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorCode => $composableBuilder(
+    column: $table.errorCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AiReportsTableFilterComposer get reportId {
+    final $$AiReportsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reportId,
+      referencedTable: $db.aiReports,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportsTableFilterComposer(
+            $db: $db,
+            $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AiReportVersionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiReportVersionsTable> {
+  $$AiReportVersionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get generationSource => $composableBuilder(
+    column: $table.generationSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelMetadataJson => $composableBuilder(
+    column: $table.modelMetadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorCode => $composableBuilder(
+    column: $table.errorCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AiReportsTableOrderingComposer get reportId {
+    final $$AiReportsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reportId,
+      referencedTable: $db.aiReports,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportsTableOrderingComposer(
+            $db: $db,
+            $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AiReportVersionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiReportVersionsTable> {
+  $$AiReportVersionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get generationSource => $composableBuilder(
+    column: $table.generationSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modelMetadataJson => $composableBuilder(
+    column: $table.modelMetadataJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get quality =>
+      $composableBuilder(column: $table.quality, builder: (column) => column);
+
+  GeneratedColumn<String> get errorCode =>
+      $composableBuilder(column: $table.errorCode, builder: (column) => column);
+
+  GeneratedColumn<int> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  $$AiReportsTableAnnotationComposer get reportId {
+    final $$AiReportsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reportId,
+      referencedTable: $db.aiReports,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AiReportVersionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiReportVersionsTable,
+          AiReportVersionRow,
+          $$AiReportVersionsTableFilterComposer,
+          $$AiReportVersionsTableOrderingComposer,
+          $$AiReportVersionsTableAnnotationComposer,
+          $$AiReportVersionsTableCreateCompanionBuilder,
+          $$AiReportVersionsTableUpdateCompanionBuilder,
+          (AiReportVersionRow, $$AiReportVersionsTableReferences),
+          AiReportVersionRow,
+          PrefetchHooks Function({bool reportId})
+        > {
+  $$AiReportVersionsTableTableManager(
+    _$AppDatabase db,
+    $AiReportVersionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiReportVersionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiReportVersionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiReportVersionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<String> reportId = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> generationSource = const Value.absent(),
+                Value<String?> modelMetadataJson = const Value.absent(),
+                Value<String?> content = const Value.absent(),
+                Value<String> sensitivity = const Value.absent(),
+                Value<String> quality = const Value.absent(),
+                Value<String?> errorCode = const Value.absent(),
+                Value<int?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiReportVersionsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                reportId: reportId,
+                version: version,
+                status: status,
+                generationSource: generationSource,
+                modelMetadataJson: modelMetadataJson,
+                content: content,
+                sensitivity: sensitivity,
+                quality: quality,
+                errorCode: errorCode,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                required String reportId,
+                required int version,
+                required String status,
+                required String generationSource,
+                Value<String?> modelMetadataJson = const Value.absent(),
+                Value<String?> content = const Value.absent(),
+                required String sensitivity,
+                required String quality,
+                Value<String?> errorCode = const Value.absent(),
+                Value<int?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiReportVersionsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                reportId: reportId,
+                version: version,
+                status: status,
+                generationSource: generationSource,
+                modelMetadataJson: modelMetadataJson,
+                content: content,
+                sensitivity: sensitivity,
+                quality: quality,
+                errorCode: errorCode,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AiReportVersionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({reportId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -20817,16 +22533,18 @@ class $$AiReportsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (userId) {
+                    if (reportId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.userId,
-                                referencedTable: $$AiReportsTableReferences
-                                    ._userIdTable(db),
-                                referencedColumn: $$AiReportsTableReferences
-                                    ._userIdTable(db)
-                                    .id,
+                                currentColumn: table.reportId,
+                                referencedTable:
+                                    $$AiReportVersionsTableReferences
+                                        ._reportIdTable(db),
+                                referencedColumn:
+                                    $$AiReportVersionsTableReferences
+                                        ._reportIdTable(db)
+                                        .id,
                               )
                               as T;
                     }
@@ -20842,19 +22560,19 @@ class $$AiReportsTableTableManager
       );
 }
 
-typedef $$AiReportsTableProcessedTableManager =
+typedef $$AiReportVersionsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $AiReportsTable,
-      AiReport,
-      $$AiReportsTableFilterComposer,
-      $$AiReportsTableOrderingComposer,
-      $$AiReportsTableAnnotationComposer,
-      $$AiReportsTableCreateCompanionBuilder,
-      $$AiReportsTableUpdateCompanionBuilder,
-      (AiReport, $$AiReportsTableReferences),
-      AiReport,
-      PrefetchHooks Function({bool userId})
+      $AiReportVersionsTable,
+      AiReportVersionRow,
+      $$AiReportVersionsTableFilterComposer,
+      $$AiReportVersionsTableOrderingComposer,
+      $$AiReportVersionsTableAnnotationComposer,
+      $$AiReportVersionsTableCreateCompanionBuilder,
+      $$AiReportVersionsTableUpdateCompanionBuilder,
+      (AiReportVersionRow, $$AiReportVersionsTableReferences),
+      AiReportVersionRow,
+      PrefetchHooks Function({bool reportId})
     >;
 typedef $$SyncConflictsTableCreateCompanionBuilder =
     SyncConflictsCompanion Function({
@@ -22291,6 +24009,8 @@ class $AppDatabaseManager {
       $$HealthRecordsTableTableManager(_db, _db.healthRecords);
   $$AiReportsTableTableManager get aiReports =>
       $$AiReportsTableTableManager(_db, _db.aiReports);
+  $$AiReportVersionsTableTableManager get aiReportVersions =>
+      $$AiReportVersionsTableTableManager(_db, _db.aiReportVersions);
   $$SyncConflictsTableTableManager get syncConflicts =>
       $$SyncConflictsTableTableManager(_db, _db.syncConflicts);
   $$InstallationInfoTableTableManager get installationInfo =>

@@ -502,6 +502,12 @@ AIReport 与 Today、Journal、Health、Goal 和 Growth 原始事实分离。报
 `ai_reports`，AI 输出不得覆盖用户事实。Sprint 8A 只建立本地 pending、completed、failed
 生命周期，不生成真实或模板伪造内容，也不进行云同步。
 
+Sprint 14B 在同一聚合上新增 `ai_report_versions`。`ai_reports` 保存标题、当前状态和
+最新版本投影，版本表保存不可变的终态正文或受控失败。Report 页面通过 Controller 和
+Repository 只读访问；Widget 不接触 Drift。Growth、Personal Data Aggregation、Journal
+和 Sync 均不依赖 Report。未来生成实现只能通过 `AiReportGenerationService` 边界追加
+版本，不能覆盖历史版本。
+
 ### 10.4 Prompt 管理
 
 Prompt 不应散落在代码中。

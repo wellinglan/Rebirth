@@ -576,6 +576,18 @@ AIReport 可引用以下输入：
 - 去重查询索引：`(user_id, report_type, period_start_date, period_end_date, input_hash)`；
 - 待处理查询索引：`(report_status, requested_at)`。
 
+### 12.5.1 Sprint 14B 版本模型
+
+Flutter schema 10 为 `ai_reports` 增加 `title`、`generation_source`、
+`sensitivity`、`quality` 和 `current_version`，并新增
+`ai_report_versions`。版本表保存 `(report_id, version)` 唯一的 completed/failed
+终态、正文或受控错误、非敏感生成元数据、敏感级别、质量和时间戳。
+
+数据库触发器拒绝更新或删除版本行。新结果只能追加下一版本；聚合表中的正文是兼容
+现有 AI Coach 的最新投影，不是历史版本 Source of Truth。schema 9 的 completed 和
+failed 报告自动回填为 v1，pending 报告不伪造版本。Report 不进入 Sync schema，
+PostgreSQL 与 Alembic 不变。
+
 ### 12.6 AI 输入哈希规范
 
 `input_hash` 用于标识一次 AI 分析所使用的稳定输入，不用于标识模型、设备或用户身份。生成规则如下：
@@ -961,3 +973,10 @@ diagnostics read the existing `ai_generation_requests`, `ai_usage_records`, and
 `ai_usage_controls` tables. They do not repair rows, add accounting tables, or
 touch sync/business data. Flutter Drift remains `schemaVersion = 9`; Server API
 Version `1` and Sync Protocol `2` remain unchanged.
+
+## Sprint 14B AI Report Persistence
+
+Flutter Drift advances to `schemaVersion = 10`. The local-only
+`ai_report_versions` table and immutable guards preserve historical report
+results. Existing schema 9 completed/failed reports become version 1. No
+Server database, Alembic revision, API, or Sync Protocol change is made.

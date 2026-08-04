@@ -446,7 +446,7 @@ def test_operations_add_no_api_flutter_schema_or_migration() -> None:
     )
     assert "maintenance.rebirth_ai" not in router
     assert "usage/audit" not in router
-    assert "int get schemaVersion => 9;" in database
+    assert "int get schemaVersion => 10;" in database
     assert "20260801_0007_ai_provider_cost_safety.py" in versions
     assert not any("14a3" in name.lower() for name in versions)
     assert all(

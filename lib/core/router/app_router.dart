@@ -14,6 +14,8 @@ import '../../features/ai_coach/presentation/ai_coach_page.dart';
 import '../../features/ai_coach/presentation/ai_daily_insight_page.dart';
 import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
 import '../../features/ai_coach/domain/ai_data_scope.dart';
+import '../../features/ai_reports/presentation/ai_report_library_detail_page.dart';
+import '../../features/ai_reports/presentation/ai_report_library_page.dart';
 import '../../features/growth/presentation/growth_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
@@ -184,6 +186,20 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
             path: 'reports/:reportId',
             name: RouteNames.aiCoachReport,
             builder: (context, state) => AiReportDetailPage(
+              reportId: state.pathParameters['reportId'] ?? '',
+            ),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: RoutePaths.aiReports,
+        name: RouteNames.aiReports,
+        builder: (context, state) => const AiReportLibraryPage(),
+        routes: [
+          GoRoute(
+            path: ':reportId',
+            name: RouteNames.aiReportsDetail,
+            builder: (context, state) => AiReportLibraryDetailPage(
               reportId: state.pathParameters['reportId'] ?? '',
             ),
           ),

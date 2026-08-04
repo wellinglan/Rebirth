@@ -374,6 +374,9 @@ class _StatusContent extends StatelessWidget {
           AiReportStatus.failed => Text(
             '失败原因：${detail.failureMessage ?? '生成未完成'}。这里不会显示底层异常、StackTrace 或 HTTP 内容。',
           ),
+          AiReportStatus.draft => const Text('这份报告仍是草稿，尚未生成内容。'),
+          AiReportStatus.generating => const Text('报告正在生成，已有历史版本不会被覆盖。'),
+          AiReportStatus.archived => const Text('这份报告已归档。'),
         },
       ),
     );

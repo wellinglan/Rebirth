@@ -184,7 +184,10 @@ class _ReportCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final statusColor = switch (report.status) {
       AiReportStatus.completed => colorScheme.secondaryContainer,
-      AiReportStatus.pending => colorScheme.surfaceContainerHighest,
+      AiReportStatus.pending ||
+      AiReportStatus.draft ||
+      AiReportStatus.generating ||
+      AiReportStatus.archived => colorScheme.surfaceContainerHighest,
       AiReportStatus.failed => colorScheme.errorContainer,
     };
     return Card(

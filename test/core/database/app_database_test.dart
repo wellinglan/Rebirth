@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 9 with Journal prompt tables', () async {
+  test('creates schema version 10 with AI report versions', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -33,6 +33,7 @@ void main() {
         'goals',
         'health_records',
         'ai_reports',
+        'ai_report_versions',
         'sync_conflicts',
         'installation_info',
         'cloud_account_bindings',
@@ -45,7 +46,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 9);
+    expect(versionRow.read<int>('user_version'), 10);
   });
 
   test(

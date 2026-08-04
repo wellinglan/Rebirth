@@ -11,6 +11,8 @@ class AiReports extends Table
 
   TextColumn get reportType => text()();
 
+  TextColumn get title => text().withDefault(const Constant('AI 报告'))();
+
   TextColumn get periodStartDate => text()();
 
   TextColumn get periodEndDate => text()();
@@ -33,6 +35,15 @@ class AiReports extends Table
   TextColumn get reportStatus =>
       text().withDefault(const Constant('pending'))();
 
+  TextColumn get generationSource =>
+      text().withDefault(const Constant('legacy'))();
+
+  TextColumn get sensitivity => text().withDefault(const Constant('high'))();
+
+  TextColumn get quality => text().withDefault(const Constant('unknown'))();
+
+  IntColumn get currentVersion => integer().withDefault(const Constant(0))();
+
   TextColumn get reportContent => text().nullable()();
 
   TextColumn get structuredOutputJson => text().nullable()();
@@ -52,8 +63,13 @@ class AiReports extends Table
     'CHECK (length(trim(input_hash)) > 0)',
     'CHECK (length(trim(prompt_version)) > 0)',
     "CHECK (generation_mode IN ('manual', 'automatic'))",
-    "CHECK (report_status IN ('pending', 'completed', 'failed'))",
+    "CHECK (report_status IN ('pending', 'draft', 'generating', 'completed', 'failed', 'archived'))",
     "CHECK (report_status != 'completed' OR report_content IS NOT NULL)",
+    'CHECK (length(trim(title)) > 0)',
+    'CHECK (length(trim(generation_source)) > 0)',
+    "CHECK (sensitivity IN ('standard', 'high', 'restricted'))",
+    "CHECK (quality IN ('unknown', 'unreviewed', 'validated'))",
+    'CHECK (current_version >= 0)',
     'CHECK (requested_at >= 0)',
     'CHECK (generated_at IS NULL OR generated_at >= 0)',
     'CHECK (created_at >= 0)',

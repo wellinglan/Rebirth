@@ -11,9 +11,12 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_mode.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report.dart' as domain;
+import 'package:rebirth/features/ai_coach/domain/ai_report_lifecycle.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_metadata.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_version.dart';
 import 'package:rebirth/features/ai_coach/domain/canonical_json_encoder.dart';
 import 'package:uuid/uuid.dart';
 
@@ -31,6 +34,208 @@ final class LocalAiReportRepository implements AiReportRepository {
   final AiConsentRepository consentRepository;
   final CanonicalJsonEncoder canonicalJsonEncoder;
   final String Function() idFactory;
+
+  @override
+  Future<domain.AiReport> createDraft({
+    required AiReportType reportType,
+    required String title,
+    required String periodStartDate,
+    required String periodEndDate,
+    String generationSource = 'fake',
+    AiReportSensitivity sensitivity = AiReportSensitivity.high,
+  }) async {
+    final normalizedTitle = title.trim();
+    final normalizedSource = generationSource.trim();
+    if (normalizedTitle.isEmpty ||
+        normalizedSource.isEmpty ||
+        !dateTimeService.isValidLocalDateString(periodStartDate) ||
+        !dateTimeService.isValidLocalDateString(periodEndDate) ||
+        periodEndDate.compareTo(periodStartDate) < 0) {
+      throw const InvalidAiInputException('Invalid AI report draft.');
+    }
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final now = dateTimeService.currentSnapshot().utcMilliseconds;
+    final reportId = idFactory();
+    await database
+        .into(database.aiReports)
+        .insert(
+          db.AiReportsCompanion.insert(
+            id: Value(reportId),
+            userId: bootstrap.activeUserId,
+            reportType: reportType.databaseValue,
+            title: Value(normalizedTitle),
+            periodStartDate: periodStartDate,
+            periodEndDate: periodEndDate,
+            inputHash: 'report-foundation:$reportId',
+            promptVersion: 'report-foundation-v1',
+            generationMode: const Value('manual'),
+            reportStatus: const Value('draft'),
+            generationSource: Value(normalizedSource),
+            sensitivity: Value(sensitivity.databaseValue),
+            quality: const Value('unknown'),
+            requestedAt: now,
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            syncStatus: const Value('local_only'),
+          ),
+        );
+    return _toDomain(await _getActiveRow(reportId, bootstrap.activeUserId));
+  }
+
+  @override
+  Future<domain.AiReport> beginGeneration(String reportId) async {
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final now = dateTimeService.currentSnapshot().utcMilliseconds;
+    return database.transaction(() async {
+      final existing = await _getActiveRow(reportId, bootstrap.activeUserId);
+      final current = AiReportStatus.fromDatabaseValue(existing.reportStatus);
+      AiReportLifecycle.requireTransition(current, AiReportStatus.generating);
+      await (database.update(
+        database.aiReports,
+      )..where((row) => row.id.equals(reportId))).write(
+        db.AiReportsCompanion(
+          reportStatus: const Value('generating'),
+          errorCode: const Value(null),
+          generatedAt: const Value(null),
+          updatedAt: Value(now),
+        ),
+      );
+      return _toDomain(await _getActiveRow(reportId, bootstrap.activeUserId));
+    });
+  }
+
+  @override
+  Future<domain.AiReport> completeVersion({
+    required String reportId,
+    required String content,
+    required String generationSource,
+    String? modelMetadataJson,
+    AiReportSensitivity sensitivity = AiReportSensitivity.high,
+    AiReportQuality quality = AiReportQuality.unreviewed,
+  }) async {
+    final normalizedContent = content.trim();
+    final normalizedSource = generationSource.trim();
+    if (normalizedContent.isEmpty || normalizedSource.isEmpty) {
+      throw const InvalidAiInputException(
+        'Completed AI report content must not be empty.',
+      );
+    }
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final now = dateTimeService.currentSnapshot().utcMilliseconds;
+    return database.transaction(() async {
+      final existing = await _getActiveRow(reportId, bootstrap.activeUserId);
+      final current = AiReportStatus.fromDatabaseValue(existing.reportStatus);
+      AiReportLifecycle.requireTransition(current, AiReportStatus.completed);
+      final version = await _insertVersion(
+        report: existing,
+        status: AiReportStatus.completed,
+        generationSource: normalizedSource,
+        modelMetadataJson: _trimToNull(modelMetadataJson),
+        content: normalizedContent,
+        sensitivity: sensitivity,
+        quality: quality,
+        errorCode: null,
+        now: now,
+      );
+      await (database.update(
+        database.aiReports,
+      )..where((row) => row.id.equals(reportId))).write(
+        db.AiReportsCompanion(
+          reportStatus: const Value('completed'),
+          generationSource: Value(normalizedSource),
+          sensitivity: Value(sensitivity.databaseValue),
+          quality: Value(quality.databaseValue),
+          currentVersion: Value(version),
+          reportContent: Value(normalizedContent),
+          errorCode: const Value(null),
+          generatedAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+      return _toDomain(
+        await _getActiveRow(reportId, bootstrap.activeUserId),
+        versions: await _listVersionsFor(reportId),
+      );
+    });
+  }
+
+  @override
+  Future<domain.AiReport> failVersion({
+    required String reportId,
+    required String errorCode,
+    required String generationSource,
+  }) async {
+    final normalizedSource = generationSource.trim();
+    if (!AiReportFailureCode.isSupported(errorCode) ||
+        normalizedSource.isEmpty) {
+      throw const InvalidAiInputException('Invalid AI report failure.');
+    }
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final now = dateTimeService.currentSnapshot().utcMilliseconds;
+    return database.transaction(() async {
+      final existing = await _getActiveRow(reportId, bootstrap.activeUserId);
+      final current = AiReportStatus.fromDatabaseValue(existing.reportStatus);
+      AiReportLifecycle.requireTransition(current, AiReportStatus.failed);
+      final version = await _insertVersion(
+        report: existing,
+        status: AiReportStatus.failed,
+        generationSource: normalizedSource,
+        content: null,
+        sensitivity: AiReportSensitivity.fromDatabaseValue(
+          existing.sensitivity,
+        ),
+        quality: AiReportQuality.unknown,
+        errorCode: errorCode.trim(),
+        now: now,
+      );
+      await (database.update(
+        database.aiReports,
+      )..where((row) => row.id.equals(reportId))).write(
+        db.AiReportsCompanion(
+          reportStatus: const Value('failed'),
+          generationSource: Value(normalizedSource),
+          quality: const Value('unknown'),
+          currentVersion: Value(version),
+          errorCode: Value(errorCode.trim()),
+          updatedAt: Value(now),
+        ),
+      );
+      return _toDomain(
+        await _getActiveRow(reportId, bootstrap.activeUserId),
+        versions: await _listVersionsFor(reportId),
+      );
+    });
+  }
+
+  @override
+  Future<domain.AiReport> archive(String reportId) async {
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final now = dateTimeService.currentSnapshot().utcMilliseconds;
+    return database.transaction(() async {
+      final existing = await _getActiveRow(reportId, bootstrap.activeUserId);
+      final current = AiReportStatus.fromDatabaseValue(existing.reportStatus);
+      AiReportLifecycle.requireTransition(current, AiReportStatus.archived);
+      await (database.update(
+        database.aiReports,
+      )..where((row) => row.id.equals(reportId))).write(
+        db.AiReportsCompanion(
+          reportStatus: const Value('archived'),
+          updatedAt: Value(now),
+        ),
+      );
+      return _toDomain(
+        await _getActiveRow(reportId, bootstrap.activeUserId),
+        versions: await _listVersionsFor(reportId),
+      );
+    });
+  }
+
+  @override
+  Future<List<AiReportVersion>> listVersions(String reportId) async {
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    await _getActiveRow(reportId, bootstrap.activeUserId);
+    return _listVersionsFor(reportId);
+  }
 
   @override
   Future<domain.AiReport> createPending({
@@ -81,6 +286,7 @@ final class LocalAiReportRepository implements AiReportRepository {
             id: Value(reportId),
             userId: bootstrap.activeUserId,
             reportType: input.reportType.databaseValue,
+            title: Value(_defaultTitle(input.reportType)),
             periodStartDate: input.periodStartDate,
             periodEndDate: input.periodEndDate,
             inputSourcesJson: Value(inputSourcesJson),
@@ -91,6 +297,9 @@ final class LocalAiReportRepository implements AiReportRepository {
             promptVersion: input.promptVersion,
             generationMode: const Value('manual'),
             reportStatus: const Value('pending'),
+            generationSource: const Value('remote_ai'),
+            sensitivity: const Value('high'),
+            quality: const Value('unknown'),
             requestedAt: now,
             createdAt: Value(now),
             updatedAt: Value(now),
@@ -109,33 +318,32 @@ final class LocalAiReportRepository implements AiReportRepository {
     String? provider,
     String? model,
   }) async {
-    final content = reportContent.trim();
-    if (content.isEmpty) {
-      throw const InvalidAiInputException(
-        'Completed AI report content must not be empty.',
-      );
-    }
+    final metadata = <String, String>{};
+    if (_trimToNull(provider) case final value?) metadata['provider'] = value;
+    if (_trimToNull(model) case final value?) metadata['model'] = value;
+    final result = await completeVersion(
+      reportId: reportId,
+      content: reportContent,
+      generationSource: 'remote_ai',
+      modelMetadataJson: jsonEncode(metadata),
+    );
     final bootstrap = await database.bootstrapDao.bootstrap();
-    final now = dateTimeService.currentSnapshot().utcMilliseconds;
-    return database.transaction(() async {
-      final existing = await _getActiveRow(reportId, bootstrap.activeUserId);
-      _requirePending(existing, AiReportStatus.completed);
-      await (database.update(
-        database.aiReports,
-      )..where((row) => row.id.equals(reportId))).write(
-        db.AiReportsCompanion(
-          reportStatus: const Value('completed'),
-          reportContent: Value(content),
-          structuredOutputJson: Value(_trimToNull(structuredOutputJson)),
-          provider: Value(_trimToNull(provider)),
-          model: Value(_trimToNull(model)),
-          errorCode: const Value(null),
-          generatedAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-      return _toDomain(await _getActiveRow(reportId, bootstrap.activeUserId));
-    });
+    await (database.update(database.aiReports)..where(
+          (row) =>
+              row.id.equals(reportId) &
+              row.userId.equals(bootstrap.activeUserId),
+        ))
+        .write(
+          db.AiReportsCompanion(
+            structuredOutputJson: Value(_trimToNull(structuredOutputJson)),
+            provider: Value(_trimToNull(provider)),
+            model: Value(_trimToNull(model)),
+          ),
+        );
+    return _toDomain(
+      await _getActiveRow(reportId, bootstrap.activeUserId),
+      versions: result.versions,
+    );
   }
 
   @override
@@ -148,22 +356,11 @@ final class LocalAiReportRepository implements AiReportRepository {
         'AI report failure code is not supported.',
       );
     }
-    final bootstrap = await database.bootstrapDao.bootstrap();
-    final now = dateTimeService.currentSnapshot().utcMilliseconds;
-    return database.transaction(() async {
-      final existing = await _getActiveRow(reportId, bootstrap.activeUserId);
-      _requirePending(existing, AiReportStatus.failed);
-      await (database.update(
-        database.aiReports,
-      )..where((row) => row.id.equals(reportId))).write(
-        db.AiReportsCompanion(
-          reportStatus: const Value('failed'),
-          errorCode: Value(errorCode),
-          updatedAt: Value(now),
-        ),
-      );
-      return _toDomain(await _getActiveRow(reportId, bootstrap.activeUserId));
-    });
+    return failVersion(
+      reportId: reportId,
+      errorCode: errorCode,
+      generationSource: 'remote_ai',
+    );
   }
 
   @override
@@ -272,17 +469,10 @@ final class LocalAiReportRepository implements AiReportRepository {
     return row;
   }
 
-  void _requirePending(db.AiReport report, AiReportStatus target) {
-    final current = AiReportStatus.fromDatabaseValue(report.reportStatus);
-    if (current != AiReportStatus.pending) {
-      throw InvalidAiReportTransitionException(
-        from: current.databaseValue,
-        to: target.databaseValue,
-      );
-    }
-  }
-
-  domain.AiReport _toDomain(db.AiReport row) {
+  domain.AiReport _toDomain(
+    db.AiReport row, {
+    List<AiReportVersion> versions = const [],
+  }) {
     final metadata = _decodeInputMetadata(row.inputSourcesJson);
     return domain.AiReport(
       id: row.id,
@@ -308,8 +498,89 @@ final class LocalAiReportRepository implements AiReportRepository {
       generatedAt: row.generatedAt,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      title: row.title,
+      generationSource: row.generationSource,
+      sensitivity: AiReportSensitivity.fromDatabaseValue(row.sensitivity),
+      quality: AiReportQuality.fromDatabaseValue(row.quality),
+      currentVersion: row.currentVersion,
+      versions: versions,
     );
   }
+
+  Future<int> _insertVersion({
+    required db.AiReport report,
+    required AiReportStatus status,
+    required String generationSource,
+    String? modelMetadataJson,
+    required String? content,
+    required AiReportSensitivity sensitivity,
+    required AiReportQuality quality,
+    required String? errorCode,
+    required int now,
+  }) async {
+    final nextRow = await database
+        .customSelect(
+          'SELECT COALESCE(MAX(version), 0) + 1 AS next_version '
+          'FROM ai_report_versions WHERE report_id = ?',
+          variables: [Variable.withString(report.id)],
+        )
+        .getSingle();
+    final version = nextRow.read<int>('next_version');
+    await database
+        .into(database.aiReportVersions)
+        .insert(
+          db.AiReportVersionsCompanion.insert(
+            id: Value(idFactory()),
+            reportId: report.id,
+            version: version,
+            status: status.databaseValue,
+            generationSource: generationSource,
+            modelMetadataJson: Value(modelMetadataJson),
+            content: Value(content),
+            sensitivity: sensitivity.databaseValue,
+            quality: quality.databaseValue,
+            errorCode: Value(errorCode),
+            completedAt: Value(now),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+    return version;
+  }
+
+  Future<List<AiReportVersion>> _listVersionsFor(String reportId) async {
+    final rows =
+        await (database.select(database.aiReportVersions)
+              ..where((row) => row.reportId.equals(reportId))
+              ..orderBy([(row) => OrderingTerm.desc(row.version)]))
+            .get();
+    return rows
+        .map(
+          (row) => AiReportVersion(
+            id: row.id,
+            reportId: row.reportId,
+            version: row.version,
+            status: AiReportStatus.fromDatabaseValue(row.status),
+            generationSource: row.generationSource,
+            modelMetadataJson: row.modelMetadataJson,
+            content: row.content,
+            sensitivity: AiReportSensitivity.fromDatabaseValue(row.sensitivity),
+            quality: AiReportQuality.fromDatabaseValue(row.quality),
+            errorCode: row.errorCode,
+            createdAt: row.createdAt,
+            completedAt: row.completedAt,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  String _defaultTitle(AiReportType type) => switch (type) {
+    AiReportType.dailyInsight => '每日洞察',
+    AiReportType.weeklyReport => '每周回顾',
+    AiReportType.monthlyReflection => '月度复盘',
+    AiReportType.tomorrowSuggestion => '明日建议',
+    AiReportType.trendExplanation => '趋势说明',
+  };
 
   _StoredInputMetadata _decodeInputMetadata(String value) {
     try {

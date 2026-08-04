@@ -73,10 +73,10 @@ void main() {
     }
   });
 
-  test('aggregation adds no persistence and preserves schemaVersion 9', () {
+  test('aggregation adds no persistence and preserves current schema', () {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(database.close);
-    expect(database.schemaVersion, 9);
+    expect(database.schemaVersion, 10);
     final databaseTables = File(
       'lib/core/database/app_database.dart',
     ).readAsStringSync();

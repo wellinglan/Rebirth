@@ -32,6 +32,12 @@ mixin SyncableColumns on Table {
       text().withLength(min: 36, max: 36).nullable()();
 }
 
+mixin TimestampColumns on Table {
+  IntColumn get createdAt => integer().clientDefault(utcNowMilliseconds)();
+
+  IntColumn get updatedAt => integer().clientDefault(utcNowMilliseconds)();
+}
+
 mixin SoftDeleteColumn on Table {
   IntColumn get deletedAt => integer().nullable()();
 }

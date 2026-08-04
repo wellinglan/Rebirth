@@ -5,6 +5,7 @@ import 'package:rebirth/core/utils/deterministic_uuid.dart';
 import 'daos/bootstrap_dao.dart';
 import 'database_connection.dart';
 import 'tables/ai_reports_table.dart';
+import 'tables/ai_report_versions_table.dart';
 import 'tables/app_settings_table.dart';
 import 'tables/cloud_account_bindings_table.dart';
 import 'tables/common_columns.dart';
@@ -33,6 +34,7 @@ part 'app_database.g.dart';
     JournalEntryPromptItems,
     HealthRecords,
     AiReports,
+    AiReportVersions,
     SyncConflicts,
     InstallationInfo,
     CloudAccountBindings,
@@ -50,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,6 +62,7 @@ class AppDatabase extends _$AppDatabase {
       await _createSyncConflictIndexes();
       await _createAccountBoundaryIndexes();
       await _createJournalPromptIndexes();
+      await _createAiReportVersionIndexesAndGuards();
     },
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
@@ -155,8 +158,33 @@ class AppDatabase extends _$AppDatabase {
         await _createJournalPromptIndexes();
         await _backfillJournalPromptSystem();
       }
+      if (from < 10) {
+        await migrator.alterTable(
+          TableMigration(
+            aiReports,
+            newColumns: [
+              aiReports.title,
+              aiReports.generationSource,
+              aiReports.sensitivity,
+              aiReports.quality,
+              aiReports.currentVersion,
+            ],
+          ),
+        );
+        await migrator.createTable(aiReportVersions);
+        await _backfillAiReportVersions();
+        await _createAiReportIndexes();
+        await _createAiReportVersionIndexesAndGuards();
+      }
     },
     beforeOpen: (details) async {
+      if (details.versionBefore case final previous?
+          when previous > details.versionNow) {
+        throw StateError(
+          'Database downgrade is not supported: '
+          '$previous -> ${details.versionNow}',
+        );
+      }
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
@@ -193,6 +221,50 @@ class AppDatabase extends _$AppDatabase {
     for (final statement in _journalPromptIndexes) {
       await customStatement(statement);
     }
+  }
+
+  Future<void> _createAiReportVersionIndexesAndGuards() async {
+    for (final statement in _aiReportVersionStatements) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createAiReportIndexes() async {
+    for (final statement in _aiReportIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _backfillAiReportVersions() async {
+    await customStatement('''
+INSERT INTO ai_report_versions (
+  id, report_id, version, status, generation_source, model_metadata_json,
+  content, sensitivity, quality, error_code, completed_at, created_at,
+  updated_at
+)
+SELECT
+  lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' ||
+  substr(lower(hex(randomblob(2))), 2) || '-8' ||
+  substr(lower(hex(randomblob(2))), 2) || '-' || lower(hex(randomblob(6))),
+  id, 1, report_status, 'legacy', NULL, report_content, 'high', 'unknown',
+  CASE WHEN report_status = 'failed'
+    THEN COALESCE(NULLIF(trim(error_code), ''), 'unknown')
+    ELSE NULL END,
+  generated_at, created_at, updated_at
+FROM ai_reports
+WHERE report_status IN ('completed', 'failed')
+''');
+    await customStatement(
+      "UPDATE ai_reports SET current_version = 1, "
+      "title = CASE report_type "
+      "WHEN 'daily_insight' THEN '每日洞察' "
+      "WHEN 'weekly_report' THEN '每周回顾' "
+      "WHEN 'monthly_reflection' THEN '月度复盘' "
+      "WHEN 'tomorrow_suggestion' THEN '明日建议' "
+      "WHEN 'trend_explanation' THEN '趋势说明' "
+      "ELSE 'AI 报告' END "
+      "WHERE report_status IN ('completed', 'failed')",
+    );
   }
 
   Future<void> _backfillJournalPromptSystem() async {
@@ -438,4 +510,25 @@ const _journalPromptIndexes = <String>[
       'ON journal_entry_prompt_items '
       '(journal_entry_id, source_prompt_id, source_prompt_version) '
       'WHERE source_prompt_id IS NOT NULL',
+];
+
+const _aiReportVersionStatements = <String>[
+  'CREATE INDEX IF NOT EXISTS ai_report_versions_report_version '
+      'ON ai_report_versions (report_id, version DESC)',
+  'CREATE TRIGGER IF NOT EXISTS ai_report_versions_no_update '
+      'BEFORE UPDATE ON ai_report_versions BEGIN '
+      "SELECT RAISE(ABORT, 'AI report versions are immutable'); END",
+  'CREATE TRIGGER IF NOT EXISTS ai_report_versions_no_delete '
+      'BEFORE DELETE ON ai_report_versions BEGIN '
+      "SELECT RAISE(ABORT, 'AI report versions are immutable'); END",
+];
+
+const _aiReportIndexes = <String>[
+  'CREATE INDEX IF NOT EXISTS ai_reports_user_type_period '
+      'ON ai_reports (user_id, report_type, period_end_date DESC)',
+  'CREATE INDEX IF NOT EXISTS ai_reports_input_deduplication '
+      'ON ai_reports '
+      '(user_id, report_type, period_start_date, period_end_date, input_hash)',
+  'CREATE INDEX IF NOT EXISTS ai_reports_status_requested_at '
+      'ON ai_reports (report_status, requested_at)',
 ];

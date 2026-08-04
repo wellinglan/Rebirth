@@ -4,6 +4,8 @@ import 'ai_generation_mode.dart';
 import 'ai_input_source_ref.dart';
 import 'ai_report_status.dart';
 import 'ai_report_type.dart';
+import 'ai_report_metadata.dart';
+import 'ai_report_version.dart';
 
 final class AiReport {
   AiReport({
@@ -30,7 +32,14 @@ final class AiReport {
     required this.generatedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.title = 'AI 报告',
+    this.generationSource = 'legacy',
+    this.sensitivity = AiReportSensitivity.high,
+    this.quality = AiReportQuality.unknown,
+    this.currentVersion = 0,
+    List<AiReportVersion> versions = const [],
   }) : inputSources = List<AiInputSourceRef>.unmodifiable(inputSources),
+       versions = List<AiReportVersion>.unmodifiable(versions),
        selectedScopes = selectedScopes == null
            ? null
            : Set<AiDataScope>.unmodifiable(selectedScopes) {
@@ -49,7 +58,10 @@ final class AiReport {
         'A failed AI report requires a controlled error code.',
       );
     }
-    if (status == AiReportStatus.pending && generatedAt != null) {
+    if ((status == AiReportStatus.pending ||
+            status == AiReportStatus.draft ||
+            status == AiReportStatus.generating) &&
+        generatedAt != null) {
       throw const InvalidAiInputException(
         'A pending AI report cannot have a completion time.',
       );
@@ -79,4 +91,10 @@ final class AiReport {
   final int? generatedAt;
   final int createdAt;
   final int updatedAt;
+  final String title;
+  final String generationSource;
+  final AiReportSensitivity sensitivity;
+  final AiReportQuality quality;
+  final int currentVersion;
+  final List<AiReportVersion> versions;
 }

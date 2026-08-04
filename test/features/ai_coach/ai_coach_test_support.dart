@@ -15,9 +15,11 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.d
 import 'package:rebirth/features/ai_coach/domain/ai_input_source_ref.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_input_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_metadata.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_version.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 
 final class FakeAiConsentRepository implements AiConsentRepository {
@@ -105,7 +107,7 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
   }
 }
 
-final class FakeAiReportRepository implements AiReportRepository {
+class FakeAiReportRepository implements AiReportRepository {
   FakeAiReportRepository({List<AiReport> reports = const []})
     : reports = [...reports];
 
@@ -128,6 +130,84 @@ final class FakeAiReportRepository implements AiReportRepository {
   String? lastFailedId;
   String? lastFailureCode;
   String? lastStructuredOutput;
+
+  @override
+  Future<AiReport> createDraft({
+    required AiReportType reportType,
+    required String title,
+    required String periodStartDate,
+    required String periodEndDate,
+    String generationSource = 'fake',
+    AiReportSensitivity sensitivity = AiReportSensitivity.high,
+  }) async {
+    final report = buildAiReport(
+      id: 'draft-${reports.length + 1}',
+      reportType: reportType,
+      status: AiReportStatus.draft,
+    );
+    reports.insert(0, report);
+    return report;
+  }
+
+  @override
+  Future<AiReport> beginGeneration(String reportId) async {
+    return _replace(reportId, status: AiReportStatus.generating);
+  }
+
+  @override
+  Future<AiReport> completeVersion({
+    required String reportId,
+    required String content,
+    required String generationSource,
+    String? modelMetadataJson,
+    AiReportSensitivity sensitivity = AiReportSensitivity.high,
+    AiReportQuality quality = AiReportQuality.unreviewed,
+  }) async {
+    final existing = reports.firstWhere((report) => report.id == reportId);
+    final version = AiReportVersion(
+      id: 'version-${existing.versions.length + 1}',
+      reportId: reportId,
+      version: existing.versions.length + 1,
+      status: AiReportStatus.completed,
+      generationSource: generationSource,
+      modelMetadataJson: modelMetadataJson,
+      content: content,
+      sensitivity: sensitivity,
+      quality: quality,
+      errorCode: null,
+      createdAt: existing.updatedAt + 1,
+      completedAt: existing.updatedAt + 1,
+    );
+    return _replace(
+      reportId,
+      status: AiReportStatus.completed,
+      reportContent: content,
+      versions: [...existing.versions, version],
+    );
+  }
+
+  @override
+  Future<AiReport> failVersion({
+    required String reportId,
+    required String errorCode,
+    required String generationSource,
+  }) async {
+    return _replace(
+      reportId,
+      status: AiReportStatus.failed,
+      errorCode: errorCode,
+    );
+  }
+
+  @override
+  Future<AiReport> archive(String reportId) async {
+    return _replace(reportId, status: AiReportStatus.archived);
+  }
+
+  @override
+  Future<List<AiReportVersion>> listVersions(String reportId) async {
+    return reports.firstWhere((report) => report.id == reportId).versions;
+  }
 
   @override
   Future<AiReport?> findReusableCompleted({
@@ -233,6 +313,7 @@ final class FakeAiReportRepository implements AiReportRepository {
     String? provider,
     String? model,
     String? errorCode,
+    List<AiReportVersion>? versions,
   }) {
     final index = reports.indexWhere((report) => report.id == id);
     final existing = reports[index];
@@ -262,6 +343,12 @@ final class FakeAiReportRepository implements AiReportRepository {
           : null,
       createdAt: existing.createdAt,
       updatedAt: existing.updatedAt + 1000,
+      title: existing.title,
+      generationSource: existing.generationSource,
+      sensitivity: existing.sensitivity,
+      quality: existing.quality,
+      currentVersion: versions?.length ?? existing.currentVersion,
+      versions: versions ?? existing.versions,
     );
     reports[index] = updated;
     return updated;

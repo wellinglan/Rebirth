@@ -27,6 +27,7 @@ become manual PASS.
 | AI Usage Audit and Operations (0 PASS / 0 FAIL / 34 NOT EXECUTED) | `48_ai_usage_audit_and_operations.md` |
 | AI Operations Acceptance and Incident Drill (72 PASS / 0 FAIL / 0 NOT EXECUTED) | `49_ai_operations_acceptance.md` |
 | AI Consent Settings Route Repair | `50_ai_consent_settings_route_repair.md` |
+| AI Report Persistence Foundation (0 PASS / 0 FAIL / 42 NOT EXECUTED) | `51_ai_report_persistence.md` |
 
 Older UI, AI, account, and deployment matrices remain in this directory and
 retain their recorded status.

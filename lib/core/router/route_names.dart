@@ -27,6 +27,8 @@ abstract final class RouteNames {
   static const aiCoach = 'aiCoach';
   static const aiCoachDaily = 'aiCoachDaily';
   static const aiCoachReport = 'aiCoachReport';
+  static const aiReports = 'aiReports';
+  static const aiReportsDetail = 'aiReportsDetail';
 }
 
 abstract final class RoutePaths {
@@ -55,6 +57,11 @@ abstract final class RoutePaths {
   static const personalDataOverview = '/personal-data';
   static const syncConflicts = '/settings/sync-conflicts';
   static const aiCoach = '/ai-coach';
+  static const aiReports = '/ai-reports';
+
+  static String aiReportsDetail(String reportId) {
+    return '$aiReports/${Uri.encodeComponent(reportId)}';
+  }
 
   static String todayHistoryForDate(String date) {
     return Uri(path: todayHistory, queryParameters: {'date': date}).toString();

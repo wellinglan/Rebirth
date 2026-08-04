@@ -20,8 +20,11 @@ abstract final class AiCoachFormatters {
   static String reportStatus(AiReportStatus status) {
     return switch (status) {
       AiReportStatus.pending => '待处理',
+      AiReportStatus.draft => '草稿',
+      AiReportStatus.generating => '生成中',
       AiReportStatus.completed => '已完成',
       AiReportStatus.failed => '生成失败',
+      AiReportStatus.archived => '已归档',
     };
   }
 

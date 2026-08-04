@@ -620,3 +620,19 @@ Sprint 14A.3 在现有 `AiGenerationRequest` 与 `AiUsageRecord` 上增加 Serve
 本 Sprint 不修改 Server 业务表或 Alembic revision，不修改 Flutter；
 `schemaVersion` 保持 9，API Version 保持 1，Sync Protocol 保持 2。详见
 `docs/44_AI_OPERATOR_RUNBOOK.md`。
+
+# 二十五、AI Report 本地持久化边界
+
+Sprint 14B 将既有 `ai_reports` 演进为独立、本地、版本化的 Report 聚合，并以
+`ai_report_versions` 保存不可变的完成或失败版本。新的结果只能追加版本，旧版本
+不能更新或删除；schema 9 的既有完成/失败报告迁移为 v1。
+
+报告正文属于高敏感本地数据，不进入 Growth Evidence、Personal Data
+Aggregation、Journal、普通日志或手动同步。所有查询继续由 active local profile
+限定，账号切换后不得读取其他账号报告。设置中的“AI 报告”页面只读展示列表、
+详情、状态和版本历史，不自动生成，不调用 Provider，也不显示 Token、Prompt、
+Secret、原始模型元数据或完整内部 ID。
+
+Flutter `schemaVersion` 升至 `10`；PostgreSQL、Alembic、API Version `1`、Sync
+Protocol `2` 均不变。AI Report 云端存储与跨设备同步仍不支持。详见
+`docs/45_AI_REPORT_PERSISTENCE.md`。

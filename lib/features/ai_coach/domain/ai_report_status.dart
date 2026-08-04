@@ -1,7 +1,10 @@
 enum AiReportStatus {
   pending('pending'),
+  draft('draft'),
+  generating('generating'),
   completed('completed'),
-  failed('failed');
+  failed('failed'),
+  archived('archived');
 
   const AiReportStatus(this.databaseValue);
 

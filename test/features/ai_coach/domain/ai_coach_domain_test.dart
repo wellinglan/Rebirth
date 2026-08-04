@@ -20,8 +20,11 @@ void main() {
     ]);
     expect(AiReportStatus.values.map((value) => value.databaseValue), [
       'pending',
+      'draft',
+      'generating',
       'completed',
       'failed',
+      'archived',
     ]);
     expect(AiGenerationMode.values.map((value) => value.databaseValue), [
       'manual',

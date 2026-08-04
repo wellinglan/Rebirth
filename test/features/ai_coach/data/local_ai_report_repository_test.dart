@@ -34,6 +34,10 @@ void main() {
       '33333333-3333-4333-8333-333333333333',
       '44444444-4444-4444-8444-444444444444',
       '55555555-5555-4555-8555-555555555555',
+      '66666666-6666-4666-8666-666666666666',
+      '77777777-7777-4777-8777-777777777777',
+      '88888888-8888-4888-8888-888888888888',
+      '99999999-9999-4999-8999-999999999999',
     ];
     repository = LocalAiReportRepository(
       database: database,
@@ -347,6 +351,103 @@ void main() {
       );
     },
   );
+
+  test(
+    'new results append immutable versions instead of overwriting',
+    () async {
+      final draft = await repository.createDraft(
+        reportType: AiReportType.weeklyReport,
+        title: '版本化周报',
+        periodStartDate: '2026-07-10',
+        periodEndDate: '2026-07-16',
+      );
+      expect(draft.status, AiReportStatus.draft);
+
+      await repository.beginGeneration(draft.id);
+      final first = await repository.completeVersion(
+        reportId: draft.id,
+        content: '第一版正文',
+        generationSource: 'fake',
+      );
+      expect(first.currentVersion, 1);
+
+      await repository.beginGeneration(draft.id);
+      final second = await repository.completeVersion(
+        reportId: draft.id,
+        content: '第二版正文',
+        generationSource: 'fake',
+      );
+      final versions = await repository.listVersions(draft.id);
+
+      expect(second.currentVersion, 2);
+      expect(versions.map((item) => item.version), [2, 1]);
+      expect(versions.map((item) => item.content), ['第二版正文', '第一版正文']);
+
+      await expectLater(
+        (database.update(database.aiReportVersions)
+              ..where((row) => row.version.equals(1)))
+            .write(const AiReportVersionsCompanion(content: Value('覆盖'))),
+        throwsA(isA<Exception>()),
+      );
+    },
+  );
+
+  test(
+    'illegal lifecycle transition is rejected without writing a version',
+    () async {
+      final draft = await repository.createDraft(
+        reportType: AiReportType.weeklyReport,
+        title: '非法转换测试',
+        periodStartDate: '2026-07-10',
+        periodEndDate: '2026-07-16',
+      );
+
+      await expectLater(
+        repository.completeVersion(
+          reportId: draft.id,
+          content: '不应保存',
+          generationSource: 'fake',
+        ),
+        throwsA(isA<InvalidAiReportTransitionException>()),
+      );
+      expect(await database.select(database.aiReportVersions).get(), isEmpty);
+    },
+  );
+
+  test('active local account cannot read another account report', () async {
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final report = await repository.createDraft(
+      reportType: AiReportType.dailyInsight,
+      title: '账号 A 报告',
+      periodStartDate: '2026-07-16',
+      periodEndDate: '2026-07-16',
+    );
+    const accountB = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    await database
+        .into(database.userProfiles)
+        .insert(
+          UserProfilesCompanion.insert(
+            id: const Value(accountB),
+            timezoneId: 'Asia/Shanghai',
+            isActive: const Value(false),
+          ),
+        );
+    await database.transaction(() async {
+      await (database.update(database.userProfiles)
+            ..where((row) => row.id.equals(bootstrap.activeUserId)))
+          .write(const UserProfilesCompanion(isActive: Value(false)));
+      await (database.update(database.userProfiles)
+            ..where((row) => row.id.equals(accountB)))
+          .write(const UserProfilesCompanion(isActive: Value(true)));
+    });
+
+    expect(await repository.getById(report.id), isNull);
+    expect(await repository.listRecent(), isEmpty);
+    await expectLater(
+      repository.listVersions(report.id),
+      throwsA(isA<AiReportNotFoundException>()),
+    );
+  });
 }
 
 final class _FakeConsentRepository extends Fake implements AiConsentRepository {

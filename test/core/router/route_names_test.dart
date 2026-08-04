@@ -70,4 +70,12 @@ void main() {
       'conflict id/alpha',
     ]);
   });
+
+  test('AI report library route preserves an encoded opaque report id', () {
+    expect(RoutePaths.aiReports, '/ai-reports');
+    final location = RoutePaths.aiReportsDetail('report id/alpha');
+
+    expect(location, isNot(contains(' ')));
+    expect(Uri.parse(location).pathSegments, ['ai-reports', 'report id/alpha']);
+  });
 }

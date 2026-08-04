@@ -717,8 +717,8 @@ void main() {
     expect((await activePush).pushed, isTrue);
   });
 
-  test('schemaVersion is 7', () {
-    expect(database.schemaVersion, 9);
+  test('schemaVersion includes AI report persistence', () {
+    expect(database.schemaVersion, 10);
   });
 
   test(
