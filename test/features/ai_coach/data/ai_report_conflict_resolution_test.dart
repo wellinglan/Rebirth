@@ -138,6 +138,61 @@ void main() {
       );
     },
   );
+
+  test(
+    'conflict hydration stores the remote snapshot without applying it',
+    () async {
+      final local = await database.select(database.aiReports).getSingle();
+      final awaiting = await conflicts.upsertDetectedConflict(
+        SyncConflictDetection(
+          scope: scope,
+          entityType: SyncEntityType.aiReport,
+          recordId: _reportId,
+          remoteRecordId: _reportId,
+          localSnapshot: SyncConflictSnapshot(
+            payload: _completedPayload,
+            updatedAt: local.updatedAt,
+            deletedAt: null,
+            serverVersion: local.serverVersion,
+            originDeviceId: local.originDeviceId,
+          ),
+          remoteSnapshot: const SyncConflictSnapshot(
+            payload: null,
+            updatedAt: null,
+            deletedAt: null,
+            serverVersion: 6,
+            originDeviceId: null,
+          ),
+          remoteOperation: SyncConflictOperation.unknownPendingPull,
+          resolutionStatus:
+              SyncConflictResolutionStatus.awaitingRemoteSnapshot,
+          detectedAt: 900,
+        ),
+      );
+
+      final result = await adapter.applyRemoteChanges(
+        changes: [_change(_archivedPayload, serverVersion: 6)],
+        syncedAt: 1000,
+        pullMode: SyncPullMode.preferRemoteConflictResolution,
+      );
+
+      final hydrated = await conflicts.getConflict(scope, awaiting.id);
+      final report = await database.select(database.aiReports).getSingle();
+      expect(result.status, SyncEntityStatus.conflict);
+      expect(result.conflictCount, 1);
+      expect(hydrated.remoteSnapshotReady, isTrue);
+      expect(
+        hydrated.resolutionStatus,
+        SyncConflictResolutionStatus.unresolved,
+      );
+      expect(
+        (hydrated.remoteSnapshot.payload as AiReportSyncPayload).status,
+        AiReportStatus.archived,
+      );
+      expect(report.reportStatus, 'completed');
+      expect(report.syncStatus, 'conflict');
+    },
+  );
 }
 
 DateTime _fixedNow() => DateTime.utc(2026, 8, 4, 12);

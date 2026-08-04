@@ -266,6 +266,7 @@ final class AiReportSyncAdapter implements SyncEntityAdapter {
   }) {
     return _database.transaction(() async {
       final bootstrap = await _database.bootstrapDao.bootstrap();
+      final scope = changes.isEmpty ? null : await _tryLoadConflictScope();
       var pulled = 0;
       var deleted = 0;
       var conflicts = 0;
@@ -277,6 +278,27 @@ final class AiReportSyncAdapter implements SyncEntityAdapter {
           bootstrap.activeUserId,
           change.recordId,
         );
+        final activeConflict = scope == null || _conflictRepository == null
+            ? null
+            : await _findActiveConflict(
+                scope: scope,
+                localRecordId: local?.id ?? change.recordId,
+                remoteRecordId: change.recordId,
+              );
+        if (activeConflict != null) {
+          final refreshed = await _hydrateRemoteConflict(
+            scope: scope!,
+            active: activeConflict,
+            change: change,
+            seenAt: syncedAt,
+          );
+          if (pullMode != SyncPullMode.preferRemoteConflictResolution ||
+              refreshed.resolutionStatus !=
+                  SyncConflictResolutionStatus.adoptRemoteRequested) {
+            conflicts += 1;
+            continue;
+          }
+        }
         if (local != null && _requiresConflict(local, change, pullMode)) {
           await _recordRemoteConflict(
             local: local,
@@ -517,6 +539,52 @@ final class AiReportSyncAdapter implements SyncEntityAdapter {
               row.userId.equals(scope.localUserId) & row.id.equals(local.id),
         ))
         .write(const db.AiReportsCompanion(syncStatus: Value('conflict')));
+  }
+
+  Future<SyncConflictRecord?> _findActiveConflict({
+    required SyncConflictScope scope,
+    required String localRecordId,
+    required String remoteRecordId,
+  }) async {
+    final byLocalId = await _conflictRepository!.findActiveConflict(
+      scope: scope,
+      entityType: entityType,
+      recordId: localRecordId,
+    );
+    return byLocalId ??
+        _conflictRepository.findActiveConflictByRemoteRecordId(
+          scope: scope,
+          entityType: entityType,
+          remoteRecordId: remoteRecordId,
+        );
+  }
+
+  Future<SyncConflictRecord> _hydrateRemoteConflict({
+    required SyncConflictScope scope,
+    required SyncConflictRecord active,
+    required SyncChange change,
+    required int seenAt,
+  }) {
+    if (change.serverVersion < (active.remoteSnapshot.serverVersion ?? 0)) {
+      return Future.value(active);
+    }
+    return _conflictRepository!.hydrateRemoteSnapshot(
+      scope: scope,
+      entityType: entityType,
+      recordId: active.recordId,
+      remoteRecordId: change.recordId,
+      operation: change.operation == SyncOperation.delete
+          ? SyncConflictOperation.delete
+          : SyncConflictOperation.upsert,
+      remoteSnapshot: SyncConflictSnapshot(
+        payload: change.payload,
+        updatedAt: change.updatedAt,
+        deletedAt: change.deletedAt,
+        serverVersion: change.serverVersion,
+        originDeviceId: change.originDeviceId,
+      ),
+      seenAt: seenAt,
+    );
   }
 
   Future<void> _insertRemoteReport({

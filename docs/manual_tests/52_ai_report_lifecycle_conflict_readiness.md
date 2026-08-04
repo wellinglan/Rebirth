@@ -26,7 +26,7 @@ Prerequisites:
 | B3 | Sync both devices again | No duplicate report/version and no unexpected generation | NOT EXECUTED |
 | C1 | Windows archive a completed report, then Android deletes the older completed copy before pulling | A scoped AI Report conflict is created after manual sync/pull | NOT EXECUTED |
 | C2 | Open Sync Conflict Center and select the report conflict | Row identifies the report without showing body or internal IDs | NOT EXECUTED |
-| C3 | Inspect local and remote conflict summaries | Only title, period, status, and version count are visible; report text is hidden | NOT EXECUTED |
+| C3 | If the remote summary is pending, choose Re-fetch remote version, then inspect both summaries | The remote summary appears and the explicit Adopt Remote / Keep Local actions become available; only title, period, status, and version count are visible, with report text hidden | NOT EXECUTED |
 | C4 | Choose Adopt Remote and confirm | Conflict clears; remote delete/archive projection wins; immutable history is not rewritten | NOT EXECUTED |
 | C5 | Recreate an archive versus old-local-state conflict | A new scoped AI Report conflict is shown | NOT EXECUTED |
 | C6 | Choose Keep Local and confirm | Conflict clears only after normal manual resolution; local archive projection wins | NOT EXECUTED |
