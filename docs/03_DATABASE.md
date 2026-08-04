@@ -114,6 +114,11 @@ AI Coach 发起远程分析前必须满足：
 
 数据导出、备份和恢复必须由用户主动触发，并明确目标位置。导出内容不得默认包含内部错误、设备标识或不必要的 AI 请求元数据。
 
+Sprint 14F 的 AI Report 导出遵循该原则：单报告 Markdown 与全报告 JSON 仅由用户
+主动保存到所选位置，DTO 不直接序列化 Drift 行，并排除身份、设备、Prompt/Input、
+Provider/Model、Ledger、Sync、Conflict 和 Credential 字段。该导出不提供导入或恢复，
+也不修改任何数据库记录。
+
 ---
 
 ## 4. 日期与时间字段规范

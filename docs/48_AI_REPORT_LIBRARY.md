@@ -73,3 +73,8 @@ The Sprint 14E manual matrix closed on 2026-08-04 with 31 PASS, 0 FAIL, and
 entry, lifecycle, sync/conflict navigation, account isolation, privacy,
 responsive layout, accessibility, Back navigation, and restart behavior were
 accepted. The AI Report Library Consolidation release gate is closed.
+
+Sprint 14F builds explicit local export on this canonical library. It adds one
+single-report Markdown action and one complete active-account JSON action;
+neither action changes lifecycle, versions, sync, conflicts, or AI generation.
+See `docs/49_AI_REPORT_SAFE_EXPORT.md`.

@@ -508,6 +508,12 @@ Repository 只读访问；Widget 不接触 Drift。Growth、Personal Data Aggreg
 和 Sync 均不依赖 Report。未来生成实现只能通过 `AiReportGenerationService` 边界追加
 版本，不能覆盖历史版本。
 
+Sprint 14C 将 Report 聚合及其不可变版本作为一个手动 Sync Protocol 2 实体接入现有
+SyncCoordinator；版本不是独立同步实体。Sprint 14F 在统一报告库上增加只读导出：
+Widget 通过 `AiReportExportController` 调用 `AiReportExportService`，服务将 Domain
+对象映射为不含数据库与同步字段的 Export DTO，再交给平台文件 Adapter。导出前后都
+必须保持报告、版本、同步状态和冲突状态不变；账号或会话在保存前变化时必须停止。
+
 ### 10.4 Prompt 管理
 
 Prompt 不应散落在代码中。

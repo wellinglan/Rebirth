@@ -22,6 +22,13 @@
 > Its Windows and Android manual matrix closed with 31 PASS and 0 FAIL on
 > 2026-08-04.
 
+> Sprint 14F adds explicit, local AI Report export. A single report is exported
+> as UTF-8 Markdown and the active account library as versioned JSON. Export
+> reads through the account-scoped Repository, rechecks account access before
+> saving, and excludes identity, prompt/input, provider/model, ledger, sync,
+> conflict, and credential metadata. It never mutates reports or starts AI or
+> sync. Schema remains 11, API remains 1, and Sync Protocol remains 2.
+
 ---
 
 # 一、文档定位
@@ -652,5 +659,7 @@ Aggregation、Journal、普通日志或手动同步。所有查询继续由 acti
 Secret、原始模型元数据或完整内部 ID。
 
 Flutter `schemaVersion` 升至 `10`；PostgreSQL、Alembic、API Version `1`、Sync
-Protocol `2` 均不变。AI Report 云端存储与跨设备同步仍不支持。详见
+Protocol `2` 均不变。在 Sprint 14B 完成时，AI Report 云端存储与跨设备同步尚不
+支持；该历史限制已由 Sprint 14C 的手动跨端同步实现取代。当前传输边界详见
+`docs/46_AI_REPORT_CROSS_DEVICE_SYNC.md`，Sprint 14B 的本地持久化边界详见
 `docs/45_AI_REPORT_PERSISTENCE.md`。
