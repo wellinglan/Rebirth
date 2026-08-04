@@ -355,6 +355,10 @@ void main() {
         second.id,
         first.id,
       ]);
+      expect((await repository.listAll()).map((report) => report.id), [
+        first.id,
+        second.id,
+      ]);
       await repository.softDelete(second.id);
       expect(await repository.getById(second.id), isNull);
       expect((await repository.listRecent()).map((report) => report.id), [
@@ -477,6 +481,7 @@ void main() {
 
     expect(await repository.getById(report.id), isNull);
     expect(await repository.listRecent(), isEmpty);
+    expect(await repository.listAll(), isEmpty);
     await expectLater(
       repository.listVersions(report.id),
       throwsA(isA<AiReportNotFoundException>()),

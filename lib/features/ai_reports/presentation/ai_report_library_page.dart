@@ -6,6 +6,8 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/models/ai_report_presentation_models.dart';
+import 'package:rebirth/features/ai_reports/presentation/ai_report_export_controller.dart';
+import 'package:rebirth/features/ai_reports/presentation/widgets/ai_report_export_dialog.dart';
 import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 enum AiReportLibraryFilter {
@@ -36,10 +38,20 @@ class AiReportLibraryPage extends ConsumerStatefulWidget {
 
 class _AiReportLibraryPageState extends ConsumerState<AiReportLibraryPage> {
   AiReportLibraryFilter _filter = AiReportLibraryFilter.all;
+  final FocusNode _exportAllFocusNode = FocusNode(
+    debugLabel: 'exportAllAiReports',
+  );
+
+  @override
+  void dispose() {
+    _exportAllFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final history = ref.watch(aiReportHistoryControllerProvider);
+    final export = ref.watch(aiReportExportControllerProvider);
     final refreshing = history.asData?.value.isRefreshing == true;
     return Scaffold(
       key: const ValueKey('aiReportLibraryPage'),
@@ -99,6 +111,14 @@ class _AiReportLibraryPageState extends ConsumerState<AiReportLibraryPage> {
                   filter: _filter,
                   onChanged: (value) => setState(() => _filter = value),
                 ),
+                _ExportAllAction(
+                  enabled: state.reports.isNotEmpty && !export.isExporting,
+                  exporting:
+                      export.isExporting &&
+                      export.target == AiReportExportTarget.allReports,
+                  focusNode: _exportAllFocusNode,
+                  onPressed: () => _exportAll(context),
+                ),
                 if (state.operationError case final message?)
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -130,6 +150,77 @@ class _AiReportLibraryPageState extends ConsumerState<AiReportLibraryPage> {
       ),
     );
   }
+
+  Future<void> _exportAll(BuildContext context) async {
+    final confirmed = await showAiReportExportDialog(context, exportAll: true);
+    if (!confirmed || !context.mounted) return;
+    final result = await ref
+        .read(aiReportExportControllerProvider.notifier)
+        .exportAllReports();
+    if (!context.mounted) return;
+    _showExportResult(context, result);
+  }
+}
+
+class _ExportAllAction extends StatelessWidget {
+  const _ExportAllAction({
+    required this.enabled,
+    required this.exporting,
+    required this.focusNode,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final bool exporting;
+  final FocusNode focusNode;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: AppLayout.maxContentWidth,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              key: const ValueKey('exportAllAiReportsButton'),
+              focusNode: focusNode,
+              onPressed: enabled ? onPressed : null,
+              icon: exporting
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_outlined),
+              label: Text(exporting ? '导出中...' : '导出全部报告'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showExportResult(BuildContext context, AiReportExportViewState result) {
+  final message = switch (result.phase) {
+    AiReportExportPhase.saved => 'AI 报告导出已保存',
+    AiReportExportPhase.cancelled => '已取消导出，报告内容和状态均未改变',
+    AiReportExportPhase.failed => result.message ?? '导出失败，请重试。',
+    AiReportExportPhase.idle || AiReportExportPhase.exporting => null,
+  };
+  if (message == null) return;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
 }
 
 class _FilterBar extends StatelessWidget {

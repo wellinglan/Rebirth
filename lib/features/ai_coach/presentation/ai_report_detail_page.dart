@@ -6,6 +6,8 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_version.dart';
 import 'package:rebirth/features/ai_coach/domain/daily_report_freshness.dart';
+import 'package:rebirth/features/ai_reports/presentation/ai_report_export_controller.dart';
+import 'package:rebirth/features/ai_reports/presentation/widgets/ai_report_export_dialog.dart';
 
 import 'ai_coach_formatters.dart';
 import 'ai_daily_report_freshness_provider.dart';
@@ -70,6 +72,8 @@ class _DetailContent extends ConsumerWidget {
         : null;
     final deleting = history?.deletingReportIds.contains(detail.id) == true;
     final archiving = history?.archivingReportIds.contains(detail.id) == true;
+    final export = ref.watch(aiReportExportControllerProvider);
+    final exporting = export.isExporting && export.reportId == detail.id;
     return ListView(
       key: const ValueKey('aiReportDetailContent'),
       padding: AppLayout.pagePadding,
@@ -200,6 +204,20 @@ class _DetailContent extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  key: const ValueKey('exportAiReportDetailButton'),
+                  onPressed: export.isExporting
+                      ? null
+                      : () => _export(context, ref),
+                  icon: exporting
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.download_outlined),
+                  label: Text(exporting ? '导出中...' : '导出当前报告'),
+                ),
+                const SizedBox(height: 8),
                 if (detail.status == AiReportStatus.completed) ...[
                   FilledButton.tonalIcon(
                     key: const ValueKey('archiveAiReportDetailButton'),
@@ -233,6 +251,25 @@ class _DetailContent extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showAiReportExportDialog(context, exportAll: false);
+    if (!confirmed || !context.mounted) return;
+    final result = await ref
+        .read(aiReportExportControllerProvider.notifier)
+        .exportReport(detail.id);
+    if (!context.mounted) return;
+    final message = switch (result.phase) {
+      AiReportExportPhase.saved => 'AI 报告导出已保存',
+      AiReportExportPhase.cancelled => '已取消导出，报告内容和状态均未改变',
+      AiReportExportPhase.failed => result.message ?? '导出失败，请重试。',
+      AiReportExportPhase.idle || AiReportExportPhase.exporting => null,
+    };
+    if (message == null) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _archive(BuildContext context, WidgetRef ref) async {

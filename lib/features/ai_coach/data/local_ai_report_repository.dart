@@ -428,6 +428,24 @@ final class LocalAiReportRepository implements AiReportRepository {
   }
 
   @override
+  Future<List<domain.AiReport>> listAll() async {
+    final bootstrap = await database.bootstrapDao.bootstrap();
+    final rows =
+        await (database.select(database.aiReports)
+              ..where(
+                (row) =>
+                    row.userId.equals(bootstrap.activeUserId) &
+                    row.deletedAt.isNull(),
+              )
+              ..orderBy([
+                (row) => OrderingTerm.asc(row.createdAt),
+                (row) => OrderingTerm.asc(row.id),
+              ]))
+            .get();
+    return rows.map(_toDomain).toList(growable: false);
+  }
+
+  @override
   Future<List<domain.AiReport>> listPending() async {
     final bootstrap = await database.bootstrapDao.bootstrap();
     final rows =

@@ -3,6 +3,7 @@ import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_pending_recovery_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
+import 'package:rebirth/features/ai_reports/presentation/ai_report_export_controller.dart';
 import 'package:rebirth/features/growth/presentation/growth_controller.dart';
 import 'package:rebirth/features/health/presentation/health_controller.dart';
 import 'package:rebirth/features/journal/presentation/journal_controller.dart';
@@ -55,4 +56,5 @@ void invalidateAccountScopedProviders(Ref ref) {
   ref.invalidate(activeSyncConflictListProvider);
   ref.invalidate(aiPendingRecoveryControllerProvider);
   ref.invalidate(aiReportHistoryControllerProvider);
+  ref.invalidate(aiReportExportControllerProvider);
 }

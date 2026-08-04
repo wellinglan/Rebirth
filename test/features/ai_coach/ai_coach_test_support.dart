@@ -246,6 +246,13 @@ class FakeAiReportRepository implements AiReportRepository {
   }
 
   @override
+  Future<List<AiReport>> listAll() async {
+    listCalls += 1;
+    if (listError case final error?) throw error;
+    return List<AiReport>.unmodifiable(reports);
+  }
+
+  @override
   Future<List<AiReport>> listPending() async => reports
       .where((report) => report.status == AiReportStatus.pending)
       .toList(growable: false);

@@ -19,6 +19,18 @@ void main() {
           reason: file.path,
         );
         expect(source, isNot(contains('modelMetadataJson')), reason: file.path);
+        expect(source, isNot(contains("import 'dart:io'")), reason: file.path);
+        expect(source, isNot(contains('file_selector')), reason: file.path);
+        expect(
+          source,
+          isNot(contains('flutter_file_dialog')),
+          reason: file.path,
+        );
+        expect(
+          source,
+          isNot(contains('PlatformAiReportExportAdapter')),
+          reason: file.path,
+        );
       }
     },
   );
