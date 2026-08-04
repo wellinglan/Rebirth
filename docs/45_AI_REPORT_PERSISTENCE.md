@@ -81,7 +81,9 @@ Android, 320 px width, and TextScaler 2.0.
 
 ## Database And Compatibility
 
-- Flutter schemaVersion: `10`.
+- Flutter schemaVersion: `11` after Sprint 14D extends the generic conflict
+  table constraint to persist scoped `ai_reports` conflicts. The AI report and
+  immutable version tables themselves are unchanged.
 - New local table: `ai_report_versions`.
 - PostgreSQL/Alembic: unchanged.
 - API Version: `1`.

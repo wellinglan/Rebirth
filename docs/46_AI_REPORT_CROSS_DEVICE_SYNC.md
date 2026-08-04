@@ -33,8 +33,10 @@ manual, account-bound synchronization capability, not an AI generation feature.
   never rendered in sync center rows, conflict lists, or diagnostics.
 - Report generation, AI usage controls, provider configuration, prompts,
   request IDs, tokens, and AI reports do not gain automatic/background sync.
-- Flutter schemaVersion remains 10; the existing report sync columns and
-  immutable version-table guards are reused.
+- Flutter schemaVersion is 11. Sprint 14D rebuilds the generic local
+  `sync_conflicts` constraint to accept `ai_reports`, preserving existing
+  conflict rows and indexes; report tables and immutable version guards are
+  reused.
 
 ## Conflict And Delete Behavior
 
@@ -43,3 +45,9 @@ conflict record. The user can explicitly retrieve the remote version, adopt it,
 or keep the local version. Existing version number/ID/content changes are
 rejected by the server and adapter. Deleting a report creates a normal v2 root
 tombstone; it never deletes historical rows through a conflict action.
+
+Sprint 14D exposes `completed -> archived` from report detail. Archive is a
+metadata state change: body and version history remain readable, no generation
+is invoked, and a manual AI Report sync transfers the archived status. Archive
+versus delete and archive versus an older local state use this same OCC conflict
+flow. Conflict summaries show only title, period, status, and version count.

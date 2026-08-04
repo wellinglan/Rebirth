@@ -4,9 +4,15 @@
 > Status: Active  
 > Last Updated: 2026-07
 
-> Sprint 14C: `ai_reports` is a manual Sync Protocol 2 aggregate. Its immutable
+> Sprint 14D: `ai_reports` is a manual Sync Protocol 2 aggregate. Its immutable
 > versions travel only as children; payloads exclude prompts, inputs, runtime
-> metadata, credentials, usage, and tokens. Schema remains 10, API remains 1.
+> metadata, credentials, usage, and tokens. Schema is 11, API remains 1.
+
+> Sprint 14D exposes the existing completed-to-archived lifecycle in the
+> report detail UI. Archiving preserves body and immutable history, does not
+> generate AI content, and transfers only aggregate metadata through manual
+> sync. AI Report conflicts use the existing conflict center and never render
+> report body, prompt, provider, token, or secret.
 
 ---
 

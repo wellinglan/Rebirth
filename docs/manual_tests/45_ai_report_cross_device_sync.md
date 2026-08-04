@@ -1,8 +1,10 @@
 # AI Report Cross-device Sync Manual Acceptance
 
-Status: PASS for all applicable manual checks. B1-B3 and C1-C6 are NOT
-EXECUTED because the current production UI deliberately has no report archive,
-edit, or same-aggregate version-append operation.
+Status: historical Sprint 14C acceptance. B1-B3 and C1-C6 remain NOT EXECUTED
+in this record because they had no corresponding production UI when Sprint 14C
+was accepted. Sprint 14D adds the archive lifecycle and its executable
+archive/conflict acceptance is recorded separately in
+`52_ai_report_lifecycle_conflict_readiness.md`.
 
 Prerequisites: deploy the Sprint 14C API image after CI passes; sign in to the
 same cloud account and register both Windows and Android devices. Use manual

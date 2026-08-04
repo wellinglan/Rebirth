@@ -980,3 +980,16 @@ Flutter Drift advances to `schemaVersion = 10`. The local-only
 `ai_report_versions` table and immutable guards preserve historical report
 results. Existing schema 9 completed/failed reports become version 1. No
 Server database, Alembic revision, API, or Sync Protocol change is made.
+
+## Sprint 14D AI Report Lifecycle And Conflict Readiness
+
+Flutter Drift advances to `schemaVersion = 11`. The v10-to-v11 migration
+rebuilds only the generic `sync_conflicts` table so its entity-type CHECK
+constraint also accepts `ai_reports`. Existing conflict rows and the conflict
+indexes are preserved. This is required for an existing AI Report OCC conflict
+to persist locally and be recoverable through the shared conflict center.
+
+No AI report business table, PostgreSQL model, Alembic revision, API Version,
+or Sync Protocol changes. The archive state continues to live on the existing
+`ai_reports` aggregate and its immutable `ai_report_versions` children are not
+rewritten by archive or conflict resolution.
