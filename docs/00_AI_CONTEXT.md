@@ -14,6 +14,12 @@
 > sync. AI Report conflicts use the existing conflict center and never render
 > report body, prompt, provider, token, or secret.
 
+> Sprint 14E establishes `/ai-reports` as the single AI Report Library.
+> Settings and AI Coach reach the same account-scoped list and detail state;
+> the ordinary list shows lifecycle and safe sync status but never report body,
+> Prompt, AI input, Provider/model, credentials, internal IDs, cursor, or
+> payload. Schema remains 11, API remains 1, and Sync Protocol remains 2.
+
 ---
 
 # 一、文档定位

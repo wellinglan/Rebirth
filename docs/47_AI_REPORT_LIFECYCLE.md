@@ -50,6 +50,13 @@ See `docs/46_AI_REPORT_CROSS_DEVICE_SYNC.md` for the report aggregate transport
 contract and `docs/manual_tests/52_ai_report_lifecycle_conflict_readiness.md`
 for the release acceptance matrix.
 
+Sprint 14E consolidates lifecycle presentation into the canonical
+`/ai-reports` library. Settings and AI Coach now reach the same list and rich
+detail; the former embedded AI Coach history list and duplicate read-only
+detail controller were removed. Archive semantics, immutable version history,
+manual sync, and conflict resolution are unchanged. See
+`docs/48_AI_REPORT_LIBRARY.md`.
+
 ## Acceptance
 
 The Sprint 14D manual matrix closed on 2026-08-04 with 25 PASS, 0 FAIL, and
