@@ -89,5 +89,13 @@ SyncModuleRegistry createDefaultSyncModuleRegistry() {
       entityTypes: const [SyncEntityType.health],
       sensitivity: SyncModuleSensitivity.sensitive,
     ),
+    SyncModuleDescriptor(
+      moduleId: SyncModuleId.aiReport,
+      displayName: 'AI 报告',
+      description: 'AI 生成的个人洞察与不可变版本历史',
+      displayOrder: 60,
+      entityTypes: const [SyncEntityType.aiReport],
+      sensitivity: SyncModuleSensitivity.sensitive,
+    ),
   ]);
 }

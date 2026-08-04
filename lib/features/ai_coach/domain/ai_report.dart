@@ -37,6 +37,10 @@ final class AiReport {
     this.sensitivity = AiReportSensitivity.high,
     this.quality = AiReportQuality.unknown,
     this.currentVersion = 0,
+    this.syncStatus = 'local_only',
+    this.serverVersion,
+    this.lastSyncedAt,
+    this.deletedAt,
     List<AiReportVersion> versions = const [],
   }) : inputSources = List<AiInputSourceRef>.unmodifiable(inputSources),
        versions = List<AiReportVersion>.unmodifiable(versions),
@@ -96,5 +100,9 @@ final class AiReport {
   final AiReportSensitivity sensitivity;
   final AiReportQuality quality;
   final int currentVersion;
+  final String syncStatus;
+  final int? serverVersion;
+  final int? lastSyncedAt;
+  final int? deletedAt;
   final List<AiReportVersion> versions;
 }

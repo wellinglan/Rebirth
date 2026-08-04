@@ -221,6 +221,9 @@ final class LocalAiReportRepository implements AiReportRepository {
         db.AiReportsCompanion(
           reportStatus: const Value('archived'),
           updatedAt: Value(now),
+          syncStatus: Value(
+            existing.serverVersion == null ? 'local_only' : 'pending',
+          ),
         ),
       );
       return _toDomain(
@@ -444,7 +447,7 @@ final class LocalAiReportRepository implements AiReportRepository {
   Future<void> softDelete(String id) async {
     final bootstrap = await database.bootstrapDao.bootstrap();
     final now = dateTimeService.currentSnapshot().utcMilliseconds;
-    await _getActiveRow(id, bootstrap.activeUserId);
+    final existing = await _getActiveRow(id, bootstrap.activeUserId);
     await (database.update(database.aiReports)..where(
           (row) =>
               row.id.equals(id) &
@@ -452,7 +455,13 @@ final class LocalAiReportRepository implements AiReportRepository {
               row.deletedAt.isNull(),
         ))
         .write(
-          db.AiReportsCompanion(deletedAt: Value(now), updatedAt: Value(now)),
+          db.AiReportsCompanion(
+            deletedAt: Value(now),
+            updatedAt: Value(now),
+            syncStatus: Value(
+              existing.serverVersion == null ? 'local_only' : 'pending',
+            ),
+          ),
         );
   }
 
@@ -503,6 +512,10 @@ final class LocalAiReportRepository implements AiReportRepository {
       sensitivity: AiReportSensitivity.fromDatabaseValue(row.sensitivity),
       quality: AiReportQuality.fromDatabaseValue(row.quality),
       currentVersion: row.currentVersion,
+      syncStatus: row.syncStatus,
+      serverVersion: row.serverVersion,
+      lastSyncedAt: row.lastSyncedAt,
+      deletedAt: row.deletedAt,
       versions: versions,
     );
   }

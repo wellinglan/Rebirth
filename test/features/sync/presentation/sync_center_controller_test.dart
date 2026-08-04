@@ -68,7 +68,7 @@ void main() {
 
     await container.read(syncCenterControllerProvider.notifier).refresh();
 
-    expect(harness.refreshCalls, 5);
+    expect(harness.refreshCalls, 6);
   });
 }
 

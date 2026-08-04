@@ -6,6 +6,7 @@ import 'plan_sync_controller.dart';
 import 'journal_sync_controller.dart';
 import 'today_sync_controller.dart';
 import 'health_sync_controller.dart';
+import 'ai_report_sync_controller.dart';
 import 'profile_sync_controller.dart';
 
 abstract interface class SyncConflictResolutionHandler {
@@ -42,6 +43,7 @@ final syncConflictResolutionHandlerRegistryProvider =
       final todayState = ref.watch(todaySyncControllerProvider);
       final journalState = ref.watch(journalSyncControllerProvider);
       final healthState = ref.watch(healthSyncControllerProvider);
+      final aiReportState = ref.watch(aiReportSyncControllerProvider);
       final profileState = ref.watch(profileSyncControllerProvider);
       return SyncConflictResolutionHandlerRegistry([
         _CallbackConflictResolutionHandler(
@@ -132,6 +134,23 @@ final syncConflictResolutionHandlerRegistryProvider =
           keepLocal: ref.read(healthSyncControllerProvider.notifier).keepLocal,
           retryRequestedResolution: ref
               .read(healthSyncControllerProvider.notifier)
+              .retryRequestedResolution,
+        ),
+        _CallbackConflictResolutionHandler(
+          entityType: SyncEntityType.aiReport,
+          isBusy: aiReportState.isBusy,
+          resolvingConflictId: aiReportState.resolvingConflictId,
+          retryHydration: ref
+              .read(aiReportSyncControllerProvider.notifier)
+              .retryConflictHydration,
+          adoptRemote: ref
+              .read(aiReportSyncControllerProvider.notifier)
+              .adoptRemote,
+          keepLocal: ref
+              .read(aiReportSyncControllerProvider.notifier)
+              .keepLocal,
+          retryRequestedResolution: ref
+              .read(aiReportSyncControllerProvider.notifier)
               .retryRequestedResolution,
         ),
       ]);

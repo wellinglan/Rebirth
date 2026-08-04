@@ -4,6 +4,7 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart';
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/profile/domain/profile_sync_payload.dart';
@@ -161,6 +162,7 @@ class SyncConflictDetailPage extends ConsumerWidget {
       SyncEntityType.journalPromptConfiguration => '本地 Journal 问题配置已保留',
       SyncEntityType.health => '本地 Health 内容已保留',
       SyncEntityType.plan => '本地 Plan 内容已保留',
+      SyncEntityType.aiReport => '本地 AI 报告内容已保留',
     };
     final diagnosticParts = failure == null
         ? <String>[]
@@ -393,6 +395,7 @@ class _VersionSummary extends StatelessWidget {
         ? payload
         : null;
     final health = payload is HealthSyncPayload ? payload : null;
+    final aiReport = payload is AiReportSyncPayload ? payload : null;
     final awaiting = operation == SyncConflictOperation.unknownPendingPull;
     return Card(
       child: Padding(
@@ -439,6 +442,22 @@ class _VersionSummary extends StatelessWidget {
                   value: _healthSourceLabel(health.dataSource),
                 ),
                 const _Line(label: '内容', value: '健康详情已隐藏'),
+              ] else if (aiReport != null) ...[
+                _Line(label: 'Title', value: aiReport.title),
+                _Line(
+                  label: 'Period',
+                  value:
+                      '${aiReport.periodStartDate} - ${aiReport.periodEndDate}',
+                ),
+                _Line(label: 'Status', value: aiReport.status.databaseValue),
+                _Line(
+                  label: 'Versions',
+                  value: aiReport.versions.length.toString(),
+                ),
+                const _Line(
+                  label: 'Content',
+                  value: 'AI report content is hidden',
+                ),
               ] else if (journal != null) ...[
                 _Line(label: '日期', value: journal.entryDate),
                 _Line(
@@ -577,6 +596,7 @@ String _displayTitle(SyncConflictRecord record) {
     return 'Journal 问题配置';
   }
   if (local is HealthSyncPayload) return '${local.recordDate} Health';
+  if (local is AiReportSyncPayload) return local.title;
   final remote = record.remoteSnapshot.payload;
   if (remote is ProfileSyncPayload) return 'Profile';
   if (remote is PlanSyncPayload) return remote.title;
@@ -586,6 +606,7 @@ String _displayTitle(SyncConflictRecord record) {
     return 'Journal 问题配置';
   }
   if (remote is HealthSyncPayload) return '${remote.recordDate} Health';
+  if (remote is AiReportSyncPayload) return remote.title;
   if (record.entityType == SyncEntityType.today) {
     return '已删除的 Today 记录';
   }
@@ -598,6 +619,7 @@ String _displayTitle(SyncConflictRecord record) {
   if (record.entityType == SyncEntityType.health) {
     return '已删除的 Health 记录';
   }
+  if (record.entityType == SyncEntityType.aiReport) return 'Deleted AI report';
   if (record.entityType == SyncEntityType.profile) {
     return '已删除的 Profile';
   }

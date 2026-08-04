@@ -21,6 +21,7 @@ from app.schemas import (
     JournalSyncPayload,
     JournalPromptConfigurationSyncPayload,
     HealthSyncPayload,
+    AiReportSyncPayload,
     TodaySyncPayload,
     SyncPullItem,
     SyncPullRequest,
@@ -37,6 +38,7 @@ TODAY_TABLE = "today_records"
 JOURNAL_TABLE = "journal_entries"
 JOURNAL_PROMPT_CONFIGURATION_TABLE = "journal_prompt_configurations"
 HEALTH_TABLE = "health_records"
+AI_REPORT_TABLE = "ai_reports"
 GOALS_TABLE = "goals"
 CANONICAL_PROFILE_RECORD_ID = "profile"
 SYNC_CLOCK_ID = 1
@@ -314,6 +316,8 @@ def _preflight_push(
             _validate_journal_prompt_configuration_item(incoming, record_id)
         elif incoming.table_name == HEALTH_TABLE:
             _validate_health_item(incoming, record_id)
+        elif incoming.table_name == AI_REPORT_TABLE:
+            _validate_ai_report_item(incoming, record_id)
 
     _ensure_sync_clock(session)
     session.scalar(
@@ -372,6 +376,7 @@ def _preflight_push(
         session, user_id, preflight
     )
     _validate_projected_health_dates(session, user_id, preflight)
+    _validate_projected_ai_reports(session, user_id, preflight)
     return preflight
 
 
@@ -476,6 +481,81 @@ def _validate_health_item(incoming: object, record_id: str) -> None:
         HealthSyncPayload.model_validate(incoming.payload)
     except (ValidationError, ValueError) as error:
         raise SyncRequestValidationError("Invalid Health payload.") from error
+
+
+def _validate_ai_report_item(incoming: object, record_id: str) -> None:
+    try:
+        uuid.UUID(record_id)
+        uuid.UUID(incoming.origin_device_id)
+    except ValueError as error:
+        raise SyncRequestValidationError(
+            "AI Report record and origin device IDs must be UUIDs."
+        ) from error
+    if incoming.deleted_at is not None:
+        if incoming.payload:
+            raise SyncRequestValidationError(
+                "AI Report tombstone payload must be empty."
+            )
+        return
+    try:
+        AiReportSyncPayload.model_validate(incoming.payload)
+    except (ValidationError, ValueError) as error:
+        raise SyncRequestValidationError("Invalid AI Report payload.") from error
+
+
+def _validate_projected_ai_reports(
+    session: Session,
+    user_id: str,
+    preflight: list[_PreflightItem],
+) -> None:
+    """Reject any update that overwrites or removes an immutable version."""
+    if not any(item.incoming.table_name == AI_REPORT_TABLE for item in preflight):
+        return
+    current = session.scalars(
+        select(SyncItem)
+        .where(
+            SyncItem.user_id == user_id,
+            SyncItem.table_name == AI_REPORT_TABLE,
+        )
+        .with_for_update()
+    ).all()
+    current_by_id = {
+        item.record_id: item for item in current if item.deleted_at is None
+    }
+    for item in preflight:
+        incoming = item.incoming
+        if incoming.table_name != AI_REPORT_TABLE or item.outcome == "conflict":
+            continue
+        if incoming.deleted_at is not None:
+            continue
+        previous = current_by_id.get(item.record_id)
+        if previous is None:
+            continue
+        try:
+            previous_payload = AiReportSyncPayload.model_validate(
+                json.loads(previous.payload_json)
+            )
+            incoming_payload = AiReportSyncPayload.model_validate(incoming.payload)
+        except (ValidationError, ValueError, TypeError) as error:
+            raise SyncRequestValidationError(
+                "Stored AI Report payload is invalid."
+            ) from error
+        previous_versions = {
+            version.version: version for version in previous_payload.versions
+        }
+        incoming_versions = {
+            version.version: version for version in incoming_payload.versions
+        }
+        for number, previous_version in previous_versions.items():
+            incoming_version = incoming_versions.get(number)
+            if incoming_version is None or incoming_version != previous_version:
+                raise SyncRequestValidationError(
+                    "AI Report versions are immutable and cannot be overwritten."
+                )
+        if incoming_payload.current_version < previous_payload.current_version:
+            raise SyncRequestValidationError(
+                "AI Report current version cannot move backwards."
+            )
 
 
 def _validate_projected_today_dates(

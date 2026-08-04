@@ -4,7 +4,8 @@ enum SyncEntityType {
   journalPromptConfiguration('journal_prompt_configurations'),
   journal('journal_entries'),
   plan('goals'),
-  health('health_records');
+  health('health_records'),
+  aiReport('ai_reports');
 
   const SyncEntityType(this.wireName);
 

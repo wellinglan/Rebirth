@@ -6,6 +6,7 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart';
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_sync_payload.dart';
 import 'package:rebirth/features/plan/domain/plan_sync_payload.dart';
 import 'package:rebirth/features/profile/domain/profile_sync_payload.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
@@ -184,6 +185,8 @@ String _displayTitle(SyncConflictRecord conflict) {
   if (remote is HealthSyncPayload) {
     return '${remote.recordDate} Health';
   }
+  if (local is AiReportSyncPayload) return local.title;
+  if (remote is AiReportSyncPayload) return remote.title;
   if (conflict.entityType == SyncEntityType.today) {
     return '已删除的 Today 记录';
   }
@@ -209,6 +212,7 @@ String _entityLabel(SyncEntityType type) => switch (type) {
   SyncEntityType.journal => 'Journal',
   SyncEntityType.plan => 'Plan',
   SyncEntityType.health => 'Health',
+  SyncEntityType.aiReport => 'AI 报告',
 };
 
 enum SyncConflictModuleFilter {
@@ -217,7 +221,8 @@ enum SyncConflictModuleFilter {
   plan('Plan'),
   today('Today'),
   journal('Journal'),
-  health('Health');
+  health('Health'),
+  aiReport('AI Report');
 
   const SyncConflictModuleFilter(this.label);
 
@@ -230,6 +235,7 @@ enum SyncConflictModuleFilter {
       'module.today' => today,
       'module.journal' => journal,
       'module.health' => health,
+      'module.ai_report' => aiReport,
       _ => all,
     };
   }
@@ -244,6 +250,8 @@ enum SyncConflictModuleFilter {
         entityType == SyncEntityType.journal ||
             entityType == SyncEntityType.journalPromptConfiguration,
       SyncConflictModuleFilter.health => entityType == SyncEntityType.health,
+      SyncConflictModuleFilter.aiReport =>
+        entityType == SyncEntityType.aiReport,
     };
   }
 }

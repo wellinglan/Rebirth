@@ -10,6 +10,7 @@ import '../application/sync_module_registry.dart';
 import '../application/sync_module_runner.dart';
 import '../domain/sync_module.dart';
 import 'health_sync_controller.dart';
+import 'ai_report_sync_controller.dart';
 import 'journal_sync_controller.dart';
 import 'plan_sync_controller.dart';
 import 'profile_sync_controller.dart';
@@ -74,6 +75,15 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
       ),
       onRefresh: ref
           .read(healthSyncControllerProvider.notifier)
+          .reloadConflictCount,
+    ),
+    CallbackSyncModuleRunner(
+      descriptor: descriptor(SyncModuleId.aiReport),
+      onRun: () => runAndRefresh(
+        ref.read(aiReportSyncControllerProvider.notifier).syncAiReports,
+      ),
+      onRefresh: ref
+          .read(aiReportSyncControllerProvider.notifier)
           .reloadConflictCount,
     ),
   ]);

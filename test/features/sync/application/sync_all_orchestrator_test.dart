@@ -7,7 +7,7 @@ import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   test(
-    'sync all runs five modules sequentially in explicit product order',
+    'sync all runs six modules sequentially in explicit product order',
     () async {
       final calls = <SyncModuleId>[];
       var active = 0;
@@ -37,7 +37,7 @@ void main() {
 
       expect(calls, SyncModuleId.values);
       expect(maxActive, 1);
-      expect(result.moduleResults, hasLength(5));
+      expect(result.moduleResults, hasLength(6));
       expect(
         result.moduleResults.map((item) => item.status),
         everyElement(SyncModuleExecutionStatus.succeeded),

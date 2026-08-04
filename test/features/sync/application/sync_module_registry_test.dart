@@ -15,6 +15,7 @@ void main() {
         'module.today',
         'module.journal',
         'module.health',
+        'module.ai_report',
       ],
     );
     expect(registry.orderedModules.map((item) => item.displayOrder), const [
@@ -23,6 +24,7 @@ void main() {
       30,
       40,
       50,
+      60,
     ]);
   });
 
@@ -77,6 +79,7 @@ SyncModuleDescriptor _descriptor(SyncModuleId id, int order) {
     SyncModuleId.today => SyncEntityType.today,
     SyncModuleId.journal => SyncEntityType.journal,
     SyncModuleId.health => SyncEntityType.health,
+    SyncModuleId.aiReport => SyncEntityType.aiReport,
   };
   return SyncModuleDescriptor(
     moduleId: id,

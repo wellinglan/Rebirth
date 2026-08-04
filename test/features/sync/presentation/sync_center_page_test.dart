@@ -10,7 +10,7 @@ import 'package:rebirth/features/sync/presentation/sync_center_page.dart';
 import 'package:rebirth/features/sync/presentation/sync_center_view_state.dart';
 
 void main() {
-  testWidgets('Sync Center shows five user modules and privacy-safe metrics', (
+  testWidgets('Sync Center shows six user modules and privacy-safe metrics', (
     tester,
   ) async {
     await _pump(tester, _state(), height: 2400);
@@ -24,6 +24,7 @@ void main() {
       'Today',
       'Journal',
       'Health',
+      'AI 报告',
     ]) {
       expect(find.text(module), findsOneWidget);
     }
@@ -57,7 +58,7 @@ void main() {
         height: 2400,
       );
 
-      expect(find.textContaining('2 / 5'), findsOneWidget);
+      expect(find.textContaining('2 / 6'), findsOneWidget);
       expect(find.textContaining('正在同步 Today'), findsOneWidget);
       expect(
         tester

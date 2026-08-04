@@ -23,6 +23,7 @@ SyncTable = Literal[
     "journal_entries",
     "goals",
     "health_records",
+    "ai_reports",
 ]
 PlanGoalLevel = Literal["life", "year", "quarter", "month", "week", "day", "custom"]
 PlanGoalStatus = Literal[
@@ -37,6 +38,17 @@ JournalEntryStatus = Literal["draft", "completed"]
 JournalPromptSource = Literal["system", "user", "future_ai"]
 JournalResponseKind = Literal["long_text"]
 HealthDataSource = Literal["manual", "health_connect", "apple_health"]
+AiReportType = Literal[
+    "daily_insight",
+    "weekly_report",
+    "monthly_reflection",
+    "tomorrow_suggestion",
+    "trend_explanation",
+]
+AiReportStatus = Literal["completed", "failed", "archived"]
+AiReportVersionStatus = Literal["completed", "failed"]
+AiReportSensitivity = Literal["standard", "high", "restricted"]
+AiReportQuality = Literal["unknown", "unreviewed", "validated"]
 
 
 class PlanSyncPayload(BaseModel):
@@ -399,6 +411,95 @@ class HealthSyncPayload(BaseModel):
         if not trimmed:
             raise ValueError("Health text must not be blank")
         return trimmed
+
+
+class AiReportVersionSyncPayload(BaseModel):
+    """Portable immutable Report version; provider/runtime fields are absent."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    version: int = Field(ge=1)
+    status: AiReportVersionStatus
+    generation_source: str = Field(min_length=1, max_length=80)
+    content: str | None = Field(default=None, max_length=100000)
+    sensitivity: AiReportSensitivity
+    quality: AiReportQuality
+    error_code: str | None = Field(default=None, max_length=80)
+    created_at: int = Field(ge=0)
+    completed_at: int | None = Field(default=None, ge=0)
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, value: str) -> str:
+        UUID(value)
+        return value
+
+    @field_validator("generation_source", "content", "error_code")
+    @classmethod
+    def trim_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("AI Report text must not be blank")
+        return trimmed
+
+    @model_validator(mode="after")
+    def validate_terminal_version(self) -> "AiReportVersionSyncPayload":
+        if self.completed_at is not None and self.completed_at < self.created_at:
+            raise ValueError("completed_at must not precede created_at")
+        if self.status == "completed" and self.content is None:
+            raise ValueError("completed versions require content")
+        if self.status == "failed" and self.error_code is None:
+            raise ValueError("failed versions require a safe error code")
+        return self
+
+
+class AiReportSyncPayload(BaseModel):
+    """User-owned AI Report aggregate for Sync Protocol v2 transport."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    report_type: AiReportType
+    title: str = Field(min_length=1, max_length=200)
+    period_start_date: str
+    period_end_date: str
+    report_status: AiReportStatus
+    created_at: int = Field(ge=0)
+    generation_source: str = Field(min_length=1, max_length=80)
+    sensitivity: AiReportSensitivity
+    quality: AiReportQuality
+    current_version: int = Field(ge=1)
+    versions: list[AiReportVersionSyncPayload] = Field(min_length=1, max_length=100)
+
+    @field_validator("period_start_date", "period_end_date")
+    @classmethod
+    def validate_period_date(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("AI Report period date must use YYYY-MM-DD")
+        date.fromisoformat(value)
+        return value
+
+    @field_validator("title", "generation_source")
+    @classmethod
+    def trim_required_text(cls, value: str) -> str:
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("AI Report text must not be blank")
+        return trimmed
+
+    @model_validator(mode="after")
+    def validate_versions(self) -> "AiReportSyncPayload":
+        if self.period_end_date < self.period_start_date:
+            raise ValueError("AI Report period end must not precede start")
+        ids = {version.id for version in self.versions}
+        numbers = {version.version for version in self.versions}
+        if len(ids) != len(self.versions) or len(numbers) != len(self.versions):
+            raise ValueError("AI Report versions must be unique")
+        if self.current_version not in numbers:
+            raise ValueError("AI Report current version must exist")
+        return self
 
 
 class HealthResponse(BaseModel):

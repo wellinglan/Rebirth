@@ -25,6 +25,7 @@ void main() {
       SyncEntityType.journalPromptConfiguration,
       SyncEntityType.journal,
       SyncEntityType.health,
+      SyncEntityType.aiReport,
       SyncEntityType.plan,
     ]);
     expect(
@@ -46,6 +47,10 @@ void main() {
     expect(
       registry.adapterFor(SyncEntityType.health).entityType,
       SyncEntityType.health,
+    );
+    expect(
+      registry.adapterFor(SyncEntityType.aiReport).entityType,
+      SyncEntityType.aiReport,
     );
     expect(
       registry.adapterFor(SyncEntityType.plan).entityType,

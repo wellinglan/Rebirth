@@ -6,6 +6,13 @@ import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/account_boundary.dart';
+import 'package:rebirth/features/ai_coach/data/ai_report_sync_payload_codec.dart';
+import 'package:rebirth/features/ai_coach/data/ai_report_conflict_resolution_service_impl.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_conflict_resolution_service.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_metadata.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_sync_payload.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/journal/data/journal_conflict_resolution_service_impl.dart';
 import 'package:rebirth/features/journal/data/journal_prompt_conflict_resolution_service.dart';
 import 'package:rebirth/features/journal/data/journal_sync_payload_codec.dart';
@@ -49,6 +56,7 @@ final syncConflictRepositoryProvider = Provider<SyncConflictRepository>((ref) {
       JournalPromptSyncPayloadCodec(),
       JournalSyncPayloadCodec(),
       HealthSyncPayloadCodec(),
+      AiReportSyncPayloadCodec(),
       PlanSyncPayloadCodec(),
     ],
   );
@@ -181,6 +189,15 @@ final healthConflictResolutionServiceProvider =
       );
     });
 
+final aiReportConflictResolutionServiceProvider =
+    Provider<AiReportConflictResolutionService>((ref) {
+      return AiReportConflictResolutionServiceImpl(
+        ref.watch(appDatabaseProvider),
+        ref.watch(syncConflictRepositoryProvider),
+        ref.watch(dateTimeServiceProvider),
+      );
+    });
+
 Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
   AppDatabase database,
   SyncConflictRecord record,
@@ -218,7 +235,76 @@ Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
       localUserId,
       record.recordId,
     ),
+    SyncEntityType.aiReport => _loadAiReportSnapshot(
+      database,
+      localUserId,
+      record.recordId,
+    ),
   };
+}
+
+Future<SyncConflictSnapshot?> _loadAiReportSnapshot(
+  AppDatabase database,
+  String localUserId,
+  String recordId,
+) async {
+  final report =
+      await (database.select(database.aiReports)..where(
+            (row) => row.userId.equals(localUserId) & row.id.equals(recordId),
+          ))
+          .getSingleOrNull();
+  if (report == null) return null;
+  final versions =
+      await (database.select(database.aiReportVersions)
+            ..where((row) => row.reportId.equals(report.id))
+            ..orderBy([(row) => OrderingTerm.asc(row.version)]))
+          .get();
+  final payload =
+      report.deletedAt == null &&
+          const {
+            'completed',
+            'failed',
+            'archived',
+          }.contains(report.reportStatus)
+      ? AiReportSyncPayload(
+          reportType: AiReportType.fromDatabaseValue(report.reportType),
+          title: report.title,
+          periodStartDate: report.periodStartDate,
+          periodEndDate: report.periodEndDate,
+          status: AiReportStatus.fromDatabaseValue(report.reportStatus),
+          createdAt: report.createdAt,
+          generationSource: report.generationSource,
+          sensitivity: AiReportSensitivity.fromDatabaseValue(
+            report.sensitivity,
+          ),
+          quality: AiReportQuality.fromDatabaseValue(report.quality),
+          currentVersion: report.currentVersion,
+          versions: [
+            for (final version in versions)
+              AiReportVersionSyncPayload(
+                id: version.id,
+                version: version.version,
+                status: AiReportStatus.fromDatabaseValue(version.status),
+                generationSource: version.generationSource,
+                content: version.content,
+                sensitivity: AiReportSensitivity.fromDatabaseValue(
+                  version.sensitivity,
+                ),
+                quality: AiReportQuality.fromDatabaseValue(version.quality),
+                errorCode: version.errorCode,
+                createdAt: version.createdAt,
+                completedAt: version.completedAt,
+              ),
+          ],
+        )
+      : null;
+  return SyncConflictSnapshot(
+    payload: payload,
+    updatedAt: report.updatedAt,
+    deletedAt: report.deletedAt,
+    serverVersion: report.serverVersion,
+    originDeviceId: report.originDeviceId,
+  );
 }
 
 Future<SyncConflictSnapshot?> _loadProfileSnapshot(
@@ -505,6 +591,10 @@ bool _samePayload(Object? left, Object? right) {
   if (left is HealthSyncPayload && right is HealthSyncPayload) {
     return const HealthSyncPayloadCodec().canonicalJson(left) ==
         const HealthSyncPayloadCodec().canonicalJson(right);
+  }
+  if (left is AiReportSyncPayload && right is AiReportSyncPayload) {
+    return const AiReportSyncPayloadCodec().canonicalJson(left) ==
+        const AiReportSyncPayloadCodec().canonicalJson(right);
   }
   if (left is! PlanSyncPayload || right is! PlanSyncPayload) {
     return left == null && right == null;

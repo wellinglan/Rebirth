@@ -6,7 +6,8 @@ enum SyncModuleId {
   plan('module.plan'),
   today('module.today'),
   journal('module.journal'),
-  health('module.health');
+  health('module.health'),
+  aiReport('module.ai_report');
 
   const SyncModuleId(this.stableId);
 

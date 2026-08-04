@@ -3,6 +3,7 @@ import 'package:rebirth/core/config/server_endpoint_provider.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
+import 'package:rebirth/features/ai_coach/data/ai_report_sync_adapter.dart';
 import 'package:rebirth/features/journal/data/journal_sync_adapter.dart';
 import 'package:rebirth/features/journal/data/journal_prompt_repository_provider.dart';
 import 'package:rebirth/features/journal/data/journal_prompt_sync_adapter.dart';
@@ -68,6 +69,14 @@ final healthSyncAdapterProvider = Provider<HealthSyncAdapter>((ref) {
   );
 });
 
+final aiReportSyncAdapterProvider = Provider<AiReportSyncAdapter>((ref) {
+  return AiReportSyncAdapter(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncConflictRepositoryProvider),
+    () => ref.read(syncConflictScopeProvider.future),
+  );
+});
+
 final syncEntityAdapterRegistryProvider = Provider<SyncEntityAdapterRegistry>((
   ref,
 ) {
@@ -77,6 +86,7 @@ final syncEntityAdapterRegistryProvider = Provider<SyncEntityAdapterRegistry>((
     ref.watch(journalPromptSyncAdapterProvider),
     ref.watch(journalSyncAdapterProvider),
     ref.watch(healthSyncAdapterProvider),
+    ref.watch(aiReportSyncAdapterProvider),
     ref.watch(planSyncAdapterProvider),
   ]);
 });

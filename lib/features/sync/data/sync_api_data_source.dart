@@ -26,6 +26,7 @@ final class SyncApiDataSource implements SyncRemoteDataSource {
     'journal_prompt_configurations',
     'goals',
     'health_records',
+    'ai_reports',
   };
 
   final ApiClient apiClient;

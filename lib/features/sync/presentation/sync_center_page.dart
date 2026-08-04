@@ -346,6 +346,7 @@ IconData _iconFor(SyncModuleId moduleId) => switch (moduleId) {
   SyncModuleId.today => Icons.today_outlined,
   SyncModuleId.journal => Icons.auto_stories_outlined,
   SyncModuleId.health => Icons.favorite_outline,
+  SyncModuleId.aiReport => Icons.auto_awesome_outlined,
 };
 
 String _statusLabel(SyncModuleExecutionStatus status) => switch (status) {
