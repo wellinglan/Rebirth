@@ -19,6 +19,8 @@
 > the ordinary list shows lifecycle and safe sync status but never report body,
 > Prompt, AI input, Provider/model, credentials, internal IDs, cursor, or
 > payload. Schema remains 11, API remains 1, and Sync Protocol remains 2.
+> Its Windows and Android manual matrix closed with 31 PASS and 0 FAIL on
+> 2026-08-04.
 
 ---
 

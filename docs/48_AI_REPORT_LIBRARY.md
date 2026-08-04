@@ -65,3 +65,11 @@ See `docs/47_AI_REPORT_LIFECYCLE.md` for archive semantics,
 `docs/46_AI_REPORT_CROSS_DEVICE_SYNC.md` for transport semantics, and
 `docs/manual_tests/53_ai_report_library_consolidation.md` for manual release
 acceptance.
+
+## Acceptance
+
+The Sprint 14E manual matrix closed on 2026-08-04 with 31 PASS, 0 FAIL, and
+0 NOT EXECUTED on Windows release and Android arm64-v8a release. Canonical
+entry, lifecycle, sync/conflict navigation, account isolation, privacy,
+responsive layout, accessibility, Back navigation, and restart behavior were
+accepted. The AI Report Library Consolidation release gate is closed.
