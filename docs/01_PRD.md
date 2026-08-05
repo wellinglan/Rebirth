@@ -805,3 +805,24 @@ H1-H7 remain NOT EXECUTED because no safe unbound-legacy-data fixture was
 available. The public login, authentication protocol, password credential
 security, and secure client storage gates are accepted; see
 `docs/manual_tests/41_public_username_password_login.md`.
+
+## 24. Full Personal Data Export and Backup Foundation
+
+Settings 的“个人数据与隐私”区域提供“导出全部个人数据”。用户必须先看到导出
+范围、明文敏感数据和当前不能恢复的说明，再显式确认并通过 Windows 或 Android
+系统保存界面选择位置。
+
+首版导出当前登录账号的 Profile、Plan 层级、Today、Journal 动态问题快照与历史
+兼容事实、Journal Prompt Configuration、Health 敏感字段和备注，以及 AI Report
+当前聚合、生命周期、正文和不可变版本历史。文件使用版本化 UTF-8 JSON、模块
+manifest、记录计数和可重复校验的 SHA-256。Growth 和 Personal Data Aggregation
+由源事实重算，不作为独立记录复制。
+
+导出不能包含密码、Token、Secure Storage、Cloud/Auth/Device 标识、Endpoint、
+Provider 请求或 Prompt、AI Ledger、sync/cursor/conflict/remote snapshot、内部路径或
+日志。导出不修改任何业务或同步状态，不联网、不生成 AI、不启动同步。账号切换、
+退出或 SessionRejected 必须在系统保存界面打开前停止操作。
+
+Sprint 15A 只提供明文导出与未来恢复格式基础，不提供 Import、Restore、Merge、
+加密、自动备份或云备份。完整合同见
+`docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md`。

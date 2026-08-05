@@ -2,14 +2,15 @@
 
 > Classification: **Active / authoritative**
 > Audited: **2026-08-05**
-> Baseline commit: `6d3be363e27b7d0bdf4045c393b11e16924a5176`
-> Current consolidation Sprint: **14G**
+> Audited code baseline: `6d3be363e27b7d0bdf4045c393b11e16924a5176`
+> Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
+> Current working Sprint: **15A**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
 state. Historical Sprint documents remain evidence of what was true at their
-recorded time; when they conflict with this baseline, this document and the
-source code at the audited commit take precedence.
+recorded time; when they conflict with this baseline, this document, the current
+reviewed working change, and source code at its recorded commits take precedence.
 
 ## Evidence Vocabulary
 
@@ -70,6 +71,7 @@ Drift or server implementation classes.
 | Health | Sensitive local health records | Yes | Explicit shared conflict recovery | Health rows passed in the 113-row unified matrix; the older dedicated matrix is historical |
 | Growth | Read-only local projections | No | Not a sync aggregate | 71 PASS / 0 FAIL / 6 safe fault-injection rows NOT EXECUTED |
 | Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
+| Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Implemented and automated locally; manual Gate OPEN at 0 PASS / 0 FAIL / 54 NOT EXECUTED |
 | Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
 | AI Report | Persistent immutable versions, archive, library, export | Yes | Explicit AI Report conflict recovery | Sprint 14B-14F evidence summarized below |
 
@@ -157,6 +159,28 @@ AI Report export is portability output, not a backup/restore promise. There is
 no import, restore, scheduled export, cloud export, report editing, or
 regeneration flow.
 
+## Full Personal Data Export Baseline
+
+Sprint 15A adds a protected Settings flow that exports the current authenticated
+local account's Profile, Plan, Today, Journal and prompt configuration, Health,
+and AI Reports with immutable versions. It uses explicit typed module exporters,
+portable DTOs, one read transaction, deterministic JSON ordering, a SHA-256 over
+the canonical `data` payload, and the shared Windows/Android file adapter from
+Sprint 14F.
+
+The export preserves business relationships, natural dates, lifecycle facts,
+soft-deletion timestamps, `null`, numeric zero, and empty strings. It excludes
+credentials, cloud/auth/device identifiers, endpoints, Provider inputs and
+ledgers, sync metadata, cursors, conflicts, transport tombstones, paths, and
+logs. Growth and Personal Data Aggregation remain derived and are recomputed
+from source facts rather than copied into the backup.
+
+The file is plaintext UTF-8 JSON and may contain Journal, Health, and AI Report
+bodies. It is local-only, user-triggered, account-scoped, and non-mutating. It
+does not call the Server, AI, or sync. It does not provide import, restore,
+merge, encryption, scheduled backup, or cloud backup. The 54-row Windows and
+Android matrix is entirely NOT EXECUTED, so the feature Gate remains OPEN.
+
 ## Server Baseline
 
 Public API groups are:
@@ -220,6 +244,7 @@ Current intentional product boundaries:
 - account-scoped data, conflicts, usage, and reports;
 - immutable AI Report versions;
 - export without import/restore in Sprint 14F;
+- explicit full personal data export without import/restore in Sprint 15A;
 - no AI Chat, agents, or tool calling.
 
 Current release debt/blockers:

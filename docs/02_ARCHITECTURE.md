@@ -885,3 +885,37 @@ scope and resolve to public login without rendering the old business shell.
 
 No database or Server architecture changed. See
 `docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`.
+
+## 24. Full Personal Data Export Pipeline
+
+Sprint 15A adds one local, read-only pipeline:
+
+```text
+FullPersonalDataExportPage
+  -> FullPersonalDataExportController
+  -> FullPersonalDataExportService
+  -> immutable PersonalDataExportModuleRegistry
+  -> typed account-scoped module exporters
+  -> portable backup DTOs
+  -> deterministic JSON encoder and SHA-256 verifier
+  -> shared FileExportAdapter
+  -> native Windows / Android save dialog
+```
+
+The Widget owns disclosure, confirmation, progress, and feedback only. It does
+not access Drift, serialize JSON, or write files. Each typed exporter reads
+through an audited account-scoped repository. All module reads occur inside one
+Drift transaction; one module failure closes the whole operation. The service
+checks that the authenticated local account is unchanged before, during, and
+after assembly and immediately before the native picker.
+
+Portable DTOs carry only stable business facts and relationships. They do not
+reuse database rows, API models, or Sync Protocol payloads. Recursive object-key
+ordering and stable record order produce canonical `data`; SHA-256 is verified
+before the shared Sprint 14F file adapter receives UTF-8 bytes.
+
+The pipeline has no API client, AI generation, token refresh, endpoint probe,
+SyncCoordinator, or database mutation dependency. Growth and Personal Data
+Aggregation remain recomputable projections. There is no import/restore,
+encryption, scheduling, cloud backup, or second platform file stack. See
+`docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md`.

@@ -124,6 +124,17 @@ Sprint 14F 的 AI Report 导出遵循该原则：单报告 Markdown 与全报告
 Provider/Model、Ledger、Sync、Conflict 和 Credential 字段。该导出不提供导入或恢复，
 也不修改任何数据库记录。
 
+Sprint 15A 的完整个人数据导出继续使用现有 schema 11，不新增表或 migration。导出
+在一个只读事务中将当前账号的 Profile、Plan、Today、Journal、Journal Prompt、
+Health 和 AI Report 业务事实映射为独立的便携 DTO，并保留未来重建父子、日期、
+生命周期和版本关系所需的稳定业务 ID。软删除记录可以保留 `deleted_at`，但 Sync
+tombstone transport、serverVersion、cursor、sync 状态和 conflict snapshot 不进入文件。
+
+导出文件为版本化 UTF-8 明文 JSON，`payload_sha256` 仅覆盖规范化 `data`。它不包含
+认证凭据、Cloud/Auth/Device 标识、Endpoint、AI Prompt/Input/Ledger、内部路径或日志。
+Growth 与 Personal Data Aggregation 是派生结果，不持久化到备份。该格式当前不能
+Import 或 Restore；未来恢复不得因为读取历史软删除事实而自动向云端传播删除。
+
 ---
 
 ## 4. 日期与时间字段规范

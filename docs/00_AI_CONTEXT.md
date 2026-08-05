@@ -36,6 +36,14 @@
 > conflict, and credential metadata. It never mutates reports or starts AI or
 > sync. Schema remains 11, API remains 1, and Sync Protocol remains 2.
 
+> Sprint 15A adds explicit full personal data export for the current protected
+> account. Typed modules produce a versioned plaintext JSON document with a
+> deterministic SHA-256 over its canonical data payload. Credentials, account
+> and device identity, endpoints, AI runtime inputs/ledgers, and sync/conflict
+> state are excluded. Growth remains derived. The operation is local-only and
+> non-mutating; import, restore, encryption, scheduling, and cloud backup remain
+> unsupported. Schema remains 11, API remains 1, and Sync Protocol remains 2.
+
 ---
 
 # 一、文档定位
@@ -671,3 +679,23 @@ Protocol `2` 均不变。在 Sprint 14B 完成时，AI Report 云端存储与跨
 支持；该历史限制已由 Sprint 14C 的手动跨端同步实现取代。当前传输边界详见
 `docs/46_AI_REPORT_CROSS_DEVICE_SYNC.md`，Sprint 14B 的本地持久化边界详见
 `docs/45_AI_REPORT_PERSISTENCE.md`。
+
+# 二十六、完整个人数据导出边界
+
+Sprint 15A 在 Settings 的“个人数据与隐私”区域增加用户显式触发的完整个人数据
+导出。导出仅面向当前受保护账号，包含 Profile、Plan、Today、Journal、Journal
+Prompt Configuration、Health 与 AI Report 当前正文和不可变版本历史。模块通过
+不可变 Registry 和 typed exporter 接入，便携 DTO 不复用 Drift Row、API DTO 或
+Sync Payload。
+
+文件为 UTF-8 明文 JSON，格式版本为 `1.0`，并对规范化 `data` 计算 SHA-256；保存
+前必须在内存中重新校验。导出保留业务关系、自然日、生命周期、软删除事实、
+`null`、`0` 与空字符串，但严格排除认证凭据、Cloud/Auth/Device 标识、Endpoint、
+AI Provider 输入与 Ledger、serverVersion、cursor、sync/conflict/tombstone transport、
+私人路径和日志。Growth 与 Personal Data Aggregation 是可重算派生结果，不进入备份。
+
+该流程不联网、不调用 AI、不触发同步、不修改数据库，也不保存用户选择的路径。
+账号切换、退出或 SessionRejected 会使导出状态失效；打开保存选择器前必须再次
+确认当前账号。当前只建立未来恢复可以审计的格式基础，不实现 Import、Restore、
+Merge、加密、自动或云备份，也不得向用户宣称文件已经可恢复。详细约束见
+`docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md`。

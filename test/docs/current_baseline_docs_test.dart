@@ -7,6 +7,10 @@ void main() {
   const releaseReadinessPath = 'docs/RELEASE_READINESS.md';
   const docsIndexPath = 'docs/README.md';
   const manualRegistryPath = 'docs/manual_tests/README.md';
+  const personalDataExportContractPath =
+      'docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md';
+  const personalDataExportMatrixPath =
+      'docs/manual_tests/55_full_personal_data_export_and_backup.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -17,6 +21,8 @@ void main() {
         releaseReadinessPath,
         docsIndexPath,
         manualRegistryPath,
+        personalDataExportContractPath,
+        personalDataExportMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -61,6 +67,22 @@ void main() {
     expect(baseline, contains('| Flutter schemaVersion | `11` |'));
     expect(baseline, contains('| API Version | `1` |'));
     expect(baseline, contains('| Sync Protocol Version | `2` |'));
+  });
+
+  test('personal data export docs preserve the backup-only open Gate', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final contract = File(personalDataExportContractPath).readAsStringSync();
+    final matrix = File(personalDataExportMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('Full Personal Data Export'));
+    expect(contract, contains('restore_supported'));
+    expect(contract, contains('plaintext'));
+    expect(contract, contains('does not implement import or restore'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 54 NOT EXECUTED'));
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(registry, contains('Full Personal Data Export'));
+    expect(registry, contains('0 / 0 / 54'));
   });
 
   test('baseline and source contain all six manual sync modules', () {

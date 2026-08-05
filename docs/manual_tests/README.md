@@ -1,7 +1,7 @@
 # Rebirth Manual Acceptance Registry
 
 > Classification: **Active / authoritative Gate registry**
-> Consolidated: **2026-08-05 / Sprint 14G**
+> Consolidated: **2026-08-05 / Sprint 15A working tree**
 
 Manual matrices record only real product execution. Automated tests never
 become manual PASS. `NOT EXECUTED` is an honest capability or fixture limit,
@@ -54,6 +54,7 @@ that a separate module-only matrix was rerun.
 | AI Report Lifecycle | CLOSED | [AI Report Lifecycle](52_ai_report_lifecycle_conflict_readiness.md) | 25 / 0 / 0 | Archive, delete conflict, both resolutions, privacy, and account scope accepted |
 | AI Report Library | CLOSED | [AI Report Library](53_ai_report_library_consolidation.md) | 31 / 0 / 0 | One canonical list/detail entry and lifecycle/sync regression accepted |
 | AI Report Export | CLOSED WITH ACCEPTED LIMITATION | [AI Report Safe Export](54_ai_report_safe_export.md) | 37 / 0 / 1 | SessionRejected injection was unavailable; export has no import/restore promise |
+| Full Personal Data Export | OPEN | [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) | 0 / 0 / 54 | Local implementation and automation do not replace Windows/Android execution; plaintext export has no import/restore promise |
 
 ## Important Succession Rules
 
@@ -95,6 +96,7 @@ that a separate module-only matrix was rerun.
 - [Growth System Foundation](37_growth_system_foundation.md) - Current
 - [Journal Prompt System](38_journal_prompt_system.md) - Current
 - [Settings and Sync Center](39_settings_information_architecture_and_sync_center.md) - Current unified authority
+- [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) - Current OPEN Gate
 
 ### Authentication and Identity
 

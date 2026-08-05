@@ -41,6 +41,9 @@ directly. Local SQLite remains the primary working data store.
 - **AI Reports**: local persistence, immutable versions, manual cross-device
   sync, conflict recovery, archive lifecycle, one report library, and explicit
   Markdown/JSON export.
+- **Personal Data Export**: an explicit current-account plaintext JSON snapshot
+  of Profile, Plan, Today, Journal, prompt configuration, Health, and AI Reports,
+  with deterministic SHA-256 verification and native Windows/Android saving.
 
 ## Local-first Sync
 
@@ -70,6 +73,12 @@ those ledgers.
 
 AI Report export is a local, explicit save operation. It does not trigger AI or
 sync, and Sprint 14F does not provide import or restore.
+
+Full personal data export is also local and explicit. It excludes credentials,
+device/session state, Server endpoints, sync/conflict runtime state, and AI
+Server ledgers. Its plaintext JSON may contain sensitive bodies. Sprint 15A
+establishes a backup format foundation but still provides no import, restore,
+scheduled backup, or cloud backup.
 
 Never commit credentials, environment files, access or refresh tokens,
 database passwords, private endpoints, or personal data.

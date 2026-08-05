@@ -1,8 +1,8 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-05 / Sprint 14G**
-> Source baseline: `6d3be363e27b7d0bdf4045c393b11e16924a5176`
+> Audited: **2026-08-05 / Sprint 15A working tree**
+> Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 
 This is a readiness inventory, not a release approval. It separates a private
 Alpha codebase from a public Production or app-store release. Current versions
@@ -17,22 +17,23 @@ and product capabilities are authoritative in
 | Wider external Alpha distribution | **No-go until release identity/signing and packaging decisions** | Development package identity, Debug signing, stale version metadata, and incomplete distribution controls |
 | Public Production or app-store release | **No-go** | Security, operations, recovery, packaging, observability, and unsupported account capabilities remain open |
 
-Sprint 14G performs no deployment and does not certify that the audited commit
-is running on the private Alpha Server.
+Neither Sprint 14G nor Sprint 15A performs deployment or certifies that the
+reviewed source is running on the private Alpha Server.
 
 ## Private Alpha Foundations Present
 
 | Area | Evidence present | Remaining qualification |
 |---|---|---|
-| Quality CI | Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug passed for the baseline commit | No Windows CI and no signed release artifact job |
+| Quality CI | Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug passed for the last audited code baseline | Sprint 15A still requires its own post-review CI; no Windows CI or signed release artifact job exists |
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
-| Private cloud Alpha | GHCR publishing workflow and Tailscale/GHCR deployment history exist | Live image, migration, Provider, backup, and health state not inspected in Sprint 14G |
+| Private cloud Alpha | GHCR publishing workflow and Tailscale/GHCR deployment history exist | Live image, migration, Provider, backup, and health state not inspected in Sprint 14G or 15A |
 | Data migrations | Drift migration tests through schema 11 and Alembic through `20260801_0007` | Production backup/restore rehearsal is absent |
 | Authentication | Public password login, secure sessions, refresh rotation, logout, and account isolation | Recovery, MFA, real WeChat, and some controlled Step-up cases are absent |
 | Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |
 | Manual acceptance | Unified Gate Registry and retained matrices | NOT EXECUTED rows remain limitations, not PASS |
+| Personal data portability | Versioned, deterministic, integrity-checked local JSON export | Plaintext; no import/restore, encryption, scheduling, cloud backup, or manual device acceptance yet |
 
 ## Production and Store Blockers
 
@@ -47,7 +48,7 @@ is running on the private Alpha Server.
 | REL-PYTHON-LOCK-001 | Python dependencies use ranges rather than a full lock | `server/requirements.txt` | Adopt a reviewed deterministic lock/update policy and prove CI/install parity |
 | REL-IMAGE-DIGEST-001 | Base images use floating tags, not digests | `server/Dockerfile`, workflows | Pin reviewed image digests and define controlled update automation |
 | REL-SUPPLY-CHAIN-001 | No SBOM, image signing, provenance Gate, or dependency scan | Workflow audit | Add generated SBOM, signed artifacts/images, provenance, and blocking vulnerability policy |
-| REL-BACKUP-DR-001 | No Production backup/restore drill | Operational docs | Define RPO/RTO, encrypted backups, restore rehearsal, ownership, and evidence retention |
+| REL-BACKUP-DR-001 | No Production backup/restore drill | Sprint 15A provides plaintext local export only | Define RPO/RTO, encrypted operational backups, a reviewed restore implementation and rehearsal, ownership, and evidence retention |
 | REL-MONITORING-001 | No formal Production monitoring and incident validation | Operational docs | Define SLOs, alert routing, log retention, on-call/incident roles, and run a drill |
 | REL-DELETION-001 | No end-to-end account/data deletion policy validation | Product/operations audit | Approve retention/deletion policy and verify local, cloud, backup, ledger, and export behavior |
 | REL-STEP-UP-001 | Step-up and callback controlled scenarios remain incomplete | 24 PASS / 0 FAIL / 12 NOT EXECUTED | Execute safe proof expiry, replay, cross-session/account, callback, and persistence scenarios |
@@ -83,7 +84,8 @@ Before every separately authorized Alpha deployment:
 7. verify `/health`, API Version 1, Sync Protocol 2, authentication, and device
    registration;
 8. perform smoke checks for local save, manual Sync Center behavior, account
-   isolation, consent, AI usage state, and AI Report library/export;
+   isolation, consent, AI usage state, AI Report library/export, and full
+   personal data export;
 9. record exact artifact identity and any honestly NOT EXECUTED scenario;
 10. provide rollback criteria before expanding testers.
 
@@ -119,9 +121,11 @@ A public release needs explicit owner decisions for:
   [Alpha GHCR Deployment](15_ALPHA_GHCR_DEPLOYMENT.md), but publication alone
   is not proof of a running deployment.
 
-## Sprint 14G Boundary
+## Sprint 15A Boundary
 
-This Sprint records and classifies readiness only. It does not change package
-identity, signing, versions, dependencies, images, workflows, business code,
-database schemas, API Version, Sync Protocol, remote services, or GitHub
-releases.
+Sprint 15A adds only an explicit local full-personal-data export foundation.
+It does not close the Production backup/disaster-recovery blocker because it
+has no import/restore path, encryption, RPO/RTO policy, scheduled operation, or
+restore drill. It does not change package identity, signing, dependencies,
+images, workflows, database schemas, API Version, Sync Protocol, Server runtime,
+remote services, or GitHub releases. Its manual Gate remains OPEN.
