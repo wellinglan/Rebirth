@@ -1,5 +1,13 @@
 # Rebirth Cloud Alpha Server Context
 
+> Classification: **Historical deployment log / partially current topology**
+> The opening Sprint 10B deployment status and later appended checkpoints are
+> historical observations, not a live-state dashboard. Current repository
+> capability is authoritative in `docs/CURRENT_BASELINE.md`; release blockers
+> are in `docs/RELEASE_READINESS.md`. Sprint 14G performs no remote inspection
+> and does not claim that its baseline commit, a particular image digest, an AI
+> Provider, or an Alembic revision is currently deployed.
+
 > 目的：让 Codex 在后续开发中准确理解当前 Rebirth 的实际运行环境、部署边界和发布流程。
 >
 > 当前状态：北京云端 Alpha 调试环境已接入 Windows 与 Android；Sprint 10B 已推送并通过 Quality CI，匹配的 GHCR API 镜像已发布。

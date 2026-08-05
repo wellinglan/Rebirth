@@ -1,5 +1,10 @@
 # 02_ARCHITECTURE.md
 
+> Classification: **Partially current architecture foundation**
+> The Sprint 0 metadata and future-server passages below are historical.
+> Current architecture, versions, module registration, and deployment
+> certainty are authoritative in `docs/CURRENT_BASELINE.md`.
+
 # Rebirth 软件架构设计文档
 
 > 文档版本：v1.0  
@@ -100,7 +105,7 @@ v1.0 的第一优先级是建立清晰、稳定、可持续演进的项目骨架
 - 拦截器机制成熟；
 - 适合接入 AI API；
 - 支持统一错误处理；
-- 后续可接入 FastAPI 后端。
+- 当前 Dio 已接入 FastAPI 后端；早期“后续接入”描述已被实现取代。
 
 ### 3.6 图表
 

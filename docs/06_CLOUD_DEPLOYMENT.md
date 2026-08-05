@@ -1,5 +1,12 @@
 # Rebirth Cloud Deployment Foundation
 
+> Classification: **Historical Sprint 6E / partially current foundation**
+> This document preserves the development deployment design. It is not the
+> current release or live-deployment authority. Use
+> `docs/CURRENT_BASELINE.md`, `docs/RELEASE_READINESS.md`,
+> `docs/15_ALPHA_GHCR_DEPLOYMENT.md`, and `server/README.md` for current
+> boundaries.
+
 > Client builds now use `REBIRTH_ENV`, `REBIRTH_SERVER_ENDPOINT`, and
 > `REBIRTH_ENABLE_DEV_LOGIN`. See
 > `release/rebirth_client_environment_build_guide.md`. The older
@@ -12,11 +19,12 @@
 
 Windows SQLite, LAN FastAPI, Docker PostgreSQL, and a future HTTPS cloud server use the same API contract from `docs/05_API_CONTRACT.md`. The Base URL and database engine are environment differences; Flutter Account and Sync business logic do not fork by environment.
 
-Flutter endpoint priority is:
-
-1. Settings saved runtime endpoint.
-2. `--dart-define=REBIRTH_API_BASE_URL=...` build fallback.
-3. `AppConfig.defaultApiBaseUrl`, currently `http://127.0.0.1:8000`.
+The current compile-time endpoint key is `REBIRTH_SERVER_ENDPOINT`.
+Alpha/Production builds require it. A saved developer endpoint may override the
+build fallback only in builds that expose Developer Options.
+`REBIRTH_API_BASE_URL` remains a development compatibility fallback and is not
+release evidence. The older endpoint priority recorded by Sprint 6E is
+superseded.
 
 Settings normalizes and validates an HTTP/HTTPS origin, tests `/health`, checks API v1 and sync protocol v2, then saves. A changed endpoint rebuilds ApiClient immediately and clears the old endpoint-bound session/device registration without touching SQLite business data.
 
@@ -61,7 +69,12 @@ Existing SQLAlchemy-created Sprint 6D SQLite database:
 
 Development rollback restores the backup file or a PostgreSQL backup. Do not run Alembic downgrade against data that must be retained because the initial downgrade drops cloud tables.
 
-## Production Gaps
+## Historical Production Gaps Recorded At Sprint 8E
+
+The following list is preserved as the Sprint 8E snapshot. Authentication,
+secure storage, and additional manual sync modules were implemented later.
+Current unresolved blockers are maintained only in
+`docs/RELEASE_READINESS.md`.
 
 Sprint 8D adds the `ai_generation_requests` durable ledger through Alembic revision `20260717_0002`. Provider defaults to disabled; OpenAI credentials and model selection are Server environment secrets, and Fake is development/test only. OpenAI calls use Responses API structured output with `store=false`, no streaming/tools/background mode, explicit timeout/output limit, and no SDK retries. `store=false` is not an absolute zero-retention guarantee.
 
@@ -71,10 +84,13 @@ The ledger temporarily stores validated output for recovery and retains a minima
 
 - HTTP cleartext is limited to localhost, LAN, and alpha builds; production must use HTTPS.
 - JWT secret and database credentials must come from a managed secret system.
-- Flutter tokens still use development-level SharedPreferences, not secure storage.
+- At this Sprint 8E checkpoint, Flutter tokens still used development-level
+  SharedPreferences rather than secure storage; later authentication Sprints
+  superseded this limitation.
 - Refresh/revoke, key rotation, rate limiting, audit logging, monitoring, backup drills, and disaster recovery are incomplete.
 - Real WeChat login is not implemented.
-- Only canonical Profile manual sync is connected; Today, Journal, Plan, and Health remain local-only.
+- At this Sprint 8E checkpoint, only canonical Profile manual sync was
+  connected; later Sprints added Plan, Today, Journal, Health, and AI Report.
 - No field-level Profile conflict resolution or background synchronization exists.
 
 These gaps mean Sprint 6E is cloud-compatible scaffolding, not production security readiness.

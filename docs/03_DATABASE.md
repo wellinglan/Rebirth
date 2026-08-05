@@ -1,5 +1,10 @@
 # Rebirth 数据库设计文档
 
+> Classification: **Partially current design plus migration history**
+> The Sprint 1.5 design-only metadata below is historical. Appendices record
+> later migrations through Flutter `schemaVersion = 11`; current versions and
+> Server Alembic state are authoritative in `docs/CURRENT_BASELINE.md`.
+
 > 文档版本：v1.0  
 > 项目版本：Rebirth v0.1.0-alpha  
 > 文档状态：Draft  

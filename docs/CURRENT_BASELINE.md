@@ -1,0 +1,246 @@
+# Rebirth Current Baseline
+
+> Classification: **Active / authoritative**
+> Audited: **2026-08-05**
+> Baseline commit: `6d3be363e27b7d0bdf4045c393b11e16924a5176`
+> Current consolidation Sprint: **14G**
+> Branch: `main`
+
+This document is the single entry point for the current product and technical
+state. Historical Sprint documents remain evidence of what was true at their
+recorded time; when they conflict with this baseline, this document and the
+source code at the audited commit take precedence.
+
+## Evidence Vocabulary
+
+| Term | Meaning |
+|---|---|
+| Implemented | The capability exists in source at the baseline commit. |
+| Automated verified | Repository tests or CI exercise the capability. |
+| Manually accepted | A named manual matrix records real product execution. |
+| Deployed | The exact artifact/configuration was verified in a running environment. |
+| Deferred | Intentionally postponed; the current product does not promise it. |
+| Unsupported | No usable product flow exists at this baseline. |
+
+These terms are not interchangeable. In particular, a CI PASS is not manual
+acceptance, an image publication is not deployment, and a Provider abstraction
+is not proof that a live Provider is configured.
+
+## Version Baseline
+
+| Component | Audited value | Source/evidence |
+|---|---|---|
+| Flutter | `3.44.4` stable | Local tool and `.github/workflows/quality.yml` |
+| Dart | `3.12.2` | Flutter toolchain and `pubspec.yaml` SDK constraint |
+| Python | `3.12` contract | CI and `python:3.12-slim`; patch version is not pinned |
+| PostgreSQL | `17` | CI service and `postgres:17-alpine`; digest is not pinned |
+| Flutter schemaVersion | `11` | `lib/core/database/app_database.dart` |
+| Server Alembic head | `20260801_0007` | `server/alembic/versions/` |
+| API Version | `1` | `/health` schema |
+| Sync Protocol Version | `2` | `/health` schema and sync contracts |
+| Flutter package version | `1.0.0+1` | `pubspec.yaml`; stale release metadata |
+| Android application ID | `com.example.rebirth` | Development value; public-release blocker |
+
+## Current Architecture
+
+```text
+Flutter Windows / Android
+  -> feature presentation and Riverpod controllers
+  -> domain repositories
+  -> Drift / SQLite account-scoped local data
+  -> Dio authenticated API client
+  -> FastAPI services
+  -> SQLAlchemy / Alembic
+  -> PostgreSQL 17
+```
+
+The client is local-first and feature-first. The server owns authentication,
+devices, generic Sync Protocol 2 transport, AI Provider calls, request/usage
+ledgers, and server-only operational diagnostics. Widgets do not directly read
+Drift or server implementation classes.
+
+## Client Product Baseline
+
+| Area | Local product behavior | Manual sync | Conflict behavior | Current evidence |
+|---|---|---|---|---|
+| Profile | Account-scoped profile and settings | Yes | OCC and shared conflict framework | Unified Sync Center: 113 PASS / 0 FAIL / 0 NOT EXECUTED |
+| Plan | Hierarchical goals, dates, lifecycle, archive/filter | Yes | Explicit shared conflict recovery | Unified matrix accepted; Android date layout regression accepted separately |
+| Today | Daily priorities, scores, durations, note, Health summary | Yes | Explicit Today recovery, null/zero preserved | 51 PASS / 0 FAIL / 0 NOT EXECUTED |
+| Journal | Draft/complete/reopen and prompt snapshots | Yes | Explicit Journal recovery | 39 PASS / 0 FAIL / 0 NOT EXECUTED |
+| Health | Sensitive local health records | Yes | Explicit shared conflict recovery | Health rows passed in the 113-row unified matrix; the older dedicated matrix is historical |
+| Growth | Read-only local projections | No | Not a sync aggregate | 71 PASS / 0 FAIL / 6 safe fault-injection rows NOT EXECUTED |
+| Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
+| Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
+| AI Report | Persistent immutable versions, archive, library, export | Yes | Explicit AI Report conflict recovery | Sprint 14B-14F evidence summarized below |
+
+The Sync Center registers exactly six user-facing modules in this order:
+
+1. Profile
+2. Plan
+3. Today
+4. Journal
+5. Health
+6. AI Report
+
+Journal prompt configuration runs before Journal entries. Synchronization is
+manual only. There is no startup, scheduled, background, or automatic sync.
+
+## Authentication and Identity Boundary
+
+| Capability | Current state | Verification and limitation |
+|---|---|---|
+| Public username/password register and login | Implemented and manually accepted | 107 PASS / 0 FAIL / 7 unavailable legacy-fixture rows; main auth gates closed |
+| Session restore, refresh rotation, logout/revocation | Implemented and automated; product flows accepted | Access token is memory-only; refresh credential uses Android/Windows secure storage |
+| Account Boundary | Implemented and manually accepted | Endpoint plus cloud user selects one local data space; no cross-account inheritance |
+| Developer login | Implemented for explicitly enabled non-production builds | Production configuration forces it off |
+| Canonical identity model | Implemented | `AuthIdentity` is the only identity store; no second provider-specific identity model |
+| Multi-identity product matrix | Implemented/automated, manual Gate still open | Dedicated matrix remains 0 PASS / 0 FAIL / 38 NOT EXECUTED |
+| WeChat identity foundation | Implemented and foundation Gate closed | 30 PASS / 0 FAIL / 0 NOT EXECUTED; this is not real WeChat login |
+| OAuth transaction security | Implemented and foundation Gate closed | 24 PASS / 0 FAIL / 0 NOT EXECUTED; state/nonce and one-time consumption are server-side |
+| Step-up reauthentication/callback contract | Implemented, manual Gate open | 24 PASS / 0 FAIL / 12 controlled scenarios NOT EXECUTED |
+| Real WeChat login/SDK/QR | Unsupported | No production Provider Adapter, SDK, QR flow, App ID, or App Secret integration |
+| Password recovery | Unsupported / deferred | No recovery product flow |
+| MFA | Unsupported / deferred | No MFA product flow |
+
+Cloud ownership always comes from the authenticated server session. Clients do
+not submit a trusted cloud user ID for authentication, identity binding, or
+sync ownership.
+
+## AI Baseline
+
+The Server has one Provider boundary with four selectable implementations:
+
+- `disabled`: fail closed and do not invoke a model;
+- `fake`: deterministic development/test Provider only;
+- `openai`: real server-side Provider integration;
+- `deepseek`: real server-side Provider integration.
+
+Provider choice, model, credentials, timeouts, quotas, and kill switch are
+server configuration. They are never client settings. The code supports
+explicit Daily and Weekly generation; it does not provide AI Chat, agents,
+tool calling, automatic background generation, or client-selected credentials.
+
+Current controls include:
+
+- explicit account-scoped AI data consent;
+- canonical input hashing and request idempotency;
+- generation request and usage ledgers;
+- UTC-day user/global quotas and concurrency reservations;
+- timeout, failure, expiry, and processing-lease handling;
+- authenticated personal usage transparency;
+- server-only config, audit, monitor, consistency, and cleanup commands;
+- allowlisted operational events without prompt or source-body logging.
+
+Manual evidence:
+
+- Real Provider and cost safety: 32 PASS / 0 FAIL / 0 NOT EXECUTED;
+- Usage transparency: 36 PASS / 0 FAIL / 0 NOT EXECUTED;
+- Operations acceptance: 72 PASS / 0 FAIL / 0 NOT EXECUTED;
+- Consent route integrity: 25 PASS / 0 FAIL / 0 NOT EXECUTED.
+
+Those results prove the recorded Alpha acceptance environment at the time of
+execution. Sprint 14G does not inspect the current remote Provider selection or
+credential readiness and therefore does not claim that a live Provider is
+configured today.
+
+## AI Report Baseline
+
+| Sprint | Capability | Database/protocol effect | Manual result | Current conclusion |
+|---|---|---|---|---|
+| 14B | Local report persistence and immutable versions | Flutter schema 10 | 34 PASS / 0 FAIL / 8 non-applicable rows | Conditionally accepted |
+| 14C | Manual cross-device report sync | Sync Protocol remains 2 | 12 PASS / 0 FAIL / 9 unavailable UI rows | Applicable Gate closed; later lifecycle tests supersede missing archive/conflict UI |
+| 14D | Archive lifecycle and conflict readiness | Flutter schema 11 | 25 PASS / 0 FAIL / 0 NOT EXECUTED | Closed |
+| 14E | One canonical report library | No schema/API/protocol change | 31 PASS / 0 FAIL / 0 NOT EXECUTED | Closed |
+| 14F | Explicit Markdown/JSON safe export | No schema/API/protocol change | 37 PASS / 0 FAIL / 1 safe SessionRejected row | Closed with accepted limitation |
+
+AI Report export is portability output, not a backup/restore promise. There is
+no import, restore, scheduled export, cloud export, report editing, or
+regeneration flow.
+
+## Server Baseline
+
+Public API groups are:
+
+- `/health`;
+- `/auth` for register, login, developer login when allowed, refresh, logout,
+  session, identities, and guarded identity foundations;
+- `/devices/register`;
+- `/sync/verify-ownership`, `/sync/push`, and `/sync/pull`;
+- `/ai/capabilities`, `/ai/usage/me`, Daily/Weekly generation, and request
+  status recovery.
+
+The PostgreSQL model contains cloud users, canonical auth identities,
+OAuth/step-up state, credentials and sessions, devices, generic sync items and
+clock, and AI generation/usage ledgers. AI Reports remain Sync Protocol payloads
+rather than a second server report database model.
+
+## Verification Baseline
+
+GitHub `Quality` run
+[30978529267](https://github.com/wellinglan/Rebirth/actions/runs/30978529267)
+completed successfully for the audited baseline commit. It passed:
+
+- Server SQLite;
+- Server PostgreSQL, Alembic, multiprocessing, and multi-worker checks;
+- Flutter analyze and all Flutter tests;
+- Android Debug build.
+
+The workflow does not build Windows. CI PASS does not close manual Gates; the
+manual evidence lineage is authoritative in
+[Manual Acceptance Registry](manual_tests/README.md).
+
+## Deployment Baseline
+
+Repository evidence confirms:
+
+- a GHCR workflow can build and publish API commit tags and `alpha-latest`;
+- the workflow mirrors `postgres:17-alpine` into GHCR;
+- historical records describe a private Tailscale-based Beijing Alpha Server;
+- Windows and Android have previously exercised that private Alpha environment.
+
+Sprint 14G performs no remote Docker, PostgreSQL, Tailscale, health, migration,
+or Provider inspection. It therefore **cannot confirm**:
+
+- which API image digest or commit tag is currently running;
+- whether the current baseline commit is deployed;
+- the live Alembic head or database backup state;
+- the live AI Provider, model, quotas, or credential validity;
+- current private-network reachability or `/health` output.
+
+Publishing an image is not deployment. Any release decision needs a fresh,
+separately authorized deployment check.
+
+## Product Decisions Versus Release Debt
+
+Current intentional product boundaries:
+
+- local-first records with explicit, manual synchronization;
+- no automatic sync or automatic AI generation;
+- explicit AI consent and selected source scopes;
+- account-scoped data, conflicts, usage, and reports;
+- immutable AI Report versions;
+- export without import/restore in Sprint 14F;
+- no AI Chat, agents, or tool calling.
+
+Current release debt/blockers:
+
+- example Android application ID and Debug release signing;
+- stale package description/version metadata;
+- no Windows installer pipeline, Windows CI, or GitHub Release process;
+- Python dependencies are ranged rather than fully locked;
+- container base images are not digest-pinned;
+- no SBOM, image signing, or dependency/security scan Gate;
+- no production backup/restore drill;
+- no formal monitoring, incident-response, or deletion-policy validation;
+- incomplete controlled Step-up/OAuth callback manual scenarios;
+- no real WeChat login, password recovery, or MFA.
+
+The detailed classification and exit criteria are in
+[Release Readiness](RELEASE_READINESS.md).
+
+## Authority and Update Rule
+
+When a future Sprint changes a version, module boundary, deployment fact, or
+Gate status, update this file in the same change. Do not rewrite old manual or
+release evidence. Mark old records Historical or Superseded and link the newer
+authority from [Documentation Index](README.md).

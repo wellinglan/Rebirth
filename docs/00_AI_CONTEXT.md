@@ -1,8 +1,15 @@
 # Rebirth AI Context
 
-> Version: 1.0  
-> Status: Active  
-> Last Updated: 2026-07
+> Version: 1.0
+> Status: Partially current / active mission with append-only Sprint history
+> Last Updated: 2026-08
+
+> Current-state authority: `docs/CURRENT_BASELINE.md`. Early technology notes
+> that describe FastAPI or external AI as future work, and the Sprint 12D
+> five-module Sync Center snapshot, are historical. The audited current code
+> has a FastAPI Server, server-selected Disabled/Fake/OpenAI/DeepSeek AI
+> Providers, public password authentication, and six manual sync modules:
+> Profile, Plan, Today, Journal, Health, and AI Report.
 
 > Sprint 14D: `ai_reports` is a manual Sync Protocol 2 aggregate. Its immutable
 > versions travel only as children; payloads exclude prompts, inputs, runtime
@@ -294,11 +301,11 @@ fl_chart
 
 后端：
 
-FastAPI（未来）
+FastAPI（当前已实现；“未来”是早期历史定位）
 
 AI：
 
-OpenAI API（未来支持多模型）
+Server AI Provider abstraction（当前支持 disabled/fake/openai/deepseek）
 
 目标平台：
 
@@ -582,7 +589,8 @@ Journal、高级设置和关于。Endpoint、Development User Key、设备诊断
 归属验证集中到受 `enableDevLogin` 控制的开发者选项；普通页面不显示 Token、
 内部用户 ID、完整设备 ID 或 Profile 推拉方向。
 
-同步中心只包含 Profile、Plan、Today、Journal、Health 五个用户模块。
+Sprint 12D 当时的同步中心只包含 Profile、Plan、Today、Journal、Health
+五个用户模块；当前第六个模块 AI Report 已在后续 Sprint 接入。
 `SyncModuleRegistry` 显式定义顺序，Journal 在一个模块内先同步问题配置再同步
 Journal 条目。同步仍由用户主动触发，并继续复用现有 Coordinator、OCC、cursor、
 事务、账号隔离和显式冲突恢复。没有自动同步、后台队列、新 Sync Entity、

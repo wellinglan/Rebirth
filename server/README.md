@@ -1,12 +1,23 @@
-# Rebirth Cloud-Ready Development API
+# Rebirth Server
 
-Sprint 6E provides one FastAPI contract for Windows SQLite development and Docker PostgreSQL development. It supports development login, device registration, manual canonical Profile sync, and manual Plan sync. It is not a production-safe cloud deployment.
+> Classification: **Active Server development and operations guide**
+> Current repository-wide state: `../docs/CURRENT_BASELINE.md`
+> Release blockers: `../docs/RELEASE_READINESS.md`
+
+Rebirth Server is the FastAPI API Version 1 implementation for authentication,
+device registration, Sync Protocol 2, and explicit AI generation. It supports
+local SQLite development and PostgreSQL 17 operation. Public username/password
+authentication and optional non-production developer login use the same
+session foundation. Manual sync currently serves Profile, Plan, Today,
+Journal, Health, and AI Report. It is not by itself a Production-safe cloud
+deployment.
 
 Sprint 8D added a durable, JWT-user-isolated AI request ledger to the explicit Weekly generation gateway. Sprint 9A adds a typed Daily Insight foundation on the same ledger. Sprint 14A.1 adds a DeepSeek JSON adapter and database-backed cost safety. Provider defaults to `disabled`; `fake` is development/test only. Flutter never receives or stores Provider API keys.
 
 AI endpoints:
 
 - `GET /ai/capabilities`
+- `GET /ai/usage/me`
 - `POST /ai/reports/daily/generate`
 - `POST /ai/reports/weekly/generate`
 - `GET /ai/requests/{request_id}`
@@ -151,10 +162,12 @@ GitHub Actions runs Server SQLite, PostgreSQL multiprocessing/multi-worker, Flut
 - The clock initializes at or above the greatest existing SyncItem version.
 - Flutter record `server_version` and client pull cursor are separate.
 
-Sprint 10A adds a typed Flutter Coordinator and Adapter boundary. The Protocol v2 schema
-allowlists `user_profiles`, `today_records`, `journal_entries`, `goals`, and
-`health_records` for backward compatibility. Sprint 10B registers Profile and
-Plan adapters; Today, Journal, and Health are not product sync capabilities.
+The typed Flutter Coordinator and Adapter boundary now registers six product
+modules: Profile, Plan, Today, Journal, Health, and AI Report. Protocol v2
+allowlists `user_profiles`, `goals`, `today_records`,
+`journal_prompt_configurations`, `journal_entries`, `health_records`, and
+`ai_reports`. Journal runs prompt configuration before entries. All sync is
+user-triggered; there is no startup, scheduled, background, or automatic sync.
 
 The Profile client continues to call `POST /sync/push` and
 `POST /sync/pull`. Deletion remains represented by `deleted_at`; Protocol v2
@@ -216,7 +229,9 @@ Normal pytest uses Fake/mocks and never calls real OpenAI. The opt-in smoke test
 
 Outside `development`, all four authentication secrets are mandatory and must
 be at least 32 bytes. Production must use HTTPS, managed secret rotation,
-PostgreSQL backups, observability, and a security review. Flutter now stores
-refresh credentials through Android/Windows secure storage and keeps access
-tokens in memory. There is no public login UI, account recovery, MFA, real
-WeChat login, or background sync in Sprint 13A.1.
+PostgreSQL backups, observability, and a security review. Flutter stores refresh
+credentials through Android/Windows secure storage and keeps access tokens in
+memory. Public username/password registration and login are implemented. There
+is still no password recovery, MFA, real WeChat SDK/login/QR flow, or background
+sync. WeChat identity and OAuth transaction code is a fail-closed security
+foundation, not a usable WeChat login product.

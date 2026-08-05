@@ -1,5 +1,11 @@
 # 01_PRD.md
 
+> Classification: **Partially current product foundation**
+> The Sprint 0 / v0.1.0 metadata below is historical. Product mission and
+> principles remain active, while implemented scope, versions, verification,
+> deployment certainty, and release blockers are authoritative in
+> `docs/CURRENT_BASELINE.md`.
+
 # Rebirth 产品需求文档（PRD）
 
 > 文档版本：v1.0  

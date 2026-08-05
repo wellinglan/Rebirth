@@ -1,5 +1,9 @@
 # Alpha GHCR Deployment
 
+> Classification: **Partially current image-publication guide**
+> Current code and release state are in `docs/CURRENT_BASELINE.md`. Publishing
+> a GHCR image does not prove that the image is deployed or running.
+
 ## Purpose
 
 Rebirth Cloud Alpha images are built and published by GitHub Actions. The Windows development machine does not need Docker and does not participate in image builds.
@@ -23,7 +27,12 @@ Never commit a GitHub PAT, JWT secret, PostgreSQL password, `.env` file, or Dock
 
 ## Current Boundary
 
-This remains a Development deployment using the Fake Provider over a Tailscale private network. It is a private Cloud Alpha debug environment, not a production deployment, and it does not expose a public API.
+When this guide was introduced, the private Tailscale Alpha used the Fake
+Provider. The repository now supports server-selected Disabled, Fake, OpenAI,
+and DeepSeek Providers. A separately authorized live configuration check is
+required to determine which Provider, model, limits, image digest, and database
+revision are running. The recorded topology remains a private Cloud Alpha debug
+boundary, not a Production or public-API claim.
 
 The Beijing server does not pull `python:3.12-slim` or `postgres:17-alpine` directly from Docker Hub. GitHub-hosted Ubuntu runners perform those Docker Hub pulls while building or mirroring, and the server consumes the resulting GHCR images.
 

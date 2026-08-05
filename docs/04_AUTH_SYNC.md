@@ -1,7 +1,16 @@
 # Rebirth Auth & Sync Architecture
 
-> Status: Sprint 13B.4 step-up reauthentication and OAuth callback contract
+> Status: Partially current; narrative retained through Sprint 13B.4
 > Scope: Auth Gate, account-bound manual sync, and extensible login identities
+> Current-state authority: `docs/CURRENT_BASELINE.md`
+
+The current client has public username/password registration and login,
+session-backed authentication, Android/Windows secure refresh storage, and an
+account-scoped Sync Center for Profile, Plan, Today, Journal, Health, and AI
+Report. Sync remains explicit and manual. Real WeChat login, password recovery,
+and MFA remain unsupported. Historical staged-rollout limitations below are
+retained as evidence and are not present-state claims unless repeated in the
+Current Baseline.
 
 ## 目标
 
@@ -142,7 +151,12 @@ Sync Coordinator 在 device registration、cursor read、collect、push、pull �
 
 schema 4 升级到 5 时不自动认领旧 Profile。旧未绑定数据原样保留并进入 `bindingRequired`；现有未完成的 `awaiting_remote_snapshot` conflict 保留 snapshot 与时间，并标记为 `superseded_by_account_isolation_migration`。
 
-## 当前限制
+## Historical Sprint 10B.2-A Limitations (Superseded)
+
+The bullets in this section describe the earlier development-token and
+Profile-only stage. Sprint 13A.1/13A.2 authentication, later module sync
+Sprints, and AI Report sync supersede them. They remain here only as historical
+evidence.
 
 Sprint 8D 的 AI pending recovery 额外将 request ID 绑定到 normalized endpoint 与当前 Rebirth cloud user ID。切换 endpoint 或账号后不会向新 Server/其他账号查询旧请求；用户切回原绑定后才能检查。Binding 不保存 token、业务 payload 或报告正文。
 
@@ -244,8 +258,10 @@ compatibility fallback. Production requires the new key and exposes no endpoint
 editing UI.
 
 Authentication success does not synchronize. It resolves Account Boundary,
-selects the matching local profile, and leaves all five modules under existing
-manual sync rules. See `docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md`.
+selects the matching local profile, and leaves all currently registered modules
+under manual sync rules. The current registry has six modules after AI Report
+sync was added. See `docs/41_PUBLIC_USERNAME_PASSWORD_LOGIN.md` and
+`docs/CURRENT_BASELINE.md`.
 
 User acceptance on 2026-07-30 recorded 107 PASS, 0 FAIL, and 7 NOT EXECUTED.
 H1-H7 remain NOT EXECUTED because no safe unbound-legacy-data fixture was
