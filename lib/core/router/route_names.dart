@@ -22,6 +22,7 @@ abstract final class RouteNames {
   static const syncCenter = 'syncCenter';
   static const settingsProfile = 'settingsProfile';
   static const personalDataOverview = 'personalDataOverview';
+  static const fullPersonalDataExport = 'fullPersonalDataExport';
   static const syncConflicts = 'syncConflicts';
   static const syncConflictDetails = 'syncConflictDetails';
   static const aiCoach = 'aiCoach';
@@ -55,6 +56,7 @@ abstract final class RoutePaths {
   static const syncCenter = '/settings/sync-center';
   static const settingsProfile = '/settings/profile';
   static const personalDataOverview = '/personal-data';
+  static const fullPersonalDataExport = '/settings/personal-data-export';
   static const syncConflicts = '/settings/sync-conflicts';
   static const aiCoach = '/ai-coach';
   static const aiReports = '/ai-reports';

@@ -21,6 +21,7 @@ import '../../features/journal/presentation/journal_page.dart';
 import '../../features/journal/presentation/journal_prompt_management_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
 import '../../features/personal_data/presentation/personal_data_overview_page.dart';
+import '../../features/personal_data_export/presentation/full_personal_data_export_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/settings/presentation/account_details_page.dart';
@@ -241,6 +242,11 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
             path: 'profile',
             name: RouteNames.settingsProfile,
             builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: 'personal-data-export',
+            name: RouteNames.fullPersonalDataExport,
+            builder: (context, state) => const FullPersonalDataExportPage(),
           ),
           GoRoute(
             path: 'sync-conflicts',

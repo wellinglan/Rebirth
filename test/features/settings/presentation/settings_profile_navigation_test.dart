@@ -65,6 +65,24 @@ void main() {
     expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     expect(find.text('设置'), findsOneWidget);
     expect(find.text('仅在确认生成时发送所选汇总数据，不会自动发送'), findsOneWidget);
+
+    final personalDataExportTile = find.byKey(
+      const ValueKey('fullPersonalDataExportSettingsTile'),
+    );
+    await tester.ensureVisible(personalDataExportTile);
+    await tester.pumpAndSettle();
+    await tester.tap(personalDataExportTile);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('fullPersonalDataExportPage')),
+      findsOneWidget,
+    );
+    expect(find.text('导出全部个人数据'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
     final aiCoachTile = find.byKey(const ValueKey('aiCoachSettingsTile'));
     await tester.ensureVisible(aiCoachTile);
     await tester.pumpAndSettle();
@@ -183,7 +201,11 @@ void main() {
       final promptTile = find.byKey(
         const ValueKey('journalPromptSettingsTile'),
       );
-      await tester.ensureVisible(promptTile);
+      await tester.drag(
+        find.byKey(const ValueKey('settingsDataState')),
+        const Offset(0, -320),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(promptTile);
       await tester.pumpAndSettle();
 

@@ -157,6 +157,13 @@ class _SettingsContent extends StatelessWidget {
                 onTap: () => context.push(RoutePaths.personalDataOverview),
               ),
               SettingsTile(
+                key: const ValueKey('fullPersonalDataExportSettingsTile'),
+                title: '导出全部个人数据',
+                subtitle: '保存当前账号的完整、可校验 JSON 备份',
+                icon: Icons.download_outlined,
+                onTap: () => context.push(RoutePaths.fullPersonalDataExport),
+              ),
+              SettingsTile(
                 key: const ValueKey('aiCoachSettingsTile'),
                 title: 'AI Coach',
                 subtitle: '按需生成每日洞察和每周回顾',
