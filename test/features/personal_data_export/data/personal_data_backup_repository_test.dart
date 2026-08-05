@@ -196,6 +196,69 @@ void main() {
       );
     },
   );
+
+  test(
+    'historical Journal snapshot exports when its source prompt is absent',
+    () async {
+      final historicalSourceId = _id(99);
+      await (database.update(
+        database.journalEntryPromptItems,
+      )..where((row) => row.id.equals(_id(42)))).write(
+        JournalEntryPromptItemsCompanion(
+          sourcePromptId: Value(historicalSourceId),
+        ),
+      );
+
+      final records = await repository.readJournal(userA);
+
+      expect(records, hasLength(1));
+      expect(records.single.promptItems, hasLength(1));
+      expect(
+        records.single.promptItems.single.sourcePromptId,
+        historicalSourceId,
+      );
+      expect(records.single.promptItems.single.answerText, isNotNull);
+    },
+  );
+
+  test(
+    'Journal snapshot rejects a source prompt owned by another account',
+    () async {
+      await database
+          .into(database.journalPromptConfigurations)
+          .insert(
+            JournalPromptConfigurationsCompanion.insert(
+              id: Value(_id(81)),
+              userId: _id(2),
+              createdAt: const Value(_now),
+              updatedAt: const Value(_now),
+            ),
+          );
+      await database
+          .into(database.journalPromptDefinitions)
+          .insert(
+            JournalPromptDefinitionsCompanion.insert(
+              id: Value(_id(82)),
+              configurationId: _id(81),
+              promptSource: 'user',
+              questionText: 'Account B prompt',
+              displayOrder: 0,
+              createdAt: const Value(_now),
+              updatedAt: const Value(_now),
+            ),
+          );
+      await (database.update(
+        database.journalEntryPromptItems,
+      )..where((row) => row.id.equals(_id(42)))).write(
+        JournalEntryPromptItemsCompanion(sourcePromptId: Value(_id(82))),
+      );
+
+      await expectLater(
+        repository.readJournal(userA),
+        throwsA(isA<PersonalDataBackupSourceException>()),
+      );
+    },
+  );
 }
 
 List<Map<String, dynamic>> _records(Map<String, dynamic> data, String module) {

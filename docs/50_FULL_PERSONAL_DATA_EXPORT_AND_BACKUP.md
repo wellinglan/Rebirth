@@ -148,6 +148,14 @@ needs them to rebuild relationships. They are not account IDs or device IDs and
 are not copied from a cloud sync payload. Soft-deleted business facts retain
 their `deleted_at` lifecycle value. Sync tombstones are never exported.
 
+Journal prompt snapshots are self-contained historical facts. A snapshot can
+retain a `source_prompt_id` whose definition is no longer present on the current
+device after cross-device sync, configuration replacement, or conflict
+resolution. That absent historical source does not make the snapshot partial.
+If the source ID resolves to a prompt definition owned by another local
+account, the complete export still fails closed rather than crossing the
+account boundary.
+
 A future restore implementation must treat historical deletion state as local
 backup history and must not automatically propagate it to the cloud.
 
@@ -213,4 +221,3 @@ The manual Gate is still **OPEN**. Windows and Android execution is recorded in
 [Full Personal Data Export and Backup manual matrix](manual_tests/55_full_personal_data_export_and_backup.md).
 All 54 rows start as `NOT EXECUTED`; automated tests do not convert them to
 manual PASS.
-

@@ -138,11 +138,14 @@ final class PersonalDataBackupRepositoryImpl
               ]))
             .get();
     final todayIds = await _todayIds(localUserId);
-    final definitionIds = await _journalPromptDefinitionIds(localUserId);
+    final definitionOwners = await _journalPromptDefinitionOwners();
     final itemsByEntry = <String, List<db.JournalEntryPromptItemRow>>{};
     for (final item in items) {
       final sourceId = item.sourcePromptId;
-      if (sourceId != null && !definitionIds.contains(sourceId)) {
+      final sourceOwnerId = sourceId == null
+          ? null
+          : definitionOwners[sourceId];
+      if (sourceOwnerId != null && sourceOwnerId != localUserId) {
         throw const PersonalDataBackupSourceException();
       }
       itemsByEntry.putIfAbsent(item.journalEntryId, () => []).add(item);
@@ -374,24 +377,26 @@ final class PersonalDataBackupRepositoryImpl
     return rows.map((row) => row.read(database.todayRecords.id)!).toSet();
   }
 
-  Future<Set<String>> _journalPromptDefinitionIds(String localUserId) async {
+  Future<Map<String, String>> _journalPromptDefinitionOwners() async {
     final query =
         database.selectOnly(database.journalPromptDefinitions).join([
-            innerJoin(
-              database.journalPromptConfigurations,
-              database.journalPromptConfigurations.id.equalsExp(
-                database.journalPromptDefinitions.configurationId,
-              ),
+          innerJoin(
+            database.journalPromptConfigurations,
+            database.journalPromptConfigurations.id.equalsExp(
+              database.journalPromptDefinitions.configurationId,
             ),
-          ])
-          ..addColumns([database.journalPromptDefinitions.id])
-          ..where(
-            database.journalPromptConfigurations.userId.equals(localUserId),
-          );
+          ),
+        ])..addColumns([
+          database.journalPromptDefinitions.id,
+          database.journalPromptConfigurations.userId,
+        ]);
     final rows = await query.get();
-    return rows
-        .map((row) => row.read(database.journalPromptDefinitions.id)!)
-        .toSet();
+    return {
+      for (final row in rows)
+        row.read(database.journalPromptDefinitions.id)!: row.read(
+          database.journalPromptConfigurations.userId,
+        )!,
+    };
   }
 
   String _utcIso(int milliseconds) => DateTime.fromMillisecondsSinceEpoch(

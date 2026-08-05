@@ -14,6 +14,18 @@ The exported file is plaintext sensitive JSON. Use test accounts and test
 content only. Store the artifact in a controlled test location and remove it
 after acceptance according to the tester's data-handling policy.
 
+## Active Acceptance Finding
+
+- On 2026-08-05, the pre-fix Android arm64 build reached this page but stopped
+  before the system document picker with the controlled source-read failure.
+- The cause was an otherwise complete historical Journal prompt snapshot whose
+  source definition was no longer present on that device after earlier sync or
+  prompt-configuration history.
+- The repository now accepts an absent historical source while still rejecting
+  a source definition explicitly owned by another local account. Automated
+  regression coverage passes, but C1-C3 remain `NOT EXECUTED` for the post-fix
+  APK until the same physical device completes the export and file inspection.
+
 ## Preconditions
 
 - Windows Release and Android arm64-v8a Release are built from the same reviewed
@@ -138,4 +150,3 @@ python -c "import hashlib,json,pathlib; p=pathlib.Path(r'$BackupPath'); d=json.l
 The Gate remains **OPEN** until the user reports actual execution results for
 the applicable rows. Any scenario without a safe product-level fixture must
 remain `NOT EXECUTED` with its reason; it must not be inferred from automation.
-
