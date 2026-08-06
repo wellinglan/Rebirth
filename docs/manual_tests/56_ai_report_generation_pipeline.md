@@ -4,6 +4,7 @@
 > Source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Gate: **CLOSED WITH ACCEPTED LIMITATIONS**
 > Result: **35 PASS / 0 FAIL / 7 NOT EXECUTED**
+> Quality: [Run 31073858896](https://github.com/wellinglan/Rebirth/actions/runs/31073858896) PASS for `ab3bc862006ba21924595966190d93f6a661867a`
 > Last updated: **2026-08-06**
 
 This matrix records real Windows and Android product execution only. Automated
@@ -113,3 +114,6 @@ fixture can force each pending/processing/expired/not-found state. E4 remains
 NOT EXECUTED because no safe product-level request-binding persistence failure
 fixture exists. Automated tests cover these seven controlled paths; they are
 supporting evidence and are not reclassified as manual PASS.
+GitHub Quality run 31073858896 passed for the Sprint 15B implementation
+commit, so no automated or manual blocker remains inside the accepted Gate
+scope.

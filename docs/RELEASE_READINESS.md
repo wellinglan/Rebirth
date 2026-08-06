@@ -25,7 +25,7 @@ reviewed source is running on the private Alpha Server.
 
 | Area | Evidence present | Remaining qualification |
 |---|---|---|
-| Quality CI | Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug passed for the last audited code baseline | Sprint 15B still requires its own post-review CI; no Windows CI or signed release artifact job exists |
+| Quality CI | Sprint 15B Quality [run 31073858896](https://github.com/wellinglan/Rebirth/actions/runs/31073858896) passed Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug | No Windows CI or signed release artifact job exists |
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
 | Private cloud Alpha | GHCR publishing workflow and Tailscale/GHCR deployment history exist | Live image, migration, Provider, backup, and health state not inspected in Sprint 14G or 15A |

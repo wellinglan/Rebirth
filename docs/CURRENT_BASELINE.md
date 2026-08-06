@@ -2,10 +2,10 @@
 
 > Classification: **Active / authoritative**
 > Audited: **2026-08-06**
-> Audited code baseline: `6d3be363e27b7d0bdf4045c393b11e16924a5176`
+> Audited code baseline: `ab3bc862006ba21924595966190d93f6a661867a`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
-> Current working Sprint: **15B**
+> Current working Sprint: **15B (complete)**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -219,8 +219,9 @@ rather than a second server report database model.
 ## Verification Baseline
 
 GitHub `Quality` run
-[30978529267](https://github.com/wellinglan/Rebirth/actions/runs/30978529267)
-completed successfully for the audited baseline commit. It passed:
+[31073858896](https://github.com/wellinglan/Rebirth/actions/runs/31073858896)
+completed successfully for the Sprint 15B implementation commit
+`ab3bc862006ba21924595966190d93f6a661867a`. It passed:
 
 - Server SQLite;
 - Server PostgreSQL, Alembic, multiprocessing, and multi-worker checks;

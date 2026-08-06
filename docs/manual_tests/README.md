@@ -55,7 +55,7 @@ that a separate module-only matrix was rerun.
 | AI Report Library | CLOSED | [AI Report Library](53_ai_report_library_consolidation.md) | 31 / 0 / 0 | One canonical list/detail entry and lifecycle/sync regression accepted |
 | AI Report Export | CLOSED WITH ACCEPTED LIMITATION | [AI Report Safe Export](54_ai_report_safe_export.md) | 37 / 0 / 1 | SessionRejected injection was unavailable; export has no import/restore promise |
 | Full Personal Data Export | CLOSED WITH ACCEPTED LIMITATIONS | [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) | 49 / 0 / 5 | Windows/Android applicable rows passed; five safe failure/timing injection fixtures remain unavailable; plaintext export has no import/restore promise |
-| AI Report Generation Pipeline | CLOSED WITH ACCEPTED LIMITATIONS | [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) | 35 / 0 / 7 | All applicable Windows/Android rows passed; six controlled recovery states and one binding-write failure fixture remain unavailable and automated only |
+| AI Report Generation Pipeline | CLOSED WITH ACCEPTED LIMITATIONS | [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) | 35 / 0 / 7 | Applicable rows passed and Quality run 31073858896 passed; six controlled recovery states and one binding-write failure fixture remain unavailable and automated only |
 
 ## Important Succession Rules
 
