@@ -327,6 +327,83 @@ void main() {
     },
   );
 
+  test(
+    'endpoint-scoped reusable report requires matching generation endpoint hash',
+    () async {
+      const endpointA =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const endpointB =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      final input = _bundle();
+      final pending = await repository.createPending(
+        input: input,
+        generationEndpointHash: endpointA,
+      );
+      await repository.markCompleted(
+        reportId: pending.id,
+        reportContent: 'done',
+      );
+
+      final reusable = await repository.findReusableCompleted(
+        reportType: input.reportType,
+        periodStartDate: input.periodStartDate,
+        periodEndDate: input.periodEndDate,
+        promptVersion: input.promptVersion,
+        inputHash: input.inputHash,
+        generationEndpointHash: endpointA,
+      );
+
+      expect(reusable?.id, pending.id);
+      expect(reusable?.generationEndpointHash, endpointA);
+      expect(
+        await repository.findReusableCompleted(
+          reportType: input.reportType,
+          periodStartDate: input.periodStartDate,
+          periodEndDate: input.periodEndDate,
+          promptVersion: input.promptVersion,
+          inputHash: input.inputHash,
+          generationEndpointHash: endpointB,
+        ),
+        isNull,
+      );
+    },
+  );
+
+  test(
+    'legacy completed report without endpoint hash is not coordinator-reusable',
+    () async {
+      final input = _bundle();
+      final pending = await repository.createPending(input: input);
+      await repository.markCompleted(
+        reportId: pending.id,
+        reportContent: 'done',
+      );
+
+      expect(
+        await repository.findReusableCompleted(
+          reportType: input.reportType,
+          periodStartDate: input.periodStartDate,
+          periodEndDate: input.periodEndDate,
+          promptVersion: input.promptVersion,
+          inputHash: input.inputHash,
+          generationEndpointHash:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ),
+        isNull,
+      );
+      expect(
+        await repository.findReusableCompleted(
+          reportType: input.reportType,
+          periodStartDate: input.periodStartDate,
+          periodEndDate: input.periodEndDate,
+          promptVersion: input.promptVersion,
+          inputHash: input.inputHash,
+        ),
+        isNotNull,
+      );
+    },
+  );
+
   test('failed report is not reusable', () async {
     final input = _bundle();
     final pending = await repository.createPending(input: input);

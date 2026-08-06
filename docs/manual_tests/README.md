@@ -1,7 +1,7 @@
 # Rebirth Manual Acceptance Registry
 
 > Classification: **Active / authoritative Gate registry**
-> Consolidated: **2026-08-05 / Sprint 15A working tree**
+> Consolidated: **2026-08-06 / Sprint 15B working tree**
 
 Manual matrices record only real product execution. Automated tests never
 become manual PASS. `NOT EXECUTED` is an honest capability or fixture limit,
@@ -55,6 +55,7 @@ that a separate module-only matrix was rerun.
 | AI Report Library | CLOSED | [AI Report Library](53_ai_report_library_consolidation.md) | 31 / 0 / 0 | One canonical list/detail entry and lifecycle/sync regression accepted |
 | AI Report Export | CLOSED WITH ACCEPTED LIMITATION | [AI Report Safe Export](54_ai_report_safe_export.md) | 37 / 0 / 1 | SessionRejected injection was unavailable; export has no import/restore promise |
 | Full Personal Data Export | CLOSED WITH ACCEPTED LIMITATIONS | [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) | 49 / 0 / 5 | Windows/Android applicable rows passed; five safe failure/timing injection fixtures remain unavailable; plaintext export has no import/restore promise |
+| AI Report Generation Pipeline | CLOSED WITH ACCEPTED LIMITATIONS | [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) | 35 / 0 / 7 | All applicable Windows/Android rows passed; six controlled recovery states and one binding-write failure fixture remain unavailable and automated only |
 
 ## Important Succession Rules
 
@@ -97,6 +98,7 @@ that a separate module-only matrix was rerun.
 - [Journal Prompt System](38_journal_prompt_system.md) - Current
 - [Settings and Sync Center](39_settings_information_architecture_and_sync_center.md) - Current unified authority
 - [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) - Current Gate closed with accepted limitations
+- [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) - Current Gate closed with accepted limitations
 
 ### Authentication and Identity
 
@@ -119,6 +121,7 @@ that a separate module-only matrix was rerun.
 - [AI Report Lifecycle](52_ai_report_lifecycle_conflict_readiness.md)
 - [AI Report Library](53_ai_report_library_consolidation.md)
 - [AI Report Safe Export](54_ai_report_safe_export.md)
+- [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) - Current Gate closed with accepted limitations
 
 Older UI, persistence, cloud, and AI reliability matrices `01` through `24`
 remain in this directory as historical Sprint evidence. They do not override

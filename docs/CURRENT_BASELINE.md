@@ -1,10 +1,11 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-08-05**
+> Audited: **2026-08-06**
 > Audited code baseline: `6d3be363e27b7d0bdf4045c393b11e16924a5176`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
-> Current working Sprint: **15A**
+> Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
+> Current working Sprint: **15B**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -119,8 +120,9 @@ The Server has one Provider boundary with four selectable implementations:
 
 Provider choice, model, credentials, timeouts, quotas, and kill switch are
 server configuration. They are never client settings. The code supports
-explicit Daily and Weekly generation; it does not provide AI Chat, agents,
-tool calling, automatic background generation, or client-selected credentials.
+explicit Daily and Weekly generation through one consolidated client
+application coordinator; it does not provide AI Chat, agents, tool calling,
+automatic background generation, or client-selected credentials.
 
 Current controls include:
 
@@ -154,10 +156,24 @@ configured today.
 | 14D | Archive lifecycle and conflict readiness | Flutter schema 11 | 25 PASS / 0 FAIL / 0 NOT EXECUTED | Closed |
 | 14E | One canonical report library | No schema/API/protocol change | 31 PASS / 0 FAIL / 0 NOT EXECUTED | Closed |
 | 14F | Explicit Markdown/JSON safe export | No schema/API/protocol change | 37 PASS / 0 FAIL / 1 safe SessionRejected row | Closed with accepted limitation |
+| 15B | Generation pipeline consolidation | No schema/API/protocol change | 35 PASS / 0 FAIL / 7 controlled-fixture rows | Closed with accepted limitations |
 
 AI Report export is portability output, not a backup/restore promise. There is
 no import, restore, scheduled export, cloud export, report editing, or
 regeneration flow.
+
+Sprint 15B consolidates Daily and Weekly generation behind
+`AiReportGenerationCoordinator`. Presentation controllers keep UI state and
+preview integrity checks, while the coordinator owns reusable completed-report
+lookup, pending report creation, request binding, remote generation submission,
+terminal local writes, single-flight suppression, endpoint/account safety, and
+status-only pending recovery. Older completed reports without the new endpoint
+metadata remain readable but are not reused by the consolidated generation
+pipeline. The user reported all applicable Windows and Android rows as PASS.
+The [AI Report Generation Pipeline](manual_tests/56_ai_report_generation_pipeline.md)
+Gate is closed with accepted limitations: six controlled pending-recovery state
+injections and one request-binding persistence failure injection remain
+unavailable at product level and retain automated coverage only.
 
 ## Full Personal Data Export Baseline
 

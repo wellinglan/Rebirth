@@ -18,6 +18,7 @@ final class AiReport {
     Set<AiDataScope>? selectedScopes,
     this.inputMetadataVersion,
     this.inputSchemaVersion,
+    this.generationEndpointHash,
     required this.inputHash,
     required this.promptVersion,
     required this.provider,
@@ -81,6 +82,7 @@ final class AiReport {
   final Set<AiDataScope>? selectedScopes;
   final int? inputMetadataVersion;
   final int? inputSchemaVersion;
+  final String? generationEndpointHash;
   final String inputHash;
   final String promptVersion;
   final String? provider;

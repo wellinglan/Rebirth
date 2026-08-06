@@ -1,7 +1,7 @@
 # Rebirth Documentation Index
 
 > Classification: **Active**
-> Last consolidated: **2026-08-05 / Sprint 15A working tree**
+> Last consolidated: **2026-08-06 / Sprint 15B working tree**
 
 Start with [Current Baseline](CURRENT_BASELINE.md). It is the only authoritative
 snapshot of what is implemented, verified, manually accepted, deployed,
@@ -79,6 +79,7 @@ deferred, or unsupported now.
 - [AI Report Library](48_AI_REPORT_LIBRARY.md) - Active
 - [AI Report Safe Export](49_AI_REPORT_SAFE_EXPORT.md) - Active
 - [Full Personal Data Export and Backup](50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md) - Active; manual Gate closed with accepted limitations
+- [AI Report Generation Pipeline](51_AI_REPORT_GENERATION_PIPELINE.md) - Active; Gate closed with accepted limitations
 
 ## Historical Sprint Records
 

@@ -4,6 +4,24 @@
 > Status: Partially current / active mission with append-only Sprint history
 > Last Updated: 2026-08
 
+## Current Appendix: Sprint 15B AI Report Generation Pipeline
+
+Sprint 15B does not expand AI capability. It consolidates existing explicit
+Daily and Weekly AI Report generation into one application-layer coordinator.
+
+`AiReportGenerationCoordinator` owns consent/session checks, endpoint-scoped
+reusable report lookup, pending report creation, request binding persistence,
+single-flight duplicate suppression, remote generation submission, terminal
+local reconciliation, and status-only pending recovery. Presentation controllers
+remain responsible for UI state and preview integrity, but no longer decide
+Provider retry, repository terminal writes, binding cleanup, or recovery
+semantics.
+
+The boundary remains: no AI chat, no agents, no tool calling, no automatic
+generation, no prompt changes, no Provider changes, no Sync Protocol changes,
+and no server deployment implied by client implementation. See
+`docs/51_AI_REPORT_GENERATION_PIPELINE.md`.
+
 > Current-state authority: `docs/CURRENT_BASELINE.md`. Early technology notes
 > that describe FastAPI or external AI as future work, and the Sprint 12D
 > five-module Sync Center snapshot, are historical. The audited current code

@@ -1014,3 +1014,17 @@ No AI report business table, PostgreSQL model, Alembic revision, API Version,
 or Sync Protocol changes. The archive state continues to live on the existing
 `ai_reports` aggregate and its immutable `ai_report_versions` children are not
 rewritten by archive or conflict resolution.
+
+## Sprint 15B AI Report Generation Pipeline
+
+No database migration is added. Flutter Drift remains `schemaVersion = 11`.
+
+New generation requests may persist a non-secret
+`generation_endpoint_hash` inside the existing `ai_reports.input_sources_json`
+metadata object. The hash is used only to prevent endpoint-mismatched reusable
+completed reports in the consolidated generation pipeline. Legacy completed
+reports without this metadata remain readable, exportable, and syncable, but the
+new coordinator will not reuse them as endpoint-confirmed generation results.
+
+Server PostgreSQL models, Alembic revisions, API Version `1`, Sync Protocol `2`,
+AI usage ledger tables, and AI generation ledger tables are unchanged.

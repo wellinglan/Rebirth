@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'dart:async';
 import 'package:rebirth/core/config/server_endpoint_validator.dart';
+import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/auth_user.dart';
-import 'package:rebirth/features/account/data/auth_session_manager.dart';
+import 'package:rebirth/features/ai_coach/application/ai_report_generation_coordinator.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
@@ -37,12 +39,18 @@ void main() {
 
   AiPendingRecoveryController controller({String? endpoint}) =>
       AiPendingRecoveryController(
-        gateway: gateway,
-        reports: reports,
-        bindings: bindings,
-        sessionManager: AuthSessionManager.forTesting(sessionStore: sessions),
-        currentEndpoint: endpoint ?? 'http://127.0.0.1:8000',
-        endpointValidator: const ServerEndpointValidator(),
+        coordinator: AiReportGenerationCoordinator(
+          gateway: gateway,
+          reports: reports,
+          consentRepository: FakeAiConsentRepository(
+            authorization: AiDataAuthorization(enabled: true, consentAt: 1),
+          ),
+          sessionStore: sessions,
+          bindings: bindings,
+          dateTimeService: DateTimeService(now: () => DateTime(2026, 7, 16)),
+          currentEndpoint: endpoint ?? 'http://127.0.0.1:8000',
+          endpointValidator: const ServerEndpointValidator(),
+        ),
       );
 
   test('completed status restores local report and removes binding', () async {

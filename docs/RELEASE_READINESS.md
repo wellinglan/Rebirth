@@ -1,8 +1,9 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-05 / Sprint 15A working tree**
+> Audited: **2026-08-06 / Sprint 15B working tree**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
+> Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
 This is a readiness inventory, not a release approval. It separates a private
 Alpha codebase from a public Production or app-store release. Current versions
@@ -17,14 +18,14 @@ and product capabilities are authoritative in
 | Wider external Alpha distribution | **No-go until release identity/signing and packaging decisions** | Development package identity, Debug signing, stale version metadata, and incomplete distribution controls |
 | Public Production or app-store release | **No-go** | Security, operations, recovery, packaging, observability, and unsupported account capabilities remain open |
 
-Neither Sprint 14G nor Sprint 15A performs deployment or certifies that the
+Neither Sprint 14G, Sprint 15A, nor Sprint 15B performs deployment or certifies that the
 reviewed source is running on the private Alpha Server.
 
 ## Private Alpha Foundations Present
 
 | Area | Evidence present | Remaining qualification |
 |---|---|---|
-| Quality CI | Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug passed for the last audited code baseline | Sprint 15A still requires its own post-review CI; no Windows CI or signed release artifact job exists |
+| Quality CI | Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug passed for the last audited code baseline | Sprint 15B still requires its own post-review CI; no Windows CI or signed release artifact job exists |
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
 | Private cloud Alpha | GHCR publishing workflow and Tailscale/GHCR deployment history exist | Live image, migration, Provider, backup, and health state not inspected in Sprint 14G or 15A |
@@ -33,7 +34,8 @@ reviewed source is running on the private Alpha Server.
 | Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |
 | Manual acceptance | Unified Gate Registry and retained matrices | NOT EXECUTED rows remain limitations, not PASS |
-| Personal data portability | Versioned, deterministic, integrity-checked local JSON export | Plaintext; no import/restore, encryption, scheduling, cloud backup, or manual device acceptance yet |
+| Personal data portability | Versioned, deterministic, integrity-checked local JSON export | Plaintext; no import/restore, encryption, scheduling, or cloud backup |
+| AI Report generation pipeline | Daily and Weekly generation share one coordinator; all applicable Windows/Android matrix rows passed | Seven controlled fault/state injection rows remain automated-only accepted limitations |
 
 ## Production and Store Blockers
 
@@ -85,7 +87,7 @@ Before every separately authorized Alpha deployment:
    registration;
 8. perform smoke checks for local save, manual Sync Center behavior, account
    isolation, consent, AI usage state, AI Report library/export, and full
-   personal data export;
+   personal data export and AI Report generation recovery;
 9. record exact artifact identity and any honestly NOT EXECUTED scenario;
 10. provide rollback criteria before expanding testers.
 
@@ -128,4 +130,16 @@ It does not close the Production backup/disaster-recovery blocker because it
 has no import/restore path, encryption, RPO/RTO policy, scheduled operation, or
 restore drill. It does not change package identity, signing, dependencies,
 images, workflows, database schemas, API Version, Sync Protocol, Server runtime,
-remote services, or GitHub releases. Its manual Gate remains OPEN.
+remote services, or GitHub releases. Its manual Gate is closed with accepted
+limitations in the manual registry.
+
+## Sprint 15B Boundary
+
+Sprint 15B consolidates existing explicit Daily and Weekly AI Report generation
+behind one client application coordinator. It does not add AI Chat, agents,
+automatic generation, prompt changes, Provider changes, Server API endpoints,
+database migrations, Sync Protocol changes, deployment, or GitHub releases. Its
+[AI Report Generation Pipeline](manual_tests/56_ai_report_generation_pipeline.md)
+Gate is closed with accepted limitations at 35 PASS / 0 FAIL / 7 NOT EXECUTED.
+The seven unavailable product-level fixtures remain automated-only evidence and
+are not represented as manual PASS.

@@ -41,9 +41,13 @@ abstract interface class AiReportRepository {
     required String periodEndDate,
     required String promptVersion,
     required String inputHash,
+    String? generationEndpointHash,
   });
 
-  Future<AiReport> createPending({required AiCoachInputBundle input});
+  Future<AiReport> createPending({
+    required AiCoachInputBundle input,
+    String? generationEndpointHash,
+  });
 
   Future<AiReport> markCompleted({
     required String reportId,

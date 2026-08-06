@@ -37,7 +37,8 @@ directly. Local SQLite remains the primary working data store.
 - **Profile and Settings**: public username/password sessions, account
   boundaries, consent, device state, and a unified manual Sync Center.
 - **AI Coach**: explicit Daily and Weekly generation after account-scoped
-  consent, with server-side quotas and operational auditing.
+  consent, with server-side quotas, operational auditing, and one consolidated
+  client generation coordinator.
 - **AI Reports**: local persistence, immutable versions, manual cross-device
   sync, conflict recovery, archive lifecycle, one report library, and explicit
   Markdown/JSON export.
@@ -79,6 +80,12 @@ device/session state, Server endpoints, sync/conflict runtime state, and AI
 Server ledgers. Its plaintext JSON may contain sensitive bodies. Sprint 15A
 establishes a backup format foundation but still provides no import, restore,
 scheduled backup, or cloud backup.
+
+Daily and Weekly AI Report generation now share one client-side application
+coordinator. The coordinator owns reusable-report lookup, pending report
+creation, request binding, remote generation submission, terminal local writes,
+and status-only pending recovery. There is still no automatic generation,
+automatic retry, prompt change, Provider change, or AI Report sync expansion.
 
 Never commit credentials, environment files, access or refresh tokens,
 database passwords, private endpoints, or personal data.

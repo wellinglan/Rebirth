@@ -47,6 +47,10 @@ The current endpoint and cloud user must match the binding. A mismatch sends no 
 
 Consent blocks new preview/generation and pending creation. Revoking Consent does not block status GET for a request already sent, because recovery sends no new business input and does not invoke the Provider.
 
+Sprint 15B moves binding creation, terminal local writes, duplicate single-flight suppression, endpoint/account safety, and status-only recovery into `AiReportGenerationCoordinator`. Daily and Weekly use the same coordinator contract. Presentation controllers no longer decide Provider retry, repository terminal writes, binding cleanup, or recovery strategy.
+
+New coordinator-created reports may carry a non-secret endpoint hash inside local input metadata. That hash prevents completed results produced against one Server endpoint from being reused automatically under another endpoint. Legacy completed reports without the hash remain readable and exportable but are not endpoint-confirmed reusable generation results.
+
 ## Production Limits
 
 Production still requires HTTPS, encryption at rest, managed secrets, database access controls, retention enforcement/monitoring, backup and deletion procedures, incident observability without sensitive payload logging, provider/privacy/cost review, and legal review. The current SharedPreferences session and binding stores are development-level metadata storage, not secure credential storage.

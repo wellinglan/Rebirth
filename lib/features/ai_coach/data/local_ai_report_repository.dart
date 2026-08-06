@@ -243,6 +243,7 @@ final class LocalAiReportRepository implements AiReportRepository {
   @override
   Future<domain.AiReport> createPending({
     required AiCoachInputBundle input,
+    String? generationEndpointHash,
   }) async {
     final authorization = await consentRepository.read();
     if (!authorization.enabled) throw const AiConsentRequiredException();
@@ -277,6 +278,7 @@ final class LocalAiReportRepository implements AiReportRepository {
     final inputSourcesJson = canonicalJsonEncoder.encode({
       'input_schema_version': AiInputContract.schemaVersion,
       'metadata_version': 1,
+      'generation_endpoint_hash': ?_trimToNull(generationEndpointHash),
       'scopes': scopes,
       'sources': input.sources
           .map((source) => source.toCanonicalMap())
@@ -373,6 +375,7 @@ final class LocalAiReportRepository implements AiReportRepository {
     required String periodEndDate,
     required String promptVersion,
     required String inputHash,
+    String? generationEndpointHash,
   }) async {
     final bootstrap = await database.bootstrapDao.bootstrap();
     final query = database.select(database.aiReports)
@@ -391,9 +394,16 @@ final class LocalAiReportRepository implements AiReportRepository {
         (row) => OrderingTerm.desc(row.generatedAt),
         (row) => OrderingTerm.desc(row.requestedAt),
       ])
-      ..limit(1);
-    final result = await query.getSingleOrNull();
-    return result == null ? null : _toDomain(result);
+      ..limit(generationEndpointHash == null ? 1 : 20);
+    final result = await query.get();
+    for (final row in result) {
+      final report = _toDomain(row);
+      if (generationEndpointHash == null ||
+          report.generationEndpointHash == generationEndpointHash) {
+        return report;
+      }
+    }
+    return null;
   }
 
   @override
@@ -511,6 +521,7 @@ final class LocalAiReportRepository implements AiReportRepository {
       selectedScopes: metadata.selectedScopes,
       inputMetadataVersion: metadata.metadataVersion,
       inputSchemaVersion: metadata.inputSchemaVersion,
+      generationEndpointHash: metadata.generationEndpointHash,
       inputHash: row.inputHash,
       promptVersion: row.promptVersion,
       provider: row.provider,
@@ -624,10 +635,14 @@ final class LocalAiReportRepository implements AiReportRepository {
       final inputSchemaVersion = decoded['input_schema_version'];
       final rawScopes = decoded['scopes'];
       final rawSources = decoded['sources'];
+      final rawEndpointHash = decoded['generation_endpoint_hash'];
       if (metadataVersion is! int ||
           inputSchemaVersion is! int ||
           rawScopes is! List ||
-          rawSources is! List) {
+          rawSources is! List ||
+          (rawEndpointHash != null &&
+              (rawEndpointHash is! String ||
+                  !RegExp(r'^[0-9a-f]{64}$').hasMatch(rawEndpointHash)))) {
         throw const FormatException();
       }
       final selectedScopes = rawScopes.map((value) {
@@ -642,6 +657,7 @@ final class LocalAiReportRepository implements AiReportRepository {
         selectedScopes: selectedScopes,
         metadataVersion: metadataVersion,
         inputSchemaVersion: inputSchemaVersion,
+        generationEndpointHash: rawEndpointHash as String?,
       );
     } catch (_) {
       throw const InvalidAiInputException(
@@ -677,10 +693,12 @@ final class _StoredInputMetadata {
     this.selectedScopes,
     this.metadataVersion,
     this.inputSchemaVersion,
+    this.generationEndpointHash,
   });
 
   final List<AiInputSourceRef> sources;
   final Set<AiDataScope>? selectedScopes;
   final int? metadataVersion;
   final int? inputSchemaVersion;
+  final String? generationEndpointHash;
 }

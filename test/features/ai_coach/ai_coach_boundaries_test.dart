@@ -59,6 +59,24 @@ void main() {
       expect(source, isNot(contains('inputSnapshotJson')));
     }
   });
+
+  test('fake AI report generation service is not production composition', () {
+    final productionSources = Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'))
+        .where(
+          (file) => !file.path
+              .replaceAll('\\', '/')
+              .endsWith(
+                'lib/features/ai_coach/data/fake_ai_report_generation_service.dart',
+              ),
+        )
+        .map((file) => file.readAsStringSync());
+    for (final source in productionSources) {
+      expect(source, isNot(contains('FakeAiReportGenerationService')));
+    }
+  });
 }
 
 Iterable<String> _dartSources(String path) {

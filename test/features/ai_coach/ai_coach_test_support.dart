@@ -231,10 +231,16 @@ class FakeAiReportRepository implements AiReportRepository {
     required String periodEndDate,
     required String promptVersion,
     required String inputHash,
+    String? generationEndpointHash,
   }) async {
     findCalls += 1;
     lastReusableHash = inputHash;
     lastReusablePromptVersion = promptVersion;
+    if (generationEndpointHash != null &&
+        reusable?.generationEndpointHash != null &&
+        reusable?.generationEndpointHash != generationEndpointHash) {
+      return null;
+    }
     return reusable;
   }
 
@@ -272,7 +278,10 @@ class FakeAiReportRepository implements AiReportRepository {
   }
 
   @override
-  Future<AiReport> createPending({required AiCoachInputBundle input}) async {
+  Future<AiReport> createPending({
+    required AiCoachInputBundle input,
+    String? generationEndpointHash,
+  }) async {
     createPendingCalls += 1;
     lastPendingInput = input;
     final report = buildAiReport(
@@ -285,6 +294,7 @@ class FakeAiReportRepository implements AiReportRepository {
       selectedScopes: input.selection.scopes,
       inputHash: input.inputHash,
       promptVersion: input.promptVersion,
+      generationEndpointHash: generationEndpointHash,
     );
     reports.insert(0, report);
     return report;
@@ -349,6 +359,7 @@ class FakeAiReportRepository implements AiReportRepository {
       selectedScopes: existing.selectedScopes,
       inputMetadataVersion: existing.inputMetadataVersion,
       inputSchemaVersion: existing.inputSchemaVersion,
+      generationEndpointHash: existing.generationEndpointHash,
       inputHash: existing.inputHash,
       promptVersion: existing.promptVersion,
       provider: provider,
@@ -379,7 +390,7 @@ class FakeAiReportRepository implements AiReportRepository {
   }
 }
 
-final class FakeAiGenerationGateway implements AiGenerationGateway {
+class FakeAiGenerationGateway implements AiGenerationGateway {
   FakeAiGenerationGateway({
     AiGenerationCapabilities? capabilities,
     AiUsageSnapshot? usage,
@@ -429,6 +440,7 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
   Object? usageError;
   Object? generationError;
   Object? statusError;
+  AiRemoteRequestResult? generationResult;
   AiRemoteRequestResult? statusResult;
   Completer<AiRemoteRequestResult>? statusCompleter;
   int capabilitiesCalls = 0;
@@ -464,6 +476,7 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
     lastRequestId = requestId;
     lastBundle = bundle;
     if (generationError case final error?) throw error;
+    if (generationResult case final result?) return result;
     final completed = AiGenerationResult(
       requestId: requestId,
       reportType: 'weekly_report',
@@ -496,6 +509,7 @@ final class FakeAiGenerationGateway implements AiGenerationGateway {
     lastRequestId = requestId;
     lastBundle = bundle;
     if (generationError case final error?) throw error;
+    if (generationResult case final result?) return result;
     final completed = AiGenerationResult(
       requestId: requestId,
       reportType: 'daily_insight',
@@ -728,6 +742,7 @@ AiReport buildAiReport({
   String inputHash =
       '12345678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa87654321',
   String? promptVersion,
+  String? generationEndpointHash,
 }) {
   final resolvedScopes =
       selectedScopes ??
@@ -758,6 +773,7 @@ AiReport buildAiReport({
         (reportType == AiReportType.dailyInsight && includeFreshnessMetadata
             ? 1
             : null),
+    generationEndpointHash: generationEndpointHash,
     inputHash: inputHash,
     promptVersion:
         promptVersion ?? AiInputContract.promptVersionFor(reportType),

@@ -56,6 +56,13 @@ includes only a deterministic local `FakeAiReportGenerationService` for tests.
 The AI Report library contains no generation button and never calls a Provider.
 Existing explicit AI Coach generation is not expanded by this Sprint.
 
+Sprint 15B keeps the fake service as test-only scaffolding and consolidates real
+manual Daily/Weekly generation through `AiReportGenerationCoordinator`. The
+coordinator creates pending reports, saves request bindings, calls the existing
+Gateway, appends terminal versions through the repository, and performs
+status-only recovery. It does not make the AI Report Library a generation UI,
+does not change prompts or Providers, and does not introduce automatic retry.
+
 ## Privacy And Account Boundary
 
 Report content is highly sensitive local data:

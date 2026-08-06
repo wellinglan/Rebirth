@@ -919,3 +919,29 @@ SyncCoordinator, or database mutation dependency. Growth and Personal Data
 Aggregation remain recomputable projections. There is no import/restore,
 encryption, scheduling, cloud backup, or second platform file stack. See
 `docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md`.
+
+## 25. AI Report Generation Coordinator
+
+Sprint 15B consolidates manual Daily and Weekly AI Report generation behind one
+application-layer coordinator:
+
+```text
+Presentation controller
+  -> preview integrity check
+  -> AiReportGenerationCoordinator
+  -> consent, auth session, reusable lookup, pending report, binding
+  -> AiGenerationGateway
+  -> terminal local report reconciliation or status-only recovery
+```
+
+Controllers no longer decide Provider retry, binding persistence, terminal
+repository writes, or recovery strategy. Pending recovery uses the same
+coordinator and only calls the request-status endpoint; it never resubmits a
+generation POST.
+
+The coordinator is account-, endpoint-, report-type-, period-, prompt-version-,
+input-hash-, and scope-aware. It single-flights duplicate in-process requests,
+requires endpoint-scoped reuse for new completed reports, and leaves uncertain
+network outcomes pending rather than inventing a result. It does not change
+Provider, Prompt, Server API, Sync Protocol, or automatic sync behavior. See
+`docs/51_AI_REPORT_GENERATION_PIPELINE.md`.

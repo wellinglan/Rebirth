@@ -1,15 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rebirth/features/account/data/account_repository_provider.dart';
-import 'package:rebirth/core/config/server_endpoint_provider.dart';
-import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/features/ai_coach/application/ai_report_generation_coordinator.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
-import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
-import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
-import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 
 import 'ai_manual_generation_view_state.dart';
 import 'ai_report_history_controller.dart';
@@ -49,10 +44,6 @@ class AiManualGenerationController
   ) async {
     if (_submissionStarted || _preflightStarted) return null;
     _preflightStarted = true;
-    final consentRepository = ref.read(aiConsentRepositoryProvider);
-    final sessionStore = ref.read(authSessionStoreProvider);
-    final gateway = ref.read(aiGenerationGatewayProvider);
-    final reports = ref.read(aiReportRepositoryProvider);
     try {
       if (!_bundleMatchesContext(bundle) || !_hasGeneratableData(bundle)) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
@@ -72,42 +63,32 @@ class AiManualGenerationController
           .read(aiRequestPreviewControllerFamily(context).notifier)
           .verifyPreviewIntegrity(bundle);
       if (!unchanged) return null;
-      final authorization = await consentRepository.read();
-      if (!authorization.enabled) {
-        throw const AiGenerationException(AiReportFailureCode.invalidInput);
-      }
-      final session = await sessionStore.read();
-      if (session == null) {
-        throw const AiGenerationException(
-          AiReportFailureCode.authenticationRequired,
-        );
-      }
-      final capabilities = await gateway.getCapabilities();
-      _validateCapabilities(capabilities, bundle);
-      final reusable = await reports.findReusableCompleted(
-        reportType: bundle.reportType,
-        periodStartDate: bundle.periodStartDate,
-        periodEndDate: bundle.periodEndDate,
-        promptVersion: bundle.promptVersion,
-        inputHash: bundle.inputHash,
-      );
-      if (reusable != null) {
+      final result = await ref
+          .read(aiReportGenerationCoordinatorProvider)
+          .prepare(bundle);
+      if (result.status ==
+          AiReportGenerationPreflightStatus.reusableCompleted) {
         _setIfMounted(
           AiManualGenerationViewState(
             phase: AiManualGenerationPhase.success,
-            capabilities: capabilities,
-            reportId: reusable.id,
+            capabilities: result.capabilities,
+            reportId: result.reportId,
           ),
         );
         return null;
       }
+      if (result.status == AiReportGenerationPreflightStatus.failed) {
+        throw AiGenerationException(
+          result.failureCode ?? AiReportFailureCode.unknown,
+        );
+      }
       _setIfMounted(
         AiManualGenerationViewState(
           phase: AiManualGenerationPhase.ready,
-          capabilities: capabilities,
+          capabilities: result.capabilities,
         ),
       );
-      return capabilities;
+      return result.capabilities;
     } on AiGenerationException catch (error) {
       _setIfMounted(
         AiManualGenerationViewState(
@@ -132,12 +113,7 @@ class AiManualGenerationController
   Future<AiManualGenerationOutcome?> submit(AiCoachInputBundle bundle) async {
     if (_submissionStarted) return null;
     _submissionStarted = true;
-    final gateway = ref.read(aiGenerationGatewayProvider);
-    final reports = ref.read(aiReportRepositoryProvider);
-    final consentRepository = ref.read(aiConsentRepositoryProvider);
-    final sessionStore = ref.read(authSessionStoreProvider);
-    String? pendingId;
-    AiGenerationCapabilities? activeCapabilities;
+    final activeCapabilities = state.asData?.value.capabilities;
     try {
       if (!_bundleMatchesContext(bundle) || !_hasGeneratableData(bundle)) {
         throw const AiGenerationException(AiReportFailureCode.invalidInput);
@@ -156,219 +132,80 @@ class AiManualGenerationController
           .read(aiRequestPreviewControllerFamily(context).notifier)
           .verifyPreviewIntegrity(bundle);
       if (!unchanged) return null;
-      final authorization = await consentRepository.read();
-      if (!authorization.enabled) {
-        throw const AiGenerationException(AiReportFailureCode.invalidInput);
-      }
-      final session = await sessionStore.read();
-      if (session == null) {
-        throw const AiGenerationException(
-          AiReportFailureCode.authenticationRequired,
-        );
-      }
-      final capabilities = await gateway.getCapabilities();
-      activeCapabilities = capabilities;
-      _validateCapabilities(capabilities, bundle);
-      final reusable = await reports.findReusableCompleted(
-        reportType: bundle.reportType,
-        periodStartDate: bundle.periodStartDate,
-        periodEndDate: bundle.periodEndDate,
-        promptVersion: bundle.promptVersion,
-        inputHash: bundle.inputHash,
-      );
-      if (reusable != null) {
-        _setIfMounted(
-          AiManualGenerationViewState(
-            phase: AiManualGenerationPhase.success,
-            capabilities: capabilities,
-            reportId: reusable.id,
-          ),
-        );
-        return AiManualGenerationOutcome(
-          reportId: reusable.id,
-          completed: true,
-        );
-      }
-
       _setIfMounted(
         AiManualGenerationViewState(
           phase: AiManualGenerationPhase.submitting,
-          capabilities: capabilities,
+          capabilities: activeCapabilities,
         ),
       );
-      final pending = await reports.createPending(input: bundle);
-      pendingId = pending.id;
-      try {
-        await ref
-            .read(aiGenerationRequestBindingStoreProvider)
-            .save(
-              AiGenerationRequestBinding(
-                localReportId: pending.id,
-                requestId: pending.id,
-                normalizedEndpoint: ref
-                    .read(effectiveServerEndpointProvider)
-                    .baseUrl,
-                cloudUserId: session.user.id,
-                inputHash: bundle.inputHash,
-                reportType: bundle.reportType.databaseValue,
-                promptVersion: bundle.promptVersion,
-                createdAt: ref
-                    .read(dateTimeServiceProvider)
-                    .currentSnapshot()
-                    .utcMilliseconds,
-              ),
-            );
-      } catch (_) {
-        await reports.markFailed(
-          reportId: pending.id,
-          errorCode: AiReportFailureCode.requestBindingFailed.databaseValue,
-        );
-        _setIfMounted(
-          AiManualGenerationViewState(
-            phase: AiManualGenerationPhase.failure,
-            capabilities: activeCapabilities,
-            reportId: pending.id,
-            failureCode: AiReportFailureCode.requestBindingFailed,
-          ),
-        );
-        return AiManualGenerationOutcome(
-          reportId: pending.id,
-          completed: false,
-        );
-      }
-      final remote = await _generate(
-        gateway: gateway,
-        requestId: pending.id,
-        bundle: bundle,
-      );
-      if (remote.status == AiRemoteRequestStatus.processing) {
-        if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
-        _setIfMounted(
-          AiManualGenerationViewState(
-            phase: AiManualGenerationPhase.pendingRecovery,
-            capabilities: capabilities,
-            reportId: pending.id,
-          ),
-        );
-        return AiManualGenerationOutcome(
-          reportId: pending.id,
-          completed: false,
-          awaitingRecovery: true,
-        );
-      }
-      if (remote.status == AiRemoteRequestStatus.outcomeUnknown ||
-          remote.status == AiRemoteRequestStatus.resultExpired) {
-        final code = remote.status == AiRemoteRequestStatus.outcomeUnknown
-            ? AiReportFailureCode.outcomeUnknown
-            : AiReportFailureCode.resultExpired;
-        await reports.markFailed(
-          reportId: pending.id,
-          errorCode: code.databaseValue,
-        );
-        await _deleteBinding(pending.id);
-        _setIfMounted(
-          AiManualGenerationViewState(
-            phase: AiManualGenerationPhase.failure,
-            capabilities: capabilities,
-            reportId: pending.id,
-            failureCode: code,
-          ),
-        );
-        return AiManualGenerationOutcome(
-          reportId: pending.id,
-          completed: false,
-        );
-      }
-      if (remote.status == AiRemoteRequestStatus.failed) {
-        final code = remote.failureCode ?? AiReportFailureCode.requestFailed;
-        throw AiGenerationException(code);
-      }
-      final result = remote.completedResult!;
-      await reports.markCompleted(
-        reportId: pending.id,
-        reportContent: result.reportContent,
-        structuredOutputJson: result.structuredOutputJson,
-        provider: result.provider,
-        model: result.model,
-      );
-      await _deleteBinding(pending.id);
+      final result = await ref
+          .read(aiReportGenerationCoordinatorProvider)
+          .generate(bundle);
       if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
       final stillCurrent = ref.mounted && _isCurrentBundle(bundle);
-      if (stillCurrent) {
-        _setIfMounted(
-          AiManualGenerationViewState(
-            phase: AiManualGenerationPhase.success,
-            capabilities: capabilities,
-            reportId: pending.id,
-          ),
-        );
-      }
-      return stillCurrent
-          ? AiManualGenerationOutcome(reportId: pending.id, completed: true)
-          : null;
-    } on AiGenerationException catch (error) {
-      if (pendingId != null &&
-          error.code == AiReportFailureCode.networkOutcomeUnknown) {
-        if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
+      if (result.awaitingRecovery) {
         _setIfMounted(
           AiManualGenerationViewState(
             phase: AiManualGenerationPhase.pendingRecovery,
-            capabilities: activeCapabilities,
-            reportId: pendingId,
-            failureCode: error.code,
+            capabilities: result.capabilities ?? activeCapabilities,
+            reportId: result.reportId,
+            failureCode: result.failureCode,
           ),
         );
         return AiManualGenerationOutcome(
-          reportId: pendingId,
+          reportId: result.reportId,
           completed: false,
           awaitingRecovery: true,
         );
       }
-      if (pendingId != null) {
-        try {
-          await reports.markFailed(
-            reportId: pendingId,
-            errorCode: error.code.databaseValue,
+      if (result.completed) {
+        if (stillCurrent) {
+          _setIfMounted(
+            AiManualGenerationViewState(
+              phase: AiManualGenerationPhase.success,
+              capabilities: result.capabilities ?? activeCapabilities,
+              reportId: result.reportId,
+            ),
           );
-        } catch (_) {
-          // The original controlled error remains the only UI-visible failure.
         }
-        if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
-        await _deleteBinding(pendingId);
+        return stillCurrent
+            ? AiManualGenerationOutcome(
+                reportId: result.reportId,
+                completed: true,
+              )
+            : null;
       }
       _setIfMounted(
         AiManualGenerationViewState(
           phase: AiManualGenerationPhase.failure,
+          capabilities: result.capabilities ?? activeCapabilities,
+          reportId: result.reportId,
+          failureCode: result.failureCode,
+        ),
+      );
+      return AiManualGenerationOutcome(
+        reportId: result.reportId,
+        completed: false,
+      );
+    } on AiGenerationException catch (error) {
+      _setIfMounted(
+        AiManualGenerationViewState(
+          phase: AiManualGenerationPhase.failure,
           capabilities: activeCapabilities,
-          reportId: pendingId,
           failureCode: error.code,
         ),
       );
-      return pendingId == null
-          ? null
-          : AiManualGenerationOutcome(reportId: pendingId, completed: false);
+      return null;
     } catch (_) {
       const code = AiReportFailureCode.unknown;
-      if (pendingId != null) {
-        try {
-          await reports.markFailed(
-            reportId: pendingId,
-            errorCode: code.databaseValue,
-          );
-        } catch (_) {}
-        if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
-      }
       _setIfMounted(
         AiManualGenerationViewState(
           phase: AiManualGenerationPhase.failure,
           capabilities: activeCapabilities,
-          reportId: pendingId,
           failureCode: code,
         ),
       );
-      return pendingId == null
-          ? null
-          : AiManualGenerationOutcome(reportId: pendingId, completed: false);
+      return null;
     } finally {
       _submissionStarted = false;
     }
@@ -382,10 +219,32 @@ class AiManualGenerationController
         ?.value
         .bundle;
     try {
-      final capabilities = await gateway.getCapabilities();
-      if (capabilities.enabled && bundle != null) {
-        _validateCapabilities(capabilities, bundle);
+      if (bundle != null &&
+          _bundleMatchesContext(bundle) &&
+          _hasGeneratableData(bundle)) {
+        final result = await ref
+            .read(aiReportGenerationCoordinatorProvider)
+            .prepare(bundle);
+        if (result.status ==
+            AiReportGenerationPreflightStatus.reusableCompleted) {
+          return AiManualGenerationViewState(
+            phase: AiManualGenerationPhase.success,
+            capabilities: result.capabilities,
+            reportId: result.reportId,
+          );
+        }
+        if (result.status == AiReportGenerationPreflightStatus.failed) {
+          return AiManualGenerationViewState(
+            phase: AiManualGenerationPhase.failure,
+            failureCode: result.failureCode ?? AiReportFailureCode.unknown,
+          );
+        }
+        return AiManualGenerationViewState(
+          phase: AiManualGenerationPhase.ready,
+          capabilities: result.capabilities,
+        );
       }
+      final capabilities = await gateway.getCapabilities();
       return AiManualGenerationViewState(
         phase: capabilities.enabled
             ? AiManualGenerationPhase.ready
@@ -402,72 +261,6 @@ class AiManualGenerationController
         phase: AiManualGenerationPhase.failure,
         failureCode: error.code,
       );
-    }
-  }
-
-  void _validateCapabilities(
-    AiGenerationCapabilities capabilities,
-    AiCoachInputBundle bundle,
-  ) {
-    if (!capabilities.enabled) {
-      throw const AiGenerationException(AiReportFailureCode.gatewayDisabled);
-    }
-    final contract = capabilities.contractFor(bundle.reportType.databaseValue);
-    if (bundle.reportType == AiReportType.dailyInsight && contract == null) {
-      throw const AiGenerationException(
-        AiReportFailureCode.unsupportedReportType,
-      );
-    }
-    if (capabilities.reportContracts.isNotEmpty) {
-      if (contract == null) {
-        throw const AiGenerationException(
-          AiReportFailureCode.unsupportedReportType,
-        );
-      }
-      final expectedPeriodKind = switch (bundle.reportType) {
-        AiReportType.dailyInsight => AiReportPeriodKind.singleDay,
-        AiReportType.weeklyReport => AiReportPeriodKind.sevenDays,
-        _ => throw const AiGenerationException(
-          AiReportFailureCode.unsupportedReportType,
-        ),
-      };
-      if (contract.periodKind != expectedPeriodKind) {
-        throw const AiGenerationException(AiReportFailureCode.invalidInput);
-      }
-      if (!contract.supportsPrompt(bundle.promptVersion)) {
-        throw const AiGenerationException(
-          AiReportFailureCode.unsupportedPromptVersion,
-        );
-      }
-      if (bundle.selection.scopes.any(
-        (scope) => !contract.supportedScopes.contains(scope.contractValue),
-      )) {
-        throw const AiGenerationException(AiReportFailureCode.unsupportedScope);
-      }
-    } else {
-      if (!capabilities.supportedReportTypes.contains(
-        bundle.reportType.databaseValue,
-      )) {
-        throw const AiGenerationException(
-          AiReportFailureCode.unsupportedReportType,
-        );
-      }
-      if (!capabilities.promptVersions.contains(bundle.promptVersion)) {
-        throw const AiGenerationException(
-          AiReportFailureCode.unsupportedPromptVersion,
-        );
-      }
-    }
-    if ((contract?.inputSchemaVersion ?? capabilities.inputSchemaVersion) !=
-            1 ||
-        (contract?.outputSchemaVersion ?? capabilities.outputSchemaVersion) !=
-            1 ||
-        capabilities.streaming ||
-        capabilities.responseStorageRequested ||
-        !capabilities.durableRequestLedger ||
-        !capabilities.requestStatusRecovery ||
-        capabilities.exactlyOnceGuaranteed) {
-      throw const AiGenerationException(AiReportFailureCode.invalidInput);
     }
   }
 
@@ -495,39 +288,11 @@ class AiManualGenerationController
         bundle.selection.scopes.contains(AiDataScope.growthSummary);
   }
 
-  Future<AiRemoteRequestResult> _generate({
-    required AiGenerationGateway gateway,
-    required String requestId,
-    required AiCoachInputBundle bundle,
-  }) {
-    return switch (bundle.reportType) {
-      AiReportType.dailyInsight => gateway.generateDaily(
-        requestId: requestId,
-        bundle: bundle,
-      ),
-      AiReportType.weeklyReport => gateway.generateWeekly(
-        requestId: requestId,
-        bundle: bundle,
-      ),
-      _ => throw const AiGenerationException(
-        AiReportFailureCode.unsupportedReportType,
-      ),
-    };
-  }
-
   bool _sameScopes(Set<AiDataScope> left, Set<AiDataScope> right) {
     return left.length == right.length && left.containsAll(right);
   }
 
   void _setIfMounted(AiManualGenerationViewState value) {
     if (ref.mounted) state = AsyncData(value);
-  }
-
-  Future<void> _deleteBinding(String reportId) async {
-    try {
-      await ref.read(aiGenerationRequestBindingStoreProvider).delete(reportId);
-    } catch (_) {
-      // A terminal local report is authoritative; stale metadata is harmless.
-    }
   }
 }

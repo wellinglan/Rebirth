@@ -1,5 +1,21 @@
 # AI Coach Request Preview and Local History
 
+## Current Appendix: Sprint 15B Generation Pipeline
+
+Daily and Weekly manual generation now share
+`AiReportGenerationCoordinator`. The presentation controller still verifies
+that the confirmed preview bundle matches the latest preview state before
+submission, but the coordinator owns consent/session checks, capability
+validation, endpoint-scoped reusable completed-report lookup, pending report
+creation, request binding save/delete, remote generation submission, terminal
+local report reconciliation, and pending status recovery.
+
+Pending recovery still calls only the request-status endpoint and never
+resubmits generation. Reusable completed reports created by the consolidated
+pipeline include an endpoint hash in local metadata; older reports without that
+hash remain readable but are not reused as endpoint-confirmed generation output.
+See `docs/51_AI_REPORT_GENERATION_PIPELINE.md`.
+
 ## 1. Sprint 8B 基线与当前范围
 
 Sprint 8B 建立本地 Request Preview 与 History；Sprint 8C/8D 已增加显式每周生成和 pending 状态恢复。Sprint 9A 建立 Daily Insight 合同，Sprint 9B 增加显式 Daily Preview、最终确认、手动生成及混合 History/Detail。Preview 仍不创建 pending、不保存 Input Snapshot，也不发送网络。当前仍没有聊天、流式输出、后台任务或自动生成。

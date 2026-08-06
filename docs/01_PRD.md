@@ -1,5 +1,27 @@
 # 01_PRD.md
 
+## Current Appendix: AI Report Generation Pipeline
+
+The product promise for AI generation is still explicit and user-triggered:
+the user reviews local preview data, grants consent, confirms the request, and
+then receives a local AI Report. Sprint 15B improves the reliability boundary by
+making Daily and Weekly generation share one coordinator rather than separate
+controller decisions.
+
+The user-visible behavior should remain conservative:
+
+- duplicate taps must not create duplicate Provider calls;
+- uncertain network outcomes remain pending and recoverable;
+- recovery checks status only and does not regenerate;
+- account, endpoint, and consent changes never silently write content into the
+  wrong local space;
+- completed local reports may be reused only when the report identity and
+  endpoint identity match.
+
+This is not AI Chat, automatic coaching, report editing, Provider selection, or
+background generation. The manual product Gate remains open until
+`docs/manual_tests/56_ai_report_generation_pipeline.md` is executed.
+
 > Classification: **Partially current product foundation**
 > The Sprint 0 / v0.1.0 metadata below is historical. Product mission and
 > principles remain active, while implemented scope, versions, verification,
