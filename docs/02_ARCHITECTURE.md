@@ -945,3 +945,25 @@ requires endpoint-scoped reuse for new completed reports, and leaves uncertain
 network outcomes pending rather than inventing a result. It does not change
 Provider, Prompt, Server API, Sync Protocol, or automatic sync behavior. See
 `docs/51_AI_REPORT_GENERATION_PIPELINE.md`.
+
+## 26. Prompt Governance and Evaluation Architecture
+
+Sprint 15C keeps runtime and evaluation behind one Server Registry:
+
+```text
+PromptRegistry
+  -> explicit active Prompt -> AiGenerationService -> existing Provider/Ledgers
+  -> all metadata/fingerprints -> read-only maintenance CLI
+  -> synthetic fixtures -> Contract/Grounding/Safety/Coach/Operational Gates
+```
+
+Capabilities reads active definitions only. Generation resolves only the
+explicit active pointer; Ledger replay may resolve any registered historical
+version. Candidate versions are inaccessible to product generation until a
+reviewed code change updates activation and compatible public contracts.
+
+Level 1 and 2 are pure, database-free, network-free evaluation paths. Level 3
+is a separate explicit exception that uses an existing evaluation CloudUser,
+the real Provider adapter, Generation Ledger, Usage Ledger, quota, concurrency,
+case/token bounds, and cost cap. It creates no local AI Report and never runs in
+normal CI. See `docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.

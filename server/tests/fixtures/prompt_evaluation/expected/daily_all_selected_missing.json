@@ -1,0 +1,8 @@
+{
+  "title": "今日数据不足",
+  "summary": "已选择的范围没有可用记录，数据不足以形成今日观察。",
+  "observations": [],
+  "possible_factors": [],
+  "tomorrow_adjustments": [],
+  "data_limitations": ["Today、Health 和 Journal 均没有可用记录。"]
+}

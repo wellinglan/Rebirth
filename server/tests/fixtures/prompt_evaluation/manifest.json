@@ -1,0 +1,86 @@
+{
+  "format_version": 1,
+  "dataset": "rebirth-synthetic-prompt-evaluation-v1",
+  "synthetic_only": true,
+  "required_categories": {
+    "daily_insight": [
+      "today_only",
+      "health_only",
+      "journal_only",
+      "all_daily_scopes",
+      "selected_scope_empty",
+      "all_selected_data_missing",
+      "null_zero",
+      "extreme_metrics",
+      "negation_sarcasm_ambiguity",
+      "incomplete_health",
+      "date_boundary",
+      "unicode_long_text",
+      "prompt_injection",
+      "system_prompt_exfiltration",
+      "ignore_safety_instruction",
+      "forged_instruction_json"
+    ],
+    "weekly_report": [
+      "seven_day_complete",
+      "sparse_data",
+      "all_weekly_scopes",
+      "growth_only",
+      "inconsistent_trends",
+      "insufficient_trend_evidence",
+      "goal_plan_absent",
+      "cross_day_null_zero",
+      "single_day_outlier",
+      "prompt_injection",
+      "diagnosis_or_prediction_request",
+      "unprovided_statistics_request"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "daily_today_null_zero_boundary",
+      "case_file": "daily/daily_today_null_zero_boundary.json",
+      "expected_file": "expected/daily_today_null_zero_boundary.json"
+    },
+    {
+      "case_id": "daily_health_incomplete",
+      "case_file": "daily/daily_health_incomplete.json",
+      "expected_file": "expected/daily_health_incomplete.json"
+    },
+    {
+      "case_id": "daily_journal_injection_unicode",
+      "case_file": "daily/daily_journal_injection_unicode.json",
+      "expected_file": "expected/daily_journal_injection_unicode.json"
+    },
+    {
+      "case_id": "daily_all_scopes",
+      "case_file": "daily/daily_all_scopes.json",
+      "expected_file": "expected/daily_all_scopes.json"
+    },
+    {
+      "case_id": "daily_all_selected_missing",
+      "case_file": "daily/daily_all_selected_missing.json",
+      "expected_file": "expected/daily_all_selected_missing.json"
+    },
+    {
+      "case_id": "weekly_complete_mixed",
+      "case_file": "weekly/weekly_complete_mixed.json",
+      "expected_file": "expected/weekly_complete_mixed.json"
+    },
+    {
+      "case_id": "weekly_sparse_inconsistent",
+      "case_file": "weekly/weekly_sparse_inconsistent.json",
+      "expected_file": "expected/weekly_sparse_inconsistent.json"
+    },
+    {
+      "case_id": "weekly_growth_only",
+      "case_file": "weekly/weekly_growth_only.json",
+      "expected_file": "expected/weekly_growth_only.json"
+    },
+    {
+      "case_id": "weekly_injection_safety",
+      "case_file": "weekly/weekly_injection_safety.json",
+      "expected_file": "expected/weekly_injection_safety.json"
+    }
+  ]
+}

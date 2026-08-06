@@ -18,7 +18,7 @@ from app.ai.errors import (
 )
 from app.ai.ledger import AiRequestLedger
 from app.ai.observability import log_ai_event
-from app.ai.prompts import get_prompt, report_definitions
+from app.ai.prompts import get_generation_prompt, get_prompt, report_definitions
 from app.ai.providers import AiProvider, ProviderPromptPayload, safety_identifier
 from app.ai.usage import AiUsageGuard, AiUsageReservation
 from app.ai.schemas import (
@@ -117,12 +117,27 @@ class AiGenerationService:
     ) -> AiDailyGenerateResponse | AiRequestStatusResponse:
         return await self._generate(request, user_id=user_id, session=session)
 
+    async def evaluate_registered_prompt(
+        self,
+        request: AiGenerateRequest,
+        *,
+        user_id: str,
+        session: Session,
+    ):
+        return await self._generate(
+            request,
+            user_id=user_id,
+            session=session,
+            allow_non_active_prompt=True,
+        )
+
     async def _generate(
         self,
         request: AiGenerateRequest,
         *,
         user_id: str,
         session: Session,
+        allow_non_active_prompt: bool = False,
     ) -> AiGenerateResponse | AiRequestStatusResponse:
         if not self.provider.enabled:
             raise GatewayDisabledError()
@@ -145,7 +160,9 @@ class AiGenerationService:
                 now=now,
             )
 
-        prompt = self._validate_supported_contract(request)
+        prompt = self._validate_supported_contract(
+            request, allow_non_active_prompt=allow_non_active_prompt
+        )
         verified_hash = input_hash(request.payload)
         if verified_hash != request.input_hash:
             raise InputHashMismatchError()
@@ -233,6 +250,7 @@ class AiGenerationService:
                 raise AiGatewayError("response_invalid") from None
             result = prompt.response_model(
                 request_id=request.request_id,
+                prompt_version=prompt.prompt_version,
                 input_hash=verified_hash,
                 provider=generation.provider,
                 model=generation.model,
@@ -352,7 +370,12 @@ class AiGenerationService:
         )
         return self.ledger.status_response(row)
 
-    def _validate_supported_contract(self, request: AiGenerateRequest):
+    def _validate_supported_contract(
+        self,
+        request: AiGenerateRequest,
+        *,
+        allow_non_active_prompt: bool = False,
+    ):
         payload = request.payload
         if payload.schema_version != 1:
             raise UnsupportedContractError("invalid_input")
@@ -367,7 +390,13 @@ class AiGenerationService:
             or payload.report_type != expected_report_type
         ):
             raise UnsupportedContractError("unsupported_report_type")
-        prompt = get_prompt(payload.report_type, payload.prompt_version)
+        prompt = (
+            get_prompt(payload.report_type, payload.prompt_version)
+            if allow_non_active_prompt
+            else get_generation_prompt(
+                payload.report_type, payload.prompt_version
+            )
+        )
         if prompt is None:
             raise UnsupportedContractError("unsupported_prompt_version")
         if any(scope not in prompt.supported_scopes for scope in payload.scopes):

@@ -123,3 +123,18 @@ The operations layer cannot invoke a Provider, expose a public API, accept a
 client user ID, read report content for output, or repair a ledger. The existing
 Server Provider setting remains the only kill switch. See
 `docs/44_AI_OPERATOR_RUNBOOK.md`.
+
+## Prompt Registry Boundary
+
+Sprint 15C replaces the earlier registry-shaped tuple with one validated
+`PromptRegistry`. Daily and Weekly v1 remain the explicit active versions and
+the existing Provider payload, response JSON, Markdown renderer, Capabilities,
+Generation Ledger, and Usage Ledger contracts remain unchanged. Candidate v2
+metadata is Server-only and new Generate requests using it are rejected.
+
+Published Prompt fingerprints audit governed content but are distinct from the
+Canonical Input hash. Full developer instructions are never added to public
+Capabilities, ordinary logs, or maintenance output. Deterministic quality
+evaluation uses only repository-synthetic data; real Provider evaluation is
+opt-in and cost-bounded. See
+`docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.

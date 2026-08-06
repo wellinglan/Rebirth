@@ -117,3 +117,18 @@ operation procedures are in
 ## Remaining Reliability Boundary
 
 The durable Ledger remains an at-most-once ownership mechanism for a retained request ID, not exactly-once. Provider return and the completed database commit are not atomic. A crash in that interval can become `outcome_unknown`; logs and maintenance do not remove this crash gap.
+
+## Sprint 15C Prompt Quality Operations
+
+`app.maintenance.rebirth_ai` now exposes read-only Prompt metadata, static
+validation, deterministic offline evaluation, and active/candidate comparison.
+Normal Quality runs Level 1 and Level 2 plus both comparisons. These commands
+need no database, emit no Prompt or fixture body, do not call a Provider, and
+return non-zero under `--strict` on any Gate failure.
+
+The separately guarded real Provider command requires an opt-in environment
+flag, matching explicit Provider/model, existing evaluation CloudUser, maximum
+case/token bounds, price inputs, and cost cap. It uses existing quota,
+concurrency, request, and usage controls. It is absent from ordinary tests and
+CI and remains NOT EXECUTED without cost authorization. See
+`docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.

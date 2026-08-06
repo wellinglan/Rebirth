@@ -1,0 +1,12 @@
+{
+  "title": "一周成长回顾",
+  "summary": "七天均有记录，科研总计 350 分钟，学习总计 210 分钟；投入与反思资料较完整。",
+  "observations": [
+    {"statement": "科研与学习在不同日期有波动。", "evidence": ["Growth", "Today"]},
+    {"statement": "反思多次提到任务切换与缓冲。", "evidence": ["Journal"]}
+  ],
+  "suggestions": [
+    {"action": "可选地保留一次任务切换缓冲。", "reason": "多条反思都提到切换，可作为下周的小实验。"}
+  ],
+  "data_limitations": ["记录未包含 Goal 或 Plan，无法评价目标进度。"]
+}

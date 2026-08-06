@@ -848,3 +848,16 @@ Provider 请求或 Prompt、AI Ledger、sync/cursor/conflict/remote snapshot、�
 Sprint 15A 只提供明文导出与未来恢复格式基础，不提供 Import、Restore、Merge、
 加密、自动备份或云备份。完整合同见
 `docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md`。
+
+## 25. Prompt Governance and Quality Evaluation
+
+Daily Insight 与 Weekly Report 的系统 Prompt 必须由 Server 唯一 Registry 管理。
+用户不能查看、编辑、选择或激活系统 Prompt；Flutter 只消费 Capabilities 中公开的
+active 合同。Prompt 内容变化必须创建新版本，candidate 在离线质量 Gate、可选的
+真实 Provider 评估和人工评审完成前不能成为 active。
+
+质量 Gate 分开报告 Contract、Grounding、Safety、Coach Quality 与 Operational，
+严重事实虚构、安全失败、注入服从或系统 Prompt 泄漏不能由平均分抵消。普通 CI
+只使用仓库内合成输入和人工编写的合成输出，不调用 Provider、不产生费用，也不把
+Fake Provider 结果描述为真实模型质量。完整合同见
+`docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`。

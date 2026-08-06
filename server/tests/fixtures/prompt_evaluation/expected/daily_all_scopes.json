@@ -1,0 +1,14 @@
+{
+  "title": "今日综合观察",
+  "summary": "当天记录了 60 分钟科研、30 分钟学习、420 分钟睡眠和 20 分钟运动，并完成了部分优先事项。",
+  "observations": [
+    {"statement": "记录同时覆盖了投入、身体状态和反思。", "evidence": ["Today", "Health", "Journal"]}
+  ],
+  "possible_factors": [
+    {"factor": "睡眠、任务切换与注意力感受可能相关。", "caveat": "单日记录不能确定关系或原因。"}
+  ],
+  "tomorrow_adjustments": [
+    {"action": "可以尝试保留一次短暂停顿并继续观察。", "reason": "这是低负担实验，不会改写明日计划。"}
+  ],
+  "data_limitations": ["只有单日数据，不能据此判断稳定模式。"]
+}

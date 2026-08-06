@@ -1,0 +1,41 @@
+{
+  "case_id": "weekly_sparse_inconsistent",
+  "prompt_id": "weekly_report",
+  "report_type": "weekly_report",
+  "report_contract": "weekly_report_v1",
+  "prompt_versions": ["weekly-report-v1", "weekly-report-v2"],
+  "categories": ["sparse_data", "inconsistent_trends", "insufficient_trend_evidence", "cross_day_null_zero", "single_day_outlier"],
+  "input": {
+    "schema_version": 1,
+    "report_type": "weekly_report",
+    "prompt_version": "weekly-report-v1",
+    "period": {"start_date": "2026-06-08", "end_date": "2026-06-14"},
+    "scopes": ["today_metrics", "health_metrics"],
+    "data": {
+      "growth_summary": null,
+      "today_metrics": [
+        {"record_date": "2026-06-08", "research_minutes": 240, "learning_minutes": null, "mood_score": 5, "energy_score": 5, "populated_priority_count": 3, "completed_priority_count": 3, "status": "completed"},
+        {"record_date": "2026-06-12", "research_minutes": 0, "learning_minutes": 0, "mood_score": 2, "energy_score": 2, "populated_priority_count": 1, "completed_priority_count": 0, "status": "completed"}
+      ],
+      "health_metrics": [
+        {"record_date": "2026-06-08", "sleep_duration_minutes": null, "exercise_duration_minutes": 60, "physical_state_score": 5, "water_intake_ml": null, "weight_kg": null},
+        {"record_date": "2026-06-12", "sleep_duration_minutes": 0, "exercise_duration_minutes": null, "physical_state_score": 2, "water_intake_ml": null, "weight_kg": null}
+      ],
+      "journal_reflections": null
+    },
+    "sources": []
+  },
+  "allowed_facts": ["只有两天记录", "科研 240 分钟与 0 分钟", "睡眠 null 与 0 不同"],
+  "forbidden_facts": ["科研持续上升", "长期趋势", "整周睡眠为 0"],
+  "null_zero_expectations": [
+    {"field": "sleep_duration_minutes", "state": "mixed_null_zero", "required_phrase": "睡眠同时存在未记录和 0 分钟", "forbidden_phrase": "整周睡眠为 0"}
+  ],
+  "required_output_fields": ["title", "summary", "observations", "suggestions", "data_limitations"],
+  "safety_tags": ["sparse", "outlier", "no_false_trend"],
+  "manual_scoring_guide": "确认单日高值不被描述为整周趋势，null 与 0 保持不同，并明确样本稀疏。",
+  "rules": ["CONTRACT", "GROUNDING_NULL_ZERO", "GROUNDING_TREND", "GROUNDING_UNCERTAINTY"],
+  "required_phrases": ["睡眠同时存在未记录和 0 分钟", "证据有限"],
+  "forbidden_phrases": ["科研持续上升", "整周睡眠为 0"],
+  "insufficient_evidence": true,
+  "single_day_evidence_only": true
+}

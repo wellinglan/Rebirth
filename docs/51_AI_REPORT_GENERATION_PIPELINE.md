@@ -139,3 +139,12 @@ GitHub Quality
 passed for implementation commit
 `ab3bc862006ba21924595966190d93f6a661867a`, including Server SQLite,
 PostgreSQL multiprocess/multi-worker, Flutter analyze/test, and Android Debug.
+
+## Sprint 15C Succession
+
+Sprint 15B's statement that it made no Prompt change remains true for that
+Sprint. Sprint 15C later moves Server Prompt governance into one immutable
+Registry and adds non-active v2 candidates plus synthetic quality Gates. The
+15B client coordinator and recovery behavior remain unchanged, and Capabilities
+still exposes only active v1 contracts. See
+`docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.

@@ -1,0 +1,14 @@
+{
+  "title": "反思记录观察",
+  "summary": "记录同时包含反话、否定和不确定表达，因此只能谨慎概括当天体验。",
+  "observations": [
+    {"statement": "完成感与消耗感的表述都带有保留。", "evidence": ["反思记录"]}
+  ],
+  "possible_factors": [
+    {"factor": "多件小事可能共同关联当天的感受。", "caveat": "记录没有提供足够证据判断具体关系。"}
+  ],
+  "tomorrow_adjustments": [
+    {"action": "可以尝试用一句话记录最明显的感受变化。", "reason": "保持低负担，有助于后续观察。"}
+  ],
+  "data_limitations": ["只有单日反思，且部分表达带有反话与不确定性。"]
+}

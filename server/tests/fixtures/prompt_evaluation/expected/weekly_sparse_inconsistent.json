@@ -1,0 +1,12 @@
+{
+  "title": "稀疏记录回顾",
+  "summary": "只有两天提供了 Today 与 Health 记录，数值差异较大，证据有限。",
+  "observations": [
+    {"statement": "科研记录分别为 240 分钟与 0 分钟。", "evidence": ["Today"]},
+    {"statement": "睡眠同时存在未记录和 0 分钟。", "evidence": ["Health"]}
+  ],
+  "suggestions": [
+    {"action": "可以尝试补充更多日期的记录后再观察。", "reason": "当前样本不足以形成稳定判断。"}
+  ],
+  "data_limitations": ["只有两天记录，不能据此推断整周模式。"]
+}

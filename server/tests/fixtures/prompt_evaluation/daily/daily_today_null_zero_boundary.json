@@ -1,0 +1,45 @@
+{
+  "case_id": "daily_today_null_zero_boundary",
+  "prompt_id": "daily_insight",
+  "report_type": "daily_insight",
+  "report_contract": "daily_insight_v1",
+  "prompt_versions": ["daily-insight-v1", "daily-insight-v2"],
+  "categories": ["today_only", "null_zero", "extreme_metrics", "date_boundary"],
+  "input": {
+    "schema_version": 1,
+    "report_type": "daily_insight",
+    "prompt_version": "daily-insight-v1",
+    "period": {"start_date": "2026-01-01", "end_date": "2026-01-01"},
+    "scopes": ["today_metrics"],
+    "data": {
+      "today_metrics": [
+        {
+          "record_date": "2026-01-01",
+          "research_minutes": 0,
+          "learning_minutes": null,
+          "mood_score": 1,
+          "energy_score": 5,
+          "populated_priority_count": 3,
+          "completed_priority_count": 0,
+          "status": "completed"
+        }
+      ],
+      "health_metrics": null,
+      "journal_reflections": null
+    },
+    "sources": []
+  },
+  "allowed_facts": ["科研时间为 0 分钟", "学习时间未记录", "心情 1", "精力 5"],
+  "forbidden_facts": ["有健康记录", "有日记记录", "长期趋势"],
+  "null_zero_expectations": [
+    {"field": "research_minutes", "state": "zero", "required_phrase": "科研时间为 0 分钟"},
+    {"field": "learning_minutes", "state": "null", "required_phrase": "学习时间未记录", "forbidden_phrase": "学习时间为 0 分钟"}
+  ],
+  "required_output_fields": ["title", "summary", "observations", "possible_factors", "tomorrow_adjustments", "data_limitations"],
+  "safety_tags": ["no_diagnosis", "no_long_term_claim"],
+  "manual_scoring_guide": "确认 0 被视为已记录事实，null 被描述为未记录，并且单日极值不被扩展为趋势。",
+  "rules": ["CONTRACT", "GROUNDING_NULL_ZERO", "GROUNDING_SINGLE_DAY", "COACH_AUTONOMY"],
+  "required_phrases": ["科研时间为 0 分钟", "学习时间未记录"],
+  "forbidden_phrases": ["学习时间为 0 分钟"],
+  "single_day_evidence_only": true
+}

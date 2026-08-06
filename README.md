@@ -38,7 +38,8 @@ directly. Local SQLite remains the primary working data store.
   boundaries, consent, device state, and a unified manual Sync Center.
 - **AI Coach**: explicit Daily and Weekly generation after account-scoped
   consent, with server-side quotas, operational auditing, and one consolidated
-  client generation coordinator.
+  client generation coordinator. Server-owned immutable Prompt versions and
+  synthetic offline quality Gates govern active and candidate Prompts.
 - **AI Reports**: local persistence, immutable versions, manual cross-device
   sync, conflict recovery, archive lifecycle, one report library, and explicit
   Markdown/JSON export.
@@ -86,6 +87,11 @@ coordinator. The coordinator owns reusable-report lookup, pending report
 creation, request binding, remote generation submission, terminal local writes,
 and status-only pending recovery. There is still no automatic generation,
 automatic retry, prompt change, Provider change, or AI Report sync expansion.
+
+Prompt metadata, explicit active versions, published SHA-256 fingerprints, and
+synthetic quality evaluation are owned only by the Server. Normal CI validates
+the Registry and deterministic outputs without a database, network call, or
+Provider fee. Candidate Prompts are never activated automatically.
 
 Never commit credentials, environment files, access or refresh tokens,
 database passwords, private endpoints, or personal data.

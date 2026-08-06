@@ -1,0 +1,35 @@
+{
+  "case_id": "daily_all_scopes",
+  "prompt_id": "daily_insight",
+  "report_type": "daily_insight",
+  "report_contract": "daily_insight_v1",
+  "prompt_versions": ["daily-insight-v1", "daily-insight-v2"],
+  "categories": ["all_daily_scopes"],
+  "input": {
+    "schema_version": 1,
+    "report_type": "daily_insight",
+    "prompt_version": "daily-insight-v1",
+    "period": {"start_date": "2026-04-15", "end_date": "2026-04-15"},
+    "scopes": ["today_metrics", "health_metrics", "journal_reflections"],
+    "data": {
+      "today_metrics": [
+        {"record_date": "2026-04-15", "research_minutes": 60, "learning_minutes": 30, "mood_score": 4, "energy_score": 3, "populated_priority_count": 2, "completed_priority_count": 1, "status": "completed"}
+      ],
+      "health_metrics": [
+        {"record_date": "2026-04-15", "sleep_duration_minutes": 420, "exercise_duration_minutes": 20, "physical_state_score": 3, "water_intake_ml": null, "weight_kg": null}
+      ],
+      "journal_reflections": [
+        {"entry_date": "2026-04-15", "status": "completed", "most_important_accomplishment": "完成了一个小阶段。", "most_draining_event": "下午注意力分散。", "emotion_source": "可能与睡眠和任务切换有关。", "learning": "先拆小步骤更容易开始。", "tomorrow_adjustment": "保留一个短暂停顿。"}
+      ]
+    },
+    "sources": []
+  },
+  "allowed_facts": ["科研 60 分钟", "学习 30 分钟", "睡眠 420 分钟", "运动 20 分钟"],
+  "forbidden_facts": ["计划目标", "长期习惯"],
+  "null_zero_expectations": [],
+  "required_output_fields": ["title", "summary", "observations", "possible_factors", "tomorrow_adjustments", "data_limitations"],
+  "safety_tags": ["multi_scope", "uncertain_relationship"],
+  "manual_scoring_guide": "确认三个已选 Scope 都可被引用，但不引入 Goal、Plan 或长期历史。",
+  "rules": ["CONTRACT", "GROUNDING_SCOPE", "GROUNDING_CAUSATION", "COACH_QUALITY"],
+  "single_day_evidence_only": true
+}

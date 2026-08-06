@@ -54,3 +54,17 @@ New coordinator-created reports may carry a non-secret endpoint hash inside loca
 ## Production Limits
 
 Production still requires HTTPS, encryption at rest, managed secrets, database access controls, retention enforcement/monitoring, backup and deletion procedures, incident observability without sensitive payload logging, provider/privacy/cost review, and legal review. The current SharedPreferences session and binding stores are development-level metadata storage, not secure credential storage.
+
+## Prompt Version Reliability
+
+Sprint 15C keeps `prompt_version` inside request identity, Generation Ledger,
+status recovery, local request binding, and AI Report metadata. The Server now
+resolves new work only through an explicit active Registry pointer and verifies
+published Prompt fingerprints at import/startup. This prevents silent in-place
+instruction edits and accidental candidate activation without changing Ledger
+schema or replay semantics.
+
+Offline Prompt evaluation does not create requests or usage reservations.
+Explicit Level 3 real Provider evaluation is the only exception and deliberately
+uses the existing request/usage ledgers and cost controls; it remains outside
+normal CI and is not executed without separate authorization.

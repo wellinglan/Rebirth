@@ -268,3 +268,30 @@ incident response, privacy, secret rotation walkthrough, and rollback
 acceptance. Automated evidence may replace only the fault injection rows that
 the matrix explicitly marks as automated. Until execution is recorded, both
 gates remain open.
+
+## 16. Prompt Governance Commands
+
+Run the default offline controls from `server`:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-list --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-validate --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-evaluate --offline --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-compare daily_insight daily-insight-v1 daily-insight-v2 --offline --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-compare weekly_report weekly-report-v1 weekly-report-v2 --offline --strict
+```
+
+These commands are read-only, database-free, network-free, and Provider-free.
+They do not print developer instructions or synthetic source bodies. No command
+can edit or activate a Prompt.
+
+Do not run `prompt-provider-evaluate` without a separate written cost
+authorization and reviewed Provider price inputs. It requires explicit
+Provider/model, an existing dedicated evaluation CloudUser, maximum case and
+token bounds, and a maximum estimated cost. It intentionally writes request and
+usage ledger rows through existing cost controls but creates no AI Report. Keep
+the Provider kill switch and rollback procedure available during such a run.
+
+The Prompt Governance and Quality Evaluation Gate remains open until
+`manual_tests/57_prompt_governance_and_quality_evaluation.md` is executed. A
+Level 2 PASS is evaluator evidence, not proof of real model quality.

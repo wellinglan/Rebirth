@@ -1,0 +1,11 @@
+{
+  "title": "成长摘要回顾",
+  "summary": "Growth 摘要显示科研记录 3 天总计 180 分钟，学习记录 2 天总计 60 分钟。",
+  "observations": [
+    {"statement": "科研记录天数多于学习记录天数。", "evidence": ["Growth"]}
+  ],
+  "suggestions": [
+    {"action": "可选地继续记录投入时间。", "reason": "更多记录有助于后续观察，而不是评价效率。"}
+  ],
+  "data_limitations": ["没有 Today、Health、Journal、Goal 或 Plan 内容，无法评价这些范围。"]
+}

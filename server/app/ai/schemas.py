@@ -6,6 +6,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.ai.prompt_contracts import (
+    DAILY_CANDIDATE_PROMPT_VERSION,
+    DAILY_PROMPT_VERSION,
+    WEEKLY_CANDIDATE_PROMPT_VERSION,
+    WEEKLY_PROMPT_VERSION,
+)
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -331,7 +338,7 @@ class AiUsageResponse(StrictModel):
 class AiWeeklyGenerateResponse(StrictModel):
     request_id: UUID
     report_type: Literal["weekly_report"] = "weekly_report"
-    prompt_version: Literal["weekly-report-v1"] = "weekly-report-v1"
+    prompt_version: Literal[WEEKLY_PROMPT_VERSION] = WEEKLY_PROMPT_VERSION
     input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     provider: str
     model: str
@@ -343,13 +350,25 @@ class AiWeeklyGenerateResponse(StrictModel):
 class AiDailyGenerateResponse(StrictModel):
     request_id: UUID
     report_type: Literal["daily_insight"] = "daily_insight"
-    prompt_version: Literal["daily-insight-v1"] = "daily-insight-v1"
+    prompt_version: Literal[DAILY_PROMPT_VERSION] = DAILY_PROMPT_VERSION
     input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     provider: str
     model: str
     output_schema_version: Literal[1] = 1
     report_content: str = Field(min_length=1)
     structured_output: AiDailyStructuredOutput
+
+
+class AiWeeklyCandidateGenerateResponse(AiWeeklyGenerateResponse):
+    prompt_version: Literal[WEEKLY_CANDIDATE_PROMPT_VERSION] = (
+        WEEKLY_CANDIDATE_PROMPT_VERSION
+    )
+
+
+class AiDailyCandidateGenerateResponse(AiDailyGenerateResponse):
+    prompt_version: Literal[DAILY_CANDIDATE_PROMPT_VERSION] = (
+        DAILY_CANDIDATE_PROMPT_VERSION
+    )
 
 
 AiGenerateResponse = AiWeeklyGenerateResponse | AiDailyGenerateResponse

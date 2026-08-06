@@ -11,6 +11,10 @@ void main() {
       'docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md';
   const personalDataExportMatrixPath =
       'docs/manual_tests/55_full_personal_data_export_and_backup.md';
+  const promptGovernancePath =
+      'docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md';
+  const promptGovernanceMatrixPath =
+      'docs/manual_tests/57_prompt_governance_and_quality_evaluation.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -23,6 +27,8 @@ void main() {
         manualRegistryPath,
         personalDataExportContractPath,
         personalDataExportMatrixPath,
+        promptGovernancePath,
+        promptGovernanceMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -84,6 +90,23 @@ void main() {
     expect(matrix, contains('| NOT EXECUTED |'));
     expect(registry, contains('Full Personal Data Export'));
     expect(registry, contains('49 / 0 / 5'));
+  });
+
+  test('prompt governance docs preserve the open manual and cost Gate', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final contract = File(promptGovernancePath).readAsStringSync();
+    final matrix = File(promptGovernanceMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('Prompt Registry'));
+    expect(contract, contains('daily-insight-v1'));
+    expect(contract, contains('daily-insight-v2'));
+    expect(contract, contains('real Provider evaluation'));
+    expect(contract, contains('NOT EXECUTED'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 38 NOT EXECUTED'));
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(registry, contains('Prompt Governance and Quality Evaluation'));
+    expect(registry, contains('0 / 0 / 38'));
   });
 
   test('baseline and source contain all six manual sync modules', () {

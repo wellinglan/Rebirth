@@ -2,10 +2,10 @@
 
 > Classification: **Active / authoritative**
 > Audited: **2026-08-06**
-> Audited code baseline: `ab3bc862006ba21924595966190d93f6a661867a`
+> Audited code baseline: `38dc8373a4de739a892bc7f7ee9cc44de72a80fe`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
-> Current working Sprint: **15B (complete)**
+> Current working Sprint: **15C (local implementation complete; manual Gate OPEN)**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -135,6 +135,14 @@ Current controls include:
 - server-only config, audit, monitor, consistency, and cleanup commands;
 - allowlisted operational events without prompt or source-body logging.
 
+Sprint 15C adds a single Server-side immutable Prompt Registry for Daily and
+Weekly active/candidate versions. Explicit active pointers remain on v1;
+candidate v2 definitions are not accepted by Generate endpoints. Published
+fingerprints prevent in-place Prompt edits. Nine repository-synthetic cases
+drive deterministic Contract, Grounding, Safety, Coach Quality, and Operational
+Gates. Level 1/2 are offline and required by Quality; real Provider evaluation
+is explicit, cost-bounded, and not executed in this Sprint.
+
 Manual evidence:
 
 - Real Provider and cost safety: 32 PASS / 0 FAIL / 0 NOT EXECUTED;
@@ -157,6 +165,7 @@ configured today.
 | 14E | One canonical report library | No schema/API/protocol change | 31 PASS / 0 FAIL / 0 NOT EXECUTED | Closed |
 | 14F | Explicit Markdown/JSON safe export | No schema/API/protocol change | 37 PASS / 0 FAIL / 1 safe SessionRejected row | Closed with accepted limitation |
 | 15B | Generation pipeline consolidation | No schema/API/protocol change | 35 PASS / 0 FAIL / 7 controlled-fixture rows | Closed with accepted limitations |
+| 15C | Prompt Registry and synthetic quality evaluation | No schema/API/protocol change | 0 PASS / 0 FAIL / 38 NOT EXECUTED | Manual Gate open; real Provider evaluation not authorized |
 
 AI Report export is portability output, not a backup/restore promise. There is
 no import, restore, scheduled export, cloud export, report editing, or

@@ -24,6 +24,12 @@ AI endpoints:
 
 Capabilities expose typed `report_contracts`: Daily uses `daily_insight`, `daily-insight-v1`, one local date, and Today/Health/Journal scopes; Weekly uses `weekly_report`, `weekly-report-v1`, seven local dates, and may also include Growth. Daily rejects Growth and Goals. Selected missing records are `[]`, unselected scopes are absent, and `null` remains distinct from `0`.
 
+The Server Prompt Registry also contains non-runtime Daily and Weekly v2
+candidates. Active pointers remain explicitly fixed to v1. Candidate versions
+are visible only through the Server maintenance CLI and are rejected by normal
+Generate endpoints until a separate reviewed activation change updates the
+contract.
+
 OpenAI requires `OPENAI_API_KEY` and `REBIRTH_AI_MODEL`. Calls use strict structured output, `store=false`, no streaming/tools/background mode, and no automatic SDK retry. `store=false` is not an absolute zero-retention promise. The Server verifies canonical SHA-256 and strips sources/identities before Provider forwarding.
 
 DeepSeek requires `DEEPSEEK_API_KEY` and `REBIRTH_AI_MODEL`. Calls use
@@ -145,11 +151,21 @@ Read-only AI production operations use the existing ledgers:
 .\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai audit --days 7
 .\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai monitor --window-minutes 60
 .\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai ledger-check --days 7
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-list --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-validate --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-evaluate --offline --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-compare daily_insight daily-insight-v1 daily-insight-v2 --offline --strict
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai prompt-compare weekly_report weekly-report-v1 weekly-report-v2 --offline --strict
 ```
 
 The commands expose no HTTP route and do not repair data. The complete deployment,
 kill-switch, incident, privacy, and rollback procedure is in
 `../docs/44_AI_OPERATOR_RUNBOOK.md`.
+
+The Prompt commands above are database-free, network-free, Provider-free, and
+do not print full instructions or fixture bodies. Real Provider evaluation is a
+separate opt-in, cost-bounded command and is never part of normal tests or CI;
+see `../docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.
 
 GitHub Actions runs Server SQLite, PostgreSQL multiprocessing/multi-worker, Flutter analyze/test, and Android debug build jobs. A checked-in workflow is not evidence of a CI PASS until GitHub executes it.
 

@@ -717,3 +717,18 @@ AI Provider 输入与 Ledger、serverVersion、cursor、sync/conflict/tombstone 
 确认当前账号。当前只建立未来恢复可以审计的格式基础，不实现 Import、Restore、
 Merge、加密、自动或云备份，也不得向用户宣称文件已经可恢复。详细约束见
 `docs/50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md`。
+
+# 二十七、Prompt 治理与质量评估边界
+
+Sprint 15C 将 Daily 与 Weekly 的 Prompt 身份、版本、报告契约、Scope、输出
+Schema、安全策略、评估 suite 和规范化 SHA-256 fingerprint 收拢到唯一的
+Server Prompt Registry。active 版本必须显式指定，candidate 不会通过版本排序、
+配置、数据库或 CLI 自动激活；已发布 fingerprint 变化会 fail closed。
+
+当前 Daily/Weekly v1 仍是 active 且生产指令原样保留，v2 仅为 candidate。九个
+完全合成 Case 覆盖缺失、null/0、稀疏趋势、Unicode、Prompt Injection、诊断与
+虚构统计等边界。Level 1/2 完全离线并进入普通 CI；它们验证治理与规则，不证明
+真实模型质量。Level 3 必须另行授权费用、使用现有 Ledger 与额度，并且本 Sprint
+保持 NOT EXECUTED。无新 API、Provider、数据库迁移或 Flutter UI；schemaVersion
+保持 11，API 1，Sync Protocol 2。详见
+`docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`。

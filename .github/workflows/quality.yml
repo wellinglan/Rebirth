@@ -20,6 +20,14 @@ jobs:
           cache: pip
           cache-dependency-path: server/requirements.txt
       - run: python -m pip install -r requirements.txt
+      - run: python -m app.maintenance.rebirth_ai prompt-validate --strict
+      - run: python -m app.maintenance.rebirth_ai prompt-evaluate --offline --strict
+      - run: >-
+          python -m app.maintenance.rebirth_ai prompt-compare
+          daily_insight daily-insight-v1 daily-insight-v2 --offline --strict
+      - run: >-
+          python -m app.maintenance.rebirth_ai prompt-compare
+          weekly_report weekly-report-v1 weekly-report-v2 --offline --strict
       - run: python -m pytest -m "not postgres"
 
   server-postgresql:

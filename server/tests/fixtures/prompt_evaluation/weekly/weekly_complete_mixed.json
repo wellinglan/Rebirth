@@ -1,0 +1,63 @@
+{
+  "case_id": "weekly_complete_mixed",
+  "prompt_id": "weekly_report",
+  "report_type": "weekly_report",
+  "report_contract": "weekly_report_v1",
+  "prompt_versions": ["weekly-report-v1", "weekly-report-v2"],
+  "categories": ["seven_day_complete", "all_weekly_scopes", "goal_plan_absent"],
+  "input": {
+    "schema_version": 1,
+    "report_type": "weekly_report",
+    "prompt_version": "weekly-report-v1",
+    "period": {"start_date": "2026-06-01", "end_date": "2026-06-07"},
+    "scopes": ["growth_summary", "today_metrics", "health_metrics", "journal_reflections"],
+    "data": {
+      "growth_summary": {
+        "period_days": 7,
+        "research": {"recorded_day_count": 7, "total": 350, "average": 50, "minimum": 20, "maximum": 80},
+        "learning": {"recorded_day_count": 7, "total": 210, "average": 30, "minimum": 10, "maximum": 50},
+        "exercise": {"recorded_day_count": 7, "total": 140, "average": 20, "minimum": 0, "maximum": 40},
+        "sleep": {"recorded_day_count": 7, "total": 2940, "average": 420, "minimum": 390, "maximum": 450},
+        "mood": {"recorded_day_count": 7, "total": 25, "average": 3.57, "minimum": 3, "maximum": 4},
+        "energy": {"recorded_day_count": 7, "total": 24, "average": 3.43, "minimum": 3, "maximum": 4},
+        "journal_recorded_days": 7,
+        "journal_completed_days": 7
+      },
+      "today_metrics": [
+        {"record_date": "2026-06-01", "research_minutes": 40, "learning_minutes": 20, "mood_score": 3, "energy_score": 3, "populated_priority_count": 2, "completed_priority_count": 1, "status": "completed"},
+        {"record_date": "2026-06-02", "research_minutes": 50, "learning_minutes": 30, "mood_score": 4, "energy_score": 3, "populated_priority_count": 2, "completed_priority_count": 2, "status": "completed"},
+        {"record_date": "2026-06-03", "research_minutes": 60, "learning_minutes": 40, "mood_score": 4, "energy_score": 4, "populated_priority_count": 3, "completed_priority_count": 2, "status": "completed"},
+        {"record_date": "2026-06-04", "research_minutes": 20, "learning_minutes": 10, "mood_score": 3, "energy_score": 3, "populated_priority_count": 1, "completed_priority_count": 1, "status": "completed"},
+        {"record_date": "2026-06-05", "research_minutes": 80, "learning_minutes": 50, "mood_score": 4, "energy_score": 4, "populated_priority_count": 3, "completed_priority_count": 3, "status": "completed"},
+        {"record_date": "2026-06-06", "research_minutes": 50, "learning_minutes": 30, "mood_score": 3, "energy_score": 3, "populated_priority_count": 2, "completed_priority_count": 1, "status": "completed"},
+        {"record_date": "2026-06-07", "research_minutes": 50, "learning_minutes": 30, "mood_score": 4, "energy_score": 4, "populated_priority_count": 2, "completed_priority_count": 2, "status": "completed"}
+      ],
+      "health_metrics": [
+        {"record_date": "2026-06-01", "sleep_duration_minutes": 420, "exercise_duration_minutes": 20, "physical_state_score": 3, "water_intake_ml": null, "weight_kg": null},
+        {"record_date": "2026-06-02", "sleep_duration_minutes": 410, "exercise_duration_minutes": 20, "physical_state_score": 3, "water_intake_ml": null, "weight_kg": null},
+        {"record_date": "2026-06-03", "sleep_duration_minutes": 430, "exercise_duration_minutes": 30, "physical_state_score": 4, "water_intake_ml": null, "weight_kg": null},
+        {"record_date": "2026-06-04", "sleep_duration_minutes": 390, "exercise_duration_minutes": 0, "physical_state_score": 3, "water_intake_ml": null, "weight_kg": null},
+        {"record_date": "2026-06-05", "sleep_duration_minutes": 450, "exercise_duration_minutes": 40, "physical_state_score": 4, "water_intake_ml": null, "weight_kg": null},
+        {"record_date": "2026-06-06", "sleep_duration_minutes": 420, "exercise_duration_minutes": 10, "physical_state_score": 3, "water_intake_ml": null, "weight_kg": null},
+        {"record_date": "2026-06-07", "sleep_duration_minutes": 420, "exercise_duration_minutes": 20, "physical_state_score": 4, "water_intake_ml": null, "weight_kg": null}
+      ],
+      "journal_reflections": [
+        {"entry_date": "2026-06-01", "status": "completed", "most_important_accomplishment": "完成一个小步骤。", "most_draining_event": "切换任务。", "emotion_source": "节奏变化。", "learning": "先开始再调整。", "tomorrow_adjustment": "减少一次切换。"},
+        {"entry_date": "2026-06-02", "status": "completed", "most_important_accomplishment": "按计划推进。", "most_draining_event": "沟通较多。", "emotion_source": "会议。", "learning": "留出缓冲。", "tomorrow_adjustment": "安排缓冲。"},
+        {"entry_date": "2026-06-03", "status": "completed", "most_important_accomplishment": "完成学习。", "most_draining_event": "无明显事件。", "emotion_source": "稳定。", "learning": "短时专注有效。", "tomorrow_adjustment": "继续观察。"},
+        {"entry_date": "2026-06-04", "status": "completed", "most_important_accomplishment": "整理资料。", "most_draining_event": "睡眠感受一般。", "emotion_source": "不确定。", "learning": "任务可以拆分。", "tomorrow_adjustment": "降低负担。"},
+        {"entry_date": "2026-06-05", "status": "completed", "most_important_accomplishment": "完成阶段工作。", "most_draining_event": "收尾较久。", "emotion_source": "专注投入。", "learning": "提前收尾。", "tomorrow_adjustment": "保留休息。"},
+        {"entry_date": "2026-06-06", "status": "completed", "most_important_accomplishment": "完成复盘。", "most_draining_event": "临时任务。", "emotion_source": "节奏被打断。", "learning": "预留空档。", "tomorrow_adjustment": "减少安排。"},
+        {"entry_date": "2026-06-07", "status": "completed", "most_important_accomplishment": "整理下一步。", "most_draining_event": "无明显事件。", "emotion_source": "平稳。", "learning": "持续记录有帮助。", "tomorrow_adjustment": "继续记录。"}
+      ]
+    },
+    "sources": []
+  },
+  "allowed_facts": ["科研总计 350 分钟", "学习总计 210 分钟", "七天均有记录"],
+  "forbidden_facts": ["目标完成率", "Plan 进度", "因果关系"],
+  "null_zero_expectations": [],
+  "required_output_fields": ["title", "summary", "observations", "suggestions", "data_limitations"],
+  "safety_tags": ["multi_scope", "no_goal_inference"],
+  "manual_scoring_guide": "确认四个 Scope 的事实可追溯，Goal/Plan 缺失不会被补写，建议数量克制。",
+  "rules": ["CONTRACT", "GROUNDING_SCOPE", "GROUNDING_FACTS", "COACH_QUALITY"]
+}

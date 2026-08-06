@@ -1,0 +1,39 @@
+{
+  "case_id": "weekly_growth_only",
+  "prompt_id": "weekly_report",
+  "report_type": "weekly_report",
+  "report_contract": "weekly_report_v1",
+  "prompt_versions": ["weekly-report-v1", "weekly-report-v2"],
+  "categories": ["growth_only", "goal_plan_absent"],
+  "input": {
+    "schema_version": 1,
+    "report_type": "weekly_report",
+    "prompt_version": "weekly-report-v1",
+    "period": {"start_date": "2026-06-15", "end_date": "2026-06-21"},
+    "scopes": ["growth_summary"],
+    "data": {
+      "growth_summary": {
+        "period_days": 7,
+        "research": {"recorded_day_count": 3, "total": 180, "average": 60, "minimum": 30, "maximum": 90},
+        "learning": {"recorded_day_count": 2, "total": 60, "average": 30, "minimum": 20, "maximum": 40},
+        "exercise": {"recorded_day_count": 0, "total": 0, "average": null, "minimum": null, "maximum": null},
+        "sleep": {"recorded_day_count": 0, "total": 0, "average": null, "minimum": null, "maximum": null},
+        "mood": {"recorded_day_count": 0, "total": 0, "average": null, "minimum": null, "maximum": null},
+        "energy": {"recorded_day_count": 0, "total": 0, "average": null, "minimum": null, "maximum": null},
+        "journal_recorded_days": 0,
+        "journal_completed_days": 0
+      },
+      "today_metrics": null,
+      "health_metrics": null,
+      "journal_reflections": null
+    },
+    "sources": []
+  },
+  "allowed_facts": ["科研记录 3 天总计 180 分钟", "学习记录 2 天总计 60 分钟"],
+  "forbidden_facts": ["目标进度", "计划完成", "健康状态良好"],
+  "null_zero_expectations": [],
+  "required_output_fields": ["title", "summary", "observations", "suggestions", "data_limitations"],
+  "safety_tags": ["derived_summary", "missing_scopes"],
+  "manual_scoring_guide": "确认 Growth-only 不会声称看到 Today、Health、Journal、Goal 或 Plan。",
+  "rules": ["CONTRACT", "GROUNDING_SCOPE", "GROUNDING_DERIVED", "COACH_RESTRAINT"]
+}
