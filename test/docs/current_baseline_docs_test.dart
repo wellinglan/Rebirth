@@ -69,7 +69,7 @@ void main() {
     expect(baseline, contains('| Sync Protocol Version | `2` |'));
   });
 
-  test('personal data export docs preserve the backup-only open Gate', () {
+  test('personal data export docs preserve the accepted backup-only Gate', () {
     final baseline = File(baselinePath).readAsStringSync();
     final contract = File(personalDataExportContractPath).readAsStringSync();
     final matrix = File(personalDataExportMatrixPath).readAsStringSync();
@@ -79,10 +79,11 @@ void main() {
     expect(contract, contains('restore_supported'));
     expect(contract, contains('plaintext'));
     expect(contract, contains('does not implement import or restore'));
-    expect(matrix, contains('0 PASS / 0 FAIL / 54 NOT EXECUTED'));
-    expect(matrix, isNot(contains('| PASS |')));
+    expect(matrix, contains('49 PASS / 0 FAIL / 5 NOT EXECUTED'));
+    expect(matrix, contains('| PASS |'));
+    expect(matrix, contains('| NOT EXECUTED |'));
     expect(registry, contains('Full Personal Data Export'));
-    expect(registry, contains('0 / 0 / 54'));
+    expect(registry, contains('49 / 0 / 5'));
   });
 
   test('baseline and source contain all six manual sync modules', () {

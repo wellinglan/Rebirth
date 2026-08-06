@@ -78,7 +78,7 @@ deferred, or unsupported now.
 - [AI Report Lifecycle](47_AI_REPORT_LIFECYCLE.md) - Active
 - [AI Report Library](48_AI_REPORT_LIBRARY.md) - Active
 - [AI Report Safe Export](49_AI_REPORT_SAFE_EXPORT.md) - Active
-- [Full Personal Data Export and Backup](50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md) - Active implementation; manual Gate OPEN
+- [Full Personal Data Export and Backup](50_FULL_PERSONAL_DATA_EXPORT_AND_BACKUP.md) - Active; manual Gate closed with accepted limitations
 
 ## Historical Sprint Records
 

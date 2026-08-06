@@ -54,7 +54,7 @@ that a separate module-only matrix was rerun.
 | AI Report Lifecycle | CLOSED | [AI Report Lifecycle](52_ai_report_lifecycle_conflict_readiness.md) | 25 / 0 / 0 | Archive, delete conflict, both resolutions, privacy, and account scope accepted |
 | AI Report Library | CLOSED | [AI Report Library](53_ai_report_library_consolidation.md) | 31 / 0 / 0 | One canonical list/detail entry and lifecycle/sync regression accepted |
 | AI Report Export | CLOSED WITH ACCEPTED LIMITATION | [AI Report Safe Export](54_ai_report_safe_export.md) | 37 / 0 / 1 | SessionRejected injection was unavailable; export has no import/restore promise |
-| Full Personal Data Export | OPEN | [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) | 0 / 0 / 54 | Local implementation and automation do not replace Windows/Android execution; plaintext export has no import/restore promise |
+| Full Personal Data Export | CLOSED WITH ACCEPTED LIMITATIONS | [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) | 49 / 0 / 5 | Windows/Android applicable rows passed; five safe failure/timing injection fixtures remain unavailable; plaintext export has no import/restore promise |
 
 ## Important Succession Rules
 
@@ -96,7 +96,7 @@ that a separate module-only matrix was rerun.
 - [Growth System Foundation](37_growth_system_foundation.md) - Current
 - [Journal Prompt System](38_journal_prompt_system.md) - Current
 - [Settings and Sync Center](39_settings_information_architecture_and_sync_center.md) - Current unified authority
-- [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) - Current OPEN Gate
+- [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) - Current Gate closed with accepted limitations
 
 ### Authentication and Identity
 

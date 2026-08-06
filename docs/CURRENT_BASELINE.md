@@ -71,7 +71,7 @@ Drift or server implementation classes.
 | Health | Sensitive local health records | Yes | Explicit shared conflict recovery | Health rows passed in the 113-row unified matrix; the older dedicated matrix is historical |
 | Growth | Read-only local projections | No | Not a sync aggregate | 71 PASS / 0 FAIL / 6 safe fault-injection rows NOT EXECUTED |
 | Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
-| Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Implemented and automated locally; manual Gate OPEN at 0 PASS / 0 FAIL / 54 NOT EXECUTED |
+| Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |
 | Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
 | AI Report | Persistent immutable versions, archive, library, export | Yes | Explicit AI Report conflict recovery | Sprint 14B-14F evidence summarized below |
 
@@ -179,7 +179,9 @@ The file is plaintext UTF-8 JSON and may contain Journal, Health, and AI Report
 bodies. It is local-only, user-triggered, account-scoped, and non-mutating. It
 does not call the Server, AI, or sync. It does not provide import, restore,
 merge, encryption, scheduled backup, or cloud backup. The 54-row Windows and
-Android matrix is entirely NOT EXECUTED, so the feature Gate remains OPEN.
+Android matrix records 49 PASS / 0 FAIL / 5 NOT EXECUTED. The five unavailable
+failure/timing injection rows have explicit reasons, so the feature Gate is
+closed with accepted limitations.
 
 ## Server Baseline
 

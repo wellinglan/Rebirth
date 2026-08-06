@@ -1,6 +1,6 @@
 # Full Personal Data Export and Backup Foundation
 
-> Status: **Implemented locally / manual Gate OPEN**  
+> Status: **Implemented / manual Gate CLOSED WITH ACCEPTED LIMITATIONS**
 > Sprint: **15A**  
 > Source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`  
 > Flutter schemaVersion: `11`  
@@ -217,7 +217,9 @@ rejection, non-mutation, cancellation, storage failure/retry, account changes,
 shared platform adapters, responsive UI, keyboard interaction, and architecture
 boundaries.
 
-The manual Gate is still **OPEN**. Windows and Android execution is recorded in
+The manual Gate is **CLOSED WITH ACCEPTED LIMITATIONS** at 49 PASS / 0 FAIL /
+5 NOT EXECUTED. Windows and Android execution, including the post-fix Android
+historical Journal export, is recorded in
 [Full Personal Data Export and Backup manual matrix](manual_tests/55_full_personal_data_export_and_backup.md).
-All 54 rows start as `NOT EXECUTED`; automated tests do not convert them to
-manual PASS.
+The five unavailable failure/timing injection scenarios remain honestly
+`NOT EXECUTED`; automated tests support but do not replace them.
