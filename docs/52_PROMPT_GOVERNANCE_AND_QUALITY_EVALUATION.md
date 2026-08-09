@@ -97,7 +97,8 @@ source. No public endpoint returns developer instructions or the full Registry.
 ## 6. Synthetic Dataset
 
 The committed dataset lives under
-`server/tests/fixtures/prompt_evaluation/`. It contains nine synthetic cases:
+`server/app/ai/evaluation_fixtures/`. It is packaged with the Server runtime
+and contains nine synthetic cases:
 five Daily and four Weekly. Active and candidate versions are evaluated against
 the same report-contract cases, producing eighteen deterministic results.
 

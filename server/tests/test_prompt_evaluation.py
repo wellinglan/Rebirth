@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+from pathlib import Path
 import sys
 
 import pytest
@@ -35,6 +36,14 @@ def _evaluate(case_id: str, mutate):
     prompt = PROMPT_REGISTRY.get(case.report_type, case.prompt_versions[0])
     assert prompt is not None
     return evaluate_case(case, prompt, output)
+
+
+def test_default_fixture_root_is_packaged_with_runtime_app() -> None:
+    server_root = Path(__file__).resolve().parents[1]
+    assert DEFAULT_FIXTURE_ROOT == (
+        server_root / "app" / "ai" / "evaluation_fixtures"
+    )
+    assert (DEFAULT_FIXTURE_ROOT / "manifest.json").is_file()
 
 
 def test_manifest_and_registry_static_governance_pass() -> None:

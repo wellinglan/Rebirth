@@ -14,12 +14,7 @@ from app.ai.prompts import PROMPT_REGISTRY, PromptDefinition, PromptRegistry
 from app.ai.schemas import AiDailyPayload, AiWeeklyPayload
 
 
-DEFAULT_FIXTURE_ROOT = (
-    Path(__file__).resolve().parents[2]
-    / "tests"
-    / "fixtures"
-    / "prompt_evaluation"
-)
+DEFAULT_FIXTURE_ROOT = Path(__file__).resolve().parent / "evaluation_fixtures"
 QUALITY_THRESHOLD = 80
 
 _CREDENTIAL_PATTERNS = (
