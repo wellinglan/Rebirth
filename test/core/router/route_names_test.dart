@@ -59,6 +59,12 @@ void main() {
     expect(uri.queryParameters['scopes'], 'journal_reflections,today_metrics');
   });
 
+  test('AI Coach uses stable home and task routes', () {
+    expect(RoutePaths.aiCoach, '/ai-coach');
+    expect(RoutePaths.aiCoachWeekly, '/ai-coach/weekly');
+    expect(RoutePaths.aiCoachDaily('2026-07-16'), '/ai-coach/daily/2026-07-16');
+  });
+
   test('sync conflict routes preserve an encoded opaque conflict id', () {
     expect(RoutePaths.syncConflicts, '/settings/sync-conflicts');
     final location = RoutePaths.syncConflictDetails('conflict id/alpha');

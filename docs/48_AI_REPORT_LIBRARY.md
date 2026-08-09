@@ -78,3 +78,11 @@ Sprint 14F builds explicit local export on this canonical library. It adds one
 single-report Markdown action and one complete active-account JSON action;
 neither action changes lifecycle, versions, sync, conflicts, or AI generation.
 See `docs/49_AI_REPORT_SAFE_EXPORT.md`.
+
+## Sprint 16A Coach Entry
+
+The AI Coach home renders at most three privacy-safe recent rows from the same
+`AiReportHistoryController`. `查看全部` opens `/ai-reports`; task reuse and
+generation success open `/ai-reports/:reportId`. No second list, repository,
+controller, detail, lifecycle action, or report-body preview is introduced.
+Settings is no longer a primary report-library entry.

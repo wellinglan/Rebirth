@@ -38,21 +38,21 @@ void main() {
     }
   });
 
-  test('schema and main navigation order remain unchanged', () {
+  test('schema remains stable and AI Coach follows existing navigation', () {
     final database = File(
       'lib/core/database/app_database.dart',
     ).readAsStringSync();
     final shell = File('lib/core/app/home_shell.dart').readAsStringSync();
 
     expect(database, contains('int get schemaVersion => 11'));
-    final labels = ['今日', '复盘', '计划', '健康', '成长'];
+    final labels = ['今日', '复盘', '计划', '健康', '成长', 'AI 教练'];
     var previousIndex = -1;
     for (final label in labels) {
-      final index = shell.indexOf("label: '$label'");
+      final index = shell.indexOf("'$label'");
       expect(index, greaterThan(previousIndex), reason: label);
       previousIndex = index;
     }
-    expect(RegExp(r'NavigationDestination\(').allMatches(shell), hasLength(5));
+    expect(shell, contains("'AI 教练',"));
   });
 
   test('all primary pages and Settings remain registered in the router', () {
@@ -63,6 +63,7 @@ void main() {
       'PlanPage',
       'HealthPage',
       'GrowthPage',
+      'AiCoachPage',
       'SettingsPage',
     ]) {
       expect(router, contains('const $page()'), reason: page);

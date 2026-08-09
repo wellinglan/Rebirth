@@ -41,11 +41,11 @@ class AiGenerationSection extends ConsumerWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
               SizedBox(width: 12),
-              Expanded(child: Text('正在读取服务器 AI 能力...')),
+              Expanded(child: Text('正在检查 AI 服务...')),
             ],
           ),
           error: (error, stackTrace) => _RetryMessage(
-            message: '暂时无法读取服务器 AI 能力。',
+            message: '暂时无法确认 AI 服务状态。',
             onRetry: () => ref
                 .read(
                   aiManualGenerationControllerFamily(requestContext).notifier,
@@ -85,7 +85,7 @@ class AiGenerationSection extends ConsumerWidget {
               .reloadCapabilities(),
         );
       case AiManualGenerationPhase.disabled:
-        return const Text('当前服务器未启用 AI 生成，本地预览仍可使用。');
+        return const Text('AI 服务当前暂不可用。已有报告仍可查看。');
       case AiManualGenerationPhase.submitting:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,13 +105,13 @@ class AiGenerationSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('网络响应中断或服务器仍在处理，请到本地报告中检查服务器状态。'),
+            const Text('上次生成仍在处理中。你可以离开页面，稍后继续检查结果。'),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               key: const ValueKey('openPendingAiReportsButton'),
               onPressed: () => context.push(RoutePaths.aiReports),
               icon: const Icon(Icons.history),
-              label: const Text('打开 AI 报告库'),
+              label: const Text('继续检查结果'),
             ),
           ],
         );
@@ -162,14 +162,14 @@ class AiGenerationSection extends ConsumerWidget {
               ? null
               : () => context.push(RoutePaths.aiReportsDetail(reportId)),
           icon: const Icon(Icons.open_in_new),
-          label: const Text('查看已生成报告'),
+          label: const Text('查看报告'),
         );
       case AiManualGenerationPhase.ready:
         final capabilities = state.capabilities!;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('${capabilities.providerLabel} · ${capabilities.model}'),
+            Text('将使用：${capabilities.providerLabel} · ${capabilities.model}'),
             const SizedBox(height: 12),
             FilledButton.icon(
               key: _generateButtonKey,
@@ -212,12 +212,12 @@ class AiGenerationSection extends ConsumerWidget {
     } else if (outcome.awaitingRecovery) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请求结果待确认，请在本地报告中检查服务器状态。')));
+      ).showSnackBar(const SnackBar(content: Text('上次生成仍在处理中，可稍后继续检查结果。')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${requestContext.isDaily ? '每日洞察' : '每周回顾'}生成失败，已保存受控失败记录。',
+            '${requestContext.isDaily ? '今日洞察' : '每周回顾'}暂时未能完成，已有内容不受影响。',
           ),
         ),
       );
@@ -226,25 +226,24 @@ class AiGenerationSection extends ConsumerWidget {
 
   String _failureMessage(AiReportFailureCode? code) => switch (code) {
     AiReportFailureCode.authenticationRequired => '请先登录 Rebirth 云账号。',
-    AiReportFailureCode.aiDisabled => '当前服务器已关闭 AI 生成功能。',
-    AiReportFailureCode.gatewayDisabled => '当前服务器未启用 AI 生成。',
-    AiReportFailureCode.usageLimitReached => '今日 AI 使用额度或当前并发额度已用完，请稍后再试。',
-    AiReportFailureCode.providerTimeout => '生成请求超时；为避免重复费用，系统不会自动重试。',
-    AiReportFailureCode.providerRateLimited => 'AI Provider 当前请求较多，请稍后手动重试。',
-    AiReportFailureCode.providerRefused => 'AI Provider 拒绝了本次生成请求。',
-    AiReportFailureCode.providerAuthenticationFailed =>
-      '服务器暂时无法认证 AI Provider。',
-    AiReportFailureCode.providerAuthFailed => '服务器暂时无法认证 AI Provider。',
-    AiReportFailureCode.responseInvalid => 'AI Provider 返回内容未通过结构校验。',
-    AiReportFailureCode.outcomeUnknown => '无法确定 Provider 是否产生过结果或费用；不会自动重试。',
+    AiReportFailureCode.aiDisabled => 'AI 服务当前暂不可用。',
+    AiReportFailureCode.gatewayDisabled => 'AI 服务当前暂不可用。',
+    AiReportFailureCode.usageLimitReached => '今天的 AI 次数已用完，请在额度恢复后再试。',
+    AiReportFailureCode.providerTimeout => '本次生成等待超时。为避免重复费用，系统不会自动重试。',
+    AiReportFailureCode.providerRateLimited => 'AI 服务当前请求较多，请稍后手动重试。',
+    AiReportFailureCode.providerRefused => 'AI 服务未能完成本次生成。',
+    AiReportFailureCode.providerAuthenticationFailed => 'AI 服务暂时无法完成身份确认。',
+    AiReportFailureCode.providerAuthFailed => 'AI 服务暂时无法完成身份确认。',
+    AiReportFailureCode.responseInvalid => 'AI 返回的内容暂时无法使用。',
+    AiReportFailureCode.outcomeUnknown => '上次请求结果暂时无法确认，也可能已经产生费用；系统不会自动重试。',
     AiReportFailureCode.resultExpired => '服务器临时结果已过保留期，无法恢复正文。',
-    AiReportFailureCode.requestBindingFailed => '无法保存恢复信息，未向服务器发送生成请求。',
-    AiReportFailureCode.networkOutcomeUnknown => '网络中断，请检查服务器状态。',
-    AiReportFailureCode.unsupportedPromptVersion => '服务器不支持当前 Prompt Version。',
-    AiReportFailureCode.unsupportedReportType => '服务器不支持当前报告类型。',
-    AiReportFailureCode.unsupportedScope => '服务器不支持当前数据范围。',
-    AiReportFailureCode.inputHashMismatch => '服务器校验输入 Hash 失败。',
-    _ => '${requestContext.isDaily ? '每日洞察' : '每周回顾'}暂时无法生成，请检查服务器后手动重试。',
+    AiReportFailureCode.requestBindingFailed => '未能安全保存恢复信息，本次请求尚未提交。',
+    AiReportFailureCode.networkOutcomeUnknown => '网络中断，上次请求结果暂时无法确认。',
+    AiReportFailureCode.unsupportedPromptVersion => '当前版本暂不支持本次生成。',
+    AiReportFailureCode.unsupportedReportType => '当前版本暂不支持这类报告。',
+    AiReportFailureCode.unsupportedScope => '当前版本暂不支持所选数据。',
+    AiReportFailureCode.inputHashMismatch => '所选数据已变化，请重新检查本次使用的数据。',
+    _ => '${requestContext.isDaily ? '今日洞察' : '每周回顾'}暂时无法生成，请稍后手动重试。',
   };
 
   bool _canRetry(AiReportFailureCode? code) =>

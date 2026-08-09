@@ -16,7 +16,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.d
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
-import 'package:rebirth/features/ai_coach/presentation/ai_coach_page.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_weekly_report_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
 import 'package:rebirth/features/ai_reports/presentation/ai_report_library_page.dart';
 import 'package:rebirth/features/settings/presentation/ai_consent_settings_page.dart';
@@ -39,9 +39,8 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('aiConsentGate')), findsOneWidget);
-    expect(find.text('AI 数据使用尚未启用'), findsOneWidget);
-    expect(find.textContaining('当前不会准备任何 AI 输入'), findsOneWidget);
-    expect(find.textContaining('只有最终确认后'), findsOneWidget);
+    expect(find.textContaining('使用 AI 教练前'), findsOneWidget);
+    expect(find.textContaining('最终确认生成前'), findsOneWidget);
     expect(assembler.buildCalls, 0);
     expect(consent.grantCalls, 0);
   });
@@ -57,7 +56,7 @@ void main() {
         routes: [
           GoRoute(
             path: RoutePaths.aiCoach,
-            builder: (context, state) => const AiCoachPage(),
+            builder: (context, state) => const AiWeeklyReportPage(),
           ),
           GoRoute(
             path: RoutePaths.settingsAiConsent,
@@ -112,7 +111,7 @@ void main() {
       routes: [
         GoRoute(
           path: RoutePaths.aiCoach,
-          builder: (context, state) => const AiCoachPage(),
+          builder: (context, state) => const AiWeeklyReportPage(),
         ),
         GoRoute(
           path: RoutePaths.settingsAiConsent,
@@ -156,7 +155,7 @@ void main() {
       find.byKey(const ValueKey('buildAiPreviewButton')),
     );
     expect(buildButton.onPressed, isNull);
-    expect(find.text('请至少选择一个数据范围。'), findsOneWidget);
+    expect(find.text('请至少选择一种数据。'), findsOneWidget);
     expect(find.text('成长趋势汇总'), findsOneWidget);
     expect(find.text('Journal 复盘内容'), findsOneWidget);
     final growthSemantics = tester.widget<Semantics>(
@@ -244,7 +243,7 @@ void main() {
         routes: [
           GoRoute(
             path: '/ai-coach',
-            builder: (context, state) => const AiCoachPage(),
+            builder: (context, state) => const AiWeeklyReportPage(),
           ),
           GoRoute(
             path: '${RoutePaths.aiReports}/:reportId',
@@ -294,7 +293,16 @@ void main() {
         find.byKey(const ValueKey('aiRequestPreviewLiveRegion')),
       );
       expect(liveRegion.properties.liveRegion, isTrue);
+      expect(find.text('12345678…87654321'), findsNothing);
+      expect(find.text('Prompt Version'), findsNothing);
+      expect(find.text('Input Hash'), findsNothing);
+      await _tapAfterScrolling(
+        tester,
+        find.byKey(const ValueKey('aiPreviewTechnicalDetails')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('12345678…87654321'), findsOneWidget);
+      expect(find.text('提示模板版本'), findsOneWidget);
       expect(find.text('Daily Note 未包含；Priority 文本未包含。'), findsOneWidget);
       expect(find.text('Health Note 未包含；外部来源标识未包含。'), findsOneWidget);
       expect(find.text('一段私人经历'), findsOneWidget);
@@ -315,7 +323,7 @@ void main() {
     },
   );
 
-  testWidgets('local reports tab is only an entry to the canonical library', (
+  testWidgets('weekly flow has no local-report tab or duplicate report list', (
     tester,
   ) async {
     final reports = FakeAiReportRepository(
@@ -328,57 +336,9 @@ void main() {
       reports: reports,
     );
 
-    await tester.tap(find.widgetWithText(Tab, '本地报告'));
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('aiReportLibraryEntryTab')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('openAiReportLibraryFromCoachButton')),
-      findsOneWidget,
-    );
+    expect(find.byType(Tab), findsNothing);
     expect(find.byKey(const ValueKey('aiReportLibraryList')), findsNothing);
-    expect(reports.listCalls, 0);
-  });
-
-  testWidgets('local reports entry navigates to the canonical library', (
-    tester,
-  ) async {
-    final reports = FakeAiReportRepository(
-      reports: [buildAiReport(id: 'weekly')],
-    );
-    final router = GoRouter(
-      initialLocation: RoutePaths.aiCoach,
-      routes: [
-        GoRoute(
-          path: RoutePaths.aiCoach,
-          builder: (_, _) => const AiCoachPage(),
-        ),
-        GoRoute(
-          path: RoutePaths.aiReports,
-          builder: (_, _) => const AiReportLibraryPage(),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-    await _pumpAiCoach(
-      tester,
-      consent: _enabledConsent(),
-      assembler: FakeAiCoachInputAssembler(),
-      reports: reports,
-      router: router,
-    );
-    await tester.tap(find.widgetWithText(Tab, '本地报告'));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey('openAiReportLibraryFromCoachButton')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('aiReportLibraryPage')), findsOneWidget);
-    expect(find.text('AI 报告库'), findsOneWidget);
-    expect(reports.listCalls, 1);
+    expect(find.byKey(const ValueKey('aiWeeklyReportPage')), findsOneWidget);
   });
 
   testWidgets(
@@ -638,7 +598,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('当前服务器未启用 AI 生成'), findsOneWidget);
+    expect(find.textContaining('AI 服务当前暂不可用'), findsOneWidget);
     expect(gateway.generationCalls, 0);
   });
 
@@ -669,7 +629,7 @@ void main() {
 
     expect(assembler.bundle.sources, isEmpty);
     expect(find.byKey(const ValueKey('aiRequestPreview')), findsOneWidget);
-    expect(find.textContaining('生成请求超时'), findsOneWidget);
+    expect(find.textContaining('本次生成等待超时'), findsOneWidget);
     expect(find.textContaining('不会自动重试'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('retryAiGenerationButton')),
@@ -695,7 +655,7 @@ void main() {
         routes: [
           GoRoute(
             path: RoutePaths.aiCoach,
-            builder: (context, state) => const AiCoachPage(),
+            builder: (context, state) => const AiWeeklyReportPage(),
           ),
           GoRoute(
             path: '${RoutePaths.aiReports}/:reportId',
@@ -757,7 +717,7 @@ void main() {
         routes: [
           GoRoute(
             path: RoutePaths.aiCoach,
-            builder: (_, _) => const AiCoachPage(),
+            builder: (_, _) => const AiWeeklyReportPage(),
           ),
           GoRoute(
             path: RoutePaths.aiReports,
@@ -786,7 +746,7 @@ void main() {
       await _submitWeeklyGeneration(tester);
 
       expect(find.byKey(const ValueKey('aiRequestPreview')), findsOneWidget);
-      expect(find.textContaining('网络响应中断或服务器仍在处理'), findsOneWidget);
+      expect(find.textContaining('上次生成仍在处理中'), findsWidgets);
       expect(reports.reports.single.status, AiReportStatus.pending);
       expect(gateway.generationCalls, 1);
 
@@ -934,7 +894,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('AI 使用额度'), findsOneWidget);
+    expect(find.textContaining('今天的 AI 次数已用完'), findsOneWidget);
     expect(gateway.generationCalls, 0);
     expect(tester.takeException(), isNull);
   });
@@ -952,15 +912,16 @@ void main() {
           reports: FakeAiReportRepository(),
           textScale: 2,
         );
-        expect(find.byKey(const ValueKey('aiCoachPage')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('aiWeeklyReportPage')),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull, reason: 'width $width');
       }
     },
   );
 
-  testWidgets('canonical library entry fits a narrow local reports tab', (
-    tester,
-  ) async {
+  testWidgets('weekly flow fits a narrow high-text viewport', (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.binding.setSurfaceSize(const Size(320, 720));
     await _pumpAiCoach(
@@ -970,13 +931,8 @@ void main() {
       reports: FakeAiReportRepository(),
       textScale: 2,
     );
-    await tester.tap(find.widgetWithText(Tab, '本地报告'));
-    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(
-      find.byKey(const ValueKey('openAiReportLibraryFromCoachButton')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('aiWeeklyReportPage')), findsOneWidget);
   });
 
   testWidgets('not found requires confirmation before marking pending failed', (
@@ -1070,7 +1026,10 @@ Future<void> _pumpAiCoach(
   FakeAiGenerationRequestBindingStore? bindings,
 }) async {
   final child = router == null
-      ? MaterialApp(home: const AiCoachPage(), builder: _scaled(textScale))
+      ? MaterialApp(
+          home: const AiWeeklyReportPage(),
+          builder: _scaled(textScale),
+        )
       : MaterialApp.router(routerConfig: router, builder: _scaled(textScale));
   await tester.pumpWidget(
     ProviderScope(

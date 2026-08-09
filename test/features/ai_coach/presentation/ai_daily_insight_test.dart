@@ -312,9 +312,9 @@ void main() {
         find.byKey(const ValueKey('dailyInsightNoSources')),
         findsOneWidget,
       );
-      expect(find.text('返回 Today'), findsOneWidget);
-      expect(find.text('返回 Health'), findsOneWidget);
-      expect(find.text('返回 Journal'), findsOneWidget);
+      expect(find.text('去记录今天'), findsOneWidget);
+      expect(find.text('补充健康记录'), findsOneWidget);
+      expect(find.text('写今日复盘'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('generateDailyInsightButton')),
         findsNothing,

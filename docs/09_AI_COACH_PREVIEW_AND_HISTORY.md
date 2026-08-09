@@ -132,3 +132,15 @@ Windows 与 Android 共用独立路由和返回行为。Android debug APK 构建
 Daily Detail 的 Today 和 Journal 来源按钮携带报告的单日日期，分别进入 `/today/history?date=YYYY-MM-DD` 和 `/journal?date=YYYY-MM-DD`。目标页面使用 `DateTimeService` 验证日期，通过已有 Repository 合同读取保存后的来源记录，并仅在 `recordDate` 或 `entryDate` 完全匹配时自动打开现有只读 Dialog。
 
 一个页面实例只处理目标日期一次，Widget rebuild 不会重复弹出 Dialog。无效日期或查无记录时页面保留并显示明确提示，不回退到今天、不创建记录、不修改来源数据。Weekly Detail 不显示这些 Daily 来源按钮。
+
+## 13. Sprint 16A Task-oriented Succession
+
+`/ai-coach` 现在是任务首页，不再承载“请求预览 / 本地报告”双 Tab。今日洞察与
+每周回顾进入独立自然流程；少量最近报告与“查看全部”复用唯一
+`AiReportHistoryController`、`/ai-reports` 和 canonical detail。旧
+`/ai-coach/reports/:reportId` 安全重定向到 canonical detail。
+
+Preview 的数据合同、Hash、Scope、Journal 确认、reusable 匹配、Coordinator、
+Pending Recovery 和软删除语义不变。普通页面名称改为“本次使用的数据”，技术信息
+默认收起。首页只读取 Consent、Usage 和报告列表，不调用 Generate、Status、Sync，
+也不自动构建或上传输入。

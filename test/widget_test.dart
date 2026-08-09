@@ -9,6 +9,9 @@ import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
+import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
+
+import 'features/ai_coach/ai_coach_test_support.dart';
 
 void main() {
   testWidgets('renders Today state and switches destinations', (tester) async {
@@ -33,6 +36,9 @@ void main() {
                 cloudUserId: 'widget-user',
               ),
             ),
+          ),
+          aiGenerationGatewayProvider.overrideWithValue(
+            FakeAiGenerationGateway(),
           ),
         ],
         child: const RebirthApp(),
@@ -84,5 +90,18 @@ void main() {
     expect(find.byIcon(Icons.monitor_heart), findsOneWidget);
     expect(find.byKey(const ValueKey('healthDataState')), findsOneWidget);
     expect(find.text('Health'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.auto_awesome_outlined));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('homeNavigationBar')),
+        matching: find.byIcon(Icons.auto_awesome),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('aiCoachPage')), findsOneWidget);
+    expect(find.text('今天想从哪里开始？'), findsOneWidget);
   });
 }

@@ -12,6 +12,7 @@ import '../../features/account/presentation/login_page.dart';
 import '../../features/account/presentation/register_page.dart';
 import '../../features/ai_coach/presentation/ai_coach_page.dart';
 import '../../features/ai_coach/presentation/ai_daily_insight_page.dart';
+import '../../features/ai_coach/presentation/ai_weekly_report_page.dart';
 import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
 import '../../features/ai_coach/domain/ai_data_scope.dart';
 import '../../features/ai_reports/presentation/ai_report_library_page.dart';
@@ -95,6 +96,25 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
         name: RouteNames.home,
         redirect: (_, _) => RoutePaths.today,
       ),
+      GoRoute(
+        path: RoutePaths.aiCoachWeekly,
+        name: RouteNames.aiCoachWeekly,
+        builder: (context, state) => const AiWeeklyReportPage(),
+      ),
+      GoRoute(
+        path: '${RoutePaths.aiCoach}/daily/:targetDate',
+        name: RouteNames.aiCoachDaily,
+        builder: (context, state) => AiDailyInsightPage(
+          targetDate: state.pathParameters['targetDate'] ?? '',
+          initialScopes: _dailyScopesFrom(state.uri.queryParameters['scopes']),
+        ),
+      ),
+      GoRoute(
+        path: '${RoutePaths.aiCoach}/reports/:reportId',
+        name: RouteNames.aiCoachReport,
+        redirect: (context, state) =>
+            RoutePaths.aiReportsDetail(state.pathParameters['reportId'] ?? ''),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return HomeShell(navigationShell: navigationShell);
@@ -155,6 +175,15 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.aiCoach,
+                name: RouteNames.aiCoach,
+                builder: (context, state) => const AiCoachPage(),
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(
@@ -166,30 +195,6 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
         path: RoutePaths.journalPrompts,
         name: RouteNames.journalPrompts,
         builder: (context, state) => const JournalPromptManagementPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.aiCoach,
-        name: RouteNames.aiCoach,
-        builder: (context, state) => const AiCoachPage(),
-        routes: [
-          GoRoute(
-            path: 'daily/:targetDate',
-            name: RouteNames.aiCoachDaily,
-            builder: (context, state) => AiDailyInsightPage(
-              targetDate: state.pathParameters['targetDate'] ?? '',
-              initialScopes: _dailyScopesFrom(
-                state.uri.queryParameters['scopes'],
-              ),
-            ),
-          ),
-          GoRoute(
-            path: 'reports/:reportId',
-            name: RouteNames.aiCoachReport,
-            redirect: (context, state) => RoutePaths.aiReportsDetail(
-              state.pathParameters['reportId'] ?? '',
-            ),
-          ),
-        ],
       ),
       GoRoute(
         path: RoutePaths.aiReports,

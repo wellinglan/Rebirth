@@ -732,3 +732,16 @@ Server Prompt Registry。active 版本必须显式指定，candidate 不会通�
 保持 NOT EXECUTED。无新 API、Provider、数据库迁移或 Flutter UI；schemaVersion
 保持 11，API 1，Sync Protocol 2。详见
 `docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`。
+
+## Sprint 16A AI Coach MVP Product Experience Boundary
+
+Sprint 16A 将现有 Daily、Weekly、Consent、Usage、Coordinator、Pending
+Recovery 与唯一 AI Report Library 收束为一级 `AI 教练` 产品入口。首页只组合
+任务、可用状态、少量最近报告和自然 CTA；不会因为打开页面而生成、轮询、同步或
+恢复请求。Settings 只保留 AI 授权与隐私。
+
+“请求预览”改为“本次使用的数据”。Prompt Version 与 Input Hash 不再占据主流程，
+只允许在默认收起的技术信息中显示模板版本和安全缩略摘要。真实调用前仍需显式确认
+Provider、Model 与可能费用。账号切换必须使 Usage、Preview、Generation、Recovery
+和报告列表全部失效。完整合同见
+`docs/53_AI_COACH_MVP_PRODUCT_EXPERIENCE.md`。

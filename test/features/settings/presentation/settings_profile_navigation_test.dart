@@ -15,7 +15,10 @@ import 'package:rebirth/features/account/data/auth_session_store.dart';
 import 'package:rebirth/features/account/domain/auth_session.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/presentation/app_auth_controller.dart';
+import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/journal/data/journal_prompt_repository_impl.dart';
+
+import '../../ai_coach/ai_coach_test_support.dart';
 
 void main() {
   testWidgets('Settings opens globally and Profile returns an updated name', (
@@ -46,14 +49,17 @@ void main() {
               ),
             ),
           ),
+          aiGenerationGatewayProvider.overrideWithValue(
+            FakeAiGenerationGateway(),
+          ),
         ],
         child: const RebirthApp(),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationDestination), findsNWidgets(5));
-    for (final label in ['今日', '复盘', '计划', '健康', '成长']) {
+    expect(find.byKey(const ValueKey('homeNavigationRail')), findsOneWidget);
+    for (final label in ['今日', '复盘', '计划', '健康', '成长', 'AI 教练']) {
       expect(find.text(label), findsWidgets);
     }
     expect(find.text('Profile'), findsNothing);
@@ -83,18 +89,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
-    final aiCoachTile = find.byKey(const ValueKey('aiCoachSettingsTile'));
-    await tester.ensureVisible(aiCoachTile);
-    await tester.pumpAndSettle();
-    await tester.tap(aiCoachTile);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('aiCoachPage')), findsOneWidget);
-    expect(find.byKey(const ValueKey('aiConsentGate')), findsOneWidget);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiCoachSettingsTile')), findsNothing);
+    expect(find.byKey(const ValueKey('aiReportsSettingsTile')), findsNothing);
     final aiPrivacyTile = find.byKey(
       const ValueKey('aiDataPrivacySettingsTile'),
     );
@@ -107,19 +103,6 @@ void main() {
     expect(find.byKey(const ValueKey('aiDataPrivacyCard')), findsOneWidget);
     expect(find.byKey(const ValueKey('aiCoachPage')), findsNothing);
     expect(find.byType(NavigationDestination), findsNothing);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('settingsPage')), findsOneWidget);
-    final aiReportsTile = find.byKey(const ValueKey('aiReportsSettingsTile'));
-    await tester.ensureVisible(aiReportsTile);
-    await tester.pumpAndSettle();
-    await tester.tap(aiReportsTile);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('aiReportLibraryPage')), findsOneWidget);
-    expect(find.text('AI 报告库'), findsOneWidget);
-    expect(find.byKey(const ValueKey('aiCoachPage')), findsNothing);
     await tester.pageBack();
     await tester.pumpAndSettle();
 

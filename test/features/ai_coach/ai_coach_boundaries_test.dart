@@ -37,6 +37,9 @@ void main() {
       File(
         'lib/features/ai_coach/presentation/ai_daily_insight_page.dart',
       ).readAsStringSync(),
+      File(
+        'lib/features/ai_coach/presentation/ai_weekly_report_page.dart',
+      ).readAsStringSync(),
     ];
     expect(presentation, isNotEmpty);
     for (final source in presentation) {
@@ -57,6 +60,33 @@ void main() {
     for (final source in presentation) {
       expect(source, isNot(contains('.canonicalJson')));
       expect(source, isNot(contains('inputSnapshotJson')));
+    }
+  });
+
+  test('AI Coach home hides engineering identity and account state is reset', () {
+    final home = File(
+      'lib/features/ai_coach/presentation/ai_coach_page.dart',
+    ).readAsStringSync();
+    for (final term in [
+      'Prompt Version',
+      'Input Hash',
+      'Request Binding',
+      'Generation Gateway',
+    ]) {
+      expect(home, isNot(contains(term)));
+    }
+
+    final invalidator = File(
+      'lib/features/account/presentation/account_scoped_provider_invalidator.dart',
+    ).readAsStringSync();
+    for (final provider in [
+      'aiUsageControllerProvider',
+      'aiRequestPreviewControllerFamily',
+      'aiManualGenerationControllerFamily',
+      'aiPendingRecoveryControllerProvider',
+      'aiReportHistoryControllerProvider',
+    ]) {
+      expect(invalidator, contains('ref.invalidate($provider)'));
     }
   });
 

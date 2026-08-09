@@ -148,3 +148,12 @@ Registry and adds non-active v2 candidates plus synthetic quality Gates. The
 15B client coordinator and recovery behavior remain unchanged, and Capabilities
 still exposes only active v1 contracts. See
 `docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.
+
+## Sprint 16A Presentation Succession
+
+Sprint 16A changes how users reach this pipeline, not the pipeline itself.
+Daily and Weekly task pages still perform preview-integrity checks and call the
+same `AiReportGenerationCoordinator`. Reuse, single-flight, request binding,
+pending recovery, endpoint/account safety, terminal writes, quota, and no
+automatic retry/sync semantics are unchanged. The Coach home never calls
+Generate or Status merely because it is opened.

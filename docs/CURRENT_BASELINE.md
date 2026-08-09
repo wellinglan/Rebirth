@@ -2,10 +2,11 @@
 
 > Classification: **Active / authoritative**
 > Audited: **2026-08-09**
-> Audited code baseline: `621f4352cbd6bf937f3312ce3c2c603e4813a950`
+> Audited code baseline: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
-> Current working Sprint: **15C complete; Gate closed with accepted automation and cost limitations**
+> Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
+> Current working Sprint: **16A local implementation; AI Coach MVP Product Experience Gate CLOSED WITH ACCEPTED LIMITATIONS**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -124,6 +125,13 @@ explicit Daily and Weekly generation through one consolidated client
 application coordinator; it does not provide AI Chat, agents, tool calling,
 automatic background generation, or client-selected credentials.
 
+Sprint 16A exposes `AI 教练` as a stable first-level Windows/Android
+destination. Its task-oriented home composes Daily, Weekly, recent reports,
+and simple usage availability from existing controllers. Settings retains
+consent/privacy only. The natural flow still uses the canonical coordinator,
+report library, and report detail; opening the home never generates, polls,
+syncs, or automatically recovers a request.
+
 Current controls include:
 
 - explicit account-scoped AI data consent;
@@ -151,6 +159,9 @@ Manual evidence:
 - Consent route integrity: 25 PASS / 0 FAIL / 0 NOT EXECUTED;
 - Prompt governance and quality evaluation: 30 PASS / 0 FAIL / 8
   explicitly accepted NOT EXECUTED rows.
+- AI Coach MVP product experience: 29 PASS / 0 FAIL / 8 NOT EXECUTED; all
+  applicable platform and real-Provider rows passed, while eight dangerous
+  runtime injections use explicitly accepted automated evidence.
 
 Those results prove the recorded Alpha acceptance environment at the time of
 execution. Sprint 14G does not inspect the current remote Provider selection or
@@ -168,6 +179,13 @@ configured today.
 | 14F | Explicit Markdown/JSON safe export | No schema/API/protocol change | 37 PASS / 0 FAIL / 1 safe SessionRejected row | Closed with accepted limitation |
 | 15B | Generation pipeline consolidation | No schema/API/protocol change | 35 PASS / 0 FAIL / 7 controlled-fixture rows | Closed with accepted limitations |
 | 15C | Prompt Registry and synthetic quality evaluation | No schema/API/protocol change | 30 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted automation and cost limitations; real Provider evaluation not authorized |
+| 16A | First-level task-oriented AI Coach product experience | No schema/API/protocol change | 29 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted limitations; automated evidence replaces dangerous runtime injection only |
+
+Sprint 16A does not add a report type or change report persistence. It exposes
+the existing Daily/Weekly and report lifecycle through one first-level Coach
+home. Its Gate closed with accepted limitations after real Provider
+Daily/Weekly and Windows/Android product checks passed; only the eight named
+automated-only fault scenarios remain manually unexecuted.
 
 AI Report export is portability output, not a backup/restore promise. There is
 no import, restore, scheduled export, cloud export, report editing, or

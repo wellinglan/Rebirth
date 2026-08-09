@@ -21,12 +21,12 @@ class AiRequestPreview extends StatelessWidget {
           key: ValueKey('aiRequestPreviewLiveRegion'),
           container: true,
           liveRegion: true,
-          label: '本地 AI 输入预览已更新',
+          label: '本次使用的数据已更新',
           child: SizedBox.shrink(),
         ),
-        Text('本地输入预览', style: Theme.of(context).textTheme.headlineSmall),
+        Text('本次使用的数据', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
-        const Text('以下内容只在本机显示，不会发送给服务器或 AI 模型。'),
+        const Text('请在最终确认前检查。只有你确认生成后，所选数据才会用于本次分析。'),
         const SizedBox(height: 12),
         _MetadataCard(preview: preview),
         if (preview.growth case final growth?) ...[
@@ -72,8 +72,6 @@ class _MetadataCard extends StatelessWidget {
                   ? preview.periodStartDate
                   : '${preview.periodStartDate} 至 ${preview.periodEndDate}',
             ),
-            _ValueLine(label: 'Prompt Version', value: preview.promptVersion),
-            _ValueLine(label: 'Input Hash', value: preview.shortInputHash),
             _ValueLine(label: '来源记录', value: '${preview.sourceCount} 条'),
             const SizedBox(height: 8),
             Text('已选择范围', style: Theme.of(context).textTheme.labelLarge),
@@ -87,6 +85,17 @@ class _MetadataCard extends StatelessWidget {
                         Chip(label: Text(AiScopeCatalog.titleFor(scope))),
                   )
                   .toList(growable: false),
+            ),
+            const SizedBox(height: 8),
+            ExpansionTile(
+              key: const ValueKey('aiPreviewTechnicalDetails'),
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              title: const Text('技术信息'),
+              children: [
+                _ValueLine(label: '提示模板版本', value: preview.promptVersion),
+                _ValueLine(label: '输入摘要', value: preview.shortInputHash),
+              ],
             ),
           ],
         ),

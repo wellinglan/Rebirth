@@ -26,6 +26,7 @@ abstract final class RouteNames {
   static const syncConflicts = 'syncConflicts';
   static const syncConflictDetails = 'syncConflictDetails';
   static const aiCoach = 'aiCoach';
+  static const aiCoachWeekly = 'aiCoachWeekly';
   static const aiCoachDaily = 'aiCoachDaily';
   static const aiCoachReport = 'aiCoachReport';
   static const aiReports = 'aiReports';
@@ -59,6 +60,7 @@ abstract final class RoutePaths {
   static const fullPersonalDataExport = '/settings/personal-data-export';
   static const syncConflicts = '/settings/sync-conflicts';
   static const aiCoach = '/ai-coach';
+  static const aiCoachWeekly = '/ai-coach/weekly';
   static const aiReports = '/ai-reports';
 
   static String aiReportsDetail(String reportId) {

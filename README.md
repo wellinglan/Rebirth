@@ -36,10 +36,12 @@ directly. Local SQLite remains the primary working data store.
 - **Growth**: read-only local projections over approved personal-data sources.
 - **Profile and Settings**: public username/password sessions, account
   boundaries, consent, device state, and a unified manual Sync Center.
-- **AI Coach**: explicit Daily and Weekly generation after account-scoped
-  consent, with server-side quotas, operational auditing, and one consolidated
-  client generation coordinator. Server-owned immutable Prompt versions and
-  synthetic offline quality Gates govern active and candidate Prompts.
+- **AI Coach**: a stable first-level, task-oriented entry for Daily and Weekly
+  insight, account-scoped consent, simple availability/usage state, recent
+  reports, and natural navigation into the one consolidated generation
+  coordinator and canonical report library. Server-owned immutable Prompt
+  versions and synthetic offline quality Gates govern active and candidate
+  Prompts.
 - **AI Reports**: local persistence, immutable versions, manual cross-device
   sync, conflict recovery, archive lifecycle, one report library, and explicit
   Markdown/JSON export.

@@ -4,8 +4,6 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 
-import '../ai_coach_formatters.dart';
-
 Future<bool> showAiGenerationConfirmationDialog(
   BuildContext context, {
   required AiCoachInputBundle bundle,
@@ -62,32 +60,21 @@ class AiGenerationConfirmationDialog extends StatelessWidget {
                       ? bundle.periodStartDate
                       : '${bundle.periodStartDate} 至 ${bundle.periodEndDate}',
                 ),
-                _line('Provider', capabilities.providerLabel),
-                _line('Model', capabilities.model ?? '未配置'),
+                _line('AI 服务', capabilities.providerLabel),
+                _line('模型', capabilities.model ?? '未配置'),
                 _line('数据范围', scopes.join('、')),
-                _line('输入 Hash', AiCoachFormatters.shortHash(bundle.inputHash)),
                 _line('Journal', journalIncluded ? '包含' : '不包含'),
                 _line('来源记录', '${bundle.sources.length} 条'),
                 const SizedBox(height: 12),
-                const Text('数据将发送到 Rebirth Server，再由服务器向 AI Provider 转发最小化字段。'),
+                const Text('确认后，所选数据会通过 Rebirth 服务发送给上述 AI 服务完成本次分析。'),
                 const SizedBox(height: 6),
-                const Text('Source record IDs 不会转发给模型；AI 输出不会修改任何原始记录。'),
-                const SizedBox(height: 6),
-                const Text('请求明确设置 store=false，但这不代表绝对零保留。'),
+                const Text('记录标识不会发送给 AI；生成结果不会修改任何原始记录。'),
                 const SizedBox(height: 6),
                 Text(
-                  '服务器会临时保留已验证的生成结果 ${capabilities.resultRetentionHours} 小时，用于恢复丢失响应；结果可能包含对敏感数据的总结。',
+                  '为恢复中断的请求，服务端最多临时保留结果 ${capabilities.resultRetentionHours} 小时；结果可能包含对所选数据的总结。',
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  '最小请求 Tombstone 会保留 ${capabilities.dedupeRetentionDays} 天用于防止相同 request_id 重复调用。服务器不保存输入 Payload、Sources 或 Canonical JSON。',
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '这不是 exactly-once 保证；极端崩溃窗口下结果可能变为 outcome unknown，无法确定是否已经产生结果或费用。',
-                ),
-                const SizedBox(height: 6),
-                const Text('AI 输出可能不准确，本次操作可能产生 Provider 费用，当前不会自动重试。'),
+                const Text('AI 输出可能不准确，本次操作可能产生服务费用；系统不会在失败后自动重新生成。'),
                 if (journalIncluded) ...[
                   const SizedBox(height: 10),
                   Text(
@@ -127,10 +114,10 @@ class AiGenerationConfirmationDialog extends StatelessWidget {
   );
 
   String _scopeLabel(AiDataScope scope) => switch (scope) {
-    AiDataScope.growthSummary => 'Growth 汇总',
-    AiDataScope.todayMetrics => 'Today 指标',
-    AiDataScope.healthMetrics => 'Health 指标',
-    AiDataScope.journalReflections => 'Journal 回顾',
-    AiDataScope.activeGoals => 'Goals',
+    AiDataScope.growthSummary => '成长趋势汇总',
+    AiDataScope.todayMetrics => '每日状态指标',
+    AiDataScope.healthMetrics => '健康指标',
+    AiDataScope.journalReflections => '复盘内容',
+    AiDataScope.activeGoals => '当前目标',
   };
 }

@@ -967,3 +967,22 @@ is a separate explicit exception that uses an existing evaluation CloudUser,
 the real Provider adapter, Generation Ledger, Usage Ledger, quota, concurrency,
 case/token bounds, and cost cap. It creates no local AI Report and never runs in
 normal CI. See `docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.
+
+## 27. AI Coach Product Composition
+
+Sprint 16A adds no second AI application layer. The canonical composition is:
+
+```text
+HomeShell / AI Coach route
+  -> consent + usage + recent-report presentation controllers
+  -> Daily/Weekly preview controller families
+  -> AiReportGenerationCoordinator
+  -> canonical AiReportRepository / recovery / library / detail
+```
+
+The home reads status only. Generate remains behind explicit selection,
+preview-integrity verification, confirmation, and the existing coordinator.
+Account-scope invalidation includes consent, usage, preview families, manual
+generation families, pending recovery, coordinator, and report history. The
+navigation/routing change does not alter Drift schema, Server runtime, API,
+Sync Protocol, Provider, Prompt activation, quota, or ledger architecture.

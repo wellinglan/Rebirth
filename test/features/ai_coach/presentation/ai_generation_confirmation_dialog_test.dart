@@ -43,18 +43,22 @@ void main() {
       'Development Fake',
       'deterministic-test-provider',
       '2026-07-10 至 2026-07-16',
-      'Rebirth Server',
-      'Source record IDs',
-      'store=false',
-      '不代表绝对零保留',
-      '可能产生 Provider 费用',
-      '不会自动重试',
-      '临时保留已验证的生成结果 24 小时',
-      'Tombstone 会保留 30 天',
-      '不是 exactly-once',
-      '不保存输入 Payload',
+      '通过 Rebirth 服务',
+      '记录标识不会发送给 AI',
+      '可能产生服务费用',
+      '不会在失败后自动重新生成',
+      '最多临时保留结果 24 小时',
     ]) {
       expect(find.textContaining(text), findsOneWidget);
+    }
+    for (final engineeringTerm in [
+      'Input Hash',
+      'Tombstone',
+      'exactly-once',
+      'Canonical JSON',
+      'request_id',
+    ]) {
+      expect(find.textContaining(engineeringTerm), findsNothing);
     }
     expect(find.byKey(const ValueKey('aiJournalFinalWarning')), findsOneWidget);
     final semantics = tester.widget<Semantics>(

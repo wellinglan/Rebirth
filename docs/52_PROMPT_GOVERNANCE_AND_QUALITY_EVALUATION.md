@@ -1,7 +1,7 @@
 # Prompt Governance and Quality Evaluation
 
 > Sprint: **15C**
-> Classification: **Active implementation contract / manual Gate OPEN**
+> Classification: **Active implementation contract / Gate closed with accepted automation and cost limitations**
 > Source baseline: `38dc8373a4de739a892bc7f7ee9cc44de72a80fe`
 
 ## 1. Scope
@@ -230,3 +230,12 @@ The corrected Server image at `621f4352cbd6bf937f3312ce3c2c603e4813a950`
 packages the synthetic runtime fixtures and passed deployed Alpha CLI
 acceptance. No PostgreSQL restart, migration, API version change, or Sync
 Protocol change was required.
+
+## 13. Sprint 16A Non-change
+
+Sprint 16A moves Prompt identity out of the ordinary product flow but does not
+change the Registry, fingerprints, candidate definitions, evaluation fixtures,
+CLI, or active pointers. Active versions remain `daily-insight-v1` and
+`weekly-report-v1`. The preview may expose only the template version and a
+short input digest inside a default-collapsed technical section; the AI Coach
+home does not expose Prompt or input identity.

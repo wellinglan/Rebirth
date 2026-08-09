@@ -861,3 +861,15 @@ active 合同。Prompt 内容变化必须创建新版本，candidate 在离线�
 只使用仓库内合成输入和人工编写的合成输出，不调用 Provider、不产生费用，也不把
 Fake Provider 结果描述为真实模型质量。完整合同见
 `docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`。
+
+## 26. AI Coach MVP Product Experience
+
+AI Coach 必须是 Windows 与 Android 的稳定一级入口，而不是只能从 Settings 发现。
+首页至少提供今日洞察、每周回顾、最近报告和 AI 可用/额度状态。用户应从自然任务
+进入数据选择、查看“本次使用的数据”、最终确认、受控生成与 canonical 报告详情。
+
+普通流程不得要求理解 Prompt Version、Input Hash、Request Binding、Payload 或
+Gateway。已有报告优先查看和复用；复用不能增加调用、额度、报告或版本。未授权、无
+数据、服务关闭、额度耗尽、网络不确定和处理中必须各有诚实且可操作的状态。Sprint
+16A 不增加 AI 能力、报告类型、自动生成或自动同步。完整要求见
+`docs/53_AI_COACH_MVP_PRODUCT_EXPERIENCE.md`。

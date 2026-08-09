@@ -3,13 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
-import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
-import 'package:rebirth/features/ai_coach/domain/ai_input_contract.dart';
 
 import 'ai_request_preview_controller.dart';
 import 'ai_request_preview_view_state.dart';
-import 'models/ai_insight_request_context.dart';
 import 'widgets/ai_consent_gate.dart';
 import 'widgets/ai_generation_section.dart';
 import 'widgets/ai_journal_scope_dialog.dart';
@@ -17,67 +14,44 @@ import 'widgets/ai_request_preview.dart';
 import 'widgets/ai_reusable_report_card.dart';
 import 'widgets/ai_scope_selector.dart';
 
-class AiDailyInsightPage extends ConsumerWidget {
-  const AiDailyInsightPage({
-    required this.targetDate,
-    this.initialScopes = const {},
-    super.key,
-  });
-
-  final String targetDate;
-  final Set<AiDataScope> initialScopes;
+class AiWeeklyReportPage extends ConsumerWidget {
+  const AiWeeklyReportPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref
-        .watch(dateTimeServiceProvider)
-        .isValidLocalDateString(targetDate)) {
-      return Scaffold(
-        key: const ValueKey('invalidDailyInsightDatePage'),
-        appBar: AppBar(title: const Text('今日洞察')),
-        body: const SafeArea(child: Center(child: Text('目标日期无效，请返回后重新选择。'))),
-      );
-    }
-
-    final requestContext = AiInsightRequestContext.daily(
-      targetDate,
-      initialScopes: initialScopes,
-    );
-    final preview = ref.watch(aiRequestPreviewControllerFamily(requestContext));
+    final preview = ref.watch(aiRequestPreviewControllerProvider);
     return Scaffold(
-      key: const ValueKey('aiDailyInsightPage'),
-      appBar: AppBar(title: const Text('今日洞察')),
+      key: const ValueKey('aiWeeklyReportPage'),
+      appBar: AppBar(title: const Text('每周回顾')),
       body: SafeArea(
         child: preview.when(
           loading: () => const Center(
             child: CircularProgressIndicator(
-              key: ValueKey('dailyInsightLoading'),
+              key: ValueKey('aiWeeklyLoading'),
               semanticsLabel: '正在读取 AI 数据授权状态',
             ),
           ),
-          error: (error, stackTrace) => _DailyError(
+          error: (_, _) => _WeeklyError(
             onRetry: () => ref
-                .read(aiRequestPreviewControllerFamily(requestContext).notifier)
+                .read(aiRequestPreviewControllerProvider.notifier)
                 .reloadAuthorization(),
           ),
-          data: (state) =>
-              _DailyContent(state: state, requestContext: requestContext),
+          data: (state) => _WeeklyContent(state: state),
         ),
       ),
     );
   }
 }
 
-class _DailyContent extends ConsumerWidget {
-  const _DailyContent({required this.state, required this.requestContext});
+class _WeeklyContent extends ConsumerWidget {
+  const _WeeklyContent({required this.state});
 
   final AiRequestPreviewViewState state;
-  final AiInsightRequestContext requestContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
-      key: const ValueKey('dailyInsightScrollView'),
+      key: const ValueKey('aiWeeklyScrollView'),
       padding: AppLayout.pagePadding,
       children: [
         Center(
@@ -86,73 +60,70 @@ class _DailyContent extends ConsumerWidget {
               maxWidth: AppLayout.wideContentWidth,
             ),
             child: state.authorization.enabled
-                ? _AuthorizedDaily(state: state, requestContext: requestContext)
+                ? _AuthorizedWeekly(state: state)
                 : AiConsentGate(
-                    onOpenSettings: () async {
-                      await context.push(RoutePaths.settingsAiConsent);
-                      if (!context.mounted) return;
-                      await ref
-                          .read(
-                            aiRequestPreviewControllerFamily(
-                              requestContext,
-                            ).notifier,
-                          )
-                          .reloadAuthorization();
-                    },
+                    onOpenSettings: () => _openConsent(context, ref),
                   ),
           ),
         ),
       ],
     );
   }
+
+  Future<void> _openConsent(BuildContext context, WidgetRef ref) async {
+    await context.push(RoutePaths.settingsAiConsent);
+    if (!context.mounted) return;
+    await ref
+        .read(aiRequestPreviewControllerProvider.notifier)
+        .reloadAuthorization();
+  }
 }
 
-class _AuthorizedDaily extends ConsumerWidget {
-  const _AuthorizedDaily({required this.state, required this.requestContext});
+class _AuthorizedWeekly extends ConsumerWidget {
+  const _AuthorizedWeekly({required this.state});
 
   final AiRequestPreviewViewState state;
-  final AiInsightRequestContext requestContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(
-      aiRequestPreviewControllerFamily(requestContext).notifier,
-    );
+    final notifier = ref.read(aiRequestPreviewControllerProvider.notifier);
     final preview = state.preview;
+    final growthSelected = state.selectedScopes.contains(
+      AiDataScope.growthSummary,
+    );
+    final hasGeneratableData =
+        preview != null && (preview.sourceCount > 0 || growthSelected);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Semantics(
-          label: '今日洞察，目标日期 ${requestContext.targetDate}',
+          label: '每周回顾，日期范围 ${state.periodStartDate} 至 ${state.periodEndDate}',
           header: true,
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('今日洞察', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 6),
-                  Text('目标日期：${requestContext.targetDate}'),
+                  Text('最近七天', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text('${state.periodStartDate} 至 ${state.periodEndDate}'),
+                  const SizedBox(height: AppSpacing.xs),
                   const Text('选择本次允许使用的数据后，再确认是否生成。'),
                 ],
               ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         AiScopeSelector(
           selectedScopes: state.selectedScopes,
-          allowedScopes: AiInputContract.supportedScopesFor(
-            requestContext.reportType,
-          ),
-          isDaily: true,
           onChanged: (scope, selected) =>
               _toggleScope(context, notifier, scope, selected),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         FilledButton.icon(
-          key: const ValueKey('buildDailyInsightPreviewButton'),
+          key: const ValueKey('buildAiPreviewButton'),
           onPressed: state.canBuild ? notifier.buildPreview : null,
           icon: state.isBuilding
               ? const SizedBox.square(
@@ -163,33 +134,33 @@ class _AuthorizedDaily extends ConsumerWidget {
           label: Text(state.isBuilding ? '正在准备...' : '查看本次使用的数据'),
         ),
         if (state.selectedScopes.isEmpty) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs),
           const Text('请至少选择一种数据。'),
         ],
         if (state.buildError case final message?) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             message,
-            key: const ValueKey('dailyInsightPreviewError'),
+            key: const ValueKey('aiPreviewBuildError'),
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
         if (preview != null) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
           AiRequestPreview(preview: preview),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           AiReusableReportCard(
             report: state.reusableCompletedReport,
             onOpenReport: (id) => context.push(RoutePaths.aiReportsDetail(id)),
           ),
-          if (preview.sourceCount == 0)
-            const _NoDailySources()
-          else if (state.reusableCompletedReport == null &&
-              state.bundle != null)
-            AiGenerationSection(
-              bundle: state.bundle!,
-              requestContext: requestContext,
-            ),
+          if (state.reusableCompletedReport == null &&
+              state.bundle != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            if (hasGeneratableData)
+              AiGenerationSection(bundle: state.bundle!)
+            else
+              const _NoWeeklySources(),
+          ],
         ],
       ],
     );
@@ -203,41 +174,41 @@ class _AuthorizedDaily extends ConsumerWidget {
   ) async {
     final result = notifier.toggleScope(scope, selected: selected);
     if (result != AiScopeToggleResult.journalConfirmationRequired) return;
-    final confirmed = await showAiJournalScopeDialog(context, isDaily: true);
+    final confirmed = await showAiJournalScopeDialog(context);
     if (!context.mounted) return;
     confirmed ? notifier.confirmJournalScope() : notifier.cancelJournalScope();
   }
 }
 
-class _NoDailySources extends StatelessWidget {
-  const _NoDailySources();
+class _NoWeeklySources extends StatelessWidget {
+  const _NoWeeklySources();
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      key: const ValueKey('dailyInsightNoSources'),
+      key: const ValueKey('weeklyReportNoSources'),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('今天还没有足够的已保存记录。你可以先补充需要的内容。'),
-            const SizedBox(height: 12),
+            const Text('最近七天还没有足够的已保存记录。'),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: [
                 OutlinedButton(
                   onPressed: () => context.go(RoutePaths.today),
                   child: const Text('去记录今天'),
                 ),
                 OutlinedButton(
-                  onPressed: () => context.go(RoutePaths.health),
-                  child: const Text('补充健康记录'),
-                ),
-                OutlinedButton(
                   onPressed: () => context.go(RoutePaths.journal),
                   child: const Text('写今日复盘'),
+                ),
+                OutlinedButton(
+                  onPressed: () => context.go(RoutePaths.health),
+                  child: const Text('补充健康记录'),
                 ),
               ],
             ),
@@ -248,19 +219,20 @@ class _NoDailySources extends StatelessWidget {
   }
 }
 
-class _DailyError extends StatelessWidget {
-  const _DailyError({required this.onRetry});
+class _WeeklyError extends StatelessWidget {
+  const _WeeklyError({required this.onRetry});
 
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Center(
+      key: const ValueKey('aiWeeklyError'),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('每日洞察暂时无法加载。'),
-          const SizedBox(height: 12),
+          const Text('每周回顾暂时无法加载。'),
+          const SizedBox(height: AppSpacing.sm),
           OutlinedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh),

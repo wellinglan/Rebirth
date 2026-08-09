@@ -158,3 +158,14 @@ Sprint 8D Server Ledger 不保存本合同 Payload、Canonical JSON、Sources、
 
 详细页面、Controller、匹配条件和后续 Provider 边界见
 `docs/09_AI_COACH_PREVIEW_AND_HISTORY.md`。
+
+## 10. Sprint 16A Product-entry Succession
+
+本文件 Sprint 8B 的“Settings 是唯一入口”和“不增加 Bottom Navigation”是历史阶段
+事实，已被 Sprint 16A 明确取代。当前 canonical 入口是一级 `/ai-coach`，Settings
+只保留授权、数据范围与撤销说明。
+
+Scope、Journal 单次确认、Assembler、`persistInputSnapshot = false`、最小化字段、
+Canonical Hash 与最终发送确认语义均未改变。“本地输入预览”在产品语言中改为
+“本次使用的数据”；Prompt 模板版本和输入摘要默认收起，完整 Hash、Canonical JSON、
+账号/记录 ID、Token 和 Endpoint 仍不得出现在普通流程。
