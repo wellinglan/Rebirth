@@ -1,11 +1,11 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-08-06**
-> Audited code baseline: `38dc8373a4de739a892bc7f7ee9cc44de72a80fe`
+> Audited: **2026-08-09**
+> Audited code baseline: `621f4352cbd6bf937f3312ce3c2c603e4813a950`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
-> Current working Sprint: **15C (local implementation complete; manual Gate OPEN)**
+> Current working Sprint: **15C complete; Gate closed with accepted automation and cost limitations**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -148,7 +148,9 @@ Manual evidence:
 - Real Provider and cost safety: 32 PASS / 0 FAIL / 0 NOT EXECUTED;
 - Usage transparency: 36 PASS / 0 FAIL / 0 NOT EXECUTED;
 - Operations acceptance: 72 PASS / 0 FAIL / 0 NOT EXECUTED;
-- Consent route integrity: 25 PASS / 0 FAIL / 0 NOT EXECUTED.
+- Consent route integrity: 25 PASS / 0 FAIL / 0 NOT EXECUTED;
+- Prompt governance and quality evaluation: 30 PASS / 0 FAIL / 8
+  explicitly accepted NOT EXECUTED rows.
 
 Those results prove the recorded Alpha acceptance environment at the time of
 execution. Sprint 14G does not inspect the current remote Provider selection or
@@ -165,7 +167,7 @@ configured today.
 | 14E | One canonical report library | No schema/API/protocol change | 31 PASS / 0 FAIL / 0 NOT EXECUTED | Closed |
 | 14F | Explicit Markdown/JSON safe export | No schema/API/protocol change | 37 PASS / 0 FAIL / 1 safe SessionRejected row | Closed with accepted limitation |
 | 15B | Generation pipeline consolidation | No schema/API/protocol change | 35 PASS / 0 FAIL / 7 controlled-fixture rows | Closed with accepted limitations |
-| 15C | Prompt Registry and synthetic quality evaluation | No schema/API/protocol change | 0 PASS / 0 FAIL / 38 NOT EXECUTED | Manual Gate open; real Provider evaluation not authorized |
+| 15C | Prompt Registry and synthetic quality evaluation | No schema/API/protocol change | 30 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted automation and cost limitations; real Provider evaluation not authorized |
 
 AI Report export is portability output, not a backup/restore promise. There is
 no import, restore, scheduled export, cloud export, report editing, or

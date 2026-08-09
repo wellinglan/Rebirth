@@ -220,9 +220,13 @@ activate a Prompt.
 
 ## 12. Release and Deployment Boundary
 
-The Prompt Governance and Quality Evaluation Gate remains **OPEN** until the
-manual matrix is executed. Local and CI success are not manual acceptance.
+The Prompt Governance and Quality Evaluation Gate is **CLOSED WITH ACCEPTED
+AUTOMATION AND COST LIMITATIONS**. The manual matrix records 30 PASS, zero FAIL,
+and eight honestly NOT EXECUTED rows. Runtime protocol repetitions with precise
+automated coverage were accepted without being relabeled as manual PASS; real
+Provider quality evaluation remains unexecuted without cost authorization.
 
-This Server runtime change may cause GitHub to publish a new GHCR API image after
-a future push. Image publication is not Beijing Alpha deployment. Sprint 15C
-does not connect to, update, restart, or migrate the Alpha Server or PostgreSQL.
+The corrected Server image at `621f4352cbd6bf937f3312ce3c2c603e4813a950`
+packages the synthetic runtime fixtures and passed deployed Alpha CLI
+acceptance. No PostgreSQL restart, migration, API version change, or Sync
+Protocol change was required.

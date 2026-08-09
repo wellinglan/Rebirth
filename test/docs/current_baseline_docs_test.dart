@@ -92,7 +92,7 @@ void main() {
     expect(registry, contains('49 / 0 / 5'));
   });
 
-  test('prompt governance docs preserve the open manual and cost Gate', () {
+  test('prompt governance docs preserve accepted evidence and cost limits', () {
     final baseline = File(baselinePath).readAsStringSync();
     final contract = File(promptGovernancePath).readAsStringSync();
     final matrix = File(promptGovernanceMatrixPath).readAsStringSync();
@@ -103,10 +103,12 @@ void main() {
     expect(contract, contains('daily-insight-v2'));
     expect(contract, contains('real Provider evaluation'));
     expect(contract, contains('NOT EXECUTED'));
-    expect(matrix, contains('0 PASS / 0 FAIL / 38 NOT EXECUTED'));
-    expect(matrix, isNot(contains('| PASS |')));
+    expect(matrix, contains('30 PASS / 0 FAIL / 8 NOT EXECUTED'));
+    expect(matrix, contains('| PASS |'));
+    expect(matrix, contains('| NOT EXECUTED |'));
+    expect(matrix, contains('ACCEPTED AUTOMATION AND COST LIMITATIONS'));
     expect(registry, contains('Prompt Governance and Quality Evaluation'));
-    expect(registry, contains('0 / 0 / 38'));
+    expect(registry, contains('30 / 0 / 8'));
   });
 
   test('baseline and source contain all six manual sync modules', () {

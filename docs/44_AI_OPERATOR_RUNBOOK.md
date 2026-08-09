@@ -292,6 +292,8 @@ token bounds, and a maximum estimated cost. It intentionally writes request and
 usage ledger rows through existing cost controls but creates no AI Report. Keep
 the Provider kill switch and rollback procedure available during such a run.
 
-The Prompt Governance and Quality Evaluation Gate remains open until
-`manual_tests/57_prompt_governance_and_quality_evaluation.md` is executed. A
-Level 2 PASS is evaluator evidence, not proof of real model quality.
+The Prompt Governance and Quality Evaluation Gate is closed with the explicit
+automation and cost limitations recorded in
+`manual_tests/57_prompt_governance_and_quality_evaluation.md`. A Level 2 PASS is
+evaluator evidence, not proof of real model quality, and the real Provider
+evaluation remains unexecuted without separate cost authorization.

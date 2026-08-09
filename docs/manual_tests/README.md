@@ -56,7 +56,7 @@ that a separate module-only matrix was rerun.
 | AI Report Export | CLOSED WITH ACCEPTED LIMITATION | [AI Report Safe Export](54_ai_report_safe_export.md) | 37 / 0 / 1 | SessionRejected injection was unavailable; export has no import/restore promise |
 | Full Personal Data Export | CLOSED WITH ACCEPTED LIMITATIONS | [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) | 49 / 0 / 5 | Windows/Android applicable rows passed; five safe failure/timing injection fixtures remain unavailable; plaintext export has no import/restore promise |
 | AI Report Generation Pipeline | CLOSED WITH ACCEPTED LIMITATIONS | [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) | 35 / 0 / 7 | Applicable rows passed and Quality run 31073858896 passed; six controlled recovery states and one binding-write failure fixture remain unavailable and automated only |
-| Prompt Governance and Quality Evaluation | OPEN | [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) | 0 / 0 / 38 | All manual rows remain NOT EXECUTED; Level 3 real Provider evaluation has no cost authorization |
+| Prompt Governance and Quality Evaluation | CLOSED WITH ACCEPTED AUTOMATION AND COST LIMITATIONS | [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) | 30 / 0 / 8 | Deployed CLI and privacy boundaries passed; runtime protocol repetitions use named automated evidence; Level 3 real Provider evaluation has no cost authorization |
 
 ## Important Succession Rules
 
@@ -100,7 +100,7 @@ that a separate module-only matrix was rerun.
 - [Settings and Sync Center](39_settings_information_architecture_and_sync_center.md) - Current unified authority
 - [Full Personal Data Export and Backup](55_full_personal_data_export_and_backup.md) - Current Gate closed with accepted limitations
 - [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) - Current Gate closed with accepted limitations
-- [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) - Current OPEN Gate
+- [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) - Current Gate closed with accepted automation and cost limitations
 
 ### Authentication and Identity
 
@@ -124,7 +124,7 @@ that a separate module-only matrix was rerun.
 - [AI Report Library](53_ai_report_library_consolidation.md)
 - [AI Report Safe Export](54_ai_report_safe_export.md)
 - [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) - Current Gate closed with accepted limitations
-- [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) - Current OPEN Gate; real Provider evaluation not authorized
+- [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) - Current Gate closed with accepted automation and cost limitations; real Provider evaluation not authorized
 
 Older UI, persistence, cloud, and AI reliability matrices `01` through `24`
 remain in this directory as historical Sprint evidence. They do not override
