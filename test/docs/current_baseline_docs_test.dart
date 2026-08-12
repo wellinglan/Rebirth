@@ -15,6 +15,10 @@ void main() {
       'docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md';
   const promptGovernanceMatrixPath =
       'docs/manual_tests/57_prompt_governance_and_quality_evaluation.md';
+  const feedbackContractPath =
+      'docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md';
+  const feedbackMatrixPath =
+      'docs/manual_tests/59_ai_coach_feedback_and_quality_signal.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -29,6 +33,8 @@ void main() {
         personalDataExportMatrixPath,
         promptGovernancePath,
         promptGovernanceMatrixPath,
+        feedbackContractPath,
+        feedbackMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -64,13 +70,13 @@ void main() {
     expect(schemaMatch, isNotNull);
     expect(apiMatch, isNotNull);
     expect(protocolMatch, isNotNull);
-    expect(schemaMatch!.group(1), '11');
+    expect(schemaMatch!.group(1), '12');
     expect(apiMatch!.group(1), '1');
     expect(apiMatch.group(2), '1');
     expect(protocolMatch!.group(1), '2');
     expect(protocolMatch.group(2), '2');
 
-    expect(baseline, contains('| Flutter schemaVersion | `11` |'));
+    expect(baseline, contains('| Flutter schemaVersion | `12` |'));
     expect(baseline, contains('| API Version | `1` |'));
     expect(baseline, contains('| Sync Protocol Version | `2` |'));
   });
@@ -144,6 +150,25 @@ void main() {
       );
     }
     expect(RegExp(r'moduleId: SyncModuleId\.').allMatches(registry).length, 6);
+  });
+
+  test('feedback docs preserve protocol and honest manual Gate boundaries', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final contract = File(feedbackContractPath).readAsStringSync();
+    final matrix = File(feedbackMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('20260812_0008'));
+    expect(contract, contains('schemaVersion: `12`'));
+    expect(contract, contains('API Version: `1`'));
+    expect(contract, contains('Sync Protocol: `2`'));
+    expect(contract.toLowerCase(), contains('no free-text'));
+    expect(contract, contains('Publishing a future GHCR image'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 39 NOT EXECUTED'));
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(matrix, contains('| NOT EXECUTED |'));
+    expect(registry, contains('AI Coach Feedback & Quality Signal'));
+    expect(registry, contains('0 / 0 / 39'));
   });
 
   test('active entry points do not reintroduce unqualified stale claims', () {

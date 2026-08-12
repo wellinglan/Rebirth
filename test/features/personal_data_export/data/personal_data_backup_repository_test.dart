@@ -37,6 +37,7 @@ void main() {
         JournalPromptsPersonalDataExportModule(repository),
         HealthPersonalDataExportModule(repository),
         AiReportsPersonalDataExportModule(repository),
+        AiReportFeedbackPersonalDataExportModule(repository),
       ]);
       final snapshots = await database.transaction(
         () => registry.exportAll(userA, checkBoundary: () {}),
@@ -60,8 +61,9 @@ void main() {
         'journal_prompt_configurations',
         'health',
         'ai_reports',
+        'ai_report_feedback',
       ]);
-      expect(database.schemaVersion, 11);
+      expect(database.schemaVersion, 12);
 
       final profile = _records(data, 'profile').single;
       expect(profile['display_name'], '账号 A');
@@ -117,6 +119,12 @@ void main() {
         '第二版正文',
       ]);
 
+      final feedback = _records(data, 'ai_report_feedback').single;
+      expect(feedback['report_id'], _id(61));
+      expect(feedback['report_version'], 1);
+      expect(feedback['helpfulness'], 'not_helpful');
+      expect(feedback['reason_codes'], ['not_actionable', 'too_generic']);
+
       for (final forbidden in const [
         '账号 B 的秘密目标',
         'secret-input-hash',
@@ -162,6 +170,7 @@ void main() {
     await repository.readJournalPrompts(userA);
     await repository.readHealth(userA);
     await repository.readAiReports(userA);
+    await repository.readAiReportFeedback(userA);
 
     final afterGoal = await (database.select(
       database.goals,
@@ -449,6 +458,26 @@ Future<void> _seed(AppDatabase database, String userA) async {
       _reportVersion(version: 1, content: '第一版正文'),
     ]);
   });
+  await database
+      .into(database.aiReportFeedback)
+      .insert(
+        AiReportFeedbackCompanion.insert(
+          id: Value(_id(81)),
+          userId: userA,
+          reportId: _id(61),
+          reportVersion: 1,
+          reportType: 'weekly_report',
+          helpfulness: 'not_helpful',
+          reasonCodesJson: const Value('["not_actionable","too_generic"]'),
+          promptId: 'weekly_report',
+          promptVersion: 'weekly-report-v1',
+          syncStatus: const Value('synced'),
+          serverVersion: const Value(4),
+          lastSyncedAt: const Value(_now),
+          createdAt: const Value(_now),
+          updatedAt: const Value(_now),
+        ),
+      );
 }
 
 GoalsCompanion _goal({

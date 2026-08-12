@@ -14,6 +14,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_report_metadata.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_version.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_report_feedback_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_detail_page.dart';
 import 'package:rebirth/features/ai_reports/presentation/ai_report_library_page.dart';
 
@@ -285,7 +286,10 @@ Future<void> _pump(
 ) {
   return tester.pumpWidget(
     ProviderScope(
-      overrides: [aiReportRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        aiReportRepositoryProvider.overrideWithValue(repository),
+        aiReportFeedbackProvider.overrideWith((ref, target) async => null),
+      ],
       child: MaterialApp(theme: ThemeData(useMaterial3: true), home: child),
     ),
   );
@@ -298,7 +302,10 @@ Future<void> _pumpRouter(
 ) {
   return tester.pumpWidget(
     ProviderScope(
-      overrides: [aiReportRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        aiReportRepositoryProvider.overrideWithValue(repository),
+        aiReportFeedbackProvider.overrideWith((ref, target) async => null),
+      ],
       child: MaterialApp.router(
         theme: ThemeData(useMaterial3: true),
         routerConfig: router,

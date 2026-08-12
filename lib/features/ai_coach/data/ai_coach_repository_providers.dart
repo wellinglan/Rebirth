@@ -7,6 +7,8 @@ import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_assembler.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_repository.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_remote_data_source.dart';
 import 'package:rebirth/features/ai_coach/domain/daily_report_freshness_service.dart';
 import 'package:rebirth/features/ai_coach/domain/canonical_json_encoder.dart';
 import 'package:rebirth/features/ai_coach/domain/input_hash_service.dart';
@@ -20,6 +22,9 @@ import 'ai_coach_input_assembler_impl.dart';
 import 'canonical_json_encoder_impl.dart';
 import 'local_ai_consent_repository.dart';
 import 'local_ai_report_repository.dart';
+import 'local_ai_report_feedback_repository.dart';
+import 'remote_ai_report_feedback_data_source.dart';
+import 'ai_report_feedback_sync_service_impl.dart';
 import 'sha256_input_hash_service.dart';
 import 'remote_ai_generation_gateway.dart';
 import 'local_ai_generation_request_binding_store.dart';
@@ -82,3 +87,28 @@ final aiReportRepositoryProvider = Provider<AiReportRepository>((ref) {
     canonicalJsonEncoder: ref.watch(canonicalJsonEncoderProvider),
   );
 });
+
+final aiReportFeedbackRepositoryProvider = Provider<AiReportFeedbackRepository>(
+  (ref) {
+    return LocalAiReportFeedbackRepository(
+      database: ref.watch(appDatabaseProvider),
+      dateTimeService: ref.watch(dateTimeServiceProvider),
+    );
+  },
+);
+
+final aiReportFeedbackRemoteDataSourceProvider =
+    Provider<AiReportFeedbackRemoteDataSource>((ref) {
+      return RemoteAiReportFeedbackDataSource(
+        apiClient: ref.watch(apiClientProvider),
+        sessionManager: ref.watch(authSessionManagerProvider),
+      );
+    });
+
+final aiReportFeedbackSyncServiceProvider =
+    Provider<AiReportFeedbackSyncService>((ref) {
+      return AiReportFeedbackSyncServiceImpl(
+        repository: ref.watch(aiReportFeedbackRepositoryProvider),
+        remoteDataSource: ref.watch(aiReportFeedbackRemoteDataSourceProvider),
+      );
+    });

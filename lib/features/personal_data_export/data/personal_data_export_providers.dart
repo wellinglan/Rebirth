@@ -28,6 +28,7 @@ final personalDataExportModuleRegistryProvider =
         JournalPromptsPersonalDataExportModule(repository),
         HealthPersonalDataExportModule(repository),
         AiReportsPersonalDataExportModule(repository),
+        AiReportFeedbackPersonalDataExportModule(repository),
       ]);
     });
 

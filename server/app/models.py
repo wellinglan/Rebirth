@@ -472,3 +472,44 @@ class AiUsageRecord(Base):
     updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     lease_expires_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     completed_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+
+class AiReportFeedback(Base):
+    __tablename__ = "ai_report_feedback"
+    __table_args__ = (
+        UniqueConstraint(
+            "cloud_user_id",
+            "report_record_id",
+            "report_version_number",
+            name="uq_ai_report_feedback_user_report_version",
+        ),
+        CheckConstraint(
+            "helpfulness IN ('helpful', 'not_helpful')",
+            name="ck_ai_report_feedback_helpfulness",
+        ),
+        CheckConstraint(
+            "server_version >= 1",
+            name="ck_ai_report_feedback_server_version",
+        ),
+        Index("ix_ai_report_feedback_prompt", "prompt_id", "prompt_version"),
+        Index("ix_ai_report_feedback_updated", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    cloud_user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("cloud_users.id"),
+        nullable=False,
+        index=True,
+    )
+    report_record_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    report_version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    report_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    helpfulness: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason_codes_json: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    server_version: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    deleted_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

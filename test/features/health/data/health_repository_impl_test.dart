@@ -169,7 +169,7 @@ void main() {
     final settings = await database.select(database.appSettings).getSingle();
 
     expect(raw.originDeviceId, settings.localInstallationId);
-    expect(database.schemaVersion, 11);
+    expect(database.schemaVersion, 12);
   });
 
   test('Today health save is readable through Health', () async {

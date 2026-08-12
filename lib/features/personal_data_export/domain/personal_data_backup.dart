@@ -462,6 +462,37 @@ final class AiReportBackupRecord implements PersonalDataBackupRecord {
   };
 }
 
+final class AiReportFeedbackBackupRecord implements PersonalDataBackupRecord {
+  AiReportFeedbackBackupRecord({
+    required this.reportId,
+    required this.reportVersion,
+    required this.helpfulness,
+    required List<String> reasonCodes,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deletedAt,
+  }) : reasonCodes = UnmodifiableListView(reasonCodes);
+
+  final String reportId;
+  final int reportVersion;
+  final String helpfulness;
+  final List<String> reasonCodes;
+  final String createdAt;
+  final String updatedAt;
+  final String? deletedAt;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'report_id': reportId,
+    'report_version': reportVersion,
+    'helpfulness': helpfulness,
+    'reason_codes': reasonCodes,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+    'deleted_at': deletedAt,
+  };
+}
+
 final class PersonalDataModuleSnapshot {
   PersonalDataModuleSnapshot({
     required this.id,

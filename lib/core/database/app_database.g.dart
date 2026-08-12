@@ -11413,6 +11413,955 @@ class AiReportVersionsCompanion extends UpdateCompanion<AiReportVersionRow> {
   }
 }
 
+class $AiReportFeedbackTable extends AiReportFeedback
+    with TableInfo<$AiReportFeedbackTable, AiReportFeedbackRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiReportFeedbackTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: databaseUuid.v4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: utcNowMilliseconds,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES user_profiles (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _reportIdMeta = const VerificationMeta(
+    'reportId',
+  );
+  @override
+  late final GeneratedColumn<String> reportId = GeneratedColumn<String>(
+    'report_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ai_reports (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _reportVersionMeta = const VerificationMeta(
+    'reportVersion',
+  );
+  @override
+  late final GeneratedColumn<int> reportVersion = GeneratedColumn<int>(
+    'report_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reportTypeMeta = const VerificationMeta(
+    'reportType',
+  );
+  @override
+  late final GeneratedColumn<String> reportType = GeneratedColumn<String>(
+    'report_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _helpfulnessMeta = const VerificationMeta(
+    'helpfulness',
+  );
+  @override
+  late final GeneratedColumn<String> helpfulness = GeneratedColumn<String>(
+    'helpfulness',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonCodesJsonMeta = const VerificationMeta(
+    'reasonCodesJson',
+  );
+  @override
+  late final GeneratedColumn<String> reasonCodesJson = GeneratedColumn<String>(
+    'reason_codes_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _promptIdMeta = const VerificationMeta(
+    'promptId',
+  );
+  @override
+  late final GeneratedColumn<String> promptId = GeneratedColumn<String>(
+    'prompt_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _promptVersionMeta = const VerificationMeta(
+    'promptVersion',
+  );
+  @override
+  late final GeneratedColumn<String> promptVersion = GeneratedColumn<String>(
+    'prompt_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('local_only'),
+  );
+  static const VerificationMeta _serverVersionMeta = const VerificationMeta(
+    'serverVersion',
+  );
+  @override
+  late final GeneratedColumn<int> serverVersion = GeneratedColumn<int>(
+    'server_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
+    'lastSyncedAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastSyncedAt = GeneratedColumn<int>(
+    'last_synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _remoteSnapshotJsonMeta =
+      const VerificationMeta('remoteSnapshotJson');
+  @override
+  late final GeneratedColumn<String> remoteSnapshotJson =
+      GeneratedColumn<String>(
+        'remote_snapshot_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    userId,
+    reportId,
+    reportVersion,
+    reportType,
+    helpfulness,
+    reasonCodesJson,
+    promptId,
+    promptVersion,
+    syncStatus,
+    serverVersion,
+    lastSyncedAt,
+    deletedAt,
+    remoteSnapshotJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_report_feedback';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiReportFeedbackRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('report_id')) {
+      context.handle(
+        _reportIdMeta,
+        reportId.isAcceptableOrUnknown(data['report_id']!, _reportIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reportIdMeta);
+    }
+    if (data.containsKey('report_version')) {
+      context.handle(
+        _reportVersionMeta,
+        reportVersion.isAcceptableOrUnknown(
+          data['report_version']!,
+          _reportVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_reportVersionMeta);
+    }
+    if (data.containsKey('report_type')) {
+      context.handle(
+        _reportTypeMeta,
+        reportType.isAcceptableOrUnknown(data['report_type']!, _reportTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reportTypeMeta);
+    }
+    if (data.containsKey('helpfulness')) {
+      context.handle(
+        _helpfulnessMeta,
+        helpfulness.isAcceptableOrUnknown(
+          data['helpfulness']!,
+          _helpfulnessMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_helpfulnessMeta);
+    }
+    if (data.containsKey('reason_codes_json')) {
+      context.handle(
+        _reasonCodesJsonMeta,
+        reasonCodesJson.isAcceptableOrUnknown(
+          data['reason_codes_json']!,
+          _reasonCodesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('prompt_id')) {
+      context.handle(
+        _promptIdMeta,
+        promptId.isAcceptableOrUnknown(data['prompt_id']!, _promptIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_promptIdMeta);
+    }
+    if (data.containsKey('prompt_version')) {
+      context.handle(
+        _promptVersionMeta,
+        promptVersion.isAcceptableOrUnknown(
+          data['prompt_version']!,
+          _promptVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_promptVersionMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('server_version')) {
+      context.handle(
+        _serverVersionMeta,
+        serverVersion.isAcceptableOrUnknown(
+          data['server_version']!,
+          _serverVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+        _lastSyncedAtMeta,
+        lastSyncedAt.isAcceptableOrUnknown(
+          data['last_synced_at']!,
+          _lastSyncedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('remote_snapshot_json')) {
+      context.handle(
+        _remoteSnapshotJsonMeta,
+        remoteSnapshotJson.isAcceptableOrUnknown(
+          data['remote_snapshot_json']!,
+          _remoteSnapshotJsonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, reportId, reportVersion},
+  ];
+  @override
+  AiReportFeedbackRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiReportFeedbackRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      reportId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}report_id'],
+      )!,
+      reportVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}report_version'],
+      )!,
+      reportType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}report_type'],
+      )!,
+      helpfulness: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}helpfulness'],
+      )!,
+      reasonCodesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason_codes_json'],
+      )!,
+      promptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt_id'],
+      )!,
+      promptVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt_version'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      serverVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_version'],
+      ),
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_synced_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      remoteSnapshotJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_snapshot_json'],
+      ),
+    );
+  }
+
+  @override
+  $AiReportFeedbackTable createAlias(String alias) {
+    return $AiReportFeedbackTable(attachedDatabase, alias);
+  }
+}
+
+class AiReportFeedbackRow extends DataClass
+    implements Insertable<AiReportFeedbackRow> {
+  final String id;
+  final int createdAt;
+  final int updatedAt;
+  final String userId;
+  final String reportId;
+  final int reportVersion;
+  final String reportType;
+  final String helpfulness;
+  final String reasonCodesJson;
+  final String promptId;
+  final String promptVersion;
+  final String syncStatus;
+  final int? serverVersion;
+  final int? lastSyncedAt;
+  final int? deletedAt;
+  final String? remoteSnapshotJson;
+  const AiReportFeedbackRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.userId,
+    required this.reportId,
+    required this.reportVersion,
+    required this.reportType,
+    required this.helpfulness,
+    required this.reasonCodesJson,
+    required this.promptId,
+    required this.promptVersion,
+    required this.syncStatus,
+    this.serverVersion,
+    this.lastSyncedAt,
+    this.deletedAt,
+    this.remoteSnapshotJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    map['user_id'] = Variable<String>(userId);
+    map['report_id'] = Variable<String>(reportId);
+    map['report_version'] = Variable<int>(reportVersion);
+    map['report_type'] = Variable<String>(reportType);
+    map['helpfulness'] = Variable<String>(helpfulness);
+    map['reason_codes_json'] = Variable<String>(reasonCodesJson);
+    map['prompt_id'] = Variable<String>(promptId);
+    map['prompt_version'] = Variable<String>(promptVersion);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || serverVersion != null) {
+      map['server_version'] = Variable<int>(serverVersion);
+    }
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<int>(lastSyncedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    if (!nullToAbsent || remoteSnapshotJson != null) {
+      map['remote_snapshot_json'] = Variable<String>(remoteSnapshotJson);
+    }
+    return map;
+  }
+
+  AiReportFeedbackCompanion toCompanion(bool nullToAbsent) {
+    return AiReportFeedbackCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      userId: Value(userId),
+      reportId: Value(reportId),
+      reportVersion: Value(reportVersion),
+      reportType: Value(reportType),
+      helpfulness: Value(helpfulness),
+      reasonCodesJson: Value(reasonCodesJson),
+      promptId: Value(promptId),
+      promptVersion: Value(promptVersion),
+      syncStatus: Value(syncStatus),
+      serverVersion: serverVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverVersion),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      remoteSnapshotJson: remoteSnapshotJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteSnapshotJson),
+    );
+  }
+
+  factory AiReportFeedbackRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiReportFeedbackRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      userId: serializer.fromJson<String>(json['userId']),
+      reportId: serializer.fromJson<String>(json['reportId']),
+      reportVersion: serializer.fromJson<int>(json['reportVersion']),
+      reportType: serializer.fromJson<String>(json['reportType']),
+      helpfulness: serializer.fromJson<String>(json['helpfulness']),
+      reasonCodesJson: serializer.fromJson<String>(json['reasonCodesJson']),
+      promptId: serializer.fromJson<String>(json['promptId']),
+      promptVersion: serializer.fromJson<String>(json['promptVersion']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      serverVersion: serializer.fromJson<int?>(json['serverVersion']),
+      lastSyncedAt: serializer.fromJson<int?>(json['lastSyncedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      remoteSnapshotJson: serializer.fromJson<String?>(
+        json['remoteSnapshotJson'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'userId': serializer.toJson<String>(userId),
+      'reportId': serializer.toJson<String>(reportId),
+      'reportVersion': serializer.toJson<int>(reportVersion),
+      'reportType': serializer.toJson<String>(reportType),
+      'helpfulness': serializer.toJson<String>(helpfulness),
+      'reasonCodesJson': serializer.toJson<String>(reasonCodesJson),
+      'promptId': serializer.toJson<String>(promptId),
+      'promptVersion': serializer.toJson<String>(promptVersion),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'serverVersion': serializer.toJson<int?>(serverVersion),
+      'lastSyncedAt': serializer.toJson<int?>(lastSyncedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'remoteSnapshotJson': serializer.toJson<String?>(remoteSnapshotJson),
+    };
+  }
+
+  AiReportFeedbackRow copyWith({
+    String? id,
+    int? createdAt,
+    int? updatedAt,
+    String? userId,
+    String? reportId,
+    int? reportVersion,
+    String? reportType,
+    String? helpfulness,
+    String? reasonCodesJson,
+    String? promptId,
+    String? promptVersion,
+    String? syncStatus,
+    Value<int?> serverVersion = const Value.absent(),
+    Value<int?> lastSyncedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    Value<String?> remoteSnapshotJson = const Value.absent(),
+  }) => AiReportFeedbackRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    userId: userId ?? this.userId,
+    reportId: reportId ?? this.reportId,
+    reportVersion: reportVersion ?? this.reportVersion,
+    reportType: reportType ?? this.reportType,
+    helpfulness: helpfulness ?? this.helpfulness,
+    reasonCodesJson: reasonCodesJson ?? this.reasonCodesJson,
+    promptId: promptId ?? this.promptId,
+    promptVersion: promptVersion ?? this.promptVersion,
+    syncStatus: syncStatus ?? this.syncStatus,
+    serverVersion: serverVersion.present
+        ? serverVersion.value
+        : this.serverVersion,
+    lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    remoteSnapshotJson: remoteSnapshotJson.present
+        ? remoteSnapshotJson.value
+        : this.remoteSnapshotJson,
+  );
+  AiReportFeedbackRow copyWithCompanion(AiReportFeedbackCompanion data) {
+    return AiReportFeedbackRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      reportId: data.reportId.present ? data.reportId.value : this.reportId,
+      reportVersion: data.reportVersion.present
+          ? data.reportVersion.value
+          : this.reportVersion,
+      reportType: data.reportType.present
+          ? data.reportType.value
+          : this.reportType,
+      helpfulness: data.helpfulness.present
+          ? data.helpfulness.value
+          : this.helpfulness,
+      reasonCodesJson: data.reasonCodesJson.present
+          ? data.reasonCodesJson.value
+          : this.reasonCodesJson,
+      promptId: data.promptId.present ? data.promptId.value : this.promptId,
+      promptVersion: data.promptVersion.present
+          ? data.promptVersion.value
+          : this.promptVersion,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      serverVersion: data.serverVersion.present
+          ? data.serverVersion.value
+          : this.serverVersion,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      remoteSnapshotJson: data.remoteSnapshotJson.present
+          ? data.remoteSnapshotJson.value
+          : this.remoteSnapshotJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiReportFeedbackRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('reportId: $reportId, ')
+          ..write('reportVersion: $reportVersion, ')
+          ..write('reportType: $reportType, ')
+          ..write('helpfulness: $helpfulness, ')
+          ..write('reasonCodesJson: $reasonCodesJson, ')
+          ..write('promptId: $promptId, ')
+          ..write('promptVersion: $promptVersion, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('remoteSnapshotJson: $remoteSnapshotJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    userId,
+    reportId,
+    reportVersion,
+    reportType,
+    helpfulness,
+    reasonCodesJson,
+    promptId,
+    promptVersion,
+    syncStatus,
+    serverVersion,
+    lastSyncedAt,
+    deletedAt,
+    remoteSnapshotJson,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiReportFeedbackRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.userId == this.userId &&
+          other.reportId == this.reportId &&
+          other.reportVersion == this.reportVersion &&
+          other.reportType == this.reportType &&
+          other.helpfulness == this.helpfulness &&
+          other.reasonCodesJson == this.reasonCodesJson &&
+          other.promptId == this.promptId &&
+          other.promptVersion == this.promptVersion &&
+          other.syncStatus == this.syncStatus &&
+          other.serverVersion == this.serverVersion &&
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.remoteSnapshotJson == this.remoteSnapshotJson);
+}
+
+class AiReportFeedbackCompanion extends UpdateCompanion<AiReportFeedbackRow> {
+  final Value<String> id;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<String> userId;
+  final Value<String> reportId;
+  final Value<int> reportVersion;
+  final Value<String> reportType;
+  final Value<String> helpfulness;
+  final Value<String> reasonCodesJson;
+  final Value<String> promptId;
+  final Value<String> promptVersion;
+  final Value<String> syncStatus;
+  final Value<int?> serverVersion;
+  final Value<int?> lastSyncedAt;
+  final Value<int?> deletedAt;
+  final Value<String?> remoteSnapshotJson;
+  final Value<int> rowid;
+  const AiReportFeedbackCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.reportId = const Value.absent(),
+    this.reportVersion = const Value.absent(),
+    this.reportType = const Value.absent(),
+    this.helpfulness = const Value.absent(),
+    this.reasonCodesJson = const Value.absent(),
+    this.promptId = const Value.absent(),
+    this.promptVersion = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.remoteSnapshotJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiReportFeedbackCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    required String userId,
+    required String reportId,
+    required int reportVersion,
+    required String reportType,
+    required String helpfulness,
+    this.reasonCodesJson = const Value.absent(),
+    required String promptId,
+    required String promptVersion,
+    this.syncStatus = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.remoteSnapshotJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId),
+       reportId = Value(reportId),
+       reportVersion = Value(reportVersion),
+       reportType = Value(reportType),
+       helpfulness = Value(helpfulness),
+       promptId = Value(promptId),
+       promptVersion = Value(promptVersion);
+  static Insertable<AiReportFeedbackRow> custom({
+    Expression<String>? id,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<String>? userId,
+    Expression<String>? reportId,
+    Expression<int>? reportVersion,
+    Expression<String>? reportType,
+    Expression<String>? helpfulness,
+    Expression<String>? reasonCodesJson,
+    Expression<String>? promptId,
+    Expression<String>? promptVersion,
+    Expression<String>? syncStatus,
+    Expression<int>? serverVersion,
+    Expression<int>? lastSyncedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? remoteSnapshotJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (userId != null) 'user_id': userId,
+      if (reportId != null) 'report_id': reportId,
+      if (reportVersion != null) 'report_version': reportVersion,
+      if (reportType != null) 'report_type': reportType,
+      if (helpfulness != null) 'helpfulness': helpfulness,
+      if (reasonCodesJson != null) 'reason_codes_json': reasonCodesJson,
+      if (promptId != null) 'prompt_id': promptId,
+      if (promptVersion != null) 'prompt_version': promptVersion,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (serverVersion != null) 'server_version': serverVersion,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (remoteSnapshotJson != null)
+        'remote_snapshot_json': remoteSnapshotJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiReportFeedbackCompanion copyWith({
+    Value<String>? id,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<String>? userId,
+    Value<String>? reportId,
+    Value<int>? reportVersion,
+    Value<String>? reportType,
+    Value<String>? helpfulness,
+    Value<String>? reasonCodesJson,
+    Value<String>? promptId,
+    Value<String>? promptVersion,
+    Value<String>? syncStatus,
+    Value<int?>? serverVersion,
+    Value<int?>? lastSyncedAt,
+    Value<int?>? deletedAt,
+    Value<String?>? remoteSnapshotJson,
+    Value<int>? rowid,
+  }) {
+    return AiReportFeedbackCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      userId: userId ?? this.userId,
+      reportId: reportId ?? this.reportId,
+      reportVersion: reportVersion ?? this.reportVersion,
+      reportType: reportType ?? this.reportType,
+      helpfulness: helpfulness ?? this.helpfulness,
+      reasonCodesJson: reasonCodesJson ?? this.reasonCodesJson,
+      promptId: promptId ?? this.promptId,
+      promptVersion: promptVersion ?? this.promptVersion,
+      syncStatus: syncStatus ?? this.syncStatus,
+      serverVersion: serverVersion ?? this.serverVersion,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      remoteSnapshotJson: remoteSnapshotJson ?? this.remoteSnapshotJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (reportId.present) {
+      map['report_id'] = Variable<String>(reportId.value);
+    }
+    if (reportVersion.present) {
+      map['report_version'] = Variable<int>(reportVersion.value);
+    }
+    if (reportType.present) {
+      map['report_type'] = Variable<String>(reportType.value);
+    }
+    if (helpfulness.present) {
+      map['helpfulness'] = Variable<String>(helpfulness.value);
+    }
+    if (reasonCodesJson.present) {
+      map['reason_codes_json'] = Variable<String>(reasonCodesJson.value);
+    }
+    if (promptId.present) {
+      map['prompt_id'] = Variable<String>(promptId.value);
+    }
+    if (promptVersion.present) {
+      map['prompt_version'] = Variable<String>(promptVersion.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (serverVersion.present) {
+      map['server_version'] = Variable<int>(serverVersion.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<int>(lastSyncedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (remoteSnapshotJson.present) {
+      map['remote_snapshot_json'] = Variable<String>(remoteSnapshotJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiReportFeedbackCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('reportId: $reportId, ')
+          ..write('reportVersion: $reportVersion, ')
+          ..write('reportType: $reportType, ')
+          ..write('helpfulness: $helpfulness, ')
+          ..write('reasonCodesJson: $reasonCodesJson, ')
+          ..write('promptId: $promptId, ')
+          ..write('promptVersion: $promptVersion, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('remoteSnapshotJson: $remoteSnapshotJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SyncConflictsTable extends SyncConflicts
     with TableInfo<$SyncConflictsTable, SyncConflictRow> {
   @override
@@ -13963,6 +14912,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AiReportVersionsTable aiReportVersions = $AiReportVersionsTable(
     this,
   );
+  late final $AiReportFeedbackTable aiReportFeedback = $AiReportFeedbackTable(
+    this,
+  );
   late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
   late final $InstallationInfoTable installationInfo = $InstallationInfoTable(
     this,
@@ -13986,6 +14938,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     healthRecords,
     aiReports,
     aiReportVersions,
+    aiReportFeedback,
     syncConflicts,
     installationInfo,
     cloudAccountBindings,
@@ -14212,6 +15165,26 @@ final class $$UserProfilesTableReferences
     ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_aiReportsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AiReportFeedbackTable, List<AiReportFeedbackRow>>
+  _aiReportFeedbackRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.aiReportFeedback,
+    aliasName: 'user_profiles__id__ai_report_feedback__user_id',
+  );
+
+  $$AiReportFeedbackTableProcessedTableManager get aiReportFeedbackRefs {
+    final manager = $$AiReportFeedbackTableTableManager(
+      $_db,
+      $_db.aiReportFeedback,
+    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _aiReportFeedbackRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -14500,6 +15473,31 @@ class $$UserProfilesTableFilterComposer
           }) => $$AiReportsTableFilterComposer(
             $db: $db,
             $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> aiReportFeedbackRefs(
+    Expression<bool> Function($$AiReportFeedbackTableFilterComposer f) f,
+  ) {
+    final $$AiReportFeedbackTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aiReportFeedback,
+      getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportFeedbackTableFilterComposer(
+            $db: $db,
+            $table: $db.aiReportFeedback,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -14868,6 +15866,31 @@ class $$UserProfilesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> aiReportFeedbackRefs<T extends Object>(
+    Expression<T> Function($$AiReportFeedbackTableAnnotationComposer a) f,
+  ) {
+    final $$AiReportFeedbackTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aiReportFeedback,
+      getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportFeedbackTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aiReportFeedback,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> syncConflictsRefs<T extends Object>(
     Expression<T> Function($$SyncConflictsTableAnnotationComposer a) f,
   ) {
@@ -14941,6 +15964,7 @@ class $$UserProfilesTableTableManager
             bool journalPromptConfigurationsRefs,
             bool healthRecordsRefs,
             bool aiReportsRefs,
+            bool aiReportFeedbackRefs,
             bool syncConflictsRefs,
             bool cloudAccountBindingsRefs,
           })
@@ -15033,6 +16057,7 @@ class $$UserProfilesTableTableManager
                 journalPromptConfigurationsRefs = false,
                 healthRecordsRefs = false,
                 aiReportsRefs = false,
+                aiReportFeedbackRefs = false,
                 syncConflictsRefs = false,
                 cloudAccountBindingsRefs = false,
               }) {
@@ -15047,6 +16072,7 @@ class $$UserProfilesTableTableManager
                       db.journalPromptConfigurations,
                     if (healthRecordsRefs) db.healthRecords,
                     if (aiReportsRefs) db.aiReports,
+                    if (aiReportFeedbackRefs) db.aiReportFeedback,
                     if (syncConflictsRefs) db.syncConflicts,
                     if (cloudAccountBindingsRefs) db.cloudAccountBindings,
                   ],
@@ -15200,6 +16226,27 @@ class $$UserProfilesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (aiReportFeedbackRefs)
+                        await $_getPrefetchedData<
+                          UserProfile,
+                          $UserProfilesTable,
+                          AiReportFeedbackRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UserProfilesTableReferences
+                              ._aiReportFeedbackRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UserProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).aiReportFeedbackRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.userId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (syncConflictsRefs)
                         await $_getPrefetchedData<
                           UserProfile,
@@ -15270,6 +16317,7 @@ typedef $$UserProfilesTableProcessedTableManager =
         bool journalPromptConfigurationsRefs,
         bool healthRecordsRefs,
         bool aiReportsRefs,
+        bool aiReportFeedbackRefs,
         bool syncConflictsRefs,
         bool cloudAccountBindingsRefs,
       })
@@ -21268,6 +22316,26 @@ final class $$AiReportsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$AiReportFeedbackTable, List<AiReportFeedbackRow>>
+  _aiReportFeedbackRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.aiReportFeedback,
+    aliasName: 'ai_reports__id__ai_report_feedback__report_id',
+  );
+
+  $$AiReportFeedbackTableProcessedTableManager get aiReportFeedbackRefs {
+    final manager = $$AiReportFeedbackTableTableManager(
+      $_db,
+      $_db.aiReportFeedback,
+    ).filter((f) => f.reportId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _aiReportFeedbackRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AiReportsTableFilterComposer
@@ -21463,6 +22531,31 @@ class $$AiReportsTableFilterComposer
           }) => $$AiReportVersionsTableFilterComposer(
             $db: $db,
             $table: $db.aiReportVersions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> aiReportFeedbackRefs(
+    Expression<bool> Function($$AiReportFeedbackTableFilterComposer f) f,
+  ) {
+    final $$AiReportFeedbackTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aiReportFeedback,
+      getReferencedColumn: (t) => t.reportId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportFeedbackTableFilterComposer(
+            $db: $db,
+            $table: $db.aiReportFeedback,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -21832,6 +22925,31 @@ class $$AiReportsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> aiReportFeedbackRefs<T extends Object>(
+    Expression<T> Function($$AiReportFeedbackTableAnnotationComposer a) f,
+  ) {
+    final $$AiReportFeedbackTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.aiReportFeedback,
+      getReferencedColumn: (t) => t.reportId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportFeedbackTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aiReportFeedback,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AiReportsTableTableManager
@@ -21847,7 +22965,11 @@ class $$AiReportsTableTableManager
           $$AiReportsTableUpdateCompanionBuilder,
           (AiReport, $$AiReportsTableReferences),
           AiReport,
-          PrefetchHooks Function({bool userId, bool aiReportVersionsRefs})
+          PrefetchHooks Function({
+            bool userId,
+            bool aiReportVersionsRefs,
+            bool aiReportFeedbackRefs,
+          })
         > {
   $$AiReportsTableTableManager(_$AppDatabase db, $AiReportsTable table)
     : super(
@@ -22001,11 +23123,16 @@ class $$AiReportsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({userId = false, aiReportVersionsRefs = false}) {
+              ({
+                userId = false,
+                aiReportVersionsRefs = false,
+                aiReportFeedbackRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (aiReportVersionsRefs) db.aiReportVersions,
+                    if (aiReportFeedbackRefs) db.aiReportFeedback,
                   ],
                   addJoins:
                       <
@@ -22062,6 +23189,27 @@ class $$AiReportsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (aiReportFeedbackRefs)
+                        await $_getPrefetchedData<
+                          AiReport,
+                          $AiReportsTable,
+                          AiReportFeedbackRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AiReportsTableReferences
+                              ._aiReportFeedbackRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AiReportsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).aiReportFeedbackRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.reportId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -22082,7 +23230,11 @@ typedef $$AiReportsTableProcessedTableManager =
       $$AiReportsTableUpdateCompanionBuilder,
       (AiReport, $$AiReportsTableReferences),
       AiReport,
-      PrefetchHooks Function({bool userId, bool aiReportVersionsRefs})
+      PrefetchHooks Function({
+        bool userId,
+        bool aiReportVersionsRefs,
+        bool aiReportFeedbackRefs,
+      })
     >;
 typedef $$AiReportVersionsTableCreateCompanionBuilder =
     AiReportVersionsCompanion Function({
@@ -22573,6 +23725,651 @@ typedef $$AiReportVersionsTableProcessedTableManager =
       (AiReportVersionRow, $$AiReportVersionsTableReferences),
       AiReportVersionRow,
       PrefetchHooks Function({bool reportId})
+    >;
+typedef $$AiReportFeedbackTableCreateCompanionBuilder =
+    AiReportFeedbackCompanion Function({
+      Value<String> id,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      required String userId,
+      required String reportId,
+      required int reportVersion,
+      required String reportType,
+      required String helpfulness,
+      Value<String> reasonCodesJson,
+      required String promptId,
+      required String promptVersion,
+      Value<String> syncStatus,
+      Value<int?> serverVersion,
+      Value<int?> lastSyncedAt,
+      Value<int?> deletedAt,
+      Value<String?> remoteSnapshotJson,
+      Value<int> rowid,
+    });
+typedef $$AiReportFeedbackTableUpdateCompanionBuilder =
+    AiReportFeedbackCompanion Function({
+      Value<String> id,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<String> userId,
+      Value<String> reportId,
+      Value<int> reportVersion,
+      Value<String> reportType,
+      Value<String> helpfulness,
+      Value<String> reasonCodesJson,
+      Value<String> promptId,
+      Value<String> promptVersion,
+      Value<String> syncStatus,
+      Value<int?> serverVersion,
+      Value<int?> lastSyncedAt,
+      Value<int?> deletedAt,
+      Value<String?> remoteSnapshotJson,
+      Value<int> rowid,
+    });
+
+final class $$AiReportFeedbackTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AiReportFeedbackTable,
+          AiReportFeedbackRow
+        > {
+  $$AiReportFeedbackTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UserProfilesTable _userIdTable(_$AppDatabase db) => db.userProfiles
+      .createAlias('ai_report_feedback__user_id__user_profiles__id');
+
+  $$UserProfilesTableProcessedTableManager get userId {
+    final $_column = $_itemColumn<String>('user_id')!;
+
+    final manager = $$UserProfilesTableTableManager(
+      $_db,
+      $_db.userProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AiReportsTable _reportIdTable(_$AppDatabase db) =>
+      db.aiReports.createAlias('ai_report_feedback__report_id__ai_reports__id');
+
+  $$AiReportsTableProcessedTableManager get reportId {
+    final $_column = $_itemColumn<String>('report_id')!;
+
+    final manager = $$AiReportsTableTableManager(
+      $_db,
+      $_db.aiReports,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_reportIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AiReportFeedbackTableFilterComposer
+    extends Composer<_$AppDatabase, $AiReportFeedbackTable> {
+  $$AiReportFeedbackTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reportVersion => $composableBuilder(
+    column: $table.reportVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reportType => $composableBuilder(
+    column: $table.reportType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get helpfulness => $composableBuilder(
+    column: $table.helpfulness,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reasonCodesJson => $composableBuilder(
+    column: $table.reasonCodesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get promptId => $composableBuilder(
+    column: $table.promptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get promptVersion => $composableBuilder(
+    column: $table.promptVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverVersion => $composableBuilder(
+    column: $table.serverVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteSnapshotJson => $composableBuilder(
+    column: $table.remoteSnapshotJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UserProfilesTableFilterComposer get userId {
+    final $$UserProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AiReportsTableFilterComposer get reportId {
+    final $$AiReportsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reportId,
+      referencedTable: $db.aiReports,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportsTableFilterComposer(
+            $db: $db,
+            $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AiReportFeedbackTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiReportFeedbackTable> {
+  $$AiReportFeedbackTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reportVersion => $composableBuilder(
+    column: $table.reportVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reportType => $composableBuilder(
+    column: $table.reportType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get helpfulness => $composableBuilder(
+    column: $table.helpfulness,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reasonCodesJson => $composableBuilder(
+    column: $table.reasonCodesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get promptId => $composableBuilder(
+    column: $table.promptId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get promptVersion => $composableBuilder(
+    column: $table.promptVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverVersion => $composableBuilder(
+    column: $table.serverVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get remoteSnapshotJson => $composableBuilder(
+    column: $table.remoteSnapshotJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UserProfilesTableOrderingComposer get userId {
+    final $$UserProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AiReportsTableOrderingComposer get reportId {
+    final $$AiReportsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reportId,
+      referencedTable: $db.aiReports,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportsTableOrderingComposer(
+            $db: $db,
+            $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AiReportFeedbackTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiReportFeedbackTable> {
+  $$AiReportFeedbackTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get reportVersion => $composableBuilder(
+    column: $table.reportVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reportType => $composableBuilder(
+    column: $table.reportType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get helpfulness => $composableBuilder(
+    column: $table.helpfulness,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reasonCodesJson => $composableBuilder(
+    column: $table.reasonCodesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get promptId =>
+      $composableBuilder(column: $table.promptId, builder: (column) => column);
+
+  GeneratedColumn<String> get promptVersion => $composableBuilder(
+    column: $table.promptVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get serverVersion => $composableBuilder(
+    column: $table.serverVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteSnapshotJson => $composableBuilder(
+    column: $table.remoteSnapshotJson,
+    builder: (column) => column,
+  );
+
+  $$UserProfilesTableAnnotationComposer get userId {
+    final $$UserProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AiReportsTableAnnotationComposer get reportId {
+    final $$AiReportsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reportId,
+      referencedTable: $db.aiReports,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiReportsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aiReports,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AiReportFeedbackTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiReportFeedbackTable,
+          AiReportFeedbackRow,
+          $$AiReportFeedbackTableFilterComposer,
+          $$AiReportFeedbackTableOrderingComposer,
+          $$AiReportFeedbackTableAnnotationComposer,
+          $$AiReportFeedbackTableCreateCompanionBuilder,
+          $$AiReportFeedbackTableUpdateCompanionBuilder,
+          (AiReportFeedbackRow, $$AiReportFeedbackTableReferences),
+          AiReportFeedbackRow,
+          PrefetchHooks Function({bool userId, bool reportId})
+        > {
+  $$AiReportFeedbackTableTableManager(
+    _$AppDatabase db,
+    $AiReportFeedbackTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiReportFeedbackTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiReportFeedbackTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiReportFeedbackTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> reportId = const Value.absent(),
+                Value<int> reportVersion = const Value.absent(),
+                Value<String> reportType = const Value.absent(),
+                Value<String> helpfulness = const Value.absent(),
+                Value<String> reasonCodesJson = const Value.absent(),
+                Value<String> promptId = const Value.absent(),
+                Value<String> promptVersion = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int?> serverVersion = const Value.absent(),
+                Value<int?> lastSyncedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String?> remoteSnapshotJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiReportFeedbackCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                userId: userId,
+                reportId: reportId,
+                reportVersion: reportVersion,
+                reportType: reportType,
+                helpfulness: helpfulness,
+                reasonCodesJson: reasonCodesJson,
+                promptId: promptId,
+                promptVersion: promptVersion,
+                syncStatus: syncStatus,
+                serverVersion: serverVersion,
+                lastSyncedAt: lastSyncedAt,
+                deletedAt: deletedAt,
+                remoteSnapshotJson: remoteSnapshotJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                required String userId,
+                required String reportId,
+                required int reportVersion,
+                required String reportType,
+                required String helpfulness,
+                Value<String> reasonCodesJson = const Value.absent(),
+                required String promptId,
+                required String promptVersion,
+                Value<String> syncStatus = const Value.absent(),
+                Value<int?> serverVersion = const Value.absent(),
+                Value<int?> lastSyncedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String?> remoteSnapshotJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiReportFeedbackCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                userId: userId,
+                reportId: reportId,
+                reportVersion: reportVersion,
+                reportType: reportType,
+                helpfulness: helpfulness,
+                reasonCodesJson: reasonCodesJson,
+                promptId: promptId,
+                promptVersion: promptVersion,
+                syncStatus: syncStatus,
+                serverVersion: serverVersion,
+                lastSyncedAt: lastSyncedAt,
+                deletedAt: deletedAt,
+                remoteSnapshotJson: remoteSnapshotJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AiReportFeedbackTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({userId = false, reportId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (userId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.userId,
+                                referencedTable:
+                                    $$AiReportFeedbackTableReferences
+                                        ._userIdTable(db),
+                                referencedColumn:
+                                    $$AiReportFeedbackTableReferences
+                                        ._userIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (reportId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.reportId,
+                                referencedTable:
+                                    $$AiReportFeedbackTableReferences
+                                        ._reportIdTable(db),
+                                referencedColumn:
+                                    $$AiReportFeedbackTableReferences
+                                        ._reportIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AiReportFeedbackTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiReportFeedbackTable,
+      AiReportFeedbackRow,
+      $$AiReportFeedbackTableFilterComposer,
+      $$AiReportFeedbackTableOrderingComposer,
+      $$AiReportFeedbackTableAnnotationComposer,
+      $$AiReportFeedbackTableCreateCompanionBuilder,
+      $$AiReportFeedbackTableUpdateCompanionBuilder,
+      (AiReportFeedbackRow, $$AiReportFeedbackTableReferences),
+      AiReportFeedbackRow,
+      PrefetchHooks Function({bool userId, bool reportId})
     >;
 typedef $$SyncConflictsTableCreateCompanionBuilder =
     SyncConflictsCompanion Function({
@@ -24011,6 +25808,8 @@ class $AppDatabaseManager {
       $$AiReportsTableTableManager(_db, _db.aiReports);
   $$AiReportVersionsTableTableManager get aiReportVersions =>
       $$AiReportVersionsTableTableManager(_db, _db.aiReportVersions);
+  $$AiReportFeedbackTableTableManager get aiReportFeedback =>
+      $$AiReportFeedbackTableTableManager(_db, _db.aiReportFeedback);
   $$SyncConflictsTableTableManager get syncConflicts =>
       $$SyncConflictsTableTableManager(_db, _db.syncConflicts);
   $$InstallationInfoTableTableManager get installationInfo =>

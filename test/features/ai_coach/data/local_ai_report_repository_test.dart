@@ -448,6 +448,47 @@ void main() {
   );
 
   test(
+    'report deletion tombstones previously synced structured feedback',
+    () async {
+      final report = await repository.createPending(input: _bundle());
+      await repository.markCompleted(
+        reportId: report.id,
+        reportContent: 'completed report',
+      );
+      final userId = (await database.bootstrapDao.bootstrap()).activeUserId;
+      await database
+          .into(database.aiReportFeedback)
+          .insert(
+            AiReportFeedbackCompanion.insert(
+              id: const Value('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+              userId: userId,
+              reportId: report.id,
+              reportVersion: 1,
+              reportType: report.reportType.databaseValue,
+              helpfulness: 'helpful',
+              promptId: report.reportType.databaseValue,
+              promptVersion: report.promptVersion,
+              syncStatus: const Value('synced'),
+              serverVersion: const Value(2),
+              lastSyncedAt: Value(currentTime.millisecondsSinceEpoch),
+              createdAt: Value(currentTime.millisecondsSinceEpoch),
+              updatedAt: Value(currentTime.millisecondsSinceEpoch),
+            ),
+          );
+
+      currentTime = currentTime.add(const Duration(minutes: 1));
+      await repository.softDelete(report.id);
+
+      final feedback = await database
+          .select(database.aiReportFeedback)
+          .getSingle();
+      expect(feedback.syncStatus, 'pending_delete');
+      expect(feedback.deletedAt, currentTime.millisecondsSinceEpoch);
+      expect(await repository.getById(report.id), isNull);
+    },
+  );
+
+  test(
     'revoked consent blocks new pending but does not alter existing report',
     () async {
       final existing = await repository.createPending(input: _bundle());

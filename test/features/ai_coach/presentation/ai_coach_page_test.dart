@@ -359,9 +359,11 @@ void main() {
 
       await _pumpDetail(tester, reports, 'completed');
       expect(find.text('这是本地保存的报告正文。'), findsOneWidget);
-      expect(find.text('Provider：未记录'), findsOneWidget);
-      expect(find.text('Model：未记录'), findsOneWidget);
-      expect(find.text('输入快照：已保存'), findsOneWidget);
+      expect(find.textContaining('Provider'), findsNothing);
+      expect(find.textContaining('Model'), findsNothing);
+      expect(find.textContaining('输入快照'), findsNothing);
+      expect(find.textContaining('Prompt Version'), findsNothing);
+      expect(find.textContaining('Input Hash'), findsNothing);
       expect(find.textContaining('not displayed'), findsNothing);
 
       await _pumpDetail(tester, reports, 'pending');

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
+import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_report_feedback_controller.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/data/sync_providers.dart';
 import 'package:rebirth/features/sync/domain/sync_conflict_record.dart';
@@ -103,9 +105,43 @@ class AiReportSyncController extends Notifier<AiReportSyncViewState> {
     state = state.copyWith(
       status: AiReportSyncStatus.syncing,
       clearError: true,
+      clearFeedbackError: true,
     );
     try {
-      final result = await ref.read(aiReportSyncRunnerProvider)();
+      var result = await ref.read(aiReportSyncRunnerProvider)();
+      if (result.isSuccessful) {
+        try {
+          final feedback = await ref
+              .read(aiReportFeedbackSyncServiceProvider)
+              .synchronize();
+          state = state.copyWith(
+            feedbackPushedCount: feedback.pushed,
+            feedbackPulledCount: feedback.pulled,
+            feedbackConflictCount: feedback.conflicts,
+            feedbackDeferredCount: feedback.deferred,
+          );
+          ref.invalidate(aiReportFeedbackControllerFamily);
+        } catch (_) {
+          const message =
+              'AI reports were synchronized, but feedback synchronization '
+              'was incomplete. Local feedback was retained.';
+          result = SyncRunResult(
+            direction: result.direction,
+            phases: result.phases,
+            entityResults: result.entityResults,
+            startedAt: result.startedAt,
+            completedAt: result.completedAt,
+            failure: const SyncFailure(
+              reason: SyncFailureReason.unexpected,
+              phase: SyncRunPhase.completed,
+              message: message,
+              entityType: SyncEntityType.aiReport,
+              diagnosticCode: 'ai_report_feedback_partial_failure',
+            ),
+          );
+          state = state.copyWith(feedbackErrorMessage: message);
+        }
+      }
       await _finish(result);
       return result;
     } catch (_) {
@@ -153,6 +189,8 @@ class AiReportSyncController extends Notifier<AiReportSyncViewState> {
     final entity = result.resultFor(SyncEntityType.aiReport);
     final status = result.isSuccessful
         ? AiReportSyncStatus.succeeded
+        : result.isPartialSuccess
+        ? AiReportSyncStatus.partial
         : entity?.status == SyncEntityStatus.conflict
         ? AiReportSyncStatus.conflict
         : AiReportSyncStatus.failed;

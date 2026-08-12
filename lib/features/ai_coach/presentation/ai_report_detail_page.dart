@@ -16,6 +16,7 @@ import 'ai_pending_recovery_controller.dart';
 import 'models/ai_report_presentation_models.dart';
 import 'widgets/ai_report_delete_dialog.dart';
 import 'widgets/ai_report_archive_dialog.dart';
+import 'widgets/ai_report_feedback_card.dart';
 
 class AiReportDetailPage extends ConsumerWidget {
   const AiReportDetailPage({required this.reportId, super.key});
@@ -119,33 +120,12 @@ class _DetailContent extends ConsumerWidget {
                           value: detail.periodLabel,
                         ),
                         _DetailLine(
-                          label: 'Prompt Version',
-                          value: detail.promptVersion,
-                        ),
-                        _DetailLine(
-                          label: 'Input Hash',
-                          value: detail.shortInputHash,
-                        ),
-                        _DetailLine(
                           label: '请求时间',
                           value: detail.requestedAtLabel,
                         ),
                         _DetailLine(
                           label: '生成时间',
                           value: detail.generatedAtLabel,
-                        ),
-                        _DetailLine(
-                          label: 'Provider',
-                          value: detail.providerLabel,
-                        ),
-                        _DetailLine(label: 'Model', value: detail.modelLabel),
-                        _DetailLine(
-                          label: '结构化输出',
-                          value: detail.hasStructuredOutput ? '已保存' : '未保存',
-                        ),
-                        _DetailLine(
-                          label: '输入快照',
-                          value: detail.hasInputSnapshot ? '已保存' : '未保存',
                         ),
                       ],
                     ),
@@ -161,8 +141,21 @@ class _DetailContent extends ConsumerWidget {
                   onConfirmNotFound: () =>
                       _confirmServerNotFound(context, ref, detail.id),
                 ),
+                if ((detail.status == AiReportStatus.completed ||
+                        detail.status == AiReportStatus.archived) &&
+                    detail.currentVersion > 0) ...[
+                  const SizedBox(height: 16),
+                  AiReportFeedbackCard(
+                    reportId: detail.id,
+                    reportVersion: detail.currentVersion,
+                  ),
+                ],
                 const SizedBox(height: 16),
-                _VersionHistory(versions: detail.versions),
+                _VersionHistory(
+                  reportId: detail.id,
+                  currentVersion: detail.currentVersion,
+                  versions: detail.versions,
+                ),
                 const SizedBox(height: 16),
                 if (detail.isDaily) ...[
                   Wrap(
@@ -353,8 +346,14 @@ class _DetailContent extends ConsumerWidget {
 }
 
 class _VersionHistory extends StatelessWidget {
-  const _VersionHistory({required this.versions});
+  const _VersionHistory({
+    required this.reportId,
+    required this.currentVersion,
+    required this.versions,
+  });
 
+  final String reportId;
+  final int currentVersion;
   final List<AiReportVersion> versions;
 
   @override
@@ -386,6 +385,15 @@ class _VersionHistory extends StatelessWidget {
                       SelectableText(version.content ?? '报告正文不可用。')
                     else
                       const Text('该版本未保存报告正文。'),
+                    if (version.status == AiReportStatus.completed &&
+                        version.version != currentVersion) ...[
+                      const SizedBox(height: 12),
+                      AiReportFeedbackCard(
+                        reportId: reportId,
+                        reportVersion: version.version,
+                        compact: true,
+                      ),
+                    ],
                   ],
                 ),
               ),

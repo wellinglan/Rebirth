@@ -124,3 +124,21 @@ final class AiReportsPersonalDataExportModule
     );
   }
 }
+
+final class AiReportFeedbackPersonalDataExportModule
+    implements PersonalDataExportModule {
+  const AiReportFeedbackPersonalDataExportModule(this.repository);
+
+  final PersonalDataBackupRepository repository;
+
+  @override
+  String get id => 'ai_report_feedback';
+
+  @override
+  Future<PersonalDataModuleSnapshot> export(String localUserId) async {
+    return PersonalDataModuleSnapshot(
+      id: id,
+      records: await repository.readAiReportFeedback(localUserId),
+    );
+  }
+}

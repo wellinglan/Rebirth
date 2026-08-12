@@ -226,7 +226,7 @@ void main() {
       expect(revisionSource, isNot(contains('features/')));
       expect(routeNamesSource, contains("'/settings/profile'"));
       expect(routerSource, isNot(contains('RoutePaths.profile')));
-      expect(databaseSource, contains('int get schemaVersion => 11'));
+      expect(databaseSource, contains('int get schemaVersion => 12'));
       expect(pubspec, isNot(contains('firebase_auth')));
       expect(pubspec, isNot(contains('supabase')));
       expect(pubspec, isNot(contains('oauth')));

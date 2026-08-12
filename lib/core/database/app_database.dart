@@ -6,6 +6,7 @@ import 'daos/bootstrap_dao.dart';
 import 'database_connection.dart';
 import 'tables/ai_reports_table.dart';
 import 'tables/ai_report_versions_table.dart';
+import 'tables/ai_report_feedback_table.dart';
 import 'tables/app_settings_table.dart';
 import 'tables/cloud_account_bindings_table.dart';
 import 'tables/common_columns.dart';
@@ -35,6 +36,7 @@ part 'app_database.g.dart';
     HealthRecords,
     AiReports,
     AiReportVersions,
+    AiReportFeedback,
     SyncConflicts,
     InstallationInfo,
     CloudAccountBindings,
@@ -52,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +65,7 @@ class AppDatabase extends _$AppDatabase {
       await _createAccountBoundaryIndexes();
       await _createJournalPromptIndexes();
       await _createAiReportVersionIndexesAndGuards();
+      await _createAiReportFeedbackIndexes();
     },
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
@@ -180,6 +183,10 @@ class AppDatabase extends _$AppDatabase {
         await migrator.alterTable(TableMigration(syncConflicts));
         await _createSyncConflictIndexes();
       }
+      if (from < 12) {
+        await migrator.createTable(aiReportFeedback);
+        await _createAiReportFeedbackIndexes();
+      }
     },
     beforeOpen: (details) async {
       if (details.versionBefore case final previous?
@@ -235,6 +242,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _createAiReportIndexes() async {
     for (final statement in _aiReportIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createAiReportFeedbackIndexes() async {
+    for (final statement in _aiReportFeedbackIndexes) {
       await customStatement(statement);
     }
   }
@@ -535,4 +548,13 @@ const _aiReportIndexes = <String>[
       '(user_id, report_type, period_start_date, period_end_date, input_hash)',
   'CREATE INDEX IF NOT EXISTS ai_reports_status_requested_at '
       'ON ai_reports (report_status, requested_at)',
+];
+
+const _aiReportFeedbackIndexes = <String>[
+  'CREATE INDEX IF NOT EXISTS ai_report_feedback_user_updated '
+      'ON ai_report_feedback (user_id, updated_at DESC)',
+  'CREATE INDEX IF NOT EXISTS ai_report_feedback_pending '
+      'ON ai_report_feedback (user_id, sync_status, updated_at)',
+  'CREATE INDEX IF NOT EXISTS ai_report_feedback_report_version '
+      'ON ai_report_feedback (report_id, report_version)',
 ];

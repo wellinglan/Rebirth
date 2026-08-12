@@ -6,6 +6,7 @@ enum AiReportSyncStatus {
   syncing,
   resolving,
   succeeded,
+  partial,
   conflict,
   failed,
 }
@@ -17,6 +18,11 @@ final class AiReportSyncViewState {
     this.errorMessage,
     this.resolvingConflictId,
     this.activeConflictCount = 0,
+    this.feedbackPushedCount = 0,
+    this.feedbackPulledCount = 0,
+    this.feedbackConflictCount = 0,
+    this.feedbackDeferredCount = 0,
+    this.feedbackErrorMessage,
   });
 
   final AiReportSyncStatus status;
@@ -24,6 +30,11 @@ final class AiReportSyncViewState {
   final String? errorMessage;
   final String? resolvingConflictId;
   final int activeConflictCount;
+  final int feedbackPushedCount;
+  final int feedbackPulledCount;
+  final int feedbackConflictCount;
+  final int feedbackDeferredCount;
+  final String? feedbackErrorMessage;
 
   bool get isBusy =>
       status == AiReportSyncStatus.syncing ||
@@ -45,6 +56,12 @@ final class AiReportSyncViewState {
     String? resolvingConflictId,
     bool clearResolvingConflictId = false,
     int? activeConflictCount,
+    int? feedbackPushedCount,
+    int? feedbackPulledCount,
+    int? feedbackConflictCount,
+    int? feedbackDeferredCount,
+    String? feedbackErrorMessage,
+    bool clearFeedbackError = false,
   }) => AiReportSyncViewState(
     status: status ?? this.status,
     lastResult: lastResult ?? this.lastResult,
@@ -53,5 +70,12 @@ final class AiReportSyncViewState {
         ? null
         : resolvingConflictId ?? this.resolvingConflictId,
     activeConflictCount: activeConflictCount ?? this.activeConflictCount,
+    feedbackPushedCount: feedbackPushedCount ?? this.feedbackPushedCount,
+    feedbackPulledCount: feedbackPulledCount ?? this.feedbackPulledCount,
+    feedbackConflictCount: feedbackConflictCount ?? this.feedbackConflictCount,
+    feedbackDeferredCount: feedbackDeferredCount ?? this.feedbackDeferredCount,
+    feedbackErrorMessage: clearFeedbackError
+        ? null
+        : feedbackErrorMessage ?? this.feedbackErrorMessage,
   );
 }

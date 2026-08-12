@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart' as db;
 
@@ -359,6 +361,51 @@ final class PersonalDataBackupRepositoryImpl
     );
   }
 
+  @override
+  Future<List<AiReportFeedbackBackupRecord>> readAiReportFeedback(
+    String localUserId,
+  ) async {
+    final rows =
+        await (database.select(database.aiReportFeedback)
+              ..where((item) => item.userId.equals(localUserId))
+              ..orderBy([
+                (item) => OrderingTerm.asc(item.reportId),
+                (item) => OrderingTerm.asc(item.reportVersion),
+              ]))
+            .get();
+    final reportIds =
+        await (database.selectOnly(database.aiReports)
+              ..addColumns([database.aiReports.id])
+              ..where(database.aiReports.userId.equals(localUserId)))
+            .get();
+    final owned = reportIds
+        .map((row) => row.read(database.aiReports.id)!)
+        .toSet();
+    final result = <AiReportFeedbackBackupRecord>[];
+    for (final row in rows) {
+      if (!owned.contains(row.reportId)) {
+        throw const PersonalDataBackupSourceException();
+      }
+      final reasons = _decodeFeedbackReasons(row.reasonCodesJson);
+      if ((row.helpfulness == 'helpful' && reasons.isNotEmpty) ||
+          (row.helpfulness == 'not_helpful' && reasons.isEmpty)) {
+        throw const PersonalDataBackupSourceException();
+      }
+      result.add(
+        AiReportFeedbackBackupRecord(
+          reportId: row.reportId,
+          reportVersion: row.reportVersion,
+          helpfulness: row.helpfulness,
+          reasonCodes: reasons,
+          createdAt: _utcIso(row.createdAt),
+          updatedAt: _utcIso(row.updatedAt),
+          deletedAt: _nullableUtcIso(row.deletedAt),
+        ),
+      );
+    }
+    return List.unmodifiable(result);
+  }
+
   Future<Set<String>> _goalIds(String localUserId) async {
     final rows =
         await (database.selectOnly(database.goals)
@@ -428,4 +475,43 @@ final class PersonalDataBackupRepositoryImpl
     final end = left.periodEndDate.compareTo(right.periodEndDate);
     return end != 0 ? end : left.id.compareTo(right.id);
   }
+}
+
+const _allowedFeedbackReasonCodes = <String>{
+  'hard_to_understand',
+  'missed_important_context',
+  'not_actionable',
+  'not_factually_grounded',
+  'repetitive',
+  'tone_not_helpful',
+  'too_generic',
+};
+
+List<String> _decodeFeedbackReasons(String value) {
+  try {
+    final decoded = jsonDecode(value);
+    if (decoded is! List || decoded.any((item) => item is! String)) {
+      throw const FormatException();
+    }
+    final reasons = decoded.cast<String>();
+    final sorted = [...reasons]..sort();
+    if (reasons.length != reasons.toSet().length ||
+        reasons.any(
+          (reason) => !_allowedFeedbackReasonCodes.contains(reason),
+        ) ||
+        !_sameStrings(reasons, sorted)) {
+      throw const FormatException();
+    }
+    return List.unmodifiable(reasons);
+  } on FormatException {
+    throw const PersonalDataBackupSourceException();
+  }
+}
+
+bool _sameStrings(List<String> left, List<String> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index += 1) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
 }

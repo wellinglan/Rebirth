@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse
 from collections.abc import Callable
 
 from app.ai.providers import build_provider
-from app.ai.service import AiGenerationService
+from app.ai.service import AiGenerationService, utc_milliseconds
+from app.ai.feedback import AiReportFeedbackService
 from app.config import load_settings
 from app.database import Database
 from app.identity import WECHAT_PROVIDER
@@ -90,6 +91,9 @@ def create_app(
             provider=provider,
             clock=ai_clock,
         )
+    )
+    application.state.ai_report_feedback_service = AiReportFeedbackService(
+        clock=ai_clock or utc_milliseconds
     )
 
     @application.exception_handler(RequestValidationError)

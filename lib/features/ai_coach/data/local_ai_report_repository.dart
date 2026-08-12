@@ -476,21 +476,44 @@ final class LocalAiReportRepository implements AiReportRepository {
     final bootstrap = await database.bootstrapDao.bootstrap();
     final now = dateTimeService.currentSnapshot().utcMilliseconds;
     final existing = await _getActiveRow(id, bootstrap.activeUserId);
-    await (database.update(database.aiReports)..where(
-          (row) =>
-              row.id.equals(id) &
-              row.userId.equals(bootstrap.activeUserId) &
-              row.deletedAt.isNull(),
-        ))
-        .write(
-          db.AiReportsCompanion(
-            deletedAt: Value(now),
-            updatedAt: Value(now),
-            syncStatus: Value(
-              existing.serverVersion == null ? 'local_only' : 'pending',
+    await database.transaction(() async {
+      await (database.delete(database.aiReportFeedback)..where(
+            (row) =>
+                row.userId.equals(bootstrap.activeUserId) &
+                row.reportId.equals(id) &
+                row.serverVersion.isNull(),
+          ))
+          .go();
+      await (database.update(database.aiReportFeedback)..where(
+            (row) =>
+                row.userId.equals(bootstrap.activeUserId) &
+                row.reportId.equals(id) &
+                row.serverVersion.isNotNull(),
+          ))
+          .write(
+            db.AiReportFeedbackCompanion(
+              syncStatus: const Value('pending_delete'),
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              remoteSnapshotJson: const Value(null),
             ),
-          ),
-        );
+          );
+      await (database.update(database.aiReports)..where(
+            (row) =>
+                row.id.equals(id) &
+                row.userId.equals(bootstrap.activeUserId) &
+                row.deletedAt.isNull(),
+          ))
+          .write(
+            db.AiReportsCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: Value(
+                existing.serverVersion == null ? 'local_only' : 'pending',
+              ),
+            ),
+          );
+    });
   }
 
   Future<db.AiReport> _getActiveRow(String id, String userId) async {

@@ -408,3 +408,71 @@ class AiErrorDetail(StrictModel):
 
 class AiErrorResponse(StrictModel):
     detail: AiErrorDetail
+
+
+AiReportFeedbackReason = Literal[
+    "repetitive",
+    "not_factually_grounded",
+    "not_actionable",
+    "too_generic",
+    "missed_important_context",
+    "tone_not_helpful",
+    "hard_to_understand",
+]
+
+
+class AiReportFeedbackWriteRequest(StrictModel):
+    feedback_id: UUID
+    report_id: UUID
+    report_version: int = Field(ge=1)
+    report_type: Literal["daily_insight", "weekly_report"]
+    helpfulness: Literal["helpful", "not_helpful"]
+    reason_codes: list[AiReportFeedbackReason] = Field(max_length=7)
+    prompt_id: Literal["daily_insight", "weekly_report"]
+    prompt_version: str = Field(min_length=1, max_length=64)
+    expected_server_version: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def validate_feedback(self) -> "AiReportFeedbackWriteRequest":
+        if len(set(self.reason_codes)) != len(self.reason_codes):
+            raise ValueError("feedback reasons must be unique")
+        if self.reason_codes != sorted(self.reason_codes):
+            raise ValueError("feedback reasons must use canonical order")
+        if self.helpfulness == "helpful" and self.reason_codes:
+            raise ValueError("helpful feedback cannot include reasons")
+        if self.helpfulness == "not_helpful" and not self.reason_codes:
+            raise ValueError("not helpful feedback requires a reason")
+        if self.prompt_id != self.report_type:
+            raise ValueError("prompt identity must match report type")
+        return self
+
+
+class AiReportFeedbackDeleteRequest(StrictModel):
+    feedback_id: UUID
+    report_id: UUID
+    report_version: int = Field(ge=1)
+    expected_server_version: int | None = Field(default=None, ge=1)
+
+
+class AiReportFeedbackItem(StrictModel):
+    feedback_id: UUID
+    report_id: UUID
+    report_version: int
+    report_type: str
+    helpfulness: Literal["helpful", "not_helpful"]
+    reason_codes: list[AiReportFeedbackReason]
+    prompt_id: str
+    prompt_version: str
+    server_version: int
+    created_at: int
+    updated_at: int
+    deleted_at: int | None
+
+
+class AiReportFeedbackMutationResponse(StrictModel):
+    outcome: Literal["applied", "conflict"]
+    item: AiReportFeedbackItem
+
+
+class AiReportFeedbackListResponse(StrictModel):
+    items: list[AiReportFeedbackItem]

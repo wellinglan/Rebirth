@@ -56,6 +56,7 @@ final class AiReportPresentationMapper {
           : null,
       hasInputSnapshot: report.hasInputSnapshot,
       versions: versions ?? report.versions,
+      currentVersion: report.currentVersion,
     );
   }
 

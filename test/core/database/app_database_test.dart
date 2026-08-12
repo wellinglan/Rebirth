@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 11 with AI report conflicts', () async {
+  test('creates schema version 12 with AI report feedback', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -34,6 +34,7 @@ void main() {
         'health_records',
         'ai_reports',
         'ai_report_versions',
+        'ai_report_feedback',
         'sync_conflicts',
         'installation_info',
         'cloud_account_bindings',
@@ -46,7 +47,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 11);
+    expect(versionRow.read<int>('user_version'), 12);
   });
 
   test(

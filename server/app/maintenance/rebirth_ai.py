@@ -19,6 +19,7 @@ from app.ai.operations import (
     monitor_operations,
 )
 from app.ai.service import utc_milliseconds
+from app.ai.feedback import feedback_audit
 from app.config import load_settings
 from app.database import Database
 
@@ -60,6 +61,10 @@ def main() -> int:
                 with database.session_factory() as session:
                     if args.command == "audit":
                         result = audit_usage(
+                            session, days=args.days, now=now
+                        )
+                    elif args.command == "feedback-audit":
+                        result = feedback_audit(
                             session, days=args.days, now=now
                         )
                     elif args.command == "monitor":
@@ -110,6 +115,11 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     audit = commands.add_parser("audit", help="Aggregate recent UTC usage.")
     audit.add_argument("--days", type=_positive_int, default=7)
+    feedback = commands.add_parser(
+        "feedback-audit",
+        help="Aggregate privacy-safe AI Report feedback quality signals.",
+    )
+    feedback.add_argument("--days", type=_positive_int, default=30)
     commands.add_parser(
         "config-check", help="Inspect non-secret AI configuration."
     )

@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.ai.errors import AiGatewayError
+from app.ai.feedback import AiReportFeedbackError
 from app.ai.schemas import (
     AiCapabilitiesResponse,
     AiDailyGenerateRequest,
@@ -14,12 +15,67 @@ from app.ai.schemas import (
     AiUsageResponse,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
+    AiReportFeedbackDeleteRequest,
+    AiReportFeedbackListResponse,
+    AiReportFeedbackMutationResponse,
+    AiReportFeedbackWriteRequest,
 )
 from app.database import get_session
 from app.security import require_user_id
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+
+
+@router.get(
+    "/report-feedback",
+    response_model=AiReportFeedbackListResponse,
+)
+def list_report_feedback(
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiReportFeedbackListResponse:
+    items = request.app.state.ai_report_feedback_service.list_for_user(
+        session, user_id=user_id
+    )
+    return AiReportFeedbackListResponse(items=items)
+
+
+@router.post(
+    "/report-feedback/upsert",
+    response_model=AiReportFeedbackMutationResponse,
+)
+def upsert_report_feedback(
+    body: AiReportFeedbackWriteRequest,
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiReportFeedbackMutationResponse | JSONResponse:
+    try:
+        return request.app.state.ai_report_feedback_service.write(
+            session, user_id=user_id, request=body
+        )
+    except AiReportFeedbackError as error:
+        return _error_response(error.code, status_code=error.status_code)
+
+
+@router.post(
+    "/report-feedback/delete",
+    response_model=AiReportFeedbackMutationResponse,
+)
+def delete_report_feedback(
+    body: AiReportFeedbackDeleteRequest,
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiReportFeedbackMutationResponse | JSONResponse:
+    try:
+        return request.app.state.ai_report_feedback_service.delete(
+            session, user_id=user_id, request=body
+        )
+    except AiReportFeedbackError as error:
+        return _error_response(error.code, status_code=error.status_code)
 
 
 @router.get("/capabilities", response_model=AiCapabilitiesResponse)
@@ -214,5 +270,9 @@ def _message(code: str) -> str:
         "outcome_unknown": "The provider outcome cannot be determined safely.",
         "result_expired": "The temporary server result is no longer available.",
         "not_found": "The AI request was not found.",
+        "report_not_synced": "The AI report must be synchronized first.",
+        "report_version_not_eligible": "The AI report version cannot receive feedback.",
+        "prompt_not_supported": "The report Prompt identity is not supported.",
+        "feedback_not_found": "The AI report feedback was not found.",
     }
     return messages.get(code, "The AI request could not be completed.")

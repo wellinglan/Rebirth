@@ -58,6 +58,7 @@ final class AiReportDetailModel {
     required this.failureMessage,
     required this.hasInputSnapshot,
     required this.versions,
+    required this.currentVersion,
   });
 
   final String id;
@@ -79,6 +80,7 @@ final class AiReportDetailModel {
   final String? failureMessage;
   final bool hasInputSnapshot;
   final List<AiReportVersion> versions;
+  final int currentVersion;
 
   AiReportDetailModel copyWith({AiReportStatus? status, String? statusLabel}) {
     return AiReportDetailModel(
@@ -101,6 +103,7 @@ final class AiReportDetailModel {
       failureMessage: failureMessage,
       hasInputSnapshot: hasInputSnapshot,
       versions: versions,
+      currentVersion: currentVersion,
     );
   }
 
