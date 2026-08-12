@@ -163,7 +163,7 @@ void main() {
     expect(contract, contains('API Version: `1`'));
     expect(contract, contains('Sync Protocol: `2`'));
     expect(contract.toLowerCase(), contains('no free-text'));
-    expect(contract, contains('Publishing a future GHCR image'));
+    expect(contract, contains('Publishing a GHCR image'));
     expect(matrix, contains('0 PASS / 0 FAIL / 39 NOT EXECUTED'));
     expect(matrix, isNot(contains('| PASS |')));
     expect(matrix, contains('| NOT EXECUTED |'));
