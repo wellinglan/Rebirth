@@ -16,7 +16,7 @@ release blockers are tracked in
 | Layer | Current implementation |
 |---|---|
 | Client | Flutter 3.44.4, Dart 3.12.2, Material 3, Riverpod, GoRouter |
-| Local data | Drift and SQLite, account-scoped, Flutter `schemaVersion` 11 |
+| Local data | Drift and SQLite, account-scoped, Flutter `schemaVersion` 12 |
 | Network | Dio, authenticated API Version 1 |
 | Server | FastAPI, SQLAlchemy, Alembic, Python 3.12 |
 | Cloud data | PostgreSQL 17 and generic Sync Protocol 2 records |
@@ -44,10 +44,12 @@ directly. Local SQLite remains the primary working data store.
   Prompts.
 - **AI Reports**: local persistence, immutable versions, manual cross-device
   sync, conflict recovery, archive lifecycle, one report library, and explicit
-  Markdown/JSON export.
+  Markdown/JSON export. Completed versions also support local-first structured
+  helpfulness feedback with fixed reasons and dedicated OCC synchronization.
 - **Personal Data Export**: an explicit current-account plaintext JSON snapshot
-  of Profile, Plan, Today, Journal, prompt configuration, Health, and AI Reports,
-  with deterministic SHA-256 verification and native Windows/Android saving.
+  of Profile, Plan, Today, Journal, prompt configuration, Health, AI Reports,
+  and structured report feedback, with deterministic SHA-256 verification and
+  native Windows/Android saving.
 
 ## Local-first Sync
 

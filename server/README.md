@@ -251,3 +251,34 @@ memory. Public username/password registration and login are implemented. There
 is still no password recovery, MFA, real WeChat SDK/login/QR flow, or background
 sync. WeChat identity and OAuth transaction code is a fail-closed security
 foundation, not a usable WeChat login product.
+
+## AI Report Feedback
+
+Sprint 16B adds an authenticated, dedicated quality-signal API:
+
+- `GET /ai/report-feedback`;
+- `POST /ai/report-feedback/upsert`;
+- `POST /ai/report-feedback/delete`.
+
+Account ownership comes only from the bearer JWT. Requests contain stable
+feedback/report/version identity, `helpful` or `not_helpful`, fixed reason
+codes, governed Prompt identity, and expected feedback server version. They do
+not accept `user_id`, free text, report/source body, Prompt text, Provider
+response, credentials, or tokens. The service verifies the already-synced
+report/version and uses exact-retry idempotence plus OCC.
+
+Alembic revision `20260812_0008` creates `ai_report_feedback`; it does not
+change generic sync items, AI generation/usage ledgers, API Version 1, or Sync
+Protocol 2. Feedback follows explicit AI Report sync through its own client
+stage and is not a protocol entity.
+
+Run the privacy-safe read-only aggregate from `server`:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.maintenance.rebirth_ai feedback-audit --days 30
+```
+
+The command groups counts, rates, and fixed reasons by report type and governed
+Prompt identity. It outputs no user/report ID or content and never mutates
+feedback. Publishing a GHCR image containing this migration does not prove that
+the Alpha API or database has been deployed.

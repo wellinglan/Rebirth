@@ -1,7 +1,7 @@
 # Rebirth Manual Acceptance Registry
 
 > Classification: **Active / authoritative Gate registry**
-> Consolidated: **2026-08-09 / Sprint 16A local working tree**
+> Consolidated: **2026-08-12 / Sprint 16B implementation**
 
 Manual matrices record only real product execution. Automated tests never
 become manual PASS. `NOT EXECUTED` is an honest capability or fixture limit,
@@ -58,6 +58,7 @@ that a separate module-only matrix was rerun.
 | AI Report Generation Pipeline | CLOSED WITH ACCEPTED LIMITATIONS | [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) | 35 / 0 / 7 | Applicable rows passed and Quality run 31073858896 passed; six controlled recovery states and one binding-write failure fixture remain unavailable and automated only |
 | Prompt Governance and Quality Evaluation | CLOSED WITH ACCEPTED AUTOMATION AND COST LIMITATIONS | [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) | 30 / 0 / 8 | Deployed CLI and privacy boundaries passed; runtime protocol repetitions use named automated evidence; Level 3 real Provider evaluation has no cost authorization |
 | AI Coach MVP Product Experience | CLOSED WITH ACCEPTED LIMITATIONS | [AI Coach MVP Product Experience](58_ai_coach_mvp_product_experience.md) | 29 / 0 / 8 | Applicable Windows/Android, consent, real Provider Daily/Weekly, reuse, account, privacy, and product UX rows passed; eight dangerous runtime injections retain accepted automated evidence |
+| AI Coach Feedback & Quality Signal | OPEN | [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) | 0 / 0 / 39 | Reviewed implementation exists; Alpha deployment is pending and every manual row remains NOT EXECUTED |
 
 ## Important Succession Rules
 
@@ -103,6 +104,7 @@ that a separate module-only matrix was rerun.
 - [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) - Current Gate closed with accepted limitations
 - [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) - Current Gate closed with accepted automation and cost limitations
 - [AI Coach MVP Product Experience](58_ai_coach_mvp_product_experience.md) - Current Gate closed with accepted limitations at 29 / 0 / 8
+- [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) - Current Gate OPEN at 0 / 0 / 39
 
 ### Authentication and Identity
 
@@ -128,6 +130,7 @@ that a separate module-only matrix was rerun.
 - [AI Report Generation Pipeline](56_ai_report_generation_pipeline.md) - Current Gate closed with accepted limitations
 - [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) - Current Gate closed with accepted automation and cost limitations; real Provider evaluation not authorized
 - [AI Coach MVP Product Experience](58_ai_coach_mvp_product_experience.md) - Current Gate closed with accepted limitations at 29 / 0 / 8
+- [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) - Current Gate OPEN at 0 / 0 / 39
 
 Older UI, persistence, cloud, and AI reliability matrices `01` through `24`
 remain in this directory as historical Sprint evidence. They do not override

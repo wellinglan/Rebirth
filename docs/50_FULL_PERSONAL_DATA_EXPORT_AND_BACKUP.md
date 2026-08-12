@@ -223,3 +223,18 @@ historical Journal export, is recorded in
 [Full Personal Data Export and Backup manual matrix](manual_tests/55_full_personal_data_export_and_backup.md).
 The five unavailable failure/timing injection scenarios remain honestly
 `NOT EXECUTED`; automated tests support but do not replace them.
+
+## Sprint 16B Optional Feedback Module
+
+Format `1.0` adds the optional `ai_report_feedback` module to the immutable
+module registry. Each portable record contains report ID, version number,
+report type, helpfulness, fixed reason codes, governed Prompt ID/version, and
+business lifecycle timestamps. It excludes account/cloud/device IDs, server
+version, sync/pending state, last-sync time, conflict/remote snapshots, and
+report body duplication.
+
+This is a backward-compatible optional module under the existing manifest
+rule: compatible readers inspect the manifest and ignore an unknown optional
+module. The export is still deterministic, plaintext, local-only, read-only,
+account-scoped, and without import/restore. Flutter schema 12 and the Server
+feedback migration do not change the export format version.

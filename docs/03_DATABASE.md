@@ -1028,3 +1028,19 @@ new coordinator will not reuse them as endpoint-confirmed generation results.
 
 Server PostgreSQL models, Alembic revisions, API Version `1`, Sync Protocol `2`,
 AI usage ledger tables, and AI generation ledger tables are unchanged.
+
+## Sprint 16B AI Report Feedback
+
+Flutter Drift advances from `schemaVersion = 11` to `12`. The additive
+`ai_report_feedback` table is unique by account, report ID, and immutable report
+version. It stores stable feedback identity, report/Prompt governance identity,
+strict helpfulness and canonical reason JSON, timestamps, a deletion tombstone,
+and dedicated feedback sync/OCC metadata. It stores no report body, source
+body, Prompt text, input hash/snapshot, Provider response, or free text.
+
+Server Alembic revision `20260812_0008` adds the corresponding account-scoped
+`ai_report_feedback` table with a foreign key to `cloud_users`, the same unique
+business key, constraints, and audit indexes. Upgrade and downgrade are
+additive and do not rewrite AI Reports, generic sync items, generation ledger,
+or usage ledger. API Version remains `1` and Sync Protocol remains `2` because
+feedback uses a dedicated authenticated API instead of a protocol entity.

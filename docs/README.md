@@ -1,7 +1,7 @@
 # Rebirth Documentation Index
 
 > Classification: **Active**
-> Last consolidated: **2026-08-09 / Sprint 16A local working tree**
+> Last consolidated: **2026-08-12 / Sprint 16B implementation**
 
 Start with [Current Baseline](CURRENT_BASELINE.md). It is the only authoritative
 snapshot of what is implemented, verified, manually accepted, deployed,
@@ -32,7 +32,7 @@ deferred, or unsupported now.
 | [AI Context](00_AI_CONTEXT.md) | Partially current | Mission and append-only Sprint boundaries; older technology/sync snapshots are historical |
 | [Product Requirements](01_PRD.md) | Partially current | Long-term product baseline; Sprint 0 metadata is historical |
 | [Architecture](02_ARCHITECTURE.md) | Partially current | Architecture principles plus append-only evolution; early future-server text is historical |
-| [Database](03_DATABASE.md) | Partially current | Original schema design plus migration history through Flutter schema 11 |
+| [Database](03_DATABASE.md) | Partially current | Original schema design plus migration history through Flutter schema 12 |
 | [Authentication and Sync](04_AUTH_SYNC.md) | Partially current | Current auth principles plus historical staged rollout; use Current Baseline for current module count |
 | [API Contract](05_API_CONTRACT.md) | Partially current | Original Protocol contract and later appendices; source schemas remain decisive |
 
@@ -82,6 +82,7 @@ deferred, or unsupported now.
 - [AI Report Generation Pipeline](51_AI_REPORT_GENERATION_PIPELINE.md) - Active; Gate closed with accepted limitations
 - [Prompt Governance and Quality Evaluation](52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md) - Active; Gate closed with accepted automation and cost limitations
 - [AI Coach MVP Product Experience](53_AI_COACH_MVP_PRODUCT_EXPERIENCE.md) - Active; Gate closed with accepted limitations
+- [AI Coach Feedback and Quality Signal](54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md) - Active implementation; manual Gate open
 
 ## Historical Sprint Records
 

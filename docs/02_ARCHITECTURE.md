@@ -986,3 +986,32 @@ Account-scope invalidation includes consent, usage, preview families, manual
 generation families, pending recovery, coordinator, and report history. The
 navigation/routing change does not alter Drift schema, Server runtime, API,
 Sync Protocol, Provider, Prompt activation, quota, or ledger architecture.
+
+## 28. AI Report Feedback Aggregate
+
+Sprint 16B keeps mutable quality observation separate from immutable report
+history:
+
+```text
+Report/Version Detail
+  -> AiReportFeedbackController
+  -> AiReportFeedbackRepository
+  -> local ai_report_feedback (schema 12)
+  -> explicit AI Report manual sync, after report transport
+  -> dedicated authenticated feedback API
+  -> server ai_report_feedback (Alembic 20260812_0008)
+```
+
+The client writes locally first and never calls the Server from a Widget. The
+Server derives account scope from JWT and verifies the referenced synced report
+and completed version. Exact writes are idempotent; stale writes become an
+explicit whole-aggregate OCC conflict. Feedback has independent pending,
+remote-version, snapshot, and tombstone metadata and is not a new
+`SyncEntityType`, so Sync Protocol remains 2.
+
+The aggregate stores only helpfulness, allowlisted reasons, governed Prompt
+identity, version identity, and lifecycle/sync metadata. It stores no report or
+source body, Prompt text, input snapshot/hash, Provider response, token, or free
+text. The read-only audit CLI aggregates these signals for human review and has
+no path to Prompt activation or generation behavior. See
+`docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`.

@@ -239,3 +239,13 @@ CLI, or active pointers. Active versions remain `daily-insight-v1` and
 `weekly-report-v1`. The preview may expose only the template version and a
 short input digest inside a default-collapsed technical section; the AI Coach
 home does not expose Prompt or input identity.
+
+## 14. Sprint 16B Feedback Signal Boundary
+
+Structured report feedback may be grouped by existing governed Prompt ID and
+version for human quality review. It is observational input only. It does not
+change fingerprints, active pointers, candidate eligibility, evaluation Gates,
+runtime templates, Provider selection, quota, or generation behavior. No
+automatic scoring, ranking, training, Prompt edit, or Prompt activation path is
+added. The CLI exposes aggregate sample/rate/reason counts and no report body,
+Prompt text, source content, or user/report identity.

@@ -415,3 +415,18 @@ passed. Proof delay/cross-session injection and controlled callback cases were
 not executed because the normal Alpha deployment intentionally exposes neither
 raw proofs nor a Fake/real WeChat Provider. Both Sprint 13B.4 gates remain open
 for those controlled scenarios.
+
+## AI Report Feedback Authentication and Sync Boundary
+
+Sprint 16B feedback endpoints accept no trusted `user_id`; the owner is always
+the JWT CloudUser. Upsert verifies that the current account owns an already
+synced AI Report and that the referenced immutable version is completed and has
+content. Delete requires the existing account-scoped feedback identity and may
+complete after a report tombstone so cross-device deletion can converge.
+
+Feedback is not a Sync Protocol 2 entity. The existing manual AI Report action
+first runs report sync and then a dedicated feedback stage. `report_not_synced`
+defers feedback without losing local state. Feedback failure after report
+success is reported as partial and never rolls back the report result. There is
+no automatic, startup, background, or scheduled feedback sync. API Version
+remains 1 and Sync Protocol remains 2.

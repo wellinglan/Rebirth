@@ -297,3 +297,31 @@ automation and cost limitations recorded in
 `manual_tests/57_prompt_governance_and_quality_evaluation.md`. A Level 2 PASS is
 evaluator evidence, not proof of real model quality, and the real Provider
 evaluation remains unexecuted without separate cost authorization.
+
+## 17. AI Report Feedback Audit
+
+After a separately authorized Sprint 16B deployment and Alembic upgrade, run
+from the API container or a Server checkout:
+
+```bash
+python -m app.maintenance.rebirth_ai feedback-audit --days 30
+```
+
+Use a positive integer day window; the default is 30 UTC days. The command is
+read-only and reports active sample size, deleted count, helpful/not-helpful
+counts, helpful rate, fixed reason counts, report type, Prompt ID, and Prompt
+version. Never redirect its output into a location that mixes it with secrets.
+Although the output is aggregate-only, keep operational logs access-controlled.
+
+The command must not emit user/report/feedback IDs, report or source bodies,
+Prompt text, request data, API keys, Authorization values, tokens, or Provider
+responses. A non-empty signal is input to human review only; operators must not
+edit active Prompt pointers or runtime configuration based on an unreviewed
+rate. Feedback does not replace the Prompt evaluation Gates.
+
+Deployment sequence remains explicit: reviewed commit, passing Quality,
+published image identity, database backup, Alembic upgrade, API recreation,
+health/version checks, then manual acceptance. A published image is not a live
+deployment. Roll back the API image and migration according to the normal
+database-change procedure if health or feedback API smoke checks fail; never
+drop PostgreSQL volumes or alter feedback rows by hand.

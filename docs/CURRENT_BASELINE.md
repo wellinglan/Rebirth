@@ -1,12 +1,13 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-08-09**
-> Audited code baseline: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
+> Audited: **2026-08-12**
+> Audited code baseline: `260356faf79deac1c72b8dd6f97f938185a4e6e3`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
-> Current working Sprint: **16A local implementation; AI Coach MVP Product Experience Gate CLOSED WITH ACCEPTED LIMITATIONS**
+> Sprint 16B starting HEAD: `260356faf79deac1c72b8dd6f97f938185a4e6e3`
+> Current working Sprint: **16B local implementation; AI Coach Feedback & Quality Signal Gate OPEN / NOT EXECUTED**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -37,8 +38,8 @@ is not proof that a live Provider is configured.
 | Dart | `3.12.2` | Flutter toolchain and `pubspec.yaml` SDK constraint |
 | Python | `3.12` contract | CI and `python:3.12-slim`; patch version is not pinned |
 | PostgreSQL | `17` | CI service and `postgres:17-alpine`; digest is not pinned |
-| Flutter schemaVersion | `11` | `lib/core/database/app_database.dart` |
-| Server Alembic head | `20260801_0007` | `server/alembic/versions/` |
+| Flutter schemaVersion | `12` | `lib/core/database/app_database.dart` |
+| Server Alembic head | `20260812_0008` | `server/alembic/versions/` |
 | API Version | `1` | `/health` schema |
 | Sync Protocol Version | `2` | `/health` schema and sync contracts |
 | Flutter package version | `1.0.0+1` | `pubspec.yaml`; stale release metadata |
@@ -75,7 +76,7 @@ Drift or server implementation classes.
 | Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
 | Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |
 | Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
-| AI Report | Persistent immutable versions, archive, library, export | Yes | Explicit AI Report conflict recovery | Sprint 14B-14F evidence summarized below |
+| AI Report | Persistent immutable versions, archive, library, export, and version-bound structured feedback | Yes, with dedicated feedback API after report sync | Explicit report and feedback OCC recovery | Sprint 14B-16B evidence summarized below |
 
 The Sync Center registers exactly six user-facing modules in this order:
 
@@ -143,6 +144,14 @@ Current controls include:
 - server-only config, audit, monitor, consistency, and cleanup commands;
 - allowlisted operational events without prompt or source-body logging.
 
+Sprint 16B adds one mutable feedback aggregate per account and immutable report
+version. Only helpful/not-helpful plus seven fixed reasons are accepted; there
+is no free text. Feedback saves locally first, follows explicit AI Report sync
+through a dedicated authenticated API, and uses independent OCC/tombstone
+metadata without becoming a Sync Protocol 2 entity. Read-only quality audit
+groups anonymous counts by report type and governed Prompt identity. It does
+not train a model or automatically alter/activate a Prompt.
+
 Sprint 15C adds a single Server-side immutable Prompt Registry for Daily and
 Weekly active/candidate versions. Explicit active pointers remain on v1;
 candidate v2 definitions are not accepted by Generate endpoints. Published
@@ -180,6 +189,7 @@ configured today.
 | 15B | Generation pipeline consolidation | No schema/API/protocol change | 35 PASS / 0 FAIL / 7 controlled-fixture rows | Closed with accepted limitations |
 | 15C | Prompt Registry and synthetic quality evaluation | No schema/API/protocol change | 30 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted automation and cost limitations; real Provider evaluation not authorized |
 | 16A | First-level task-oriented AI Coach product experience | No schema/API/protocol change | 29 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted limitations; automated evidence replaces dangerous runtime injection only |
+| 16B | Version-bound structured AI Report feedback and aggregate quality signal | Flutter schema 12; Alembic `20260812_0008`; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 39 NOT EXECUTED | Reviewed implementation committed; manual Gate open and no Alpha deployment |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
@@ -238,12 +248,15 @@ Public API groups are:
 - `/devices/register`;
 - `/sync/verify-ownership`, `/sync/push`, and `/sync/pull`;
 - `/ai/capabilities`, `/ai/usage/me`, Daily/Weekly generation, and request
-  status recovery.
+  status recovery;
+- authenticated `/ai/report-feedback` list, upsert, and delete operations.
 
 The PostgreSQL model contains cloud users, canonical auth identities,
 OAuth/step-up state, credentials and sessions, devices, generic sync items and
-clock, and AI generation/usage ledgers. AI Reports remain Sync Protocol payloads
-rather than a second server report database model.
+clock, AI generation/usage ledgers, and the independent AI Report feedback
+aggregate. AI Reports remain Sync Protocol payloads rather than a second server
+report database model; feedback uses a dedicated API and does not change the
+protocol entity registry.
 
 ## Verification Baseline
 
@@ -282,6 +295,10 @@ or Provider inspection. It therefore **cannot confirm**:
 Publishing an image is not deployment. Any release decision needs a fresh,
 separately authorized deployment check.
 
+Sprint 16B is likewise only a local working-tree implementation at this point.
+No commit, CI run, GHCR publication, Alembic upgrade on Alpha, or API deployment
+has occurred for it.
+
 ## Product Decisions Versus Release Debt
 
 Current intentional product boundaries:
@@ -291,6 +308,8 @@ Current intentional product boundaries:
 - explicit AI consent and selected source scopes;
 - account-scoped data, conflicts, usage, and reports;
 - immutable AI Report versions;
+- mutable structured feedback bound to an immutable report version, with no
+  free text and explicit manual cross-device convergence;
 - export without import/restore in Sprint 14F;
 - explicit full personal data export without import/restore in Sprint 15A;
 - no AI Chat, agents, or tool calling.

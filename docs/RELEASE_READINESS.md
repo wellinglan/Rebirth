@@ -1,7 +1,7 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-06 / Sprint 15B working tree**
+> Audited: **2026-08-12 / Sprint 16B implementation**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
@@ -29,13 +29,14 @@ reviewed source is running on the private Alpha Server.
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
 | Private cloud Alpha | GHCR publishing workflow and Tailscale/GHCR deployment history exist | Live image, migration, Provider, backup, and health state not inspected in Sprint 14G or 15A |
-| Data migrations | Drift migration tests through schema 11 and Alembic through `20260801_0007` | Production backup/restore rehearsal is absent |
+| Data migrations | Drift migration tests through schema 12 and Alembic through `20260812_0008` | Sprint 16B migration is local-only until separately committed, published, and deployed; Production backup/restore rehearsal is absent |
 | Authentication | Public password login, secure sessions, refresh rotation, logout, and account isolation | Recovery, MFA, real WeChat, and some controlled Step-up cases are absent |
 | Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |
 | Manual acceptance | Unified Gate Registry and retained matrices | NOT EXECUTED rows remain limitations, not PASS |
 | Personal data portability | Versioned, deterministic, integrity-checked local JSON export | Plaintext; no import/restore, encryption, scheduling, or cloud backup |
 | AI Report generation pipeline | Daily and Weekly generation share one coordinator; all applicable Windows/Android matrix rows passed | Seven controlled fault/state injection rows remain automated-only accepted limitations |
+| AI Report feedback | Version-bound, structured, local-first feedback with dedicated API/OCC and privacy-safe audit exists in Sprint 16B | Manual Gate is 0 PASS / 0 FAIL / 39 NOT EXECUTED; matching Alpha image, migration, and deployment evidence is not yet recorded |
 
 ## Production and Store Blockers
 
@@ -143,3 +144,18 @@ database migrations, Sync Protocol changes, deployment, or GitHub releases. Its
 Gate is closed with accepted limitations at 35 PASS / 0 FAIL / 7 NOT EXECUTED.
 The seven unavailable product-level fixtures remain automated-only evidence and
 are not represented as manual PASS.
+
+## Sprint 16B Boundary
+
+Sprint 16B adds structured AI Report feedback, Flutter schema 12, and Server
+Alembic `20260812_0008`. API Version 1 and Sync Protocol 2 remain unchanged.
+The feedback API, migration, and aggregate audit are not Alpha deployment
+evidence. At this working-tree checkpoint there is no commit, CI run, GHCR
+image, remote Alembic upgrade, or live API verification for the change.
+
+The `AI Coach Feedback & Quality Signal Gate` is **OPEN** at 0 PASS / 0 FAIL /
+39 NOT EXECUTED. Local save/modify/clear, cross-device convergence, export, UI,
+and exact Alpha artifact/migration checks require manual execution. Concurrency,
+database-failure, timeout, account-timing, and migration fault rows may retain
+automated evidence when no safe product-level injection exists. Image
+publication, if later authorized, must be recorded separately from deployment.

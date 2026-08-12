@@ -873,3 +873,15 @@ Gateway。已有报告优先查看和复用；复用不能增加调用、额度�
 数据、服务关闭、额度耗尽、网络不确定和处理中必须各有诚实且可操作的状态。Sprint
 16A 不增加 AI 能力、报告类型、自动生成或自动同步。完整要求见
 `docs/53_AI_COACH_MVP_PRODUCT_EXPERIENCE.md`。
+
+## 27. AI Coach Feedback and Quality Signal
+
+用户可在当前完成报告和已完成历史版本详情中记录结构化质量反馈。反馈必须绑定
+具体版本，只允许“有帮助”或“没帮助”；没帮助至少选择一个固定原因，不提供自由
+文本。用户可以修改或清除反馈，离线保存不能丢失，并在下一次显式 AI Report
+手动同步时跨设备收敛。
+
+反馈不会编辑报告、自动生成、训练模型、自动修改或激活 Prompt，也不会增加 Chat、
+Agent 或 Tool Calling。普通 UI 不展示 Prompt/Provider/Model、内部 ID、Server
+版本或报告正文之外的技术元数据。完整要求见
+`docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`。

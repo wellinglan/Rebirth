@@ -745,3 +745,17 @@ Recovery 与唯一 AI Report Library 收束为一级 `AI 教练` 产品入口。
 Provider、Model 与可能费用。账号切换必须使 Usage、Preview、Generation、Recovery
 和报告列表全部失效。完整合同见
 `docs/53_AI_COACH_MVP_PRODUCT_EXPERIENCE.md`。
+
+# 二十八、AI Report 反馈与质量信号边界
+
+Sprint 16B 为具体的不可变完成报告版本增加独立、可修改、账号限定的结构化反馈
+Aggregate。用户只能选择“有帮助”或“没帮助”；后者必须从七个固定原因中选择，
+系统不收集自由文本。反馈先写本地，再随用户显式触发的 AI Report 手动同步，经
+专用 API 使用 OCC 和删除墓碑收敛。它不注册为新的 Sync Protocol 2 Entity。
+
+Flutter `schemaVersion` 升至 `12`，Server Alembic head 升至
+`20260812_0008`。API Version 保持 `1`，Sync Protocol 保持 `2`。反馈不会修改
+报告正文或不可变版本，不创建生成，不消耗额度，不改变 Provider、Ledger 或 active
+Prompt。Server `feedback-audit` 只输出按报告类型和 Prompt 身份聚合的匿名统计，
+不输出用户/报告 ID 或正文。完整合同见
+`docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`。

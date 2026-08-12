@@ -140,3 +140,13 @@ evidence instead of adding dangerous product fault-injection controls.
 
 See
 [`manual_tests/58_ai_coach_mvp_product_experience.md`](manual_tests/58_ai_coach_mvp_product_experience.md).
+
+## 10. Sprint 16B Detail Feedback Extension
+
+Sprint 16B does not change the AI Coach home or generation flow. It extends the
+canonical report detail and completed historical-version views with one
+structured feedback aggregate per immutable version. Feedback is local-first,
+optional, editable, clearable, and manually synchronized after AI Report sync.
+It creates no generation, version, usage reservation, automatic retry, or home
+card. The detailed privacy and synchronization contract is
+`docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`.

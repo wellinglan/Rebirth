@@ -86,3 +86,17 @@ The AI Coach home renders at most three privacy-safe recent rows from the same
 generation success open `/ai-reports/:reportId`. No second list, repository,
 controller, detail, lifecycle action, or report-body preview is introduced.
 Settings is no longer a primary report-library entry.
+
+## Sprint 16B Version Feedback
+
+The canonical report detail now owns the only feedback UI for its current
+completed version and completed historical versions. The library rows and AI
+Coach home do not show feedback controls. Archived reports keep eligible
+completed-version feedback because archive preserves content/history; deleted,
+failed, pending, generating, outcome-unknown, and bodyless versions do not show
+the control.
+
+Feedback is mutable independent data and never edits the immutable version or
+creates a new version. Ordinary detail/history UI contains no free text and no
+Prompt version, input hash, Provider/model, feedback ID, server version, or raw
+sync metadata. See `docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`.
