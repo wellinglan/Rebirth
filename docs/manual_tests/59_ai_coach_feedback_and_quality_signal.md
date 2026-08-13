@@ -2,7 +2,7 @@
 
 > Sprint: **16B**
 > Gate: **AI Coach Feedback & Quality Signal Gate**
-> Current status: **OPEN / NOT EXECUTED**
+> Current status: **OPEN / SUSPENDED AFTER DEPLOYMENT CHECKS**
 > Starting HEAD: `260356faf79deac1c72b8dd6f97f938185a4e6e3`
 > Implementation artifact: **reviewed implementation commit `6b0f880`; Alpha deployment pending**
 
@@ -77,10 +77,10 @@
 
 | ID | Check | Expected result | Status | Evidence / note |
 |---|---|---|---|---|
-| F1 | Record exact Alpha API image and migration before testing | Image identifies the reviewed commit and Alembic is `20260812_0008` | NOT EXECUTED | No deployment authorized yet |
-| F2 | Verify `/health` after deployment | API is healthy with API Version 1 and Sync Protocol 2 | NOT EXECUTED | No deployment authorized yet |
+| F1 | Record exact Alpha API image and migration before testing | Image identifies the reviewed commit and Alembic is `20260812_0008` | PASS | User reported deployment batch PASS on 2026-08-12; reviewed full-SHA image and migration were checked |
+| F2 | Verify `/health` after deployment | API is healthy with API Version 1 and Sync Protocol 2 | PASS | User reported API healthy, Version 1, and Sync Protocol 2 |
 | F3 | Run `feedback-audit --days 30` on controlled data | Only aggregate counts/rates appear; no IDs, body, Prompt text, token, or secret | NOT EXECUTED | - |
-| F4 | Distinguish image publication from deployment | GHCR result and live Alpha identity are recorded separately | NOT EXECUTED | - |
+| F4 | Distinguish image publication from deployment | GHCR result and live Alpha identity are recorded separately | PASS | User separately verified GHCR digest and live Alpha image identity |
 
 ## G. Automated-only Fault Evidence
 
@@ -94,12 +94,13 @@
 
 ## Current Totals
 
-- PASS: `0`
+- PASS: `3`
 - FAIL: `0`
-- NOT EXECUTED: `39`
+- NOT EXECUTED: `36`
 
-Current result: **0 PASS / 0 FAIL / 39 NOT EXECUTED**.
+Current result: **3 PASS / 0 FAIL / 36 NOT EXECUTED**.
 
-The Gate remains **OPEN**. Local save, modification, clear, cross-device
+The Gate remains **OPEN / SUSPENDED**. Local save, modification, clear, cross-device
 convergence, export, Windows/Android product behavior, and Alpha deployment
-identity are required manual evidence and cannot be closed by automation alone.
+product behavior remain required manual evidence and cannot be closed by
+automation alone. Completed deployment identity evidence remains valid.

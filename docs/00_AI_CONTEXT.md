@@ -759,3 +759,16 @@ Flutter `schemaVersion` 升至 `12`，Server Alembic head 升至
 Prompt。Server `feedback-audit` 只输出按报告类型和 Prompt 身份聚合的匿名统计，
 不输出用户/报告 ID 或正文。完整合同见
 `docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`。
+
+# 二十九、产品体验与 UI 设计系统边界
+
+Sprint 17A 将 Rebirth 定位为安静、可信的成长工作台，而不是任务积分系统、数据
+驾驶舱或聊天优先的 AI 包装。Flutter 设计底座增加语义状态色、响应式断点、最小
+触控尺寸、减弱动态效果约束、统一页面宽度及 Loading/Error 组件。HomeShell 在
+手机使用底部导航，在 Windows 中宽使用紧凑 NavigationRail，宽屏使用展开导航；
+六个一级入口和路由语义不变。
+
+本 Sprint 只建立基础契约并接入少量基础状态，不机械重写所有页面，也不锁定最终
+功能级美术方向。Flutter schemaVersion 保持 12，Server Alembic、API 1、Sync
+Protocol 2、Provider、Prompt、业务同步与 Sprint 16B 手动 Gate 均不改变。完整
+审计与后续优先级见 `docs/55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md`。

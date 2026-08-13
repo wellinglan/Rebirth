@@ -7,7 +7,8 @@
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
 > Sprint 16B starting HEAD: `260356faf79deac1c72b8dd6f97f938185a4e6e3`
-> Current working Sprint: **16B local implementation; AI Coach Feedback & Quality Signal Gate OPEN / NOT EXECUTED**
+> Sprint 17A starting HEAD: `6f8415b8f7a69dfc61b39c8d98251604e200d92a`
+> Current working Sprint: **17A Product Experience & Design System Foundation; manual Gate OPEN / NOT EXECUTED**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -89,6 +90,13 @@ The Sync Center registers exactly six user-facing modules in this order:
 
 Journal prompt configuration runs before Journal entries. Synchronization is
 manual only. There is no startup, scheduled, background, or automatic sync.
+
+The responsive HomeShell exposes the same six first-level destinations through
+bottom navigation below 840px, a compact NavigationRail from 840px, and an
+expanded product rail from 1200px at ordinary text scale. Shared Material 3
+tokens define semantic state colors, responsive padding, 48px minimum targets,
+reduced-motion-aware durations, and reusable page/loading/error foundations.
+This changes presentation only and does not alter routes or feature behavior.
 
 ## Authentication and Identity Boundary
 
@@ -189,7 +197,8 @@ configured today.
 | 15B | Generation pipeline consolidation | No schema/API/protocol change | 35 PASS / 0 FAIL / 7 controlled-fixture rows | Closed with accepted limitations |
 | 15C | Prompt Registry and synthetic quality evaluation | No schema/API/protocol change | 30 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted automation and cost limitations; real Provider evaluation not authorized |
 | 16A | First-level task-oriented AI Coach product experience | No schema/API/protocol change | 29 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted limitations; automated evidence replaces dangerous runtime injection only |
-| 16B | Version-bound structured AI Report feedback and aggregate quality signal | Flutter schema 12; Alembic `20260812_0008`; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 39 NOT EXECUTED | Reviewed implementation committed; manual Gate open and no Alpha deployment |
+| 16B | Version-bound structured AI Report feedback and aggregate quality signal | Flutter schema 12; Alembic `20260812_0008`; API 1 and Sync Protocol 2 unchanged | 3 PASS / 0 FAIL / 36 NOT EXECUTED | Alpha deployment identity passed; remaining product matrix is open and explicitly suspended |
+| 17A | Product experience audit and UI design system foundation | No schema/API/protocol change | 0 PASS / 0 FAIL / 30 NOT EXECUTED | Responsive and theme automation added; final feature visual direction remains open |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
@@ -295,9 +304,12 @@ or Provider inspection. It therefore **cannot confirm**:
 Publishing an image is not deployment. Any release decision needs a fresh,
 separately authorized deployment check.
 
-Sprint 16B is likewise only a local working-tree implementation at this point.
-No commit, CI run, GHCR publication, Alembic upgrade on Alpha, or API deployment
-has occurred for it.
+Sprint 16B was committed and passed Quality run
+[31584652543](https://github.com/wellinglan/Rebirth/actions/runs/31584652543).
+Its full-SHA GHCR API image and Alembic `20260812_0008` were subsequently
+verified on Alpha together with `/health`; the user then explicitly suspended
+the remaining product matrix at 3 PASS / 0 FAIL / 36 NOT EXECUTED. This proves
+that recorded deployment only, not Provider readiness or wider release safety.
 
 ## Product Decisions Versus Release Debt
 

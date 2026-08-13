@@ -19,6 +19,10 @@ void main() {
       'docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md';
   const feedbackMatrixPath =
       'docs/manual_tests/59_ai_coach_feedback_and_quality_signal.md';
+  const designSystemPath =
+      'docs/55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md';
+  const designSystemMatrixPath =
+      'docs/manual_tests/60_product_experience_design_system.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -35,6 +39,8 @@ void main() {
         promptGovernanceMatrixPath,
         feedbackContractPath,
         feedbackMatrixPath,
+        designSystemPath,
+        designSystemMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -164,11 +170,29 @@ void main() {
     expect(contract, contains('Sync Protocol: `2`'));
     expect(contract.toLowerCase(), contains('no free-text'));
     expect(contract, contains('Publishing a GHCR image'));
-    expect(matrix, contains('0 PASS / 0 FAIL / 39 NOT EXECUTED'));
-    expect(matrix, isNot(contains('| PASS |')));
+    expect(matrix, contains('3 PASS / 0 FAIL / 36 NOT EXECUTED'));
+    expect(matrix, contains('| PASS |'));
     expect(matrix, contains('| NOT EXECUTED |'));
     expect(registry, contains('AI Coach Feedback & Quality Signal'));
-    expect(registry, contains('0 / 0 / 39'));
+    expect(registry, contains('3 / 0 / 36'));
+  });
+
+  test('design system docs preserve product and technical boundaries', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final contract = File(designSystemPath).readAsStringSync();
+    final matrix = File(designSystemMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('Product Experience & Design System'));
+    expect(contract, contains('calm growth workspace'));
+    expect(contract, contains('schemaVersion: `12`'));
+    expect(contract, contains('API Version: `1`'));
+    expect(contract, contains('Sync Protocol: `2`'));
+    expect(contract, contains('Sprint 16B manual acceptance remains suspended'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 30 NOT EXECUTED'));
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(registry, contains('Product Experience Foundation'));
+    expect(registry, contains('0 / 0 / 30'));
   });
 
   test('active entry points do not reintroduce unqualified stale claims', () {

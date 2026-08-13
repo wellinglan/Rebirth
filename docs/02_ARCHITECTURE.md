@@ -330,17 +330,21 @@ lib/
 /settings
 ```
 
-### 7.2 Bottom Navigation
+### 7.2 Responsive Primary Navigation
 
-HomeShell 使用 Bottom Navigation 管理五个主入口：
+当前 HomeShell 管理六个一级入口：
 
 1. Today
 2. Journal
 3. Plan
-4. Growth
-5. Profile
+4. Health
+5. Growth
+6. AI Coach
 
-Health 与 AI Coach 初期可放入 Profile 内部入口，后续视重要程度调整。
+紧凑宽度使用 Bottom Navigation；840px 起使用紧凑 NavigationRail；1200px
+起在普通字号下使用带 `Rebirth` 品牌信号的展开 NavigationRail。Settings 是全局
+AppBar 操作，不占用一级目的地。响应式切换不改变 GoRouter branch、业务状态或
+数据加载行为。早期将 Health/AI Coach 放入 Profile 的设想已经失效。
 
 ### 7.3 路由原则
 
