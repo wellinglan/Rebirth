@@ -24,8 +24,12 @@ class HomeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useRail = constraints.maxWidth >= AppLayout.wideContentWidth;
         final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final useRail = AppLayout.usesNavigationRail(constraints.maxWidth);
+        final useExpandedRail = AppLayout.usesExpandedNavigation(
+          constraints.maxWidth,
+          textScale,
+        );
         return Scaffold(
           appBar: AppBar(
             title: Text(_titles[navigationShell.currentIndex]),
@@ -44,9 +48,38 @@ class HomeShell extends StatelessWidget {
                   children: [
                     NavigationRail(
                       key: const ValueKey('homeNavigationRail'),
+                      extended: useExpandedRail,
+                      minWidth: 80,
+                      minExtendedWidth: 224,
                       selectedIndex: navigationShell.currentIndex,
-                      labelType: NavigationRailLabelType.all,
-                      groupAlignment: -0.8,
+                      labelType: useExpandedRail
+                          ? null
+                          : textScale >= 1.5
+                          ? NavigationRailLabelType.selected
+                          : NavigationRailLabelType.all,
+                      groupAlignment: -0.75,
+                      leading: Padding(
+                        padding: const EdgeInsets.only(
+                          top: AppSpacing.xs,
+                          bottom: AppSpacing.lg,
+                        ),
+                        child: useExpandedRail
+                            ? const SizedBox(
+                                key: ValueKey('homeNavigationBrand'),
+                                width: 176,
+                                child: Text(
+                                  'Rebirth',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )
+                            : Semantics(
+                                label: 'Rebirth 主导航',
+                                child: const Icon(Icons.eco_outlined),
+                              ),
+                      ),
                       onDestinationSelected: _goToBranch,
                       destinations: [
                         for (final destination in _destinations)
@@ -57,7 +90,7 @@ class HomeShell extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const VerticalDivider(width: 1),
+                    const VerticalDivider(width: 1, thickness: 1),
                     Expanded(child: navigationShell),
                   ],
                 )

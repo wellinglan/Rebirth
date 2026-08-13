@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/theme/app_theme.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
+import 'package:rebirth/core/theme/app_semantic_colors.dart';
 import 'package:rebirth/core/theme/app_typography.dart';
 
 void main() {
@@ -39,6 +40,14 @@ void main() {
     expect(filledButtonStyle?.fontWeight, FontWeight.w500);
     expect(theme.inputDecorationTheme.errorStyle?.fontSize, 12);
     expect(theme.inputDecorationTheme.helperStyle?.fontSize, 12);
+    expect(theme.inputDecorationTheme.filled, isTrue);
+    expect(
+      theme.filledButtonTheme.style?.minimumSize?.resolve(
+        const <WidgetState>{},
+      ),
+      const Size(48, 48),
+    );
+    expect(theme.snackBarTheme.behavior, SnackBarBehavior.floating);
   });
 
   test(
@@ -52,8 +61,21 @@ void main() {
       expect(theme.dividerTheme.color, isNotNull);
       expect(theme.listTileTheme.contentPadding, isNotNull);
       expect(theme.chipTheme.shape, isNotNull);
+      expect(theme.cardTheme.shape, isA<RoundedRectangleBorder>());
+      final cardShape = theme.cardTheme.shape! as RoundedRectangleBorder;
+      expect(cardShape.borderRadius, BorderRadius.circular(AppRadius.sm));
     },
   );
+
+  test('semantic colors add restrained success, warning, and info roles', () {
+    final theme = AppTheme.light;
+    final semantic = theme.extension<AppSemanticColors>();
+
+    expect(semantic, isNotNull);
+    expect(semantic!.success, isNot(theme.colorScheme.error));
+    expect(semantic.warning, isNot(semantic.info));
+    expect(theme.colorScheme.primary, isNot(theme.colorScheme.tertiary));
+  });
 
   test('layout constants provide an increasing spacing scale', () {
     expect([
@@ -98,7 +120,7 @@ void main() {
     expect(fontFiles, isEmpty);
   });
 
-  test('database schema is version 7', () async {
+  test('database schema remains version 12', () async {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(database.close);
 

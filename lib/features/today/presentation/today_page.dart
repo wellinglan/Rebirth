@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
+import 'package:rebirth/core/widgets/app_state_view.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 
 import 'today_controller.dart';
@@ -17,24 +18,17 @@ class TodayPage extends ConsumerWidget {
 
     return SafeArea(
       child: today.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(key: ValueKey('todayLoadingState')),
+        loading: () => const AppLoadingState(
+          key: ValueKey('todayLoadingState'),
+          label: '正在读取今日记录',
         ),
-        error: (error, stackTrace) => Center(
-          child: Column(
-            key: const ValueKey('todayErrorState'),
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('今日数据暂时无法加载'),
-              const SizedBox(height: 12),
-              IconButton(
-                onPressed: () =>
-                    ref.read(todayControllerProvider.notifier).reload(),
-                tooltip: '重新加载',
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
+        error: (error, stackTrace) => AppMessageState(
+          key: const ValueKey('todayErrorState'),
+          icon: Icons.calendar_today_outlined,
+          title: '今日数据暂时无法加载',
+          message: '当前输入不会被修改，请稍后重试。',
+          actionLabel: '重新加载',
+          onAction: () => ref.read(todayControllerProvider.notifier).reload(),
         ),
         data: (entry) => TodayForm(
           entry: entry,

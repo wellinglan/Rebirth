@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/config/app_config_provider.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
+import 'package:rebirth/core/widgets/app_page.dart';
+import 'package:rebirth/core/widgets/app_state_view.dart';
 import 'package:rebirth/features/account/domain/account_status.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
@@ -33,15 +35,17 @@ class SettingsPage extends ConsumerWidget {
       body: SafeArea(
         child: settings.when(
           loading: () => const Center(
-            child: CircularProgressIndicator(
+            child: AppLoadingState(
               key: ValueKey('settingsLoadingState'),
+              label: '正在读取设置',
             ),
           ),
           error: (_, _) => _SettingsError(onRetry: () => _reload(ref)),
           data: (settingsValue) => account.when(
             loading: () => const Center(
-              child: CircularProgressIndicator(
+              child: AppLoadingState(
                 key: ValueKey('settingsLoadingState'),
+                label: '正在读取账号设置',
               ),
             ),
             error: (_, _) => _SettingsError(onRetry: () => _reload(ref)),
@@ -95,10 +99,11 @@ class _SettingsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = settings.profile.displayName?.trim();
-    return ListView(
-      key: const ValueKey('settingsDataState'),
-      padding: AppLayout.pagePadding,
-      children: [
+    return AppScrollablePage(
+      scrollKey: const ValueKey('settingsDataState'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         SettingsSection(
           title: '账号',
           child: Column(
@@ -209,7 +214,8 @@ class _SettingsContent extends StatelessWidget {
             icon: Icons.info_outline,
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -221,21 +227,14 @@ class _SettingsError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return AppMessageState(
       key: const ValueKey('settingsErrorState'),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('设置暂时无法加载'),
-          const SizedBox(height: AppSpacing.sm),
-          OutlinedButton.icon(
-            key: const ValueKey('retrySettingsButton'),
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('重试'),
-          ),
-        ],
-      ),
+      icon: Icons.settings_outlined,
+      title: '设置暂时无法加载',
+      message: '你的本地数据没有改变。',
+      actionLabel: '重试',
+      actionKey: const ValueKey('retrySettingsButton'),
+      onAction: onRetry,
     );
   }
 }
