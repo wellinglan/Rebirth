@@ -1,7 +1,7 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-13 / Sprint 17A foundation**
+> Audited: **2026-08-17 / Sprint 17A.1 prototype**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
@@ -20,6 +20,11 @@ and product capabilities are authoritative in
 
 Neither Sprint 14G, Sprint 15A, nor Sprint 15B performs deployment or certifies that the
 reviewed source is running on the private Alpha Server.
+
+Sprint 17A.1 is a developer-only, in-memory experience prototype. Its generated
+offline imagery, water visualization, and step controls are not evidence that a
+new production Home or redesigned Today/Health flow has shipped. Its 57-row
+Windows/Android manual Gate remains open.
 
 ## Private Alpha Foundations Present
 

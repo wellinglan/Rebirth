@@ -26,6 +26,11 @@ The client is organized feature-first. Widgets use controllers and
 repositories; they do not access Drift or Server implementation details
 directly. Local SQLite remains the primary working data store.
 
+An explicitly enabled non-production build also exposes a developer-only
+Home/Today/Health experience prototype. It uses bundled day/night artwork and
+in-memory controls only; it does not replace production navigation, persist
+records, call AI, or trigger synchronization.
+
 ## Product Areas
 
 - **Today**: priorities, mood, energy, time use, notes, and same-day health

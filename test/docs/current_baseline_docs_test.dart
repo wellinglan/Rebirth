@@ -19,10 +19,13 @@ void main() {
       'docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md';
   const feedbackMatrixPath =
       'docs/manual_tests/59_ai_coach_feedback_and_quality_signal.md';
-  const designSystemPath =
-      'docs/55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md';
+  const designSystemPath = 'docs/55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md';
   const designSystemMatrixPath =
       'docs/manual_tests/60_product_experience_design_system.md';
+  const experiencePrototypePath =
+      'docs/56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md';
+  const experiencePrototypeMatrixPath =
+      'docs/manual_tests/61_home_today_health_experience_prototype.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -41,6 +44,8 @@ void main() {
         feedbackMatrixPath,
         designSystemPath,
         designSystemMatrixPath,
+        experiencePrototypePath,
+        experiencePrototypeMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -181,18 +186,34 @@ void main() {
     final baseline = File(baselinePath).readAsStringSync();
     final contract = File(designSystemPath).readAsStringSync();
     final matrix = File(designSystemMatrixPath).readAsStringSync();
+    final prototype = File(experiencePrototypePath).readAsStringSync();
+    final prototypeMatrix = File(
+      experiencePrototypeMatrixPath,
+    ).readAsStringSync();
     final registry = File(manualRegistryPath).readAsStringSync();
 
-    expect(baseline, contains('Product Experience & Design System'));
+    expect(
+      baseline,
+      contains('17A.1 Home / Today / Health Experience Prototype'),
+    );
     expect(contract, contains('calm growth workspace'));
     expect(contract, contains('schemaVersion: `12`'));
     expect(contract, contains('API Version: `1`'));
     expect(contract, contains('Sync Protocol: `2`'));
-    expect(contract, contains('Sprint 16B manual acceptance remains suspended'));
+    expect(
+      contract,
+      contains('Sprint 16B manual acceptance remains suspended'),
+    );
     expect(matrix, contains('0 PASS / 0 FAIL / 30 NOT EXECUTED'));
     expect(matrix, isNot(contains('| PASS |')));
     expect(registry, contains('Product Experience Foundation'));
     expect(registry, contains('0 / 0 / 30'));
+    expect(prototype, contains('QuickIncrementControl'));
+    expect(prototype, contains('developer-only, disposable prototype'));
+    expect(prototypeMatrix, contains('0 PASS / 0 FAIL / 57 NOT EXECUTED'));
+    expect(prototypeMatrix, isNot(contains('| PASS |')));
+    expect(registry, contains('Home / Today / Health Experience Prototype'));
+    expect(registry, contains('0 / 0 / 57'));
   });
 
   test('active entry points do not reintroduce unqualified stale claims', () {

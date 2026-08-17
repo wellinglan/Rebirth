@@ -1,7 +1,7 @@
 # Rebirth Documentation Index
 
 > Classification: **Active**
-> Last consolidated: **2026-08-13 / Sprint 17A foundation**
+> Last consolidated: **2026-08-17 / Sprint 17A.1 prototype**
 
 Start with [Current Baseline](CURRENT_BASELINE.md). It is the only authoritative
 snapshot of what is implemented, verified, manually accepted, deployed,
@@ -34,6 +34,7 @@ deferred, or unsupported now.
 | [Architecture](02_ARCHITECTURE.md) | Partially current | Architecture principles plus append-only evolution; early future-server text is historical |
 | [Database](03_DATABASE.md) | Partially current | Original schema design plus migration history through Flutter schema 12 |
 | [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) | Active | UX audit, visual principles, tokens, responsive Shell, and deferred page priorities |
+| [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) | Active prototype | Developer-only Home composition, demand-revealed presets, water model, and incremental input contract |
 | [Authentication and Sync](04_AUTH_SYNC.md) | Partially current | Current auth principles plus historical staged rollout; use Current Baseline for current module count |
 | [API Contract](05_API_CONTRACT.md) | Partially current | Original Protocol contract and later appendices; source schemas remain decisive |
 
@@ -85,6 +86,7 @@ deferred, or unsupported now.
 - [AI Coach MVP Product Experience](53_AI_COACH_MVP_PRODUCT_EXPERIENCE.md) - Active; Gate closed with accepted limitations
 - [AI Coach Feedback and Quality Signal](54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md) - Active implementation; manual Gate open
 - [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) - Active foundation; feature-level visual direction remains open
+- [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) - Active developer-only prototype; production integration is deferred
 
 ## Historical Sprint Records
 

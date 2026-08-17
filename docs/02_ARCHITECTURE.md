@@ -1019,3 +1019,21 @@ source body, Prompt text, input snapshot/hash, Provider response, token, or free
 text. The read-only audit CLI aggregates these signals for human review and has
 no path to Prompt activation or generation behavior. See
 `docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`.
+
+## 29. Developer Experience Prototype Boundary
+
+Sprint 17A.1 adds one route only when `AppConfig.enableDevLogin` is true:
+
+```text
+DeveloperOptionsPage
+  -> ExperiencePreviewPage (ephemeral state)
+  -> Home / Today / Health prototype widgets
+  -> QuickIncrementControl + WaterCupIndicator
+```
+
+The nested route shares the existing Production developer-route denial. The
+prototype reads time only through `DateTimeService`, uses local deterministic
+quotes and bundled WebP assets, and keeps mutations in Widget state. It has no
+Repository, Drift, network, AI, or sync dependency. Production HomeShell still
+contains exactly six feature branches; `/home` behavior and all production
+Today/Health application flows remain unchanged.

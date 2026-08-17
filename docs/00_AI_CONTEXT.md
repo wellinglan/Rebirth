@@ -772,3 +772,16 @@ Sprint 17A 将 Rebirth 定位为安静、可信的成长工作台，而不是任
 功能级美术方向。Flutter schemaVersion 保持 12，Server Alembic、API 1、Sync
 Protocol 2、Provider、Prompt、业务同步与 Sprint 16B 手动 Gate 均不改变。完整
 审计与后续优先级见 `docs/55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md`。
+
+# 三十、Home / Today / Health 体验原型边界
+
+Sprint 17A.1 在仅开发者可达的路由中验证 Home 构图、按需出现的快捷预设、饮水
+水杯模型和可复用步进输入。所有可变值只存在于页面内存；模拟保存明确提示未写入，
+并且 presentation 不依赖 Repository、Drift、AppDatabase、AI 或同步。
+
+饮水支持 100/250/500 ml 步长，默认 250 ml；研究、学习、运动和睡眠仅在原型中
+复用 15/30/60 分钟步长。`null`、显式 `0` 与正数保持不同语义，减少操作不低于
+零。水杯只显示相对水位和精确数值，不提供医学目标或达标判断。昼夜环境图是仓库
+内离线 WebP，寄语按本地日期确定且不调用 AI。Production 不注册该路由，现有六个
+一级入口、生产 Today/Health、schemaVersion 12、API 1 与 Sync Protocol 2 均不变。
+详见 `docs/56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md`。
