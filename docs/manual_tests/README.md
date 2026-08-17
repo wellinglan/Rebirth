@@ -1,7 +1,7 @@
 # Rebirth Manual Acceptance Registry
 
 > Classification: **Active / authoritative Gate registry**
-> Consolidated: **2026-08-17 / Sprint 17A.1 prototype**
+> Consolidated: **2026-08-18 / Sprint 17A.1 Prototype Revision 1**
 
 Manual matrices record only real product execution. Automated tests never
 become manual PASS. `NOT EXECUTED` is an honest capability or fixture limit,
@@ -60,7 +60,7 @@ that a separate module-only matrix was rerun.
 | AI Coach MVP Product Experience | CLOSED WITH ACCEPTED LIMITATIONS | [AI Coach MVP Product Experience](58_ai_coach_mvp_product_experience.md) | 29 / 0 / 8 | Applicable Windows/Android, consent, real Provider Daily/Weekly, reuse, account, privacy, and product UX rows passed; eight dangerous runtime injections retain accepted automated evidence |
 | AI Coach Feedback & Quality Signal | OPEN / SUSPENDED | [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) | 3 / 0 / 36 | Alpha image, migration, and health identity passed; remaining product matrix was explicitly suspended for Sprint 17A |
 | Product Experience Foundation | OPEN | [Product Experience and Design System](60_product_experience_design_system.md) | 0 / 0 / 30 | Foundation is implemented; Windows and Android visual/accessibility acceptance remains NOT EXECUTED |
-| Home / Today / Health Experience Prototype | OPEN | [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) | 0 / 0 / 57 | Developer-only in-memory prototype is automated; Windows and Android product judgement remains NOT EXECUTED |
+| Home / Today / Health Experience Prototype | OPEN | [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) | 0 / 0 / 81 | Developer-only in-memory prototype including Revision 1 wellbeing ratings is automated; Windows and Android product judgement remains NOT EXECUTED |
 
 ## Important Succession Rules
 
@@ -108,7 +108,7 @@ that a separate module-only matrix was rerun.
 - [AI Coach MVP Product Experience](58_ai_coach_mvp_product_experience.md) - Current Gate closed with accepted limitations at 29 / 0 / 8
 - [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) - Current Gate OPEN / SUSPENDED at 3 / 0 / 36
 - [Product Experience and Design System](60_product_experience_design_system.md) - Current Gate OPEN at 0 / 0 / 30
-- [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) - Current Gate OPEN at 0 / 0 / 57
+- [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) - Current Gate OPEN at 0 / 0 / 81
 
 ### Authentication and Identity
 

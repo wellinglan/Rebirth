@@ -1028,7 +1028,7 @@ Sprint 17A.1 adds one route only when `AppConfig.enableDevLogin` is true:
 DeveloperOptionsPage
   -> ExperiencePreviewPage (ephemeral state)
   -> Home / Today / Health prototype widgets
-  -> QuickIncrementControl + WaterCupIndicator
+  -> QuickIncrementControl + WaterCupIndicator + WellbeingRatingField
 ```
 
 The nested route shares the existing Production developer-route denial. The
@@ -1037,3 +1037,12 @@ quotes and bundled WebP assets, and keeps mutations in Widget state. It has no
 Repository, Drift, network, AI, or sync dependency. Production HomeShell still
 contains exactly six feature branches; `/home` behavior and all production
 Today/Health application flows remain unchanged.
+
+Prototype Revision 1 keeps Mood, Energy, and body-feeling scores plus their
+optional descriptions in `ExperiencePreviewPage` Widget state. The reusable
+rating field accepts `int?` from 1 through 10, uses native Slider focus and
+Semantics with custom track/thumb painting, and emits callbacks only to that
+ephemeral state. Compact and large-text layouts stack fields; ordinary wide
+layouts may use two columns. No adapter maps these prototype values to the
+production 1-5 domain, and no Repository, migration, API, or sync boundary is
+added.

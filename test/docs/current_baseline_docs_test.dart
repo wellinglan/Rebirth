@@ -194,7 +194,7 @@ void main() {
 
     expect(
       baseline,
-      contains('17A.1 Home / Today / Health Experience Prototype'),
+      contains('17A.1 Prototype Revision 1 Wellbeing Rating'),
     );
     expect(contract, contains('calm growth workspace'));
     expect(contract, contains('schemaVersion: `12`'));
@@ -209,11 +209,13 @@ void main() {
     expect(registry, contains('Product Experience Foundation'));
     expect(registry, contains('0 / 0 / 30'));
     expect(prototype, contains('QuickIncrementControl'));
+    expect(prototype, contains('WellbeingRatingField'));
+    expect(prototype, contains('not mapped to the production 1-5'));
     expect(prototype, contains('developer-only, disposable prototype'));
-    expect(prototypeMatrix, contains('0 PASS / 0 FAIL / 57 NOT EXECUTED'));
+    expect(prototypeMatrix, contains('0 PASS / 0 FAIL / 81 NOT EXECUTED'));
     expect(prototypeMatrix, isNot(contains('| PASS |')));
     expect(registry, contains('Home / Today / Health Experience Prototype'));
-    expect(registry, contains('0 / 0 / 57'));
+    expect(registry, contains('0 / 0 / 81'));
   });
 
   test('active entry points do not reintroduce unqualified stale claims', () {

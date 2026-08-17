@@ -2,8 +2,9 @@
 
 > Sprint: 17A.1
 > Baseline: `e0de17aa34f24040856d9b92869b295878b66225`
+> Prototype Revision 1 baseline: `7a056414896fdfd4ec9731429ef0cd8b7005098d`
 > Gate: **OPEN**
-> Current result: **0 PASS / 0 FAIL / 57 NOT EXECUTED**
+> Current result: **0 PASS / 0 FAIL / 81 NOT EXECUTED**
 
 This matrix is for a developer-enabled Alpha build. It does not approve a new
 production Home page. Record only observed execution as PASS or FAIL; keep every
@@ -104,6 +105,35 @@ unrun row as NOT EXECUTED.
 | F6 | TextScaler 1.3 and 1.5 preserve complete labels | NOT EXECUTED | |
 | F7 | TextScaler 2.0 wraps controls and preserves complete labels | NOT EXECUTED | |
 | F8 | TalkBack/Windows semantics announce current value, step, unit, increase, decrease, and selector | NOT EXECUTED | |
+
+## G. Prototype Revision 1 Wellbeing Ratings
+
+| ID | Check | Status | Evidence / notes |
+|---|---|---|---|
+| G1 | Android Mood moves through every discrete score from 1 to 10 | NOT EXECUTED | |
+| G2 | Android Energy selects accurate integer positions with no fractional value | NOT EXECUTED | |
+| G3 | A low score uses the restrained soft-red active state | NOT EXECUTED | |
+| G4 | A middle score uses the restrained warm-yellow active state | NOT EXECUTED | |
+| G5 | A high score uses the restrained soft-green active state | NOT EXECUTED | |
+| G6 | The inactive track remains near-white with a visible light boundary | NOT EXECUTED | |
+| G7 | The white thumb remains clearly distinguishable at every score | NOT EXECUTED | |
+| G8 | Null and score 1 are visibly and semantically different | NOT EXECUTED | |
+| G9 | Clearing a score returns it to `未记录` | NOT EXECUTED | |
+| G10 | Clearing a score preserves its one-line description | NOT EXECUTED | |
+| G11 | The Mood one-line optional description accepts and displays input | NOT EXECUTED | |
+| G12 | The Energy one-line optional description accepts and displays input | NOT EXECUTED | |
+| G13 | Health body feeling supports the same score and description behavior | NOT EXECUTED | |
+| G14 | Switching Home, Today, and Health preserves the current in-memory ratings and descriptions | NOT EXECUTED | |
+| G15 | Reset clears all prototype ratings and their descriptions | NOT EXECUTED | |
+| G16 | Windows mouse can set and clear every wellbeing rating | NOT EXECUTED | |
+| G17 | Windows Tab reaches the slider, clear action, and description; arrow keys adjust one point | NOT EXECUTED | |
+| G18 | Windows Enter and Space start an unrecorded rating at a valid discrete value | NOT EXECUTED | |
+| G19 | Maximum text size stacks rating regions with no overflow or hidden action | NOT EXECUTED | |
+| G20 | A 320 px Android portrait layout has no horizontal overflow | NOT EXECUTED | |
+| G21 | Mood, Energy, research, learning, water, exercise, sleep, body feeling, and weight icons are clear but restrained | NOT EXECUTED | |
+| G22 | Rating and description operations do not alter production Today or Health records | NOT EXECUTED | |
+| G23 | Rating and description operations do not start sync, AI, or network activity | NOT EXECUTED | |
+| G24 | Restart discards prototype ratings/descriptions while real data remains unchanged | NOT EXECUTED | |
 
 ## Gate Rule
 

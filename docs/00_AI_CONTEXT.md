@@ -785,3 +785,12 @@ Sprint 17A.1 在仅开发者可达的路由中验证 Home 构图、按需出现�
 内离线 WebP，寄语按本地日期确定且不调用 AI。Production 不注册该路由，现有六个
 一级入口、生产 Today/Health、schemaVersion 12、API 1 与 Sync Protocol 2 均不变。
 详见 `docs/56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md`。
+
+Prototype Revision 1 adds a reusable `WellbeingRatingField` for Mood, Energy,
+and body feeling. It is a nullable 1-10 discrete visual experiment with a
+soft-red/warm-yellow/soft-green active track, outlined near-white inactive
+track, white thumb, explicit number, and optional 80-character description.
+Scores and descriptions live only in prototype page memory. They do not map to
+the production 1-5 fields, database, AI, logs, or sync. Material icons identify
+the recording regions without replacing their text labels. The 81-row manual
+Gate remains OPEN; Sprint 16B acceptance remains suspended.

@@ -1,7 +1,8 @@
 # Home / Today / Health Experience Prototype
 
-> Status: Sprint 17A.1 implementation contract
+> Status: Sprint 17A.1 Prototype Revision 1 implementation contract
 > Baseline: `e0de17aa34f24040856d9b92869b295878b66225`
+> Revision 1 baseline: `7a056414896fdfd4ec9731429ef0cd8b7005098d`
 > Product state: developer-only, disposable prototype
 
 ## Purpose
@@ -51,6 +52,12 @@ bottom sheet; wide screens use a menu. Research and learning also use the shared
 stepper with 15, 30, and 60 minute choices. Values remain `int? minutes`, and the
 display splits them into hours and minutes.
 
+Mood and Energy use the Revision 1 `WellbeingRatingField`. Each occupies a full
+region with a restrained Material icon, nullable 1-10 discrete prototype score,
+and an optional one-line description of at most 80 characters. They stack on
+Android and at large text scale; ordinary Windows wide layouts may use two
+columns. This 1-10 experiment is not mapped to the production 1-5 Today fields.
+
 ## Health Prototype
 
 `WaterCupIndicator` renders an exact millilitre label plus a relative water
@@ -60,8 +67,48 @@ or deficient. Values above capacity remain exact in text while the cup stays
 visually full.
 
 Exercise and sleep reuse the duration stepper as a limited experience probe.
-The additional body-signal bar is explicitly a visual hierarchy placeholder,
-not a health conclusion.
+The old body-signal placeholder and duplicate 1-5 dropdown are replaced by the
+same nullable `WellbeingRatingField` for a non-diagnostic body-feeling
+prototype. Water, exercise, sleep, body feeling, and weight use nearby Material
+icons as secondary visual cues; text remains the authoritative field label.
+
+## Wellbeing Rating Field
+
+The reusable presentation-only component is:
+
+```dart
+WellbeingRatingField(
+  label: '心情',
+  icon: Icons.sentiment_satisfied_alt_outlined,
+  value: moodScore,
+  description: moodDescription,
+  minimumValue: 1,
+  maximumValue: 10,
+  descriptionHint: '用一句话说说今天的心情',
+  onScoreChanged: onMoodScoreChanged,
+  onDescriptionChanged: onMoodDescriptionChanged,
+)
+```
+
+It uses nine Slider divisions to expose ten integer positions. The active
+segment uses one soft color for the current value: low scores interpolate from
+soft red toward warm yellow, then high scores interpolate toward soft green.
+The remaining track is near-white with a light outline. A recorded score uses a
+white thumb with a fine colored outline and subtle shadow. The number and total
+remain visible, so color is never the sole signal.
+
+`null` is displayed as `未记录`, has no meaningful active color, and hides the
+thumb rather than impersonating score 1. Enter or Space starts at a valid middle
+value; arrows move exactly one point. Clearing a score preserves its optional
+description, while resetting the whole prototype clears both. Scores and
+descriptions survive Home/Today/Health view changes only for the life of the
+page and disappear after restart. They are not copied into Daily Note, Health
+Note, logs, persistence, AI, or sync.
+
+Slider, clear action, and description input retain Material focus behavior,
+Semantics, and 48 px targets. The short color transition uses `AppMotion.quick`;
+`MediaQuery.disableAnimations` reduces it to zero. Automated layout coverage
+includes 320, 360, 412, 720, and 1200 px plus TextScaler 2.0.
 
 ## Increment Control
 
@@ -121,6 +168,9 @@ horizontal page scrolling or compressing its labels.
 - AI-generated greetings or network images;
 - production visual targets, medical goals, gamification, or achievements;
 - persisting prototype state across restart.
+- mapping prototype 1-10 scores or descriptions into the production 1-5 domain,
+  database, account sync, or conflict model; a separate production design and
+  migration decision would be required.
 
 The next decision must use manual Windows and Android evidence from
 `manual_tests/61_home_today_health_experience_prototype.md`.
