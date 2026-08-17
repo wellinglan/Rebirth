@@ -17,6 +17,7 @@ import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
 import '../../features/ai_coach/domain/ai_data_scope.dart';
 import '../../features/ai_reports/presentation/ai_report_library_page.dart';
 import '../../features/growth/presentation/growth_page.dart';
+import '../../features/experience_preview/presentation/experience_preview_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
 import '../../features/journal/presentation/journal_prompt_management_page.dart';
@@ -237,6 +238,13 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
               path: 'developer-options',
               name: RouteNames.settingsDeveloperOptions,
               builder: (context, state) => const DeveloperOptionsPage(),
+              routes: [
+                GoRoute(
+                  path: 'experience-preview',
+                  name: RouteNames.experiencePreview,
+                  builder: (context, state) => const ExperiencePreviewPage(),
+                ),
+              ],
             ),
           GoRoute(
             path: 'sync-center',
@@ -284,7 +292,8 @@ String? _authRedirect(
   final devRouteDenied =
       !config.enableDevLogin &&
       (currentPath == RoutePaths.developerLogin ||
-          currentPath == RoutePaths.settingsDeveloperOptions);
+          currentPath == RoutePaths.settingsDeveloperOptions ||
+          currentPath.startsWith('${RoutePaths.settingsDeveloperOptions}/'));
   if (devRouteDenied) {
     return auth.value?.canAccessBusiness == true
         ? RoutePaths.settings

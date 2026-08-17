@@ -50,6 +50,11 @@ void main() {
       expect(find.text('开发云账号'), findsOneWidget);
       expect(find.text('开发服务器'), findsWidgets);
       expect(find.text('同步诊断'), findsOneWidget);
+      expect(find.text('体验原型'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('experiencePreviewEntry')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('devLoginButton')), findsOneWidget);
       expect(find.byKey(const ValueKey('checkBackendButton')), findsOneWidget);
       expect(

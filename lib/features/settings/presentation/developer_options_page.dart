@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/config/app_config_provider.dart';
 import 'package:rebirth/core/config/server_endpoint_provider.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/account/domain/legacy_ownership_verification.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
@@ -103,6 +105,20 @@ class DeveloperOptionsPage extends ConsumerWidget {
                           ),
                       ],
                     ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppLayout.sectionGap),
+              SettingsSection(
+                title: '体验原型',
+                child: Card(
+                  child: ListTile(
+                    key: const ValueKey('experiencePreviewEntry'),
+                    leading: const Icon(Icons.auto_awesome_mosaic_outlined),
+                    title: const Text('Home / Today / Health 原型'),
+                    subtitle: const Text('仅使用内存状态，不写入业务记录或触发同步'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(RoutePaths.experiencePreview),
                   ),
                 ),
               ),

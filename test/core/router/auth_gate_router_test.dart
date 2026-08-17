@@ -249,6 +249,72 @@ void main() {
     expect(find.text('Development User Key'), findsNothing);
   });
 
+  testWidgets('production deep link cannot open experience preview', (
+    tester,
+  ) async {
+    final container = ProviderContainer(
+      overrides: [
+        appConfigProvider.overrideWithValue(
+          AppConfig.fromValues(
+            environmentValue: 'production',
+            serverEndpoint: 'https://api.example.invalid',
+            enableDevLoginValue: 'true',
+          ),
+        ),
+        appAuthStateProvider.overrideWithValue(
+          const AsyncData(AppAuthState.signedOut()),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider);
+    router.go(RoutePaths.experiencePreview);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const RebirthApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('publicLoginPage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('experiencePreviewPage')), findsNothing);
+  });
+
+  testWidgets('development build can open experience preview', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        appConfigProvider.overrideWithValue(
+          const AppConfig.test(enableDevLogin: true),
+        ),
+        appAuthStateProvider.overrideWithValue(
+          const AsyncData(
+            AppAuthState(
+              status: AppAuthStatus.authenticated,
+              localUserId: 'local-a',
+              cloudUserId: 'cloud-a',
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider);
+    router.go(RoutePaths.experiencePreview);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const RebirthApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('experiencePreviewPage')), findsOneWidget);
+    expect(router.state.matchedLocation, RoutePaths.experiencePreview);
+  });
+
   for (final state in [
     const AppAuthState(
       status: AppAuthStatus.sessionRejected,
