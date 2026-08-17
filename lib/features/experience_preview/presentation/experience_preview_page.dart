@@ -10,6 +10,7 @@ import '../../../core/utils/date_time_service.dart';
 import '../../../core/utils/date_time_service_provider.dart';
 import 'widgets/quick_increment_control.dart';
 import 'widgets/water_cup_indicator.dart';
+import 'widgets/wellbeing_rating_field.dart';
 
 enum ExperiencePreviewView { home, today, health }
 
@@ -31,6 +32,12 @@ class _ExperiencePreviewPageState extends ConsumerState<ExperiencePreviewPage> {
   int? _learningMinutes;
   int? _exerciseMinutes;
   int? _sleepMinutes;
+  int? _moodScore;
+  int? _energyScore;
+  int? _physicalStateScore;
+  String _moodDescription = '';
+  String _energyDescription = '';
+  String _physicalStateDescription = '';
 
   @override
   void initState() {
@@ -91,8 +98,20 @@ class _ExperiencePreviewPageState extends ConsumerState<ExperiencePreviewPage> {
                           onOpenRoute: (path) => context.push(path),
                         ),
                         ExperiencePreviewView.today => _TodayPreview(
+                          moodScore: _moodScore,
+                          energyScore: _energyScore,
+                          moodDescription: _moodDescription,
+                          energyDescription: _energyDescription,
                           researchMinutes: _researchMinutes,
                           learningMinutes: _learningMinutes,
+                          onMoodScoreChanged: (value) =>
+                              setState(() => _moodScore = value),
+                          onEnergyScoreChanged: (value) =>
+                              setState(() => _energyScore = value),
+                          onMoodDescriptionChanged: (value) =>
+                              setState(() => _moodDescription = value),
+                          onEnergyDescriptionChanged: (value) =>
+                              setState(() => _energyDescription = value),
                           onResearchChanged: (value) =>
                               setState(() => _researchMinutes = value),
                           onLearningChanged: (value) =>
@@ -104,6 +123,8 @@ class _ExperiencePreviewPageState extends ConsumerState<ExperiencePreviewPage> {
                           waterStep: _waterStep,
                           exerciseMinutes: _exerciseMinutes,
                           sleepMinutes: _sleepMinutes,
+                          physicalStateScore: _physicalStateScore,
+                          physicalStateDescription: _physicalStateDescription,
                           onWaterChanged: (value) =>
                               setState(() => _waterIntakeMl = value),
                           onWaterStepChanged: (value) =>
@@ -112,6 +133,10 @@ class _ExperiencePreviewPageState extends ConsumerState<ExperiencePreviewPage> {
                               setState(() => _exerciseMinutes = value),
                           onSleepChanged: (value) =>
                               setState(() => _sleepMinutes = value),
+                          onPhysicalStateScoreChanged: (value) =>
+                              setState(() => _physicalStateScore = value),
+                          onPhysicalStateDescriptionChanged: (value) =>
+                              setState(() => _physicalStateDescription = value),
                           onPrototypeSave: _showPrototypeSaveMessage,
                         ),
                       },
@@ -140,6 +165,12 @@ class _ExperiencePreviewPageState extends ConsumerState<ExperiencePreviewPage> {
       _learningMinutes = null;
       _exerciseMinutes = null;
       _sleepMinutes = null;
+      _moodScore = null;
+      _energyScore = null;
+      _physicalStateScore = null;
+      _moodDescription = '';
+      _energyDescription = '';
+      _physicalStateDescription = '';
     });
   }
 
@@ -602,15 +633,31 @@ class _ModuleGrid extends StatelessWidget {
 
 class _TodayPreview extends StatelessWidget {
   const _TodayPreview({
+    required this.moodScore,
+    required this.energyScore,
+    required this.moodDescription,
+    required this.energyDescription,
     required this.researchMinutes,
     required this.learningMinutes,
+    required this.onMoodScoreChanged,
+    required this.onEnergyScoreChanged,
+    required this.onMoodDescriptionChanged,
+    required this.onEnergyDescriptionChanged,
     required this.onResearchChanged,
     required this.onLearningChanged,
     required this.onPrototypeSave,
   });
 
+  final int? moodScore;
+  final int? energyScore;
+  final String moodDescription;
+  final String energyDescription;
   final int? researchMinutes;
   final int? learningMinutes;
+  final ValueChanged<int?> onMoodScoreChanged;
+  final ValueChanged<int?> onEnergyScoreChanged;
+  final ValueChanged<String> onMoodDescriptionChanged;
+  final ValueChanged<String> onEnergyDescriptionChanged;
   final ValueChanged<int?> onResearchChanged;
   final ValueChanged<int?> onLearningChanged;
   final VoidCallback onPrototypeSave;
@@ -638,16 +685,27 @@ class _TodayPreview extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
         ],
         const SizedBox(height: AppSpacing.sm),
-        const _ScoreRow(),
+        _WellbeingScoreArea(
+          moodScore: moodScore,
+          energyScore: energyScore,
+          moodDescription: moodDescription,
+          energyDescription: energyDescription,
+          onMoodScoreChanged: onMoodScoreChanged,
+          onEnergyScoreChanged: onEnergyScoreChanged,
+          onMoodDescriptionChanged: onMoodDescriptionChanged,
+          onEnergyDescriptionChanged: onEnergyDescriptionChanged,
+        ),
         const SizedBox(height: AppSpacing.xl),
         _PrototypeDurationSection(
           label: '研究',
+          icon: Icons.science_outlined,
           value: researchMinutes,
           onChanged: onResearchChanged,
         ),
         const SizedBox(height: AppSpacing.lg),
         _PrototypeDurationSection(
           label: '学习',
+          icon: Icons.school_outlined,
           value: learningMinutes,
           onChanged: onLearningChanged,
         ),
@@ -670,39 +728,69 @@ class _TodayPreview extends StatelessWidget {
   }
 }
 
-class _ScoreRow extends StatelessWidget {
-  const _ScoreRow();
+class _WellbeingScoreArea extends StatelessWidget {
+  const _WellbeingScoreArea({
+    required this.moodScore,
+    required this.energyScore,
+    required this.moodDescription,
+    required this.energyDescription,
+    required this.onMoodScoreChanged,
+    required this.onEnergyScoreChanged,
+    required this.onMoodDescriptionChanged,
+    required this.onEnergyDescriptionChanged,
+  });
+
+  final int? moodScore;
+  final int? energyScore;
+  final String moodDescription;
+  final String energyDescription;
+  final ValueChanged<int?> onMoodScoreChanged;
+  final ValueChanged<int?> onEnergyScoreChanged;
+  final ValueChanged<String> onMoodDescriptionChanged;
+  final ValueChanged<String> onEnergyDescriptionChanged;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final fields = [
-          const DropdownMenuEntry<int?>(value: null, label: '未记录'),
-          for (var value = 1; value <= 5; value++)
-            DropdownMenuEntry<int?>(value: value, label: '$value'),
+          WellbeingRatingField(
+            key: const ValueKey('prototypeMoodRating'),
+            label: '心情',
+            icon: Icons.sentiment_satisfied_alt_outlined,
+            value: moodScore,
+            description: moodDescription,
+            descriptionHint: '例如：今天心里比较轻松',
+            onScoreChanged: onMoodScoreChanged,
+            onDescriptionChanged: onMoodDescriptionChanged,
+          ),
+          WellbeingRatingField(
+            key: const ValueKey('prototypeEnergyRating'),
+            label: '精力',
+            icon: Icons.bolt_outlined,
+            value: energyScore,
+            description: energyDescription,
+            descriptionHint: '例如：午后有些疲惫',
+            onScoreChanged: onEnergyScoreChanged,
+            onDescriptionChanged: onEnergyDescriptionChanged,
+          ),
         ];
-        final itemWidth = constraints.maxWidth >= 520
-            ? (constraints.maxWidth - AppSpacing.sm) / 2
-            : constraints.maxWidth;
-        return Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        if (constraints.maxWidth >= 840 && textScale < 1.5) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: fields.first),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: fields.last),
+            ],
+          );
+        }
+        return Column(
           children: [
-            SizedBox(
-              width: itemWidth,
-              child: DropdownMenu<int?>(
-                label: const Text('心情'),
-                dropdownMenuEntries: fields,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: DropdownMenu<int?>(
-                label: const Text('精力'),
-                dropdownMenuEntries: fields,
-              ),
-            ),
+            fields.first,
+            const SizedBox(height: AppSpacing.md),
+            fields.last,
           ],
         );
       },
@@ -713,11 +801,13 @@ class _ScoreRow extends StatelessWidget {
 class _PrototypeDurationSection extends StatelessWidget {
   const _PrototypeDurationSection({
     required this.label,
+    required this.icon,
     required this.value,
     required this.onChanged,
   });
 
   final String label;
+  final IconData icon;
   final int? value;
   final ValueChanged<int?> onChanged;
 
@@ -735,6 +825,14 @@ class _PrototypeDurationSection extends StatelessWidget {
           children: [
             Row(
               children: [
+                ExcludeSemantics(
+                  child: Icon(
+                    icon,
+                    key: ValueKey('${label}Icon'),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
                     '$label时间',
@@ -780,10 +878,14 @@ class _HealthPreview extends StatelessWidget {
     required this.waterStep,
     required this.exerciseMinutes,
     required this.sleepMinutes,
+    required this.physicalStateScore,
+    required this.physicalStateDescription,
     required this.onWaterChanged,
     required this.onWaterStepChanged,
     required this.onExerciseChanged,
     required this.onSleepChanged,
+    required this.onPhysicalStateScoreChanged,
+    required this.onPhysicalStateDescriptionChanged,
     required this.onPrototypeSave,
   });
 
@@ -791,10 +893,14 @@ class _HealthPreview extends StatelessWidget {
   final int waterStep;
   final int? exerciseMinutes;
   final int? sleepMinutes;
+  final int? physicalStateScore;
+  final String physicalStateDescription;
   final ValueChanged<int?> onWaterChanged;
   final ValueChanged<int> onWaterStepChanged;
   final ValueChanged<int?> onExerciseChanged;
   final ValueChanged<int?> onSleepChanged;
+  final ValueChanged<int?> onPhysicalStateScoreChanged;
+  final ValueChanged<String> onPhysicalStateDescriptionChanged;
   final VoidCallback onPrototypeSave;
 
   @override
@@ -816,6 +922,11 @@ class _HealthPreview extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               children: [
+                const _SectionHeading(
+                  label: '饮水',
+                  icon: Icons.water_drop_outlined,
+                ),
+                const SizedBox(height: AppSpacing.md),
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final cup = WaterCupIndicator(waterIntakeMl: waterIntakeMl);
@@ -861,29 +972,33 @@ class _HealthPreview extends StatelessWidget {
         const SizedBox(height: AppSpacing.xl),
         _PrototypeDurationSection(
           label: '运动',
+          icon: Icons.directions_run_outlined,
           value: exerciseMinutes,
           onChanged: onExerciseChanged,
         ),
         const SizedBox(height: AppSpacing.lg),
         _PrototypeDurationSection(
           label: '睡眠',
+          icon: Icons.bedtime_outlined,
           value: sleepMinutes,
           onChanged: onSleepChanged,
         ),
         const SizedBox(height: AppSpacing.lg),
-        const _GentleBodySignals(),
+        WellbeingRatingField(
+          key: const ValueKey('prototypePhysicalStateRating'),
+          label: '身体感受',
+          icon: Icons.self_improvement_outlined,
+          value: physicalStateScore,
+          description: physicalStateDescription,
+          descriptionHint: '例如：肩颈略紧，其他感觉平稳',
+          onScoreChanged: onPhysicalStateScoreChanged,
+          onDescriptionChanged: onPhysicalStateDescriptionChanged,
+        ),
         const SizedBox(height: AppSpacing.lg),
-        const _PrototypeNumberField(label: '体重', unit: 'kg'),
-        const SizedBox(height: AppSpacing.md),
-        DropdownButtonFormField<int?>(
-          key: const ValueKey('prototypePhysicalState'),
-          decoration: const InputDecoration(labelText: '身体状态'),
-          items: [
-            const DropdownMenuItem<int?>(value: null, child: Text('未记录')),
-            for (var value = 1; value <= 5; value++)
-              DropdownMenuItem<int?>(value: value, child: Text('$value')),
-          ],
-          onChanged: (_) {},
+        const _PrototypeNumberField(
+          label: '体重',
+          unit: 'kg',
+          icon: Icons.monitor_weight_outlined,
         ),
         const SizedBox(height: AppSpacing.md),
         const TextField(
@@ -904,19 +1019,25 @@ class _HealthPreview extends StatelessWidget {
   }
 }
 
-class _GentleBodySignals extends StatelessWidget {
-  const _GentleBodySignals();
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
       children: [
-        Text('身体感受', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.sm),
-        const LinearProgressIndicator(value: 0.58, minHeight: 10),
-        const SizedBox(height: AppSpacing.xs),
-        const Text('原型占位反馈 · 仅用于验证视觉层次'),
+        ExcludeSemantics(
+          child: Icon(
+            icon,
+            key: ValueKey('${label}Icon'),
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Text(label, style: Theme.of(context).textTheme.titleMedium),
       ],
     );
   }
@@ -1002,10 +1123,15 @@ class _ExactIntegerInputState extends State<_ExactIntegerInput> {
 }
 
 class _PrototypeNumberField extends StatefulWidget {
-  const _PrototypeNumberField({required this.label, required this.unit});
+  const _PrototypeNumberField({
+    required this.label,
+    required this.unit,
+    required this.icon,
+  });
 
   final String label;
   final String unit;
+  final IconData icon;
 
   @override
   State<_PrototypeNumberField> createState() => _PrototypeNumberFieldState();
@@ -1021,6 +1147,7 @@ class _PrototypeNumberFieldState extends State<_PrototypeNumberField> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: widget.label,
+        prefixIcon: Icon(widget.icon, key: ValueKey('${widget.label}Icon')),
         suffixText: widget.unit,
         errorText: _error,
         helperText: '非负数或空；仅保留在原型内存中',

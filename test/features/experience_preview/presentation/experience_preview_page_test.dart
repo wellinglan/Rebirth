@@ -60,6 +60,91 @@ void main() {
     expect(find.text('原型数据未写入本地记录'), findsOneWidget);
   });
 
+  testWidgets('today uses wellbeing fields and keeps scores across views', (
+    tester,
+  ) async {
+    await _pumpPage(tester, service: fixedNow, width: 1200);
+    await _selectView(tester, '今日');
+
+    expect(find.byKey(const ValueKey('prototypeMoodRating')), findsOneWidget);
+    expect(find.byKey(const ValueKey('prototypeEnergyRating')), findsOneWidget);
+    expect(find.byKey(const ValueKey('心情Icon')), findsOneWidget);
+    expect(find.byKey(const ValueKey('精力Icon')), findsOneWidget);
+
+    tester.widget<Slider>(find.byKey(const ValueKey('心情Slider'))).onChanged!(7);
+    await tester.enterText(
+      find.byKey(const ValueKey('心情Description')),
+      '今天比较轻松',
+    );
+    await tester.pump();
+    await _selectView(tester, '健康');
+    await _selectView(tester, '今日');
+
+    expect(find.text('7 / 10'), findsOneWidget);
+    expect(find.text('今天比较轻松'), findsOneWidget);
+  });
+
+  testWidgets('reset clears prototype wellbeing scores and descriptions', (
+    tester,
+  ) async {
+    await _pumpPage(tester, service: fixedNow, width: 720);
+    await _selectView(tester, '今日');
+    tester.widget<Slider>(find.byKey(const ValueKey('心情Slider'))).onChanged!(6);
+    await tester.enterText(
+      find.byKey(const ValueKey('心情Description')),
+      '需要休息一下',
+    );
+    await tester.pump();
+
+    tester
+        .widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.restart_alt),
+        )
+        .onPressed!();
+    await tester.pump();
+
+    expect(find.text('6 / 10'), findsNothing);
+    expect(find.text('需要休息一下'), findsNothing);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('心情ScoreText'))).data,
+      '未记录',
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('精力ScoreText'))).data,
+      '未记录',
+    );
+  });
+
+  testWidgets('health uses one wellbeing field without the old controls', (
+    tester,
+  ) async {
+    await _pumpPage(tester, service: fixedNow);
+    await _selectView(tester, '健康');
+
+    expect(
+      find.byKey(const ValueKey('prototypePhysicalStateRating')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('prototypePhysicalState')), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+
+  testWidgets('recording sections expose restrained identifying icons', (
+    tester,
+  ) async {
+    await _pumpPage(tester, service: fixedNow);
+    await _selectView(tester, '今日');
+    expect(find.byKey(const ValueKey('研究Icon')), findsOneWidget);
+    expect(find.byKey(const ValueKey('学习Icon')), findsOneWidget);
+
+    await _selectView(tester, '健康');
+    expect(find.byKey(const ValueKey('饮水Icon')), findsOneWidget);
+    expect(find.byKey(const ValueKey('运动Icon')), findsOneWidget);
+    expect(find.byKey(const ValueKey('睡眠Icon')), findsOneWidget);
+    expect(find.byKey(const ValueKey('身体感受Icon')), findsOneWidget);
+    expect(find.byKey(const ValueKey('体重Icon')), findsOneWidget);
+  });
+
   testWidgets('exact duration input preserves invalid text and converts 90', (
     tester,
   ) async {
@@ -86,7 +171,10 @@ void main() {
 
     final field = find.byKey(const ValueKey('研究精确分钟Field'));
     await tester.enterText(field, '77');
-    await tester.tap(find.byKey(const ValueKey('研究时间预设Button')));
+    final presetButton = find.byKey(const ValueKey('研究时间预设Button'));
+    await tester.ensureVisible(presetButton);
+    await tester.pumpAndSettle();
+    await tester.tap(presetButton);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('研究时间预设BottomSheet')), findsOneWidget);
 
@@ -96,7 +184,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('77'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('研究时间预设Button')));
+    await tester.ensureVisible(presetButton);
+    await tester.pumpAndSettle();
+    await tester.tap(presetButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text('1 小时 30 分钟'));
     await tester.pumpAndSettle();
@@ -110,6 +200,16 @@ void main() {
     ) async {
       await _pumpPage(tester, service: fixedNow, width: width);
       await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('today and health have no overflow at ${width.toInt()}px', (
+      tester,
+    ) async {
+      await _pumpPage(tester, service: fixedNow, width: width);
+      await _selectView(tester, '今日');
+      expect(tester.takeException(), isNull);
+      await _selectView(tester, '健康');
       expect(tester.takeException(), isNull);
     });
   }
@@ -126,6 +226,9 @@ void main() {
       const Offset(0, -700),
     );
     await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    await _selectView(tester, '今日');
     expect(tester.takeException(), isNull);
   });
 
@@ -152,6 +255,8 @@ void main() {
 Future<void> _selectView(WidgetTester tester, String label) async {
   final dropdown = find.byKey(const ValueKey('experiencePreviewDropdown'));
   if (dropdown.evaluate().isNotEmpty) {
+    await tester.ensureVisible(dropdown);
+    await tester.pumpAndSettle();
     await tester.tap(dropdown);
     await tester.pumpAndSettle();
     await tester.tap(find.text(label).last);
