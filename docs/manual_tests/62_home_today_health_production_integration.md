@@ -5,9 +5,10 @@
 > Implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
 > Sync contract repair commit: `f7b1bb6dcf5aedc1c50bc1951cf6eb7e82309668`
 > Gate: **OPEN**
-> Result: **34 PASS / 3 FAIL / 14 NOT EXECUTED**
-> Blocker: current clients exposed a Server payload-validation mismatch during
-> E1-E3; the source fix requires API deployment and cross-device retest.
+> Result: **40 PASS / 0 FAIL / 11 NOT EXECUTED**
+> Cross-device repair: E1-E3 initially exposed a Server payload-validation
+> mismatch; after deploying `26090f75900079291b79f7aa625818379ea6f70d`,
+> E1-E6 all passed on current Windows and Android clients.
 
 Use current Windows release and Android arm64 release builds from the same
 commit. Use two test accounts for account isolation and, where named, two
@@ -53,12 +54,12 @@ PASS. Record exact observations and screenshots for any failure.
 | D2 | Both | Restart preserves Health water, durations, score, description, and hidden fields | PASS | Accepted on 2026-08-20 |
 | D3 | Migration | A schema-12 1/2/3/4/5 score reads as 2/4/6/8/10 | NOT EXECUTED | No retained pre-upgrade fixture; automated migration coverage substitutes |
 | D4 | Migration | Upgrade does not make old records look newly edited or conflicted | NOT EXECUTED | No retained pre-upgrade fixture; automated migration coverage substitutes |
-| E1 | Cross-device | Current clients sync Today score, scale, and both descriptions | FAIL | Pre-fix Server rejected the expanded payload; deploy fixed API and retest |
-| E2 | Cross-device | Current clients sync Health score, scale, and description | FAIL | Pre-fix Server rejected the expanded payload; deploy fixed API and retest |
-| E3 | Cross-device | null, 0, hidden fields, tombstones, and cursor behavior do not regress | FAIL | Blocked by the same pre-fix payload rejection; deploy fixed API and retest |
-| E4 | Conflict | Today Adopt Remote and Keep Local preserve normalized score/descriptions | NOT EXECUTED | Create separate conflicts for both choices |
-| E5 | Conflict | Health Adopt Remote and Keep Local preserve normalized score/description | NOT EXECUTED | Create separate conflicts for both choices |
-| E6 | Compatibility | Both devices are upgraded before editing new score/description fields | NOT EXECUTED | Old clients may strip unknown optional fields |
+| E1 | Cross-device | Current clients sync Today score, scale, and both descriptions | PASS | Passed after fixed API deployment on 2026-08-20; pre-fix deployment rejected the expanded payload |
+| E2 | Cross-device | Current clients sync Health score, scale, and description | PASS | Passed after fixed API deployment on 2026-08-20; pre-fix deployment rejected the expanded payload |
+| E3 | Cross-device | null, 0, hidden fields, tombstones, and cursor behavior do not regress | PASS | Passed after fixed API deployment on 2026-08-20 |
+| E4 | Conflict | Today Adopt Remote and Keep Local preserve normalized score/descriptions | PASS | Accepted on 2026-08-20 |
+| E5 | Conflict | Health Adopt Remote and Keep Local preserve normalized score/description | PASS | Accepted on 2026-08-20 |
+| E6 | Compatibility | Both devices are upgraded before editing new score/description fields | PASS | Accepted on 2026-08-20 |
 | F1 | Accounts | Account A Home/Today/Health data is invisible to Account B | NOT EXECUTED | |
 | F2 | Accounts | Logout clears the previous account Home summary | NOT EXECUTED | |
 | F3 | Export | Full export contains normalized 1-10 scores, descriptions, and scale metadata | NOT EXECUTED | Inspect without publishing personal content |
@@ -70,10 +71,11 @@ PASS. Record exact observations and screenshots for any failure.
 
 ## Final Decision
 
-- PASS: 34
-- FAIL: 3
-- NOT EXECUTED: 14
+- PASS: 40
+- FAIL: 0
+- NOT EXECUTED: 11
 - Gate: **OPEN**
-- Blocking evidence: the fixed API has not yet been deployed, E1-E5 have not
-  passed after deployment, and account-isolation/accessibility execution is
-  still outstanding. D3-D4 and A10 retain explicit automated substitutions.
+- Blocking evidence: account-isolation/export/privacy and responsive/
+  accessibility execution remain outstanding. D3-D4 and A10 retain explicit
+  automated substitutions. Cross-device E1-E6 passed after the fixed API was
+  deployed.

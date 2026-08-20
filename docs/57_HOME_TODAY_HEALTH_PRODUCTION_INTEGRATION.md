@@ -80,7 +80,8 @@ either the exact legacy contract or the complete expanded contract. A partial
 extension, a score above its declared 5/10 scale, blank descriptions, and
 descriptions over 80 characters remain rejected. Payload JSON continues to be
 stored and returned exactly as submitted, so legacy rows are not rewritten.
-The fixed API image must be deployed before E1-E5 are retested.
+The fixed API image `26090f75900079291b79f7aa625818379ea6f70d` was
+deployed and E1-E6 subsequently passed on current Windows and Android clients.
 
 ## Data And Security Boundaries
 
@@ -100,8 +101,8 @@ API Version 1 and Sync Protocol 2 remain unchanged.
 ## Release Gate
 
 The **Home / Today / Health Production Integration Gate** remains **OPEN**. The
-initial cross-device run exposed and documented a Server validation blocker;
-the fixed API must be deployed and E1-E5 must pass. The remaining matrix in
-`docs/manual_tests/62_home_today_health_production_integration.md` must also be
-executed on Windows and Android. Automated tests and builds are evidence for
-the source implementation only and are not manual PASS.
+initial cross-device run exposed and documented a Server validation blocker,
+which passed E1-E6 after the fixed API deployment. The remaining account,
+privacy, responsive, and accessibility matrix in
+`docs/manual_tests/62_home_today_health_production_integration.md` must still
+be executed. Automated substitutions remain explicit for A10 and D3-D4.

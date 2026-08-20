@@ -356,17 +356,17 @@ void main() {
     expect(contract, contains('oldScore * 2'));
     expect(contract, contains('API Version 1'));
     expect(contract, contains('Sync Protocol 2'));
-    expect(matrix, contains('34 PASS / 3 FAIL / 14 NOT EXECUTED'));
+    expect(matrix, contains('40 PASS / 0 FAIL / 11 NOT EXECUTED'));
     expect(
       RegExp(r'^\| [A-G]\d+ \|', multiLine: true).allMatches(matrix),
       hasLength(51),
     );
     expect(matrix, contains('| E1 | Cross-device'));
-    expect(matrix, contains('| FAIL | Pre-fix Server rejected'));
-    expect(matrix, contains('deploy fixed API and retest'));
+    expect(matrix, contains('| PASS | Passed after fixed API deployment'));
+    expect(matrix, contains('Cross-device E1-E6 passed'));
     expect(matrix, contains('Gate: **OPEN**'));
     expect(registry, contains('Home / Today / Health Production Integration'));
-    expect(registry, contains('34 / 3 / 14'));
+    expect(registry, contains('40 / 0 / 11'));
   });
 }
 

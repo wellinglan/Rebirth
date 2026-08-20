@@ -61,7 +61,7 @@ that a separate module-only matrix was rerun.
 | AI Coach Feedback & Quality Signal | OPEN / SUSPENDED | [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) | 3 / 0 / 36 | Alpha image, migration, and health identity passed; remaining product matrix was explicitly suspended for Sprint 17A |
 | Product Experience Foundation | OPEN | [Product Experience and Design System](60_product_experience_design_system.md) | 0 / 0 / 30 | Foundation is implemented; Windows and Android visual/accessibility acceptance remains NOT EXECUTED |
 | Home / Today / Health Experience Prototype | CLOSED | [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) | 81 / 0 / 0 | Developer-only in-memory prototype including Revision 1 wellbeing ratings accepted on Windows and Android; production integration remains a separate decision |
-| Home / Today / Health Production Integration | OPEN | [Home / Today / Health Production Integration](62_home_today_health_production_integration.md) | 34 / 3 / 14 | Home, form, and persistence batches passed; deploy the dual-format Server validation fix and retest E1-E5 before continuing |
+| Home / Today / Health Production Integration | OPEN | [Home / Today / Health Production Integration](62_home_today_health_production_integration.md) | 40 / 0 / 11 | Fixed API deployed and cross-device E1-E6 passed; account, privacy, responsive, and accessibility batches remain |
 
 ## Important Succession Rules
 
@@ -110,7 +110,7 @@ that a separate module-only matrix was rerun.
 - [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) - Current Gate OPEN / SUSPENDED at 3 / 0 / 36
 - [Product Experience and Design System](60_product_experience_design_system.md) - Current Gate OPEN at 0 / 0 / 30
 - [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) - Gate CLOSED at 81 / 0 / 0
-- [Home / Today / Health Production Integration](62_home_today_health_production_integration.md) - Gate OPEN at 34 / 3 / 14; E1-E5 require fixed API deployment and retest
+- [Home / Today / Health Production Integration](62_home_today_health_production_integration.md) - Gate OPEN at 40 / 0 / 11; E1-E6 passed after fixed API deployment
 
 ### Authentication and Identity
 
