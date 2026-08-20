@@ -4,7 +4,28 @@
 > Status: Partially current / active mission with append-only Sprint history
 > Last Updated: 2026-08
 
-## Current Appendix: Sprint 15B AI Report Generation Pipeline
+## Current Appendix: Sprint 17C-E Core Experience Consolidation
+
+Sprint 17C-E changes product presentation and structured Today/Health facts; it
+does not add AI capability. Plan filters and hierarchy are more compact,
+Journal history has its own route, and Growth moves source/coverage detail to a
+separate page while consistently presenting Mood/Energy on the normalized
+1-10 domain.
+
+Flutter schema 14 adds six nullable, trimmed, 80-character metric narratives:
+Research, Learning, Sleep, Weight, Water, and Exercise. Together with Mood,
+Energy, and Physical State, these are sensitive local-first body fields. They
+may persist, export, manually synchronize, and participate in conflict recovery
+for the authenticated account, but they must not enter AI Prompt/Context,
+automatic Home/Growth summaries, logs, errors, or Semantics values.
+
+Server validation recognizes legacy, Sprint 17B, and complete Sprint 17C-E
+Today/Health payload generations. API Version remains 1, Sync Protocol remains
+2, and PostgreSQL/Alembic are unchanged. A new API image is nevertheless
+required for the validation contract. See
+`docs/58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md`.
+
+## Historical Appendix: Sprint 15B AI Report Generation Pipeline
 
 Sprint 15B does not expand AI capability. It consolidates existing explicit
 Daily and Weekly AI Report generation into one application-layer coordinator.
@@ -817,3 +838,21 @@ Server 同步校验必须同时接受完整旧格式与完整新格式，并拒�
 修复 API 部署后 E1-E6 已在 Windows/Android 双端通过。完整合同见
 `docs/57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md`；51 项人工矩阵当前为
 48 PASS / 0 FAIL / 3 NOT EXECUTED；A10、D3-D4 由自动化证据替代，Gate CLOSED。
+
+# 三十二、核心体验整合与指标叙事边界
+
+Sprint 17C-E 不扩展 AI。Today 与 Health 新增的 Research、Learning、Sleep、
+Weight、Water、Exercise 一句话描述，与已有 Mood、Energy、Physical State 描述
+共同构成九个结构化指标叙事。它们属于用户敏感正文：可以在当前账号的本地数据库、
+完整个人数据导出、显式手动同步和冲突恢复中使用，但不自动进入 AI Prompt、AI
+Context、Home 摘要、Growth 图表、日志、异常、SnackBar 或 Semantics value。
+
+Flutter schemaVersion 升至 14；迁移只增加六个 nullable、最多 80 字符的字段，不
+改写原记录和同步元数据。空白保存为 null，描述可在数值为 null 时独立存在，明确
+的数值 0 仍与未填写不同。Today/Health 表单继续通过既有 Controller 与 Repository
+保存，紧凑编辑控件只产生表单状态，不自动保存或同步。
+
+Server 仅扩展既有 Sync Protocol 2 JSON 校验，兼容三代完整 payload 并拒绝部分
+扩展字段。PostgreSQL、Alembic head `20260812_0008`、API Version 1、Sync
+Protocol 2、SyncCoordinator、cursor、OCC、tombstone 与冲突语义均不改变。由于
+校验代码有变化，跨端验收前仍必须部署 Candidate HEAD 对应的新 API 镜像。

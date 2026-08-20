@@ -1078,3 +1078,55 @@ authoritative. Server request validation mirrors those two exact payload
 shapes and keeps submitted JSON unchanged; this is validation at the existing
 transport boundary, not a second sync path. API Version 1 and Sync Protocol 2
 are unchanged.
+
+## 31. Core Experience Consolidation and Metric Narratives
+
+Sprint 17C-E continues to use the existing feature-first layers:
+
+```text
+TodayForm / HealthForm
+  -> compact shared presentation widgets
+  -> existing Controller
+  -> existing Repository
+  -> account-scoped Drift schema 14
+  -> existing Today/Health Sync Adapter
+  -> SyncCoordinator / Sync Protocol 2
+
+Plan / Journal / Growth presentation
+  -> existing Controllers and domain contracts
+  -> presentation-only route and hierarchy changes
+```
+
+`CompactDurationEditor` keeps duration values as `int?` total minutes while
+offering direct hour/minute input, a positive-add dialog, clear-to-null, and one
+field-local undo. `CompactQuantityEditor` provides the corresponding behavior
+for Water and direct-only Weight. `MetricDescriptionField` owns the collapsed
+optional one-line editor. These widgets emit form state only; they never access
+Repository, Drift, network, or synchronization and never save automatically.
+
+Flutter schema 14 adds Research, Learning, Sleep, Weight, Water, and Exercise
+narratives. Existing Mood, Energy, and Physical State narratives form the same
+nine-field contract. Repository and export boundaries normalize blank text to
+null, enforce 80 characters, preserve explicit numeric zero, retain hidden
+fields, and treat description-only records as meaningful.
+
+The Today/Health codecs recognize three exact payload generations: legacy
+implicit 1-5, Sprint 17B explicit scale plus original descriptions, and Sprint
+17C-E complete metric narratives. Current encoding includes every extension key
+even when its value is null. Server Pydantic validation rejects partial sets and
+keeps `extra="forbid"`; generic sync storage returns accepted JSON exactly.
+There is no second adapter, entity type, cursor, conflict path, or automatic
+sync. Server PostgreSQL and Alembic remain unchanged.
+
+Plan changes remain under presentation and reuse existing goal actions and date
+rules. Journal adds `/journal/history` but reuses its controller and edit flow;
+the main page does not preload history. Growth adds `/growth/data-sources`,
+reuses Projection/Coverage, preserves the selected period, and displays the
+already normalized Mood/Energy domain on a fixed 1-10 chart without changing
+aggregation.
+
+All affected surfaces wrap at 320px and TextScaler 2.0. Icon-only actions retain
+48px targets, Tooltip, keyboard activation, and readable Semantics. Metric
+narrative contents are deliberately excluded from Semantics values, logs,
+errors, statistics, and automatic Home/Growth summaries. See
+`docs/58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md`.

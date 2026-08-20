@@ -1,8 +1,8 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-08-20**
-> Audited code baseline: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
+> Audited: **2026-08-21**
+> Audited code checkpoint: `2795382b23c4a9b2ccfde94aa9bee2152e46b45d`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
@@ -12,7 +12,9 @@
 > Sprint 17A.1 Prototype Revision 1 starting HEAD: `7a056414896fdfd4ec9731429ef0cd8b7005098d`
 > Sprint 17B starting HEAD: `3eaf4c11f9b7bfdf8b78d18992fd1aaa9abaa593`
 > Sprint 17B implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
-> Current working Sprint: **17B Home / Today / Health Production Experience Integration accepted; manual Gate CLOSED**
+> Sprint 17C-E starting HEAD: `0a3bbcd2005ca30b02693a1d3ee573c36c908fa3`
+> Sprint 17C-E implementation checkpoint: `2795382b23c4a9b2ccfde94aa9bee2152e46b45d`
+> Current working Sprint: **17C-E Core Experience Consolidation implemented; manual Gate OPEN**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -43,7 +45,7 @@ is not proof that a live Provider is configured.
 | Dart | `3.12.2` | Flutter toolchain and `pubspec.yaml` SDK constraint |
 | Python | `3.12` contract | CI and `python:3.12-slim`; patch version is not pinned |
 | PostgreSQL | `17` | CI service and `postgres:17-alpine`; digest is not pinned |
-| Flutter schemaVersion | `13` | `lib/core/database/app_database.dart` |
+| Flutter schemaVersion | `14` | `lib/core/database/app_database.dart` |
 | Server Alembic head | `20260812_0008` | `server/alembic/versions/` |
 | API Version | `1` | `/health` schema |
 | Sync Protocol Version | `2` | `/health` schema and sync contracts |
@@ -73,11 +75,11 @@ Drift or server implementation classes.
 | Area | Local product behavior | Manual sync | Conflict behavior | Current evidence |
 |---|---|---|---|---|
 | Profile | Account-scoped profile and settings | Yes | OCC and shared conflict framework | Unified Sync Center: 113 PASS / 0 FAIL / 0 NOT EXECUTED |
-| Plan | Hierarchical goals, dates, lifecycle, archive/filter | Yes | Explicit shared conflict recovery | Unified matrix accepted; Android date layout regression accepted separately |
-| Today | Daily priorities, nullable 1-10 Mood/Energy with descriptions, stepped durations, and note | Yes | Explicit Today recovery, null/zero preserved | Sprint 17B production matrix accepted at 48 PASS / 0 FAIL / 3 NOT EXECUTED |
-| Journal | Draft/complete/reopen and prompt snapshots | Yes | Explicit Journal recovery | 39 PASS / 0 FAIL / 0 NOT EXECUTED |
-| Health | Sensitive local health records with water visualization/step input and nullable 1-10 physical-state description | Yes | Explicit shared conflict recovery | Sprint 17B production matrix accepted at 48 PASS / 0 FAIL / 3 NOT EXECUTED |
-| Growth | Read-only local projections | No | Not a sync aggregate | 71 PASS / 0 FAIL / 6 safe fault-injection rows NOT EXECUTED |
+| Plan | Hierarchical goals, dates, lifecycle, demand-open filters, and compact actions | Yes | Explicit shared conflict recovery | Sprint 17C-E presentation implemented; current 69-row combined matrix is NOT EXECUTED |
+| Today | Daily priorities, nullable 1-10 Mood/Energy, compact duration editing, nine-metric narrative model, and note | Yes | Explicit Today recovery, null/zero preserved | Sprint 17C-E implementation automated; current manual Gate OPEN |
+| Journal | Current reflection plus separate history page, draft/complete/reopen, and prompt snapshots | Yes | Explicit Journal recovery | Sprint 17C-E history separation implemented; current manual Gate OPEN |
+| Health | Sensitive local health records with compact input, water visualization, and metric narratives | Yes | Explicit shared conflict recovery | Sprint 17C-E implementation automated; current manual Gate OPEN |
+| Growth | Read-only local projections with separate data-source explanation and normalized 1-10 wellbeing charts | No | Not a sync aggregate | Sprint 17C-E presentation implemented; current manual Gate OPEN |
 | Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
 | Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |
 | Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
@@ -211,6 +213,7 @@ configured today.
 | 17A | Product experience audit and UI design system foundation | No schema/API/protocol change | 0 PASS / 0 FAIL / 30 NOT EXECUTED | Responsive and theme automation added; final feature visual direction remains open |
 | 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
 | 17B | Home / Today / Health production experience integration | Flutter schema 13; dual-format Server validation; API 1 and Sync Protocol 2 unchanged | 48 PASS / 0 FAIL / 3 NOT EXECUTED | Gate closed; all product-level checks passed, with explicit automated substitutions for A10 and D3-D4 |
+| 17C-E | Plan, Journal, Growth and metric narrative consolidation | Flutter schema 14; three-generation Today/Health validation; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 69 NOT EXECUTED | Implementation checkpoint recorded; candidate CI, API deployment, and complete manual matrix remain pending, so Gate OPEN |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
@@ -234,6 +237,35 @@ The [AI Report Generation Pipeline](manual_tests/56_ai_report_generation_pipelin
 Gate is closed with accepted limitations: six controlled pending-recovery state
 injections and one request-binding persistence failure injection remain
 unavailable at product level and retain automated coverage only.
+
+## Sprint 17C-E Experience Baseline
+
+Sprint 17C-E adds six nullable, trimmed, 80-character metric narratives to
+Today and Health: Research, Learning, Sleep, Weight, Water, and Exercise. With
+the three Sprint 17B fields, the local model now has nine structured metric
+narratives. Flutter schema 14 is an additive migration; description-only
+records remain meaningful, numeric `null` and explicit zero remain distinct,
+and visible-form saves retain fields they do not edit.
+
+Production Today and Health replace permanent increment rows with compact
+direct input, focused positive-add dialogs, clear-to-null, and one-step unsaved
+undo. Plan receives presentation-only hierarchy/filter refinement. Journal
+history moves to `/journal/history`. Growth data coverage moves behind
+`/growth/data-sources`, while Mood/Energy displays use the already normalized
+1-10 domain without another conversion.
+
+Generic Sync Protocol 2 now validates three exact Today/Health payload
+generations. New clients send every narrative key for the corresponding module,
+including null values; partial extension sets are rejected. Server PostgreSQL,
+Alembic `20260812_0008`, API Version 1, Sync Protocol 2, cursors, OCC,
+tombstones, conflicts, and manual-only synchronization remain unchanged.
+
+The authoritative contract is
+[Sprint 17C-E Core Experience](58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md).
+The 69-row [manual matrix](manual_tests/63_plan_journal_growth_and_metric_narratives.md)
+is entirely NOT EXECUTED. Local verification, GitHub Quality, GHCR publication,
+candidate API deployment, and Windows/Android acceptance are not interchangeable;
+the Gate remains **OPEN** until all required evidence is recorded.
 
 ## Full Personal Data Export Baseline
 
@@ -295,6 +327,10 @@ The workflow does not build Windows. CI PASS does not close manual Gates; the
 manual evidence lineage is authoritative in
 [Manual Acceptance Registry](manual_tests/README.md).
 
+Sprint 17C-E has not yet produced a recorded GitHub Quality result at this
+documentation checkpoint. The historical run above must not be used as proof
+for the current schema-14 and Server payload-validation candidate.
+
 ## Deployment Baseline
 
 Repository evidence confirms:
@@ -322,6 +358,11 @@ Its full-SHA GHCR API image and Alembic `20260812_0008` were subsequently
 verified on Alpha together with `/health`; the user then explicitly suspended
 the remaining product matrix at 3 PASS / 0 FAIL / 36 NOT EXECUTED. This proves
 that recorded deployment only, not Provider readiness or wider release safety.
+
+The Sprint 17C-E API image is not recorded as published or deployed at this
+checkpoint. Cross-device narrative acceptance must wait for the candidate
+full-SHA image, digest verification, API-only recreation, and fresh `/health`
+evidence. PostgreSQL must not be restarted and no Alembic revision is required.
 
 ## Product Decisions Versus Release Debt
 

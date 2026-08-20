@@ -30,6 +30,10 @@ void main() {
       'docs/57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md';
   const productionExperienceMatrixPath =
       'docs/manual_tests/62_home_today_health_production_integration.md';
+  const coreExperiencePath =
+      'docs/58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md';
+  const coreExperienceMatrixPath =
+      'docs/manual_tests/63_plan_journal_growth_and_metric_narratives.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -52,6 +56,8 @@ void main() {
         experiencePrototypeMatrixPath,
         productionExperiencePath,
         productionExperienceMatrixPath,
+        coreExperiencePath,
+        coreExperienceMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -87,13 +93,13 @@ void main() {
     expect(schemaMatch, isNotNull);
     expect(apiMatch, isNotNull);
     expect(protocolMatch, isNotNull);
-    expect(schemaMatch!.group(1), '13');
+    expect(schemaMatch!.group(1), '14');
     expect(apiMatch!.group(1), '1');
     expect(apiMatch.group(2), '1');
     expect(protocolMatch!.group(1), '2');
     expect(protocolMatch.group(2), '2');
 
-    expect(baseline, contains('| Flutter schemaVersion | `13` |'));
+    expect(baseline, contains('| Flutter schemaVersion | `14` |'));
     expect(baseline, contains('| API Version | `1` |'));
     expect(baseline, contains('| Sync Protocol Version | `2` |'));
   });
@@ -351,21 +357,9 @@ void main() {
     final matrix = File(productionExperienceMatrixPath).readAsStringSync();
     final registry = File(manualRegistryPath).readAsStringSync();
 
-    expect(baseline, contains('17B Home / Today / Health'));
-    expect(
-      RegExp(
-        r'\| Today \|.*Sprint 17B production matrix accepted at '
-        r'48 PASS / 0 FAIL / 3 NOT EXECUTED \|',
-      ).hasMatch(baseline),
-      isTrue,
-    );
-    expect(
-      RegExp(
-        r'\| Health \|.*Sprint 17B production matrix accepted at '
-        r'48 PASS / 0 FAIL / 3 NOT EXECUTED \|',
-      ).hasMatch(baseline),
-      isTrue,
-    );
+    expect(baseline, contains('Sprint 17B implementation commit'));
+    expect(baseline, contains('| 17B | Home / Today / Health'));
+    expect(baseline, contains('48 PASS / 0 FAIL / 3 NOT EXECUTED'));
     expect(contract, contains('schema 12 to 13'));
     expect(contract, contains('oldScore * 2'));
     expect(contract, contains('API Version 1'));
@@ -381,6 +375,41 @@ void main() {
     expect(matrix, contains('Gate: **CLOSED**'));
     expect(registry, contains('Home / Today / Health Production Integration'));
     expect(registry, contains('48 / 0 / 3'));
+  });
+
+  test('Sprint 17C-E docs keep the initial manual Gate open and honest', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final contract = File(coreExperiencePath).readAsStringSync();
+    final matrix = File(coreExperienceMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('17C-E Core Experience Consolidation'));
+    expect(baseline, contains('manual Gate OPEN'));
+    expect(contract, contains('schemaVersion: `14`'));
+    expect(contract, contains('API Version: `1`'));
+    expect(contract, contains('Sync Protocol: `2`'));
+    for (final field in <String>[
+      'research_description',
+      'learning_description',
+      'sleep_description',
+      'weight_description',
+      'water_description',
+      'exercise_description',
+    ]) {
+      expect(contract, contains(field));
+    }
+    expect(contract, contains('Three generations are accepted'));
+    expect(contract, contains('No PostgreSQL business column'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 69 NOT EXECUTED'));
+    expect(
+      RegExp(r'^\| [A-I]\d+ \|', multiLine: true).allMatches(matrix),
+      hasLength(69),
+    );
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(matrix, isNot(contains('| FAIL |')));
+    expect(matrix, contains('Gate remains OPEN'));
+    expect(registry, contains('Sprint 17C-E Core Experience'));
+    expect(registry, contains('0 / 0 / 69'));
   });
 }
 

@@ -2,7 +2,7 @@
 
 > Classification: **Partially current design plus migration history**
 > The Sprint 1.5 design-only metadata below is historical. Appendices record
-> later migrations through Flutter `schemaVersion = 11`; current versions and
+> later migrations through Flutter `schemaVersion = 14`; current versions and
 > Server Alembic state are authoritative in `docs/CURRENT_BASELINE.md`.
 
 > 文档版本：v1.0  
@@ -318,7 +318,9 @@ v1.0 以单用户使用为主要场景，但所有业务表仍保留 `user_id`�
 | `mood_description` | `TEXT` | 否 | `NULL` | 心情一句话描述，最多 80 字 |
 | `energy_description` | `TEXT` | 否 | `NULL` | 精力一句话描述，最多 80 字 |
 | `research_minutes` | `INTEGER` | 否 | `NULL` | 科研投入分钟数，必须大于等于 `0` |
+| `research_description` | `TEXT` | 否 | `NULL` | 科研内容或感受的一句话描述，最多 80 字 |
 | `learning_minutes` | `INTEGER` | 否 | `NULL` | 学习投入分钟数，必须大于等于 `0` |
+| `learning_description` | `TEXT` | 否 | `NULL` | 学习内容或收获的一句话描述，最多 80 字 |
 | `daily_note` | `TEXT` | 否 | `NULL` | 今日一句话，保持轻量 |
 | `record_status` | `TEXT` | 是 | `draft` | 记录状态：`draft` 或 `completed`，不代表用户成功或失败 |
 | `created_at` | `INTEGER` | 是 | 应用写入当前 UTC 时间 | 创建时间 |
@@ -338,6 +340,7 @@ v1.0 以单用户使用为主要场景，但所有业务表仍保留 `user_id`�
 - 当某个 `priority_n` 为空时，对应的完成状态不参与统计；
 - `mood_score`、`energy_score` 必须符合对应 scale，或为 `NULL`；领域层统一读取为 `1-10`；
 - 时长只允许非负整数或 `NULL`；
+- 指标描述保存前 trim，空白转为 `NULL`，非空长度不得超过 80；描述可在数值为 `NULL` 时独立使记录具有内容；
 - `record_status = completed` 仅表示用户完成了当天记录，不表示当天表现评价；
 - Today 页面展示睡眠和运动时，从同日 `health_records` 读取，并在同一事务中分别保存两张表。
 
@@ -488,10 +491,14 @@ life → year → quarter → month → week → day
 | `record_date` | `TEXT` | 是 | 应用写入本地日期 | 健康记录对应自然日 |
 | `timezone_offset_minutes` | `INTEGER` | 是 | 应用显式写入 | 创建该日记录时的 UTC 偏移分钟数 |
 | `sleep_duration_minutes` | `INTEGER` | 否 | `NULL` | 睡眠时长，非负整数分钟 |
+| `sleep_description` | `TEXT` | 否 | `NULL` | 睡眠感受的一句话描述，最多 80 字 |
 | `weight_kg` | `REAL` | 否 | `NULL` | 体重，单位千克，必须大于 `0` |
+| `weight_description` | `TEXT` | 否 | `NULL` | 本次体重记录的一句话描述，最多 80 字 |
 | `water_intake_ml` | `INTEGER` | 否 | `NULL` | 饮水量，单位毫升，必须大于等于 `0` |
+| `water_description` | `TEXT` | 否 | `NULL` | 当日饮水情况的一句话描述，最多 80 字 |
 | `exercise_type` | `TEXT` | 否 | `NULL` | 当日主要运动类型，自由文本或受控选项值 |
 | `exercise_duration_minutes` | `INTEGER` | 否 | `NULL` | 当日运动总时长，非负整数分钟 |
+| `exercise_description` | `TEXT` | 否 | `NULL` | 运动内容或感受的一句话描述，最多 80 字 |
 | `physical_state_score` | `INTEGER` | 否 | `NULL` | 主观身体状态；scale 5 时为 `1-5`，scale 10 时为 `1-10` |
 | `physical_state_score_scale` | `INTEGER` | 否 | `NULL` | `NULL/5` 表示旧 1-5 记录，`10` 表示当前量表 |
 | `physical_state_description` | `TEXT` | 否 | `NULL` | 身体感受一句话描述，最多 80 字 |
@@ -524,6 +531,7 @@ life → year → quarter → month → week → day
 - 趋势查询索引：`(user_id, record_date DESC)`；
 - 外部导入去重索引：`(data_source, source_record_id)`，其中 `source_record_id` 非空时生效；
 - v1.0 如需记录同日多次运动，只保存当日汇总；独立运动明细表应在真实需求出现后另行设计。
+- 指标描述保存前 trim，空白转为 `NULL`，非空长度不得超过 80；描述可在指标值为 `NULL` 时独立使记录具有内容。
 
 ---
 
@@ -1066,3 +1074,34 @@ change is required. Generic Sync Protocol 2 payload JSON carries the new
 optional fields. Both clients should be upgraded before editing the same
 Today/Health records because an older client cannot retain fields it does not
 know.
+
+## Sprint 17C-E Metric Narratives
+
+Flutter Drift advances from `schemaVersion = 13` to `14`. The migration adds
+only nullable columns:
+
+- `today_records.research_description`
+- `today_records.learning_description`
+- `health_records.sleep_description`
+- `health_records.weight_description`
+- `health_records.water_description`
+- `health_records.exercise_description`
+
+Each column has a non-null length constraint of at most 80 characters. Existing
+rows receive null for the new fields. Migration does not rewrite numeric values,
+score scales, `created_at`, `updated_at`, `sync_status`, `server_version`,
+`last_synced_at`, `deleted_at`, origin device, cursor, or conflict state.
+Supported historical schemas upgrade through the existing ordered migration
+chain to schema 14.
+
+Together with Sprint 17B, Today/Health now own nine structured metric narrative
+fields. Repository normalization trims them and maps blank text to null. A
+description may remain when the corresponding metric is null and therefore
+participates in `hasContent`/`hasMetrics`. Numeric null and explicit zero remain
+different business values. Every explicit save updates `updatedAt`, while
+fields outside the active UI's edit scope are retained.
+
+The Server keeps the values inside existing generic Sync Protocol 2 JSON. No
+PostgreSQL business column, SQLAlchemy model, or Alembic revision is added;
+Alembic head remains `20260812_0008`. API Version remains `1` and Sync Protocol
+remains `2`.

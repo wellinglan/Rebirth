@@ -430,3 +430,48 @@ defers feedback without losing local state. Feedback failure after report
 success is reported as partial and never rolls back the report result. There is
 no automatic, startup, background, or scheduled feedback sync. API Version
 remains 1 and Sync Protocol remains 2.
+
+## Sprint 17C-E Today/Health Metric Narrative Sync
+
+Metric narratives use the existing authenticated Today and Health adapters:
+
+```text
+JWT CloudUser + registered device
+  -> SyncCoordinator
+  -> TodaySyncAdapter / HealthSyncAdapter
+  -> generic Sync Protocol 2 payload JSON
+  -> existing cursor, OCC, tombstone, and conflict flow
+```
+
+Cloud ownership still comes only from JWT and the registered device. The client
+does not submit a trusted user ID. No new sync entity, endpoint, cursor,
+automatic trigger, or background worker is introduced.
+
+The Server accepts three exact payload generations:
+
+1. legacy pre-Sprint-17B payloads with implicit 1-5 scores;
+2. Sprint 17B payloads with a complete explicit scale extension and
+   Mood/Energy or Physical State description keys;
+3. Sprint 17C-E payloads with the complete earlier extension and every new
+   narrative key for its module.
+
+Current Today payloads always include `research_description` and
+`learning_description`. Current Health payloads always include
+`sleep_description`, `weight_description`, `water_description`, and
+`exercise_description`. Values may be null, but keys may not be omitted from a
+current-generation payload. Any partial extension set is rejected with 422,
+and `extra="forbid"` rejects unknown keys. Accepted payload JSON is persisted
+and returned exactly, including explicit nulls.
+
+Narratives are trimmed and limited to 80 characters. They travel only inside
+the owning authenticated record and its explicit conflict snapshots; they must
+not be placed in transport logs, error messages, list summaries, usage
+statistics, AI Prompt/Context, or account-independent state. Adopt Remote and
+Keep Local continue through the shared conflict repository, and Account A
+cannot read or resolve Account B's values.
+
+Server PostgreSQL stores the same generic sync JSON and needs no business
+column or Alembic revision. API Version remains `1`, Sync Protocol remains `2`,
+and Alembic head remains `20260812_0008`. A new Server image is required only
+because request validation changed; publishing that image is not proof that it
+has been deployed.

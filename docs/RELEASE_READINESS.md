@@ -1,7 +1,7 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-20 / Sprint 17B production integration implementation**
+> Audited: **2026-08-21 / Sprint 17C-E implementation checkpoint**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
@@ -18,8 +18,8 @@ and product capabilities are authoritative in
 | Wider external Alpha distribution | **No-go until release identity/signing and packaging decisions** | Development package identity, Debug signing, stale version metadata, and incomplete distribution controls |
 | Public Production or app-store release | **No-go** | Security, operations, recovery, packaging, observability, and unsupported account capabilities remain open |
 
-Neither Sprint 14G, Sprint 15A, nor Sprint 15B performs deployment or certifies that the
-reviewed source is running on the private Alpha Server.
+Neither source implementation nor image publication certifies that the reviewed
+candidate is running on the private Alpha Server.
 
 Sprint 17A.1 remains the accepted developer-only prototype evidence. Sprint
 17B promotes that direction into account-scoped production Home, Today, and
@@ -33,6 +33,15 @@ Private Alpha candidates must upgrade both clients before editing the expanded
 Today/Health payload because older clients cannot preserve unknown description
 fields.
 
+Sprint 17C-E adds six further structured metric narratives, advances Flutter
+schema to 14, and changes Server validation to recognize three exact payload
+generations. Its Plan, Journal, and Growth work is presentation-only; its
+Today/Health descriptions participate in local persistence, export, manual sync,
+and conflict recovery. The 69-row matrix is currently 0 PASS / 0 FAIL / 69 NOT
+EXECUTED, so the Sprint 17C-E Gate is **OPEN**. The candidate API must be
+published and deployed before cross-device acceptance; no PostgreSQL model or
+Alembic change is involved.
+
 ## Private Alpha Foundations Present
 
 | Area | Evidence present | Remaining qualification |
@@ -41,7 +50,7 @@ fields.
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
 | Private cloud Alpha | Sprint 16B GHCR image, matching live image identity, migration, and health were manually checked | Provider, backup, and broader Production readiness still require separate current evidence |
-| Data migrations | Drift migration tests through schema 13 and deployed Alembic `20260812_0008` | Sprint 17B retained-fixture manual migration evidence and Production backup/restore rehearsal are absent |
+| Data migrations | Drift migration tests through schema 14 and deployed Alembic `20260812_0008` | Sprint 17C-E retained-fixture manual migration evidence and Production backup/restore rehearsal are absent |
 | Authentication | Public password login, secure sessions, refresh rotation, logout, and account isolation | Recovery, MFA, real WeChat, and some controlled Step-up cases are absent |
 | Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |
@@ -171,3 +180,20 @@ and exact Alpha artifact/migration checks require manual execution. Concurrency,
 database-failure, timeout, account-timing, and migration fault rows may retain
 automated evidence when no safe product-level injection exists. Image
 publication, if later authorized, must be recorded separately from deployment.
+
+## Sprint 17C-E Boundary
+
+Sprint 17C-E is a core experience consolidation, not a public release approval.
+It introduces Flutter schema 14 with six additive nullable description columns,
+but does not alter Server PostgreSQL, Alembic head `20260812_0008`, API Version
+1, or Sync Protocol 2. It also does not add automatic sync, AI capability,
+medical guidance, import/restore, or a second repository/sync architecture.
+
+The Server payload validator changed and therefore requires a new GHCR API
+image. Required evidence is: complete local verification, matching GitHub
+Quality and image-publication success, the exact full-SHA image and digest,
+API-only Alpha recreation, healthy `/health`, and the applicable Windows and
+Android rows in
+[matrix 63](manual_tests/63_plan_journal_growth_and_metric_narratives.md).
+At this checkpoint those runtime and manual facts are not yet established. The
+Gate remains **OPEN** at 0 PASS / 0 FAIL / 69 NOT EXECUTED.
