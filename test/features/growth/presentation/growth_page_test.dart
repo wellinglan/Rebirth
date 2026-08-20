@@ -76,7 +76,7 @@ void main() {
     },
   );
 
-  testWidgets('empty data still exposes projection availability context', (
+  testWidgets('main page keeps projection details behind a compact entry', (
     tester,
   ) async {
     final repository = _FakeGrowthRepository(
@@ -92,8 +92,13 @@ void main() {
     expect(find.byKey(const ValueKey('growthEmptyState')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('growthProjectionOverview')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('growthDataSourcesEntry')),
       findsOneWidget,
     );
+    expect(find.text('数据覆盖与来源'), findsNothing);
   });
 
   testWidgets('partial data shows real sections and local empty states', (
@@ -136,6 +141,11 @@ void main() {
     await _pumpGrowthPage(tester, repository);
     await tester.pumpAndSettle();
 
+    expect(find.text('周期概览'), findsOneWidget);
+    expect(find.text('专注'), findsOneWidget);
+    expect(find.text('恢复'), findsOneWidget);
+    expect(find.text('身心状态'), findsOneWidget);
+    expect(find.text('反思'), findsOneWidget);
     expect(find.byKey(const ValueKey('growthFocusLineChart')), findsOneWidget);
     await _scrollTo(tester, const ValueKey('growthSleepLineChart'));
     expect(find.byKey(const ValueKey('growthSleepLineChart')), findsOneWidget);
@@ -402,6 +412,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.bySemanticsLabel('刷新成长趋势'), findsOneWidget);
+    expect(find.bySemanticsLabel('查看近 7 天的数据说明'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('科研记录 7 天，学习记录 7 天')), findsOneWidget);
     semantics.dispose();
   });
@@ -473,8 +484,8 @@ GrowthSnapshot _completeSnapshot({
       learningMinutes: 45 + index,
       exerciseMinutes: index == 1 ? 0 : 20 + index,
       sleepMinutes: 420 + index,
-      moodScore: 1 + index % 5,
-      energyScore: 5 - index % 5,
+      moodScore: 1 + index % 10,
+      energyScore: 10 - index % 10,
       journalRecorded: index % 3 != 0,
       journalCompleted: index % 3 == 2,
     ),

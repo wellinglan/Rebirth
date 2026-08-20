@@ -87,6 +87,21 @@ void main() {
     );
   });
 
+  test('keeps migrated 1-10 scores without applying another scale', () {
+    final snapshot = growthTestSnapshot(
+      dataForDay: (index, date) => index == 0
+          ? const GrowthDayTestData(moodScore: 10, energyScore: 9)
+          : const GrowthDayTestData(),
+    );
+
+    final result = const GrowthPresentationMapper().map(snapshot);
+
+    expect(result.mood.points.first.value, 10);
+    expect(result.energy.points.first.value, 9);
+    expect(result.mood.average, 10);
+    expect(result.energy.average, 9);
+  });
+
   test('presentation collections are immutable', () {
     final result = const GrowthPresentationMapper().map(growthTestSnapshot());
 

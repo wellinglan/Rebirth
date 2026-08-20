@@ -195,7 +195,7 @@ void main() {
     },
   );
 
-  testWidgets('chart exposes an objective semantic summary and text legend', (
+  testWidgets('chart exposes a 1-10 semantic summary and text legend', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -217,7 +217,12 @@ void main() {
 
     expect(find.text('Mood'), findsOneWidget);
     expect(find.text('Energy'), findsOneWidget);
-    expect(find.bySemanticsLabel('Mood 记录 1 天，Energy 记录 1 天'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Mood 与 Energy 评分范围 1 到 10，Mood 记录 1 天，Energy 记录 1 天',
+      ),
+      findsOneWidget,
+    );
     semantics.dispose();
   });
 
@@ -380,14 +385,14 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Mood and Energy values at 1 and 5 keep the fixed scale', (
+  testWidgets('Mood and Energy values at 1 and 10 keep the fixed scale', (
     tester,
   ) async {
     final data = const GrowthPresentationMapper().map(
       growthTestSnapshot(
         dataForDay: (index, date) => index.isEven
             ? const GrowthDayTestData(moodScore: 1)
-            : const GrowthDayTestData(energyScore: 5),
+            : const GrowthDayTestData(energyScore: 10),
       ),
     );
     await _pumpChart(
@@ -401,7 +406,21 @@ void main() {
 
     final chart = tester.widget<LineChart>(find.byType(LineChart));
     expect(chart.data.minY, 1);
-    expect(chart.data.maxY, 5);
+    expect(chart.data.maxY, 10);
+    expect(
+      chart.data.lineBarsData.expand((series) => series.spots),
+      contains(predicate<FlSpot>((spot) => !spot.isNull() && spot.y == 10)),
+    );
+    final energySeries = chart.data.lineBarsData[1];
+    final tenPoint = energySeries.spots.firstWhere(
+      (spot) => !spot.isNull() && spot.y == 10,
+    );
+    final tooltip = chart.data.lineTouchData.touchTooltipData.getTooltipItems([
+      LineBarSpot(energySeries, 1, tenPoint),
+    ]);
+    expect(tooltip.single?.text, contains('10 / 10'));
+    expect(find.text('评分范围为 1–10'), findsOneWidget);
+    expect(find.textContaining('1—5'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

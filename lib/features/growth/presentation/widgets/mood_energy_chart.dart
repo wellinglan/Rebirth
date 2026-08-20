@@ -22,8 +22,8 @@ class MoodEnergyChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return GrowthSectionCard(
       cardKey: const ValueKey('growthMoodEnergyCard'),
-      title: '身心状态',
-      subtitle: 'Mood 与 Energy 使用 1—5 原始评分',
+      title: 'Mood 与 Energy',
+      subtitle: '评分范围为 1–10',
       footer: Text(
         'Mood 记录 ${mood.recordedPointCount} 天，平均 '
         '${GrowthFormatters.score(mood.average)}；'
@@ -35,14 +35,16 @@ class MoodEnergyChart extends StatelessWidget {
       child: GrowthLineChart(
         period: period,
         semanticLabel:
-            'Mood 记录 ${mood.recordedPointCount} 天，Energy 记录 ${energy.recordedPointCount} 天',
+            'Mood 与 Energy 评分范围 1 到 10，Mood 记录 '
+            '${mood.recordedPointCount} 天，Energy 记录 '
+            '${energy.recordedPointCount} 天',
         emptyMessage: '这一周期还没有 Mood 或 Energy 评分记录。',
         emptyKey: const ValueKey('growthMoodEnergyEmpty'),
         chartKey: const ValueKey('growthMoodEnergyLineChart'),
         tooltipValue: GrowthFormatters.scorePoint,
         yAxisValue: (value) => value.round().toString(),
         minY: 1,
-        fixedMaxY: 5,
+        fixedMaxY: 10,
         series: [
           GrowthLineSeriesStyle(
             series: mood,

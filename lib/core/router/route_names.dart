@@ -14,6 +14,7 @@ abstract final class RouteNames {
   static const journalPrompts = 'journalPrompts';
   static const plan = 'plan';
   static const growth = 'growth';
+  static const growthDataSources = 'growthDataSources';
   static const health = 'health';
   static const settings = 'settings';
   static const settingsAccount = 'settingsAccount';
@@ -51,6 +52,7 @@ abstract final class RoutePaths {
   static const journalPrompts = '/journal/prompts';
   static const plan = '/plan';
   static const growth = '/growth';
+  static const growthDataSources = '/growth/data-sources';
   static const health = '/health';
   static const settings = '/settings';
   static const settingsAccount = '/settings/account';

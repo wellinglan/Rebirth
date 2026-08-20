@@ -16,6 +16,7 @@ import '../../features/ai_coach/presentation/ai_weekly_report_page.dart';
 import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
 import '../../features/ai_coach/domain/ai_data_scope.dart';
 import '../../features/ai_reports/presentation/ai_report_library_page.dart';
+import '../../features/growth/presentation/growth_data_sources_page.dart';
 import '../../features/growth/presentation/growth_page.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/experience_preview/presentation/experience_preview_page.dart';
@@ -182,6 +183,13 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
                 path: RoutePaths.growth,
                 name: RouteNames.growth,
                 builder: (context, state) => const GrowthPage(),
+                routes: [
+                  GoRoute(
+                    path: 'data-sources',
+                    name: RouteNames.growthDataSources,
+                    builder: (context, state) => const GrowthDataSourcesPage(),
+                  ),
+                ],
               ),
             ],
           ),

@@ -34,6 +34,7 @@ void main() {
     expect(RoutePaths.journal, '/journal');
     expect(RoutePaths.settingsAccountSecurity, '/settings/account/security');
     expect(RoutePaths.settingsAiConsent, '/settings/ai-data-privacy');
+    expect(RoutePaths.growthDataSources, '/growth/data-sources');
   });
 
   test('public authentication routes contain no credential parameters', () {

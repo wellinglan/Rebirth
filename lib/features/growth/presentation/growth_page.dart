@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/growth/domain/growth_period.dart';
 
@@ -13,7 +15,6 @@ import 'widgets/growth_daily_details.dart';
 import 'widgets/growth_empty_state.dart';
 import 'widgets/growth_error_state.dart';
 import 'widgets/growth_period_selector.dart';
-import 'widgets/growth_projection_overview.dart';
 import 'widgets/growth_summary_grid.dart';
 import 'widgets/journal_coverage_grid.dart';
 import 'widgets/mood_energy_chart.dart';
@@ -165,19 +166,22 @@ class _GrowthContent extends StatelessWidget {
                     const SizedBox(height: AppLayout.cardGap),
                     GrowthSummaryGrid(snapshot: snapshot),
                   ],
-                  if (snapshot.projection case final projection?) ...[
-                    const SizedBox(height: AppLayout.sectionGap),
-                    GrowthProjectionOverview(projection: projection),
-                  ],
+                  const SizedBox(height: AppSpacing.sm),
+                  _GrowthDataSourcesEntry(
+                    period: state.period,
+                    onTap: () => context.push(RoutePaths.growthDataSources),
+                  ),
                   if (!state.isCompletelyEmpty) ...[
                     const SizedBox(height: AppLayout.sectionGap),
+                    Text('专注', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppLayout.cardGap),
                     FocusTrendChart(
                       research: presentation.research,
                       learning: presentation.learning,
                       period: snapshot.period,
                     ),
                     const SizedBox(height: AppLayout.sectionGap),
-                    Text('身体恢复', style: Theme.of(context).textTheme.titleLarge),
+                    Text('恢复', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: AppLayout.cardGap),
                     _RecoveryCharts(
                       sleep: SleepTrendChart(
@@ -190,12 +194,16 @@ class _GrowthContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppLayout.sectionGap),
+                    Text('身心状态', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppLayout.cardGap),
                     MoodEnergyChart(
                       mood: presentation.mood,
                       energy: presentation.energy,
                       period: snapshot.period,
                     ),
                     const SizedBox(height: AppLayout.sectionGap),
+                    Text('反思', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppLayout.cardGap),
                     JournalCoverageGrid(
                       days: presentation.journalDays,
                       recordedDays: snapshot.journalRecordedDays,
@@ -212,6 +220,31 @@ class _GrowthContent extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GrowthDataSourcesEntry extends StatelessWidget {
+  const _GrowthDataSourcesEntry({required this.period, required this.onTap});
+
+  final GrowthPeriod period;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '查看${GrowthFormatters.periodLabel(period)}的数据说明',
+      button: true,
+      container: true,
+      child: ListTile(
+        key: const ValueKey('growthDataSourcesEntry'),
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.dataset_outlined),
+        title: const Text('数据说明'),
+        subtitle: Text('${GrowthFormatters.periodLabel(period)}的数据覆盖、质量与来源'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
       ),
     );
   }
