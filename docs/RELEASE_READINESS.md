@@ -1,7 +1,7 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-20 / Sprint 17A.1 Prototype Revision 1 acceptance**
+> Audited: **2026-08-20 / Sprint 17B production integration implementation**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
@@ -21,13 +21,14 @@ and product capabilities are authoritative in
 Neither Sprint 14G, Sprint 15A, nor Sprint 15B performs deployment or certifies that the
 reviewed source is running on the private Alpha Server.
 
-Sprint 17A.1 is a developer-only, in-memory experience prototype. Its generated
-offline imagery, water visualization, step controls, and Revision 1 wellbeing
-ratings are not evidence that a new production Home or redesigned Today/Health
-flow has shipped. Its 81-row Windows/Android manual Gate closed at 81 PASS / 0
-FAIL / 0 NOT EXECUTED on 2026-08-20. The
-prototype 1-10 scores and descriptions are neither production 1-5 data nor a
-database/sync capability.
+Sprint 17A.1 remains the accepted developer-only prototype evidence. Sprint
+17B promotes that direction into account-scoped production Home, Today, and
+Health flows and advances Flutter schema to 13. This source implementation is
+not yet manually accepted: its 48-row Windows/Android, persistence, migration,
+sync/conflict, account, and accessibility matrix remains entirely NOT EXECUTED.
+Private Alpha candidates must upgrade both clients before editing the expanded
+Today/Health payload because older clients cannot preserve unknown description
+fields.
 
 ## Private Alpha Foundations Present
 
@@ -37,7 +38,7 @@ database/sync capability.
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
 | Private cloud Alpha | Sprint 16B GHCR image, matching live image identity, migration, and health were manually checked | Provider, backup, and broader Production readiness still require separate current evidence |
-| Data migrations | Drift migration tests through schema 12 and deployed Alembic `20260812_0008` | Production backup/restore rehearsal is absent |
+| Data migrations | Drift migration tests through schema 13 and deployed Alembic `20260812_0008` | Sprint 17B retained-fixture manual migration evidence and Production backup/restore rehearsal are absent |
 | Authentication | Public password login, secure sessions, refresh rotation, logout, and account isolation | Recovery, MFA, real WeChat, and some controlled Step-up cases are absent |
 | Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |

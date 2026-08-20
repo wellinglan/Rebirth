@@ -795,3 +795,22 @@ the production 1-5 fields, database, AI, logs, or sync. Material icons identify
 the recording regions without replacing their text labels. The 81-row manual
 Gate closed at 81 PASS / 0 FAIL / 0 NOT EXECUTED on 2026-08-20; Sprint 16B
 acceptance remains suspended.
+
+# 三十一、Home / Today / Health 生产接入边界
+
+Sprint 17B 将已验收的体验方向接入受登录保护、按账号隔离的生产流程。登录后默认
+进入只读 Home；Home 通过 Repository 获取同一自然日的 Today 与 Health 摘要，使用
+`DateTimeService`、离线环境图和明确标记的本地固定寄语。打开或刷新 Home 不创建
+空记录、不调用 AI、不启动同步。
+
+Today 的 Mood/Energy 与 Health 的 Physical State 在领域层统一为可空 1-10 分，
+并各自支持最多 80 字的可空描述。Flutter `schemaVersion` 升至 13；旧 scale 为空
+的数据按 1-5 读取并在领域层乘 2，新写入保存 scale 10。迁移不改 `updated_at` 或
+同步元数据。Research、Learning、Sleep、Exercise 仍为 `int? minutes`；饮水仍为
+`int? ml`，null、显式 0 与正数语义不变。
+
+Sync Protocol 保持 2，API Version 保持 1，Server PostgreSQL/Alembic 不变。当前
+客户端 payload 增加 scale 和描述字段；旧 payload 缺少 scale 时按 1-5 解码。混用
+旧客户端可能在其重新上传记录时丢失未知描述字段，因此跨设备编辑前必须同时升级。
+完整合同见 `docs/57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md`；48 项人工矩阵
+当前全部 NOT EXECUTED，Gate OPEN。

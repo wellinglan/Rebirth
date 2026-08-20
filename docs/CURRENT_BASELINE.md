@@ -2,7 +2,7 @@
 
 > Classification: **Active / authoritative**
 > Audited: **2026-08-20**
-> Audited code baseline: `701e2068aefcf82c4f6012be10c0bb7b487a97f3`
+> Audited code baseline: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
@@ -10,7 +10,9 @@
 > Sprint 17A starting HEAD: `6f8415b8f7a69dfc61b39c8d98251604e200d92a`
 > Sprint 17A.1 starting HEAD: `e0de17aa34f24040856d9b92869b295878b66225`
 > Sprint 17A.1 Prototype Revision 1 starting HEAD: `7a056414896fdfd4ec9731429ef0cd8b7005098d`
-> Current working Sprint: **17A.1 Prototype Revision 1 Wellbeing Rating & Visual Input Refinement accepted; manual Gate CLOSED**
+> Sprint 17B starting HEAD: `3eaf4c11f9b7bfdf8b78d18992fd1aaa9abaa593`
+> Sprint 17B implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
+> Current working Sprint: **17B Home / Today / Health Production Experience Integration implemented; manual Gate OPEN**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -41,7 +43,7 @@ is not proof that a live Provider is configured.
 | Dart | `3.12.2` | Flutter toolchain and `pubspec.yaml` SDK constraint |
 | Python | `3.12` contract | CI and `python:3.12-slim`; patch version is not pinned |
 | PostgreSQL | `17` | CI service and `postgres:17-alpine`; digest is not pinned |
-| Flutter schemaVersion | `12` | `lib/core/database/app_database.dart` |
+| Flutter schemaVersion | `13` | `lib/core/database/app_database.dart` |
 | Server Alembic head | `20260812_0008` | `server/alembic/versions/` |
 | API Version | `1` | `/health` schema |
 | Sync Protocol Version | `2` | `/health` schema and sync contracts |
@@ -72,9 +74,9 @@ Drift or server implementation classes.
 |---|---|---|---|---|
 | Profile | Account-scoped profile and settings | Yes | OCC and shared conflict framework | Unified Sync Center: 113 PASS / 0 FAIL / 0 NOT EXECUTED |
 | Plan | Hierarchical goals, dates, lifecycle, archive/filter | Yes | Explicit shared conflict recovery | Unified matrix accepted; Android date layout regression accepted separately |
-| Today | Daily priorities, scores, durations, note, Health summary | Yes | Explicit Today recovery, null/zero preserved | 51 PASS / 0 FAIL / 0 NOT EXECUTED |
+| Today | Daily priorities, nullable 1-10 Mood/Energy with descriptions, stepped durations, and note | Yes | Explicit Today recovery, null/zero preserved | Sprint 17B production matrix OPEN at 0 PASS / 0 FAIL / 48 NOT EXECUTED |
 | Journal | Draft/complete/reopen and prompt snapshots | Yes | Explicit Journal recovery | 39 PASS / 0 FAIL / 0 NOT EXECUTED |
-| Health | Sensitive local health records | Yes | Explicit shared conflict recovery | Health rows passed in the 113-row unified matrix; the older dedicated matrix is historical |
+| Health | Sensitive local health records with water visualization/step input and nullable 1-10 physical-state description | Yes | Explicit shared conflict recovery | Sprint 17B production matrix OPEN at 0 PASS / 0 FAIL / 48 NOT EXECUTED |
 | Growth | Read-only local projections | No | Not a sync aggregate | 71 PASS / 0 FAIL / 6 safe fault-injection rows NOT EXECUTED |
 | Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
 | Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |
@@ -99,6 +101,12 @@ expanded product rail from 1200px at ordinary text scale. Shared Material 3
 tokens define semantic state colors, responsive padding, 48px minimum targets,
 reduced-motion-aware durations, and reusable page/loading/error foundations.
 This changes presentation only and does not alter routes or feature behavior.
+
+After authentication, `/home` is now the production default and provides a
+read-only, account-scoped local-day overview. It uses `DateTimeService`, bundled
+day/night imagery, a labelled deterministic local quote, the current Today and
+Health summaries, and six module cards. Opening or refreshing Home does not
+create records, call AI, or start synchronization.
 
 ## Authentication and Identity Boundary
 
@@ -202,6 +210,7 @@ configured today.
 | 16B | Version-bound structured AI Report feedback and aggregate quality signal | Flutter schema 12; Alembic `20260812_0008`; API 1 and Sync Protocol 2 unchanged | 3 PASS / 0 FAIL / 36 NOT EXECUTED | Alpha deployment identity passed; remaining product matrix is open and explicitly suspended |
 | 17A | Product experience audit and UI design system foundation | No schema/API/protocol change | 0 PASS / 0 FAIL / 30 NOT EXECUTED | Responsive and theme automation added; final feature visual direction remains open |
 | 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
+| 17B | Home / Today / Health production experience integration | Flutter schema 13; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 48 NOT EXECUTED | Source and automation implemented; production manual Gate remains OPEN |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach

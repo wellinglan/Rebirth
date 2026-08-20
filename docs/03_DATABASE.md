@@ -312,8 +312,11 @@ v1.0 以单用户使用为主要场景，但所有业务表仍保留 `user_id`�
 | `priority_3` | `TEXT` | 否 | `NULL` | 今日第三件重要事项 |
 | `priority_3_completed` | `INTEGER` | 是 | `0` | 第三件事项是否完成，取值 `0/1` |
 | `priority_3_goal_id` | `TEXT` | 否 | `NULL` | 第三件事项关联的目标 |
-| `mood_score` | `INTEGER` | 否 | `NULL` | 心情评分，范围 `1-5` |
-| `energy_score` | `INTEGER` | 否 | `NULL` | 精力评分，范围 `1-5` |
+| `mood_score` | `INTEGER` | 否 | `NULL` | 心情评分；scale 5 时为 `1-5`，scale 10 时为 `1-10` |
+| `energy_score` | `INTEGER` | 否 | `NULL` | 精力评分；scale 5 时为 `1-5`，scale 10 时为 `1-10` |
+| `wellbeing_score_scale` | `INTEGER` | 否 | `NULL` | `NULL/5` 表示旧 1-5 记录，`10` 表示当前量表 |
+| `mood_description` | `TEXT` | 否 | `NULL` | 心情一句话描述，最多 80 字 |
+| `energy_description` | `TEXT` | 否 | `NULL` | 精力一句话描述，最多 80 字 |
 | `research_minutes` | `INTEGER` | 否 | `NULL` | 科研投入分钟数，必须大于等于 `0` |
 | `learning_minutes` | `INTEGER` | 否 | `NULL` | 学习投入分钟数，必须大于等于 `0` |
 | `daily_note` | `TEXT` | 否 | `NULL` | 今日一句话，保持轻量 |
@@ -333,7 +336,7 @@ v1.0 以单用户使用为主要场景，但所有业务表仍保留 `user_id`�
 - v1.0 的“今日三件事”数量固定，因此直接保存在 `today_records`，暂不拆分 `today_priorities` 表；
 - 如果未来支持任意数量的事项、拖拽排序或子任务，再通过数据库迁移拆分为独立 `today_priorities` 表；
 - 当某个 `priority_n` 为空时，对应的完成状态不参与统计；
-- `mood_score`、`energy_score` 只允许 `1-5` 或 `NULL`；
+- `mood_score`、`energy_score` 必须符合对应 scale，或为 `NULL`；领域层统一读取为 `1-10`；
 - 时长只允许非负整数或 `NULL`；
 - `record_status = completed` 仅表示用户完成了当天记录，不表示当天表现评价；
 - Today 页面展示睡眠和运动时，从同日 `health_records` 读取，并在同一事务中分别保存两张表。
@@ -489,7 +492,9 @@ life → year → quarter → month → week → day
 | `water_intake_ml` | `INTEGER` | 否 | `NULL` | 饮水量，单位毫升，必须大于等于 `0` |
 | `exercise_type` | `TEXT` | 否 | `NULL` | 当日主要运动类型，自由文本或受控选项值 |
 | `exercise_duration_minutes` | `INTEGER` | 否 | `NULL` | 当日运动总时长，非负整数分钟 |
-| `physical_state_score` | `INTEGER` | 否 | `NULL` | 主观身体状态，范围 `1-5` |
+| `physical_state_score` | `INTEGER` | 否 | `NULL` | 主观身体状态；scale 5 时为 `1-5`，scale 10 时为 `1-10` |
+| `physical_state_score_scale` | `INTEGER` | 否 | `NULL` | `NULL/5` 表示旧 1-5 记录，`10` 表示当前量表 |
+| `physical_state_description` | `TEXT` | 否 | `NULL` | 身体感受一句话描述，最多 80 字 |
 | `note` | `TEXT` | 否 | `NULL` | 简短健康备注 |
 | `data_source` | `TEXT` | 是 | `manual` | `manual`、`health_connect`、`apple_health` 或未来来源 |
 | `source_record_id` | `TEXT` | 否 | `NULL` | 外部来源记录标识，用于未来导入去重 |
@@ -1044,3 +1049,20 @@ business key, constraints, and audit indexes. Upgrade and downgrade are
 additive and do not rewrite AI Reports, generic sync items, generation ledger,
 or usage ledger. API Version remains `1` and Sync Protocol remains `2` because
 feedback uses a dedicated authenticated API instead of a protocol entity.
+
+## Sprint 17B Home / Today / Health Production Integration
+
+Flutter Drift advances from `schemaVersion = 12` to `13`. The additive
+migration adds score-scale and one-line description columns to `today_records`
+and `health_records`. It does not rewrite old score values, business
+timestamps, sync status, server version, tombstones, or cursors. A null scale
+therefore remains the durable legacy marker and is interpreted as scale 5;
+domain reads map old values with `score * 2`. New records and updates use scale
+10. Blank descriptions normalize to null and non-null descriptions are limited
+to 80 characters.
+
+No Server PostgreSQL model, Alembic revision, API Version, or Sync Protocol
+change is required. Generic Sync Protocol 2 payload JSON carries the new
+optional fields. Both clients should be upgraded before editing the same
+Today/Health records because an older client cannot retain fields it does not
+know.

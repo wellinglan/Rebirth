@@ -26,6 +26,10 @@ void main() {
       'docs/56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md';
   const experiencePrototypeMatrixPath =
       'docs/manual_tests/61_home_today_health_experience_prototype.md';
+  const productionExperiencePath =
+      'docs/57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md';
+  const productionExperienceMatrixPath =
+      'docs/manual_tests/62_home_today_health_production_integration.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -46,6 +50,8 @@ void main() {
         designSystemMatrixPath,
         experiencePrototypePath,
         experiencePrototypeMatrixPath,
+        productionExperiencePath,
+        productionExperienceMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -81,13 +87,13 @@ void main() {
     expect(schemaMatch, isNotNull);
     expect(apiMatch, isNotNull);
     expect(protocolMatch, isNotNull);
-    expect(schemaMatch!.group(1), '12');
+    expect(schemaMatch!.group(1), '13');
     expect(apiMatch!.group(1), '1');
     expect(apiMatch.group(2), '1');
     expect(protocolMatch!.group(1), '2');
     expect(protocolMatch.group(2), '2');
 
-    expect(baseline, contains('| Flutter schemaVersion | `12` |'));
+    expect(baseline, contains('| Flutter schemaVersion | `13` |'));
     expect(baseline, contains('| API Version | `1` |'));
     expect(baseline, contains('| Sync Protocol Version | `2` |'));
   });
@@ -192,10 +198,7 @@ void main() {
     ).readAsStringSync();
     final registry = File(manualRegistryPath).readAsStringSync();
 
-    expect(
-      baseline,
-      contains('17A.1 Prototype Revision 1 Wellbeing Rating'),
-    );
+    expect(baseline, contains('17A.1 Revision 1'));
     expect(contract, contains('calm growth workspace'));
     expect(contract, contains('schemaVersion: `12`'));
     expect(contract, contains('API Version: `1`'));
@@ -340,6 +343,23 @@ void main() {
         );
       }
     }
+  });
+
+  test('production experience docs keep the new manual Gate honest', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final contract = File(productionExperiencePath).readAsStringSync();
+    final matrix = File(productionExperienceMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('17B Home / Today / Health'));
+    expect(contract, contains('schema 12 to 13'));
+    expect(contract, contains('oldScore * 2'));
+    expect(contract, contains('API Version 1'));
+    expect(contract, contains('Sync Protocol 2'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 48 NOT EXECUTED'));
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(registry, contains('Home / Today / Health Production Integration'));
+    expect(registry, contains('0 / 0 / 48'));
   });
 }
 

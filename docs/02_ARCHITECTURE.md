@@ -1046,3 +1046,32 @@ ephemeral state. Compact and large-text layouts stack fields; ordinary wide
 layouts may use two columns. No adapter maps these prototype values to the
 production 1-5 domain, and no Repository, migration, API, or sync boundary is
 added.
+
+## 30. Production Home / Today / Health Integration
+
+Sprint 17B promotes the accepted components without creating a second data or
+sync path:
+
+```text
+authenticated /home
+  -> homeOverviewProvider
+  -> TodayRepository + HealthRepository (read only)
+  -> account-scoped Drift facts
+
+TodayForm / HealthForm
+  -> existing controllers and repositories
+  -> shared WellbeingRatingField / QuickIncrementControl
+  -> existing SyncCoordinator adapters
+```
+
+Home has no direct Drift or implementation import and never creates an empty
+record. It watches authenticated scope and the shared Today/Health revision so
+saved data is re-read. Partial repository failure remains local to the missing
+summary. Time and the stable local quote are derived through `DateTimeService`.
+
+The data layer owns legacy scale normalization. Domain, presentation, Growth,
+AI input, Personal Data, export, and conflict presentation see only normalized
+1-10 values. Sync codecs accept an exact legacy key set (implicit scale 5) or
+the current expanded key set (explicit scale plus descriptions). The existing
+SyncCoordinator, OCC, cursor, tombstone, and conflict resolution paths remain
+authoritative. API Version 1 and Sync Protocol 2 are unchanged.

@@ -86,7 +86,8 @@ deferred, or unsupported now.
 - [AI Coach MVP Product Experience](53_AI_COACH_MVP_PRODUCT_EXPERIENCE.md) - Active; Gate closed with accepted limitations
 - [AI Coach Feedback and Quality Signal](54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md) - Active implementation; manual Gate open
 - [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) - Active foundation; feature-level visual direction remains open
-- [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) - Active developer-only prototype with Revision 1 wellbeing ratings; production integration is deferred
+- [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) - Accepted developer-only historical comparison
+- [Home / Today / Health Production Integration](57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md) - Active implementation; manual Gate open
 
 ## Historical Sprint Records
 
