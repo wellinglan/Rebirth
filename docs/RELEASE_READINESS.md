@@ -1,7 +1,7 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-18 / Sprint 17A.1 Prototype Revision 1**
+> Audited: **2026-08-20 / Sprint 17A.1 Prototype Revision 1 acceptance**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
@@ -24,7 +24,8 @@ reviewed source is running on the private Alpha Server.
 Sprint 17A.1 is a developer-only, in-memory experience prototype. Its generated
 offline imagery, water visualization, step controls, and Revision 1 wellbeing
 ratings are not evidence that a new production Home or redesigned Today/Health
-flow has shipped. Its 81-row Windows/Android manual Gate remains open. The
+flow has shipped. Its 81-row Windows/Android manual Gate closed at 81 PASS / 0
+FAIL / 0 NOT EXECUTED on 2026-08-20. The
 prototype 1-10 scores and descriptions are neither production 1-5 data nor a
 database/sync capability.
 

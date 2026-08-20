@@ -212,10 +212,11 @@ void main() {
     expect(prototype, contains('WellbeingRatingField'));
     expect(prototype, contains('not mapped to the production 1-5'));
     expect(prototype, contains('developer-only, disposable prototype'));
-    expect(prototypeMatrix, contains('0 PASS / 0 FAIL / 81 NOT EXECUTED'));
-    expect(prototypeMatrix, isNot(contains('| PASS |')));
+    expect(prototypeMatrix, contains('81 PASS / 0 FAIL / 0 NOT EXECUTED'));
+    expect(prototypeMatrix, contains('| PASS |'));
+    expect(prototypeMatrix, isNot(contains('| NOT EXECUTED |')));
     expect(registry, contains('Home / Today / Health Experience Prototype'));
-    expect(registry, contains('0 / 0 / 81'));
+    expect(registry, contains('81 / 0 / 0'));
   });
 
   test('active entry points do not reintroduce unqualified stale claims', () {

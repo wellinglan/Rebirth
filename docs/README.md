@@ -1,7 +1,7 @@
 # Rebirth Documentation Index
 
 > Classification: **Active**
-> Last consolidated: **2026-08-18 / Sprint 17A.1 Prototype Revision 1**
+> Last consolidated: **2026-08-20 / Sprint 17A.1 Prototype Revision 1 acceptance**
 
 Start with [Current Baseline](CURRENT_BASELINE.md). It is the only authoritative
 snapshot of what is implemented, verified, manually accepted, deployed,

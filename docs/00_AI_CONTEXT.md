@@ -793,4 +793,5 @@ track, white thumb, explicit number, and optional 80-character description.
 Scores and descriptions live only in prototype page memory. They do not map to
 the production 1-5 fields, database, AI, logs, or sync. Material icons identify
 the recording regions without replacing their text labels. The 81-row manual
-Gate remains OPEN; Sprint 16B acceptance remains suspended.
+Gate closed at 81 PASS / 0 FAIL / 0 NOT EXECUTED on 2026-08-20; Sprint 16B
+acceptance remains suspended.

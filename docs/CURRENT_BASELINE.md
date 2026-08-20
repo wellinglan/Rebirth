@@ -1,8 +1,8 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-08-12**
-> Audited code baseline: `260356faf79deac1c72b8dd6f97f938185a4e6e3`
+> Audited: **2026-08-20**
+> Audited code baseline: `701e2068aefcf82c4f6012be10c0bb7b487a97f3`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
@@ -10,7 +10,7 @@
 > Sprint 17A starting HEAD: `6f8415b8f7a69dfc61b39c8d98251604e200d92a`
 > Sprint 17A.1 starting HEAD: `e0de17aa34f24040856d9b92869b295878b66225`
 > Sprint 17A.1 Prototype Revision 1 starting HEAD: `7a056414896fdfd4ec9731429ef0cd8b7005098d`
-> Current working Sprint: **17A.1 Prototype Revision 1 Wellbeing Rating & Visual Input Refinement; manual Gate OPEN / NOT EXECUTED**
+> Current working Sprint: **17A.1 Prototype Revision 1 Wellbeing Rating & Visual Input Refinement accepted; manual Gate CLOSED**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -201,7 +201,7 @@ configured today.
 | 16A | First-level task-oriented AI Coach product experience | No schema/API/protocol change | 29 PASS / 0 FAIL / 8 NOT EXECUTED | Closed with accepted limitations; automated evidence replaces dangerous runtime injection only |
 | 16B | Version-bound structured AI Report feedback and aggregate quality signal | Flutter schema 12; Alembic `20260812_0008`; API 1 and Sync Protocol 2 unchanged | 3 PASS / 0 FAIL / 36 NOT EXECUTED | Alpha deployment identity passed; remaining product matrix is open and explicitly suspended |
 | 17A | Product experience audit and UI design system foundation | No schema/API/protocol change | 0 PASS / 0 FAIL / 30 NOT EXECUTED | Responsive and theme automation added; final feature visual direction remains open |
-| 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 0 PASS / 0 FAIL / 81 NOT EXECUTED | In-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons alongside the existing art, presets, water, and step inputs; production 1-5 fields and routes remain unchanged |
+| 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
