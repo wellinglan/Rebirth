@@ -43,9 +43,9 @@ void main() {
     expect(find.text('平均睡眠'), findsOneWidget);
     expect(find.text('7 小时 30 分钟'), findsOneWidget);
     expect(find.text('平均 Mood'), findsOneWidget);
-    expect(find.text('3.5 / 5'), findsOneWidget);
+    expect(find.text('3.5 / 10'), findsOneWidget);
     expect(find.text('平均 Energy'), findsOneWidget);
-    expect(find.text('4.5 / 5'), findsOneWidget);
+    expect(find.text('4.5 / 10'), findsOneWidget);
     expect(find.text('2 / 7 天'), findsOneWidget);
   });
 

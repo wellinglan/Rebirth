@@ -30,10 +30,10 @@ abstract final class GrowthFormatters {
   }
 
   static String score(double? value) {
-    return value == null ? noData : '${value.toStringAsFixed(1)} / 5';
+    return value == null ? noData : '${value.toStringAsFixed(1)} / 10';
   }
 
-  static String scorePoint(int value) => '$value / 5';
+  static String scorePoint(int value) => '$value / 10';
 
   static String detailDuration(int? minutes) {
     return minutes == null ? notRecorded : duration(minutes);

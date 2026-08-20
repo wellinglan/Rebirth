@@ -17,6 +17,7 @@ import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
 import '../../features/ai_coach/domain/ai_data_scope.dart';
 import '../../features/ai_reports/presentation/ai_report_library_page.dart';
 import '../../features/growth/presentation/growth_page.dart';
+import '../../features/home/presentation/home_page.dart';
 import '../../features/experience_preview/presentation/experience_preview_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
@@ -51,7 +52,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
 GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
   return GoRouter(
-    initialLocation: RoutePaths.today,
+    initialLocation: RoutePaths.home,
     refreshListenable: refresh,
     redirect: (context, state) => _authRedirect(refresh.auth, state, config),
     routes: [
@@ -91,11 +92,11 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
         name: RouteNames.fatalMigrationError,
         builder: (context, state) => const FatalMigrationErrorPage(),
       ),
-      GoRoute(path: '/', redirect: (_, _) => RoutePaths.today),
+      GoRoute(path: '/', redirect: (_, _) => RoutePaths.home),
       GoRoute(
         path: RoutePaths.home,
         name: RouteNames.home,
-        redirect: (_, _) => RoutePaths.today,
+        builder: (context, state) => const HomePage(),
       ),
       GoRoute(
         path: RoutePaths.aiCoachWeekly,
@@ -314,7 +315,7 @@ String? _authRedirect(
       AppAuthStatus.bindingRequired => RoutePaths.accountBindingRequired,
       AppAuthStatus.fatalMigrationError => RoutePaths.fatalMigrationError,
       AppAuthStatus.authenticated || AppAuthStatus.authenticatedOffline =>
-        _isAuthGatePath(currentPath) ? RoutePaths.today : null,
+        _isAuthGatePath(currentPath) ? RoutePaths.home : null,
     },
   );
   return target == currentPath ? null : target;

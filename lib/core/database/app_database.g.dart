@@ -3066,6 +3066,27 @@ class $TodayRecordsTable extends TodayRecords
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _wellbeingScoreScaleMeta =
+      const VerificationMeta('wellbeingScoreScale');
+  @override
+  late final GeneratedColumn<int> wellbeingScoreScale = GeneratedColumn<int>(
+    'wellbeing_score_scale',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _moodDescriptionMeta = const VerificationMeta(
+    'moodDescription',
+  );
+  @override
+  late final GeneratedColumn<String> moodDescription = GeneratedColumn<String>(
+    'mood_description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _energyScoreMeta = const VerificationMeta(
     'energyScore',
   );
@@ -3077,6 +3098,18 @@ class $TodayRecordsTable extends TodayRecords
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _energyDescriptionMeta = const VerificationMeta(
+    'energyDescription',
+  );
+  @override
+  late final GeneratedColumn<String> energyDescription =
+      GeneratedColumn<String>(
+        'energy_description',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _researchMinutesMeta = const VerificationMeta(
     'researchMinutes',
   );
@@ -3145,7 +3178,10 @@ class $TodayRecordsTable extends TodayRecords
     priority3Completed,
     priority3GoalId,
     moodScore,
+    wellbeingScoreScale,
+    moodDescription,
     energyScore,
+    energyDescription,
     researchMinutes,
     learningMinutes,
     dailyNote,
@@ -3322,12 +3358,39 @@ class $TodayRecordsTable extends TodayRecords
         moodScore.isAcceptableOrUnknown(data['mood_score']!, _moodScoreMeta),
       );
     }
+    if (data.containsKey('wellbeing_score_scale')) {
+      context.handle(
+        _wellbeingScoreScaleMeta,
+        wellbeingScoreScale.isAcceptableOrUnknown(
+          data['wellbeing_score_scale']!,
+          _wellbeingScoreScaleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('mood_description')) {
+      context.handle(
+        _moodDescriptionMeta,
+        moodDescription.isAcceptableOrUnknown(
+          data['mood_description']!,
+          _moodDescriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('energy_score')) {
       context.handle(
         _energyScoreMeta,
         energyScore.isAcceptableOrUnknown(
           data['energy_score']!,
           _energyScoreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('energy_description')) {
+      context.handle(
+        _energyDescriptionMeta,
+        energyDescription.isAcceptableOrUnknown(
+          data['energy_description']!,
+          _energyDescriptionMeta,
         ),
       );
     }
@@ -3457,9 +3520,21 @@ class $TodayRecordsTable extends TodayRecords
         DriftSqlType.int,
         data['${effectivePrefix}mood_score'],
       ),
+      wellbeingScoreScale: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}wellbeing_score_scale'],
+      ),
+      moodDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mood_description'],
+      ),
       energyScore: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}energy_score'],
+      ),
+      energyDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}energy_description'],
       ),
       researchMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -3508,7 +3583,10 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
   final bool priority3Completed;
   final String? priority3GoalId;
   final int? moodScore;
+  final int? wellbeingScoreScale;
+  final String? moodDescription;
   final int? energyScore;
+  final String? energyDescription;
   final int? researchMinutes;
   final int? learningMinutes;
   final String? dailyNote;
@@ -3535,7 +3613,10 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     required this.priority3Completed,
     this.priority3GoalId,
     this.moodScore,
+    this.wellbeingScoreScale,
+    this.moodDescription,
     this.energyScore,
+    this.energyDescription,
     this.researchMinutes,
     this.learningMinutes,
     this.dailyNote,
@@ -3587,8 +3668,17 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     if (!nullToAbsent || moodScore != null) {
       map['mood_score'] = Variable<int>(moodScore);
     }
+    if (!nullToAbsent || wellbeingScoreScale != null) {
+      map['wellbeing_score_scale'] = Variable<int>(wellbeingScoreScale);
+    }
+    if (!nullToAbsent || moodDescription != null) {
+      map['mood_description'] = Variable<String>(moodDescription);
+    }
     if (!nullToAbsent || energyScore != null) {
       map['energy_score'] = Variable<int>(energyScore);
+    }
+    if (!nullToAbsent || energyDescription != null) {
+      map['energy_description'] = Variable<String>(energyDescription);
     }
     if (!nullToAbsent || researchMinutes != null) {
       map['research_minutes'] = Variable<int>(researchMinutes);
@@ -3648,9 +3738,18 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
       moodScore: moodScore == null && nullToAbsent
           ? const Value.absent()
           : Value(moodScore),
+      wellbeingScoreScale: wellbeingScoreScale == null && nullToAbsent
+          ? const Value.absent()
+          : Value(wellbeingScoreScale),
+      moodDescription: moodDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(moodDescription),
       energyScore: energyScore == null && nullToAbsent
           ? const Value.absent()
           : Value(energyScore),
+      energyDescription: energyDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(energyDescription),
       researchMinutes: researchMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(researchMinutes),
@@ -3693,7 +3792,14 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
       priority3Completed: serializer.fromJson<bool>(json['priority3Completed']),
       priority3GoalId: serializer.fromJson<String?>(json['priority3GoalId']),
       moodScore: serializer.fromJson<int?>(json['moodScore']),
+      wellbeingScoreScale: serializer.fromJson<int?>(
+        json['wellbeingScoreScale'],
+      ),
+      moodDescription: serializer.fromJson<String?>(json['moodDescription']),
       energyScore: serializer.fromJson<int?>(json['energyScore']),
+      energyDescription: serializer.fromJson<String?>(
+        json['energyDescription'],
+      ),
       researchMinutes: serializer.fromJson<int?>(json['researchMinutes']),
       learningMinutes: serializer.fromJson<int?>(json['learningMinutes']),
       dailyNote: serializer.fromJson<String?>(json['dailyNote']),
@@ -3725,7 +3831,10 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
       'priority3Completed': serializer.toJson<bool>(priority3Completed),
       'priority3GoalId': serializer.toJson<String?>(priority3GoalId),
       'moodScore': serializer.toJson<int?>(moodScore),
+      'wellbeingScoreScale': serializer.toJson<int?>(wellbeingScoreScale),
+      'moodDescription': serializer.toJson<String?>(moodDescription),
       'energyScore': serializer.toJson<int?>(energyScore),
+      'energyDescription': serializer.toJson<String?>(energyDescription),
       'researchMinutes': serializer.toJson<int?>(researchMinutes),
       'learningMinutes': serializer.toJson<int?>(learningMinutes),
       'dailyNote': serializer.toJson<String?>(dailyNote),
@@ -3755,7 +3864,10 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     bool? priority3Completed,
     Value<String?> priority3GoalId = const Value.absent(),
     Value<int?> moodScore = const Value.absent(),
+    Value<int?> wellbeingScoreScale = const Value.absent(),
+    Value<String?> moodDescription = const Value.absent(),
     Value<int?> energyScore = const Value.absent(),
+    Value<String?> energyDescription = const Value.absent(),
     Value<int?> researchMinutes = const Value.absent(),
     Value<int?> learningMinutes = const Value.absent(),
     Value<String?> dailyNote = const Value.absent(),
@@ -3792,7 +3904,16 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
         ? priority3GoalId.value
         : this.priority3GoalId,
     moodScore: moodScore.present ? moodScore.value : this.moodScore,
+    wellbeingScoreScale: wellbeingScoreScale.present
+        ? wellbeingScoreScale.value
+        : this.wellbeingScoreScale,
+    moodDescription: moodDescription.present
+        ? moodDescription.value
+        : this.moodDescription,
     energyScore: energyScore.present ? energyScore.value : this.energyScore,
+    energyDescription: energyDescription.present
+        ? energyDescription.value
+        : this.energyDescription,
     researchMinutes: researchMinutes.present
         ? researchMinutes.value
         : this.researchMinutes,
@@ -3849,9 +3970,18 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
           ? data.priority3GoalId.value
           : this.priority3GoalId,
       moodScore: data.moodScore.present ? data.moodScore.value : this.moodScore,
+      wellbeingScoreScale: data.wellbeingScoreScale.present
+          ? data.wellbeingScoreScale.value
+          : this.wellbeingScoreScale,
+      moodDescription: data.moodDescription.present
+          ? data.moodDescription.value
+          : this.moodDescription,
       energyScore: data.energyScore.present
           ? data.energyScore.value
           : this.energyScore,
+      energyDescription: data.energyDescription.present
+          ? data.energyDescription.value
+          : this.energyDescription,
       researchMinutes: data.researchMinutes.present
           ? data.researchMinutes.value
           : this.researchMinutes,
@@ -3889,7 +4019,10 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
           ..write('priority3Completed: $priority3Completed, ')
           ..write('priority3GoalId: $priority3GoalId, ')
           ..write('moodScore: $moodScore, ')
+          ..write('wellbeingScoreScale: $wellbeingScoreScale, ')
+          ..write('moodDescription: $moodDescription, ')
           ..write('energyScore: $energyScore, ')
+          ..write('energyDescription: $energyDescription, ')
           ..write('researchMinutes: $researchMinutes, ')
           ..write('learningMinutes: $learningMinutes, ')
           ..write('dailyNote: $dailyNote, ')
@@ -3921,7 +4054,10 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     priority3Completed,
     priority3GoalId,
     moodScore,
+    wellbeingScoreScale,
+    moodDescription,
     energyScore,
+    energyDescription,
     researchMinutes,
     learningMinutes,
     dailyNote,
@@ -3952,7 +4088,10 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
           other.priority3Completed == this.priority3Completed &&
           other.priority3GoalId == this.priority3GoalId &&
           other.moodScore == this.moodScore &&
+          other.wellbeingScoreScale == this.wellbeingScoreScale &&
+          other.moodDescription == this.moodDescription &&
           other.energyScore == this.energyScore &&
+          other.energyDescription == this.energyDescription &&
           other.researchMinutes == this.researchMinutes &&
           other.learningMinutes == this.learningMinutes &&
           other.dailyNote == this.dailyNote &&
@@ -3981,7 +4120,10 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
   final Value<bool> priority3Completed;
   final Value<String?> priority3GoalId;
   final Value<int?> moodScore;
+  final Value<int?> wellbeingScoreScale;
+  final Value<String?> moodDescription;
   final Value<int?> energyScore;
+  final Value<String?> energyDescription;
   final Value<int?> researchMinutes;
   final Value<int?> learningMinutes;
   final Value<String?> dailyNote;
@@ -4009,7 +4151,10 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     this.priority3Completed = const Value.absent(),
     this.priority3GoalId = const Value.absent(),
     this.moodScore = const Value.absent(),
+    this.wellbeingScoreScale = const Value.absent(),
+    this.moodDescription = const Value.absent(),
     this.energyScore = const Value.absent(),
+    this.energyDescription = const Value.absent(),
     this.researchMinutes = const Value.absent(),
     this.learningMinutes = const Value.absent(),
     this.dailyNote = const Value.absent(),
@@ -4038,7 +4183,10 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     this.priority3Completed = const Value.absent(),
     this.priority3GoalId = const Value.absent(),
     this.moodScore = const Value.absent(),
+    this.wellbeingScoreScale = const Value.absent(),
+    this.moodDescription = const Value.absent(),
     this.energyScore = const Value.absent(),
+    this.energyDescription = const Value.absent(),
     this.researchMinutes = const Value.absent(),
     this.learningMinutes = const Value.absent(),
     this.dailyNote = const Value.absent(),
@@ -4069,7 +4217,10 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     Expression<bool>? priority3Completed,
     Expression<String>? priority3GoalId,
     Expression<int>? moodScore,
+    Expression<int>? wellbeingScoreScale,
+    Expression<String>? moodDescription,
     Expression<int>? energyScore,
+    Expression<String>? energyDescription,
     Expression<int>? researchMinutes,
     Expression<int>? learningMinutes,
     Expression<String>? dailyNote,
@@ -4102,7 +4253,11 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
         'priority_3_completed': priority3Completed,
       if (priority3GoalId != null) 'priority_3_goal_id': priority3GoalId,
       if (moodScore != null) 'mood_score': moodScore,
+      if (wellbeingScoreScale != null)
+        'wellbeing_score_scale': wellbeingScoreScale,
+      if (moodDescription != null) 'mood_description': moodDescription,
       if (energyScore != null) 'energy_score': energyScore,
+      if (energyDescription != null) 'energy_description': energyDescription,
       if (researchMinutes != null) 'research_minutes': researchMinutes,
       if (learningMinutes != null) 'learning_minutes': learningMinutes,
       if (dailyNote != null) 'daily_note': dailyNote,
@@ -4133,7 +4288,10 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     Value<bool>? priority3Completed,
     Value<String?>? priority3GoalId,
     Value<int?>? moodScore,
+    Value<int?>? wellbeingScoreScale,
+    Value<String?>? moodDescription,
     Value<int?>? energyScore,
+    Value<String?>? energyDescription,
     Value<int?>? researchMinutes,
     Value<int?>? learningMinutes,
     Value<String?>? dailyNote,
@@ -4163,7 +4321,10 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
       priority3Completed: priority3Completed ?? this.priority3Completed,
       priority3GoalId: priority3GoalId ?? this.priority3GoalId,
       moodScore: moodScore ?? this.moodScore,
+      wellbeingScoreScale: wellbeingScoreScale ?? this.wellbeingScoreScale,
+      moodDescription: moodDescription ?? this.moodDescription,
       energyScore: energyScore ?? this.energyScore,
+      energyDescription: energyDescription ?? this.energyDescription,
       researchMinutes: researchMinutes ?? this.researchMinutes,
       learningMinutes: learningMinutes ?? this.learningMinutes,
       dailyNote: dailyNote ?? this.dailyNote,
@@ -4240,8 +4401,17 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     if (moodScore.present) {
       map['mood_score'] = Variable<int>(moodScore.value);
     }
+    if (wellbeingScoreScale.present) {
+      map['wellbeing_score_scale'] = Variable<int>(wellbeingScoreScale.value);
+    }
+    if (moodDescription.present) {
+      map['mood_description'] = Variable<String>(moodDescription.value);
+    }
     if (energyScore.present) {
       map['energy_score'] = Variable<int>(energyScore.value);
+    }
+    if (energyDescription.present) {
+      map['energy_description'] = Variable<String>(energyDescription.value);
     }
     if (researchMinutes.present) {
       map['research_minutes'] = Variable<int>(researchMinutes.value);
@@ -4285,7 +4455,10 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
           ..write('priority3Completed: $priority3Completed, ')
           ..write('priority3GoalId: $priority3GoalId, ')
           ..write('moodScore: $moodScore, ')
+          ..write('wellbeingScoreScale: $wellbeingScoreScale, ')
+          ..write('moodDescription: $moodDescription, ')
           ..write('energyScore: $energyScore, ')
+          ..write('energyDescription: $energyDescription, ')
           ..write('researchMinutes: $researchMinutes, ')
           ..write('learningMinutes: $learningMinutes, ')
           ..write('dailyNote: $dailyNote, ')
@@ -7937,6 +8110,28 @@ class $HealthRecordsTable extends HealthRecords
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _physicalStateScoreScaleMeta =
+      const VerificationMeta('physicalStateScoreScale');
+  @override
+  late final GeneratedColumn<int> physicalStateScoreScale =
+      GeneratedColumn<int>(
+        'physical_state_score_scale',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _physicalStateDescriptionMeta =
+      const VerificationMeta('physicalStateDescription');
+  @override
+  late final GeneratedColumn<String> physicalStateDescription =
+      GeneratedColumn<String>(
+        'physical_state_description',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -7989,6 +8184,8 @@ class $HealthRecordsTable extends HealthRecords
     exerciseType,
     exerciseDurationMinutes,
     physicalStateScore,
+    physicalStateScoreScale,
+    physicalStateDescription,
     note,
     dataSource,
     sourceRecordId,
@@ -8146,6 +8343,24 @@ class $HealthRecordsTable extends HealthRecords
         ),
       );
     }
+    if (data.containsKey('physical_state_score_scale')) {
+      context.handle(
+        _physicalStateScoreScaleMeta,
+        physicalStateScoreScale.isAcceptableOrUnknown(
+          data['physical_state_score_scale']!,
+          _physicalStateScoreScaleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('physical_state_description')) {
+      context.handle(
+        _physicalStateDescriptionMeta,
+        physicalStateDescription.isAcceptableOrUnknown(
+          data['physical_state_description']!,
+          _physicalStateDescriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('note')) {
       context.handle(
         _noteMeta,
@@ -8248,6 +8463,14 @@ class $HealthRecordsTable extends HealthRecords
         DriftSqlType.int,
         data['${effectivePrefix}physical_state_score'],
       ),
+      physicalStateScoreScale: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}physical_state_score_scale'],
+      ),
+      physicalStateDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}physical_state_description'],
+      ),
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}note'],
@@ -8288,6 +8511,8 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
   final String? exerciseType;
   final int? exerciseDurationMinutes;
   final int? physicalStateScore;
+  final int? physicalStateScoreScale;
+  final String? physicalStateDescription;
   final String? note;
   final String dataSource;
   final String? sourceRecordId;
@@ -8310,6 +8535,8 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     this.exerciseType,
     this.exerciseDurationMinutes,
     this.physicalStateScore,
+    this.physicalStateScoreScale,
+    this.physicalStateDescription,
     this.note,
     required this.dataSource,
     this.sourceRecordId,
@@ -8356,6 +8583,16 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     }
     if (!nullToAbsent || physicalStateScore != null) {
       map['physical_state_score'] = Variable<int>(physicalStateScore);
+    }
+    if (!nullToAbsent || physicalStateScoreScale != null) {
+      map['physical_state_score_scale'] = Variable<int>(
+        physicalStateScoreScale,
+      );
+    }
+    if (!nullToAbsent || physicalStateDescription != null) {
+      map['physical_state_description'] = Variable<String>(
+        physicalStateDescription,
+      );
     }
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
@@ -8409,6 +8646,12 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
       physicalStateScore: physicalStateScore == null && nullToAbsent
           ? const Value.absent()
           : Value(physicalStateScore),
+      physicalStateScoreScale: physicalStateScoreScale == null && nullToAbsent
+          ? const Value.absent()
+          : Value(physicalStateScoreScale),
+      physicalStateDescription: physicalStateDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(physicalStateDescription),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       dataSource: Value(dataSource),
       sourceRecordId: sourceRecordId == null && nullToAbsent
@@ -8447,6 +8690,12 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
         json['exerciseDurationMinutes'],
       ),
       physicalStateScore: serializer.fromJson<int?>(json['physicalStateScore']),
+      physicalStateScoreScale: serializer.fromJson<int?>(
+        json['physicalStateScoreScale'],
+      ),
+      physicalStateDescription: serializer.fromJson<String?>(
+        json['physicalStateDescription'],
+      ),
       note: serializer.fromJson<String?>(json['note']),
       dataSource: serializer.fromJson<String>(json['dataSource']),
       sourceRecordId: serializer.fromJson<String?>(json['sourceRecordId']),
@@ -8476,6 +8725,12 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
         exerciseDurationMinutes,
       ),
       'physicalStateScore': serializer.toJson<int?>(physicalStateScore),
+      'physicalStateScoreScale': serializer.toJson<int?>(
+        physicalStateScoreScale,
+      ),
+      'physicalStateDescription': serializer.toJson<String?>(
+        physicalStateDescription,
+      ),
       'note': serializer.toJson<String?>(note),
       'dataSource': serializer.toJson<String>(dataSource),
       'sourceRecordId': serializer.toJson<String?>(sourceRecordId),
@@ -8501,6 +8756,8 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     Value<String?> exerciseType = const Value.absent(),
     Value<int?> exerciseDurationMinutes = const Value.absent(),
     Value<int?> physicalStateScore = const Value.absent(),
+    Value<int?> physicalStateScoreScale = const Value.absent(),
+    Value<String?> physicalStateDescription = const Value.absent(),
     Value<String?> note = const Value.absent(),
     String? dataSource,
     Value<String?> sourceRecordId = const Value.absent(),
@@ -8537,6 +8794,12 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     physicalStateScore: physicalStateScore.present
         ? physicalStateScore.value
         : this.physicalStateScore,
+    physicalStateScoreScale: physicalStateScoreScale.present
+        ? physicalStateScoreScale.value
+        : this.physicalStateScoreScale,
+    physicalStateDescription: physicalStateDescription.present
+        ? physicalStateDescription.value
+        : this.physicalStateDescription,
     note: note.present ? note.value : this.note,
     dataSource: dataSource ?? this.dataSource,
     sourceRecordId: sourceRecordId.present
@@ -8587,6 +8850,12 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
       physicalStateScore: data.physicalStateScore.present
           ? data.physicalStateScore.value
           : this.physicalStateScore,
+      physicalStateScoreScale: data.physicalStateScoreScale.present
+          ? data.physicalStateScoreScale.value
+          : this.physicalStateScoreScale,
+      physicalStateDescription: data.physicalStateDescription.present
+          ? data.physicalStateDescription.value
+          : this.physicalStateDescription,
       note: data.note.present ? data.note.value : this.note,
       dataSource: data.dataSource.present
           ? data.dataSource.value
@@ -8618,6 +8887,8 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
           ..write('exerciseType: $exerciseType, ')
           ..write('exerciseDurationMinutes: $exerciseDurationMinutes, ')
           ..write('physicalStateScore: $physicalStateScore, ')
+          ..write('physicalStateScoreScale: $physicalStateScoreScale, ')
+          ..write('physicalStateDescription: $physicalStateDescription, ')
           ..write('note: $note, ')
           ..write('dataSource: $dataSource, ')
           ..write('sourceRecordId: $sourceRecordId')
@@ -8645,6 +8916,8 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     exerciseType,
     exerciseDurationMinutes,
     physicalStateScore,
+    physicalStateScoreScale,
+    physicalStateDescription,
     note,
     dataSource,
     sourceRecordId,
@@ -8671,6 +8944,8 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
           other.exerciseType == this.exerciseType &&
           other.exerciseDurationMinutes == this.exerciseDurationMinutes &&
           other.physicalStateScore == this.physicalStateScore &&
+          other.physicalStateScoreScale == this.physicalStateScoreScale &&
+          other.physicalStateDescription == this.physicalStateDescription &&
           other.note == this.note &&
           other.dataSource == this.dataSource &&
           other.sourceRecordId == this.sourceRecordId);
@@ -8695,6 +8970,8 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
   final Value<String?> exerciseType;
   final Value<int?> exerciseDurationMinutes;
   final Value<int?> physicalStateScore;
+  final Value<int?> physicalStateScoreScale;
+  final Value<String?> physicalStateDescription;
   final Value<String?> note;
   final Value<String> dataSource;
   final Value<String?> sourceRecordId;
@@ -8718,6 +8995,8 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     this.exerciseType = const Value.absent(),
     this.exerciseDurationMinutes = const Value.absent(),
     this.physicalStateScore = const Value.absent(),
+    this.physicalStateScoreScale = const Value.absent(),
+    this.physicalStateDescription = const Value.absent(),
     this.note = const Value.absent(),
     this.dataSource = const Value.absent(),
     this.sourceRecordId = const Value.absent(),
@@ -8742,6 +9021,8 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     this.exerciseType = const Value.absent(),
     this.exerciseDurationMinutes = const Value.absent(),
     this.physicalStateScore = const Value.absent(),
+    this.physicalStateScoreScale = const Value.absent(),
+    this.physicalStateDescription = const Value.absent(),
     this.note = const Value.absent(),
     this.dataSource = const Value.absent(),
     this.sourceRecordId = const Value.absent(),
@@ -8768,6 +9049,8 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     Expression<String>? exerciseType,
     Expression<int>? exerciseDurationMinutes,
     Expression<int>? physicalStateScore,
+    Expression<int>? physicalStateScoreScale,
+    Expression<String>? physicalStateDescription,
     Expression<String>? note,
     Expression<String>? dataSource,
     Expression<String>? sourceRecordId,
@@ -8796,6 +9079,10 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
         'exercise_duration_minutes': exerciseDurationMinutes,
       if (physicalStateScore != null)
         'physical_state_score': physicalStateScore,
+      if (physicalStateScoreScale != null)
+        'physical_state_score_scale': physicalStateScoreScale,
+      if (physicalStateDescription != null)
+        'physical_state_description': physicalStateDescription,
       if (note != null) 'note': note,
       if (dataSource != null) 'data_source': dataSource,
       if (sourceRecordId != null) 'source_record_id': sourceRecordId,
@@ -8822,6 +9109,8 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     Value<String?>? exerciseType,
     Value<int?>? exerciseDurationMinutes,
     Value<int?>? physicalStateScore,
+    Value<int?>? physicalStateScoreScale,
+    Value<String?>? physicalStateDescription,
     Value<String?>? note,
     Value<String>? dataSource,
     Value<String?>? sourceRecordId,
@@ -8848,6 +9137,10 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
       exerciseDurationMinutes:
           exerciseDurationMinutes ?? this.exerciseDurationMinutes,
       physicalStateScore: physicalStateScore ?? this.physicalStateScore,
+      physicalStateScoreScale:
+          physicalStateScoreScale ?? this.physicalStateScoreScale,
+      physicalStateDescription:
+          physicalStateDescription ?? this.physicalStateDescription,
       note: note ?? this.note,
       dataSource: dataSource ?? this.dataSource,
       sourceRecordId: sourceRecordId ?? this.sourceRecordId,
@@ -8916,6 +9209,16 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     if (physicalStateScore.present) {
       map['physical_state_score'] = Variable<int>(physicalStateScore.value);
     }
+    if (physicalStateScoreScale.present) {
+      map['physical_state_score_scale'] = Variable<int>(
+        physicalStateScoreScale.value,
+      );
+    }
+    if (physicalStateDescription.present) {
+      map['physical_state_description'] = Variable<String>(
+        physicalStateDescription.value,
+      );
+    }
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
@@ -8952,6 +9255,8 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
           ..write('exerciseType: $exerciseType, ')
           ..write('exerciseDurationMinutes: $exerciseDurationMinutes, ')
           ..write('physicalStateScore: $physicalStateScore, ')
+          ..write('physicalStateScoreScale: $physicalStateScoreScale, ')
+          ..write('physicalStateDescription: $physicalStateDescription, ')
           ..write('note: $note, ')
           ..write('dataSource: $dataSource, ')
           ..write('sourceRecordId: $sourceRecordId, ')
@@ -17873,7 +18178,10 @@ typedef $$TodayRecordsTableCreateCompanionBuilder =
       Value<bool> priority3Completed,
       Value<String?> priority3GoalId,
       Value<int?> moodScore,
+      Value<int?> wellbeingScoreScale,
+      Value<String?> moodDescription,
       Value<int?> energyScore,
+      Value<String?> energyDescription,
       Value<int?> researchMinutes,
       Value<int?> learningMinutes,
       Value<String?> dailyNote,
@@ -17903,7 +18211,10 @@ typedef $$TodayRecordsTableUpdateCompanionBuilder =
       Value<bool> priority3Completed,
       Value<String?> priority3GoalId,
       Value<int?> moodScore,
+      Value<int?> wellbeingScoreScale,
+      Value<String?> moodDescription,
       Value<int?> energyScore,
+      Value<String?> energyDescription,
       Value<int?> researchMinutes,
       Value<int?> learningMinutes,
       Value<String?> dailyNote,
@@ -18114,8 +18425,23 @@ class $$TodayRecordsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get wellbeingScoreScale => $composableBuilder(
+    column: $table.wellbeingScoreScale,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get moodDescription => $composableBuilder(
+    column: $table.moodDescription,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get energyScore => $composableBuilder(
     column: $table.energyScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get energyDescription => $composableBuilder(
+    column: $table.energyDescription,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18376,8 +18702,23 @@ class $$TodayRecordsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get wellbeingScoreScale => $composableBuilder(
+    column: $table.wellbeingScoreScale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get moodDescription => $composableBuilder(
+    column: $table.moodDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get energyScore => $composableBuilder(
     column: $table.energyScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get energyDescription => $composableBuilder(
+    column: $table.energyDescription,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -18572,8 +18913,23 @@ class $$TodayRecordsTableAnnotationComposer
   GeneratedColumn<int> get moodScore =>
       $composableBuilder(column: $table.moodScore, builder: (column) => column);
 
+  GeneratedColumn<int> get wellbeingScoreScale => $composableBuilder(
+    column: $table.wellbeingScoreScale,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get moodDescription => $composableBuilder(
+    column: $table.moodDescription,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get energyScore => $composableBuilder(
     column: $table.energyScore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get energyDescription => $composableBuilder(
+    column: $table.energyDescription,
     builder: (column) => column,
   );
 
@@ -18794,7 +19150,10 @@ class $$TodayRecordsTableTableManager
                 Value<bool> priority3Completed = const Value.absent(),
                 Value<String?> priority3GoalId = const Value.absent(),
                 Value<int?> moodScore = const Value.absent(),
+                Value<int?> wellbeingScoreScale = const Value.absent(),
+                Value<String?> moodDescription = const Value.absent(),
                 Value<int?> energyScore = const Value.absent(),
+                Value<String?> energyDescription = const Value.absent(),
                 Value<int?> researchMinutes = const Value.absent(),
                 Value<int?> learningMinutes = const Value.absent(),
                 Value<String?> dailyNote = const Value.absent(),
@@ -18822,7 +19181,10 @@ class $$TodayRecordsTableTableManager
                 priority3Completed: priority3Completed,
                 priority3GoalId: priority3GoalId,
                 moodScore: moodScore,
+                wellbeingScoreScale: wellbeingScoreScale,
+                moodDescription: moodDescription,
                 energyScore: energyScore,
+                energyDescription: energyDescription,
                 researchMinutes: researchMinutes,
                 learningMinutes: learningMinutes,
                 dailyNote: dailyNote,
@@ -18852,7 +19214,10 @@ class $$TodayRecordsTableTableManager
                 Value<bool> priority3Completed = const Value.absent(),
                 Value<String?> priority3GoalId = const Value.absent(),
                 Value<int?> moodScore = const Value.absent(),
+                Value<int?> wellbeingScoreScale = const Value.absent(),
+                Value<String?> moodDescription = const Value.absent(),
                 Value<int?> energyScore = const Value.absent(),
+                Value<String?> energyDescription = const Value.absent(),
                 Value<int?> researchMinutes = const Value.absent(),
                 Value<int?> learningMinutes = const Value.absent(),
                 Value<String?> dailyNote = const Value.absent(),
@@ -18880,7 +19245,10 @@ class $$TodayRecordsTableTableManager
                 priority3Completed: priority3Completed,
                 priority3GoalId: priority3GoalId,
                 moodScore: moodScore,
+                wellbeingScoreScale: wellbeingScoreScale,
+                moodDescription: moodDescription,
                 energyScore: energyScore,
+                energyDescription: energyDescription,
                 researchMinutes: researchMinutes,
                 learningMinutes: learningMinutes,
                 dailyNote: dailyNote,
@@ -21489,6 +21857,8 @@ typedef $$HealthRecordsTableCreateCompanionBuilder =
       Value<String?> exerciseType,
       Value<int?> exerciseDurationMinutes,
       Value<int?> physicalStateScore,
+      Value<int?> physicalStateScoreScale,
+      Value<String?> physicalStateDescription,
       Value<String?> note,
       Value<String> dataSource,
       Value<String?> sourceRecordId,
@@ -21514,6 +21884,8 @@ typedef $$HealthRecordsTableUpdateCompanionBuilder =
       Value<String?> exerciseType,
       Value<int?> exerciseDurationMinutes,
       Value<int?> physicalStateScore,
+      Value<int?> physicalStateScoreScale,
+      Value<String?> physicalStateDescription,
       Value<String?> note,
       Value<String> dataSource,
       Value<String?> sourceRecordId,
@@ -21650,6 +22022,16 @@ class $$HealthRecordsTableFilterComposer
 
   ColumnFilters<int> get physicalStateScore => $composableBuilder(
     column: $table.physicalStateScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get physicalStateScoreScale => $composableBuilder(
+    column: $table.physicalStateScoreScale,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get physicalStateDescription => $composableBuilder(
+    column: $table.physicalStateDescription,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21804,6 +22186,16 @@ class $$HealthRecordsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get physicalStateScoreScale => $composableBuilder(
+    column: $table.physicalStateScoreScale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get physicalStateDescription => $composableBuilder(
+    column: $table.physicalStateDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
     builder: (column) => ColumnOrderings(column),
@@ -21945,6 +22337,16 @@ class $$HealthRecordsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get physicalStateScoreScale => $composableBuilder(
+    column: $table.physicalStateScoreScale,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get physicalStateDescription => $composableBuilder(
+    column: $table.physicalStateDescription,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
 
@@ -22051,6 +22453,8 @@ class $$HealthRecordsTableTableManager
                 Value<String?> exerciseType = const Value.absent(),
                 Value<int?> exerciseDurationMinutes = const Value.absent(),
                 Value<int?> physicalStateScore = const Value.absent(),
+                Value<int?> physicalStateScoreScale = const Value.absent(),
+                Value<String?> physicalStateDescription = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<String> dataSource = const Value.absent(),
                 Value<String?> sourceRecordId = const Value.absent(),
@@ -22074,6 +22478,8 @@ class $$HealthRecordsTableTableManager
                 exerciseType: exerciseType,
                 exerciseDurationMinutes: exerciseDurationMinutes,
                 physicalStateScore: physicalStateScore,
+                physicalStateScoreScale: physicalStateScoreScale,
+                physicalStateDescription: physicalStateDescription,
                 note: note,
                 dataSource: dataSource,
                 sourceRecordId: sourceRecordId,
@@ -22099,6 +22505,8 @@ class $$HealthRecordsTableTableManager
                 Value<String?> exerciseType = const Value.absent(),
                 Value<int?> exerciseDurationMinutes = const Value.absent(),
                 Value<int?> physicalStateScore = const Value.absent(),
+                Value<int?> physicalStateScoreScale = const Value.absent(),
+                Value<String?> physicalStateDescription = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<String> dataSource = const Value.absent(),
                 Value<String?> sourceRecordId = const Value.absent(),
@@ -22122,6 +22530,8 @@ class $$HealthRecordsTableTableManager
                 exerciseType: exerciseType,
                 exerciseDurationMinutes: exerciseDurationMinutes,
                 physicalStateScore: physicalStateScore,
+                physicalStateScoreScale: physicalStateScoreScale,
+                physicalStateDescription: physicalStateDescription,
                 note: note,
                 dataSource: dataSource,
                 sourceRecordId: sourceRecordId,

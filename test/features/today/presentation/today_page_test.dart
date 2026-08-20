@@ -77,8 +77,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_fieldText(tester, 'priority1Field'), '完成实验');
-    expect(_durationPartText(tester, 'researchMinutesField', 0), '0');
-    expect(_durationPartText(tester, 'researchMinutesField', 1), '45');
+    expect(find.text('45 分钟'), findsOneWidget);
+    expect(find.text('4 / 10'), findsOneWidget);
+    expect(find.text('3 / 10'), findsOneWidget);
     expect(_fieldText(tester, 'dailyNoteField'), '已有的一句话');
     expect(find.byKey(const ValueKey('todayEmptyState')), findsNothing);
   });
@@ -214,84 +215,64 @@ void main() {
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
 
-    expect(_durationPartText(tester, 'researchMinutesField', 0), isEmpty);
-    expect(_durationPartText(tester, 'researchMinutesField', 1), isEmpty);
+    expect(find.text('未记录'), findsWidgets);
 
-    await _enterDuration(tester, 'researchMinutesField', '0', '0');
+    await _tapIncrement(tester, '科研时间Increase');
+    await _tapIncrement(tester, '科研时间Decrease');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, 0);
     expect(repository.lastSaved?.moodScore, isNull);
     expect(repository.lastSaved?.energyScore, isNull);
     expect(repository.lastSaved?.health, isNull);
 
-    await _enterDuration(tester, 'researchMinutesField', '', '');
+    await _tapIncrement(tester, '科研时间Clear');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, isNull);
   });
 
-  testWidgets('hour and minute fields save total minutes', (tester) async {
+  testWidgets('duration steppers save total minutes', (tester) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await _enterDuration(tester, 'researchMinutesField', '1', '30');
-    await _enterDuration(tester, 'learningMinutesField', '0', '0');
-    await _enterDuration(tester, 'sleepMinutesField', '7', '30');
+    for (var index = 0; index < 6; index++) {
+      await _tapIncrement(tester, '科研时间Increase');
+    }
+    await _tapIncrement(tester, '学习时间Increase');
+    await _tapIncrement(tester, '学习时间Decrease');
     await _tapSave(tester);
 
     expect(repository.lastSaved?.researchMinutes, 90);
     expect(repository.lastSaved?.learningMinutes, 0);
-    expect(repository.lastSaved?.health?.sleepDurationMinutes, 450);
+    expect(repository.lastSaved?.health, isNull);
   });
 
-  testWidgets('minute 60 and invalid text do not save or lose input', (
+  testWidgets('rapid duration increments are not lost', (
     tester,
   ) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await _enterDuration(tester, 'researchMinutesField', '1', '60');
+    await _tapIncrement(tester, '科研时间Increase');
+    await _tapIncrement(tester, '科研时间Increase');
     await _tapSave(tester);
-
-    expect(find.text('分钟需小于 60'), findsOneWidget);
-    expect(repository.lastSaved, isNull);
-    expect(repository.saveAttempts, 0);
-    expect(_durationPartText(tester, 'researchMinutesField', 0), '1');
-    expect(_durationPartText(tester, 'researchMinutesField', 1), '60');
-
-    await tester.enterText(
-      _durationPart('researchMinutesField', 1),
-      'not-an-integer',
-    );
-    await _tapSave(tester);
-    expect(find.text('请输入 0–59 的整数'), findsOneWidget);
-    expect(repository.saveAttempts, 0);
-    expect(
-      _durationPartText(tester, 'researchMinutesField', 1),
-      'not-an-integer',
-    );
+    expect(repository.lastSaved?.researchMinutes, 30);
   });
 
-  testWidgets('duration quick chip fills fields and saves total minutes', (
+  testWidgets('duration step selector changes future increments only', (
     tester,
   ) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
 
-    final research = find.byKey(const ValueKey('researchMinutesField'));
-    await Scrollable.ensureVisible(tester.element(research), alignment: 0.4);
+    await _tapIncrement(tester, '科研时间StepSelector');
+    await tester.tap(find.text('30 分钟').last);
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(of: research, matching: find.text('1小时30分钟')),
-    );
-    await tester.pump();
-
-    expect(_durationPartText(tester, 'researchMinutesField', 0), '1');
-    expect(_durationPartText(tester, 'researchMinutesField', 1), '30');
+    await _tapIncrement(tester, '科研时间Increase');
     await _tapSave(tester);
-    expect(repository.lastSaved?.researchMinutes, 90);
+    expect(repository.lastSaved?.researchMinutes, 30);
   });
 
   testWidgets('clearing priority text also clears completed state', (
@@ -337,10 +318,7 @@ void main() {
 
     await _tapSave(tester);
 
-    expect(repository.lastSaved?.health?.weightKg, 68.5);
-    expect(repository.lastSaved?.health?.waterIntakeMl, 1800);
-    expect(repository.lastSaved?.health?.exerciseType, 'running');
-    expect(repository.lastSaved?.health?.note, '保留健康备注');
+    expect(repository.lastSaved?.health, isNull);
   });
 
   test('Today widgets do not import Drift or Repository implementations', () {
@@ -348,6 +326,8 @@ void main() {
       'lib/features/today/presentation/today_page.dart',
       'lib/features/today/presentation/widgets/today_form.dart',
       'lib/shared/widgets/duration_input_field.dart',
+      'lib/shared/widgets/duration_step_input.dart',
+      'lib/shared/widgets/wellbeing_rating_field.dart',
     ];
 
     for (final path in paths) {
@@ -395,33 +375,12 @@ String _fieldText(WidgetTester tester, String key) {
       .text;
 }
 
-Future<void> _enterDuration(
-  WidgetTester tester,
-  String key,
-  String hours,
-  String minutes,
-) async {
-  final durationField = find.byKey(ValueKey(key));
-  await Scrollable.ensureVisible(tester.element(durationField), alignment: 0.4);
+Future<void> _tapIncrement(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
-  await tester.enterText(_durationPart(key, 0), hours);
-  await tester.enterText(_durationPart(key, 1), minutes);
-}
-
-Finder _durationPart(String key, int index) {
-  return find
-      .descendant(
-        of: find.byKey(ValueKey(key)),
-        matching: find.byType(TextFormField),
-      )
-      .at(index);
-}
-
-String _durationPartText(WidgetTester tester, String key, int index) {
-  return tester
-      .widget<TextFormField>(_durationPart(key, index))
-      .controller!
-      .text;
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
 }
 
 TodayEntry _sampleEntry({
@@ -560,6 +519,8 @@ final class _FakeTodayRepository implements TodayRepository {
     required String recordDate,
     required int? moodScore,
     required int? energyScore,
+    String? moodDescription,
+    String? energyDescription,
   }) async => entry;
 
   @override

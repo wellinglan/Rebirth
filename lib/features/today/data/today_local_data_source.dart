@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
+import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
@@ -232,6 +233,7 @@ final class TodayLocalDataSource {
             createdAt: Value(timestamp),
             updatedAt: Value(timestamp),
             originDeviceId: Value(originDeviceId),
+            wellbeingScoreScale: const Value(currentWellbeingScoreScale),
           ),
         );
 
@@ -265,6 +267,8 @@ final class TodayLocalDataSource {
               exerciseType: Value(health.exerciseType),
               exerciseDurationMinutes: Value(health.exerciseDurationMinutes),
               physicalStateScore: Value(health.physicalStateScore),
+              physicalStateScoreScale: const Value(currentWellbeingScoreScale),
+              physicalStateDescription: Value(health.physicalStateDescription),
               note: Value(health.note),
               createdAt: Value(timestamp),
               updatedAt: Value(timestamp),
@@ -285,6 +289,8 @@ final class TodayLocalDataSource {
         exerciseType: Value(health.exerciseType),
         exerciseDurationMinutes: Value(health.exerciseDurationMinutes),
         physicalStateScore: Value(health.physicalStateScore),
+        physicalStateScoreScale: const Value(currentWellbeingScoreScale),
+        physicalStateDescription: Value(health.physicalStateDescription),
         note: Value(health.note),
         updatedAt: Value(timestamp),
       ),

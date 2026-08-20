@@ -94,7 +94,7 @@ void main() {
     expect(cleared.researchMinutes, isNull);
   });
 
-  test('mood and energy score validation accepts only 1 through 5', () async {
+  test('mood and energy score validation accepts only 1 through 10', () async {
     final entry = await repository.getToday();
 
     await expectLater(
@@ -109,7 +109,7 @@ void main() {
       repository.updateMoodEnergy(
         recordDate: entry.recordDate,
         moodScore: null,
-        energyScore: 6,
+        energyScore: 11,
       ),
       throwsArgumentError,
     );
@@ -117,10 +117,16 @@ void main() {
     final updated = await repository.updateMoodEnergy(
       recordDate: entry.recordDate,
       moodScore: 1,
-      energyScore: 5,
+      energyScore: 10,
+      moodDescription: '  calm  ',
+      energyDescription: '   ',
     );
     expect(updated.moodScore, 1);
-    expect(updated.energyScore, 5);
+    expect(updated.energyScore, 10);
+    expect(updated.moodDescription, 'calm');
+    expect(updated.energyDescription, isNull);
+    final raw = await database.select(database.todayRecords).getSingle();
+    expect(raw.wellbeingScoreScale, 10);
   });
 
   test('daily note can be saved and updated', () async {

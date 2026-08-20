@@ -41,6 +41,8 @@ void main() {
       'exercise_type',
       'note',
       'physical_state_score',
+      'physical_state_score_scale',
+      'physical_state_description',
       'record_date',
       'sleep_duration_minutes',
       'source_record_id',
@@ -52,6 +54,17 @@ void main() {
     expect(decoded.sleepDurationMinutes, 450);
     expect(decoded.weightKg, 65.5);
     expect(decoded.dataSource, 'manual');
+  });
+
+  test('codec accepts a legacy Health payload without score scale', () {
+    const codec = HealthSyncPayloadCodec();
+    final legacy = {...codec.encode(_payload())}
+      ..remove('physical_state_score_scale')
+      ..remove('physical_state_description');
+    final decoded = codec.decode(recordId: _remoteId, json: legacy);
+
+    expect(decoded.physicalStateScoreScale, 5);
+    expect(decoded.physicalStateDescription, isNull);
   });
 
   test('blank local placeholder is not uploaded', () async {

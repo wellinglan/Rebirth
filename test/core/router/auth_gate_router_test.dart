@@ -90,7 +90,7 @@ void main() {
     );
   });
 
-  testWidgets('authenticated account can enter Today', (tester) async {
+  testWidgets('authenticated account enters production Home', (tester) async {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(database.close);
     final bootstrap = await database.bootstrapDao.bootstrap(
@@ -117,7 +117,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('loginPage')), findsNothing);
-    expect(find.byKey(const ValueKey('todayEmptyState')), findsOneWidget);
+    expect(find.byKey(const ValueKey('productionHomePage')), findsOneWidget);
   });
 
   testWidgets('legacy AI Coach report deep link opens canonical detail', (

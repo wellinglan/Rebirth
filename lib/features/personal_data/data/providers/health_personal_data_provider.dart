@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart';
+import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 
 import '../../domain/personal_data_capability.dart';
 import '../../domain/personal_data_contribution.dart';
@@ -108,6 +109,10 @@ final class HealthPersonalDataProvider implements PersonalDataProvider {
     HealthRecord record,
     PersonalDataSensitivity sensitivity,
   ) {
+    final physicalStateScore = normalizeWellbeingScore(
+      record.physicalStateScore,
+      record.physicalStateScoreScale,
+    );
     return [
       fact(
         key: 'health.data_source',
@@ -164,14 +169,14 @@ final class HealthPersonalDataProvider implements PersonalDataProvider {
           sensitivity: sensitivity,
           priority: 60,
         ),
-      if (record.physicalStateScore != null)
+      if (physicalStateScore != null)
         fact(
           key: 'health.physical_state_score',
           label: '身体状态',
           value: PersonalDataScoreValue(
-            value: record.physicalStateScore!.toDouble(),
+            value: physicalStateScore.toDouble(),
             minimum: 1,
-            maximum: 5,
+            maximum: 10,
           ),
           sensitivity: sensitivity,
           priority: 70,

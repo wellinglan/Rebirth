@@ -51,7 +51,9 @@ void main() {
           TodayPriority(text: '整理数据'),
         ],
         moodScore: 4,
+        moodDescription: '平静而专注',
         energyScore: 3,
+        energyDescription: '午后稍有疲惫',
         researchMinutes: 90,
         learningMinutes: 45,
         dailyNote: '第一轮持久化记录',
@@ -62,6 +64,7 @@ void main() {
           exerciseType: 'running',
           exerciseDurationMinutes: 35,
           physicalStateScore: 4,
+          physicalStateDescription: '身体放松',
           note: '隐藏健康字段必须保留',
         ),
       ),
@@ -79,13 +82,16 @@ void main() {
     expect(afterFirstRestart.priorities[1].text, '阅读论文');
     expect(afterFirstRestart.priorities[2].text, '整理数据');
     expect(afterFirstRestart.moodScore, 4);
+    expect(afterFirstRestart.moodDescription, '平静而专注');
     expect(afterFirstRestart.energyScore, 3);
+    expect(afterFirstRestart.energyDescription, '午后稍有疲惫');
     expect(afterFirstRestart.researchMinutes, 90);
     expect(afterFirstRestart.learningMinutes, 45);
     expect(afterFirstRestart.dailyNote, '第一轮持久化记录');
     expect(afterFirstRestart.health?.sleepDurationMinutes, 450);
     expect(afterFirstRestart.health?.exerciseDurationMinutes, 35);
     expect(afterFirstRestart.health?.physicalStateScore, 4);
+    expect(afterFirstRestart.health?.physicalStateDescription, '身体放松');
     expect(firstHistory, hasLength(1));
     expect(firstHistory.single.id, firstSave.id);
     expect(firstHistory.single.researchMinutes, 90);
@@ -95,7 +101,9 @@ void main() {
       TodaySaveData(
         priorities: afterFirstRestart.priorities,
         moodScore: afterFirstRestart.moodScore,
+        moodDescription: afterFirstRestart.moodDescription,
         energyScore: afterFirstRestart.energyScore,
+        energyDescription: afterFirstRestart.energyDescription,
         researchMinutes: null,
         learningMinutes: 0,
         dailyNote: '第二轮持久化记录',
@@ -107,6 +115,7 @@ void main() {
           exerciseType: health.exerciseType,
           exerciseDurationMinutes: health.exerciseDurationMinutes,
           physicalStateScore: health.physicalStateScore,
+          physicalStateDescription: health.physicalStateDescription,
           note: health.note,
         ),
       ),

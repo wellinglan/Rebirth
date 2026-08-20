@@ -63,7 +63,7 @@ void main() {
         'ai_reports',
         'ai_report_feedback',
       ]);
-      expect(database.schemaVersion, 12);
+      expect(database.schemaVersion, 13);
 
       final profile = _records(data, 'profile').single;
       expect(profile['display_name'], '账号 A');

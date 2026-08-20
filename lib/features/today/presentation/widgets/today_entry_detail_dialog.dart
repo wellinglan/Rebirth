@@ -37,7 +37,9 @@ class TodayEntryDetailDialog extends StatelessWidget {
                 ),
               const SizedBox(height: 18),
               _DetailValue(label: 'Mood', value: _score(entry.moodScore)),
+              _DetailValue(label: '心情描述', value: _text(entry.moodDescription)),
               _DetailValue(label: 'Energy', value: _score(entry.energyScore)),
+              _DetailValue(label: '精力描述', value: _text(entry.energyDescription)),
               _DetailValue(
                 label: '科研时间',
                 value: formatDurationMinutes(entry.researchMinutes),
@@ -58,6 +60,10 @@ class TodayEntryDetailDialog extends StatelessWidget {
               _DetailValue(
                 label: '身体状态',
                 value: _score(health?.physicalStateScore),
+              ),
+              _DetailValue(
+                label: '身体感受',
+                value: _text(health?.physicalStateDescription),
               ),
               _DetailValue(
                 label: '记录状态',
@@ -83,7 +89,7 @@ class TodayEntryDetailDialog extends StatelessWidget {
     );
   }
 
-  String _score(int? score) => score?.toString() ?? '未填写';
+  String _score(int? score) => score == null ? '未填写' : '$score/10';
 
   String _text(String? value) {
     final text = value?.trim();

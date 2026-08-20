@@ -105,10 +105,9 @@ final class TodayConflictResolutionServiceImpl
     required int timestamp,
     required String originDeviceId,
   }) async {
-    final global =
-        await (_database.select(
-          _database.todayRecords,
-        )..where((row) => row.id.equals(remoteId))).getSingleOrNull();
+    final global = await (_database.select(
+      _database.todayRecords,
+    )..where((row) => row.id.equals(remoteId))).getSingleOrNull();
     if (global != null && global.userId != local.userId) {
       throw const SyncConflictResolutionException('云端 Today 身份与其他本地账号冲突。');
     }
@@ -142,7 +141,10 @@ final class TodayConflictResolutionServiceImpl
               priority3Completed: Value(local.priority3Completed),
               priority3GoalId: Value(local.priority3GoalId),
               moodScore: Value(local.moodScore),
+              wellbeingScoreScale: Value(local.wellbeingScoreScale),
+              moodDescription: Value(local.moodDescription),
               energyScore: Value(local.energyScore),
+              energyDescription: Value(local.energyDescription),
               researchMinutes: Value(local.researchMinutes),
               learningMinutes: Value(local.learningMinutes),
               dailyNote: Value(local.dailyNote),
@@ -158,8 +160,7 @@ final class TodayConflictResolutionServiceImpl
           );
     } else {
       await (_database.update(_database.todayRecords)..where(
-            (row) =>
-                row.userId.equals(local.userId) & row.id.equals(remoteId),
+            (row) => row.userId.equals(local.userId) & row.id.equals(remoteId),
           ))
           .write(
             db.TodayRecordsCompanion(
@@ -175,7 +176,10 @@ final class TodayConflictResolutionServiceImpl
               priority3Completed: Value(local.priority3Completed),
               priority3GoalId: Value(local.priority3GoalId),
               moodScore: Value(local.moodScore),
+              wellbeingScoreScale: Value(local.wellbeingScoreScale),
+              moodDescription: Value(local.moodDescription),
               energyScore: Value(local.energyScore),
+              energyDescription: Value(local.energyDescription),
               researchMinutes: Value(local.researchMinutes),
               learningMinutes: Value(local.learningMinutes),
               dailyNote: Value(local.dailyNote),

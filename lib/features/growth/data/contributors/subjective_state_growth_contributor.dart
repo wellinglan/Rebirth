@@ -48,7 +48,7 @@ final class SubjectiveStateGrowthContributor
         sourceCapabilities: _capabilities,
         minimumSensitivity: descriptor.sensitivity,
         summarize: averageScores,
-        unit: '1-5',
+        unit: '1-10',
         displayOrder: 10,
       ),
       projectMetric(
@@ -63,7 +63,7 @@ final class SubjectiveStateGrowthContributor
         sourceCapabilities: _capabilities,
         minimumSensitivity: descriptor.sensitivity,
         summarize: averageScores,
-        unit: '1-5',
+        unit: '1-10',
         displayOrder: 20,
       ),
     ];

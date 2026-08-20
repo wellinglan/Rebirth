@@ -59,12 +59,8 @@ void main() {
     await _pumpHealthPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await _enterDuration(
-      tester,
-      const ValueKey('healthSleepDurationField'),
-      hours: '0',
-      minutes: '0',
-    );
+    await _tapControl(tester, '睡眠时长Increase');
+    await _tapControl(tester, '睡眠时长Decrease');
     await tester.enterText(find.byKey(const ValueKey('healthWaterField')), '0');
     await _tapSave(tester);
 
@@ -241,20 +237,11 @@ Future<void> _ensureVisible(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _enterDuration(
-  WidgetTester tester,
-  Key key, {
-  required String hours,
-  required String minutes,
-}) async {
-  final container = find.byKey(key);
-  final fields = find.descendant(
-    of: container,
-    matching: find.byType(TextFormField),
-  );
-  await _ensureVisible(tester, container);
-  await tester.enterText(fields.at(0), hours);
-  await tester.enterText(fields.at(1), minutes);
+Future<void> _tapControl(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await _ensureVisible(tester, finder);
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
 }
 
 String _fieldText(WidgetTester tester, String key) {

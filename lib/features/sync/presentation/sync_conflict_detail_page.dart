@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
+import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 import 'package:rebirth/features/journal/domain/journal_sync_payload.dart';
 import 'package:rebirth/features/journal/domain/journal_prompt_sync_payload.dart';
 import 'package:rebirth/features/health/domain/health_sync_payload.dart';
@@ -478,8 +479,26 @@ class _VersionSummary extends StatelessWidget {
                   label: '状态',
                   value: today.status.name == 'completed' ? '已完成' : '草稿',
                 ),
-                _Line(label: '心情', value: today.moodScore?.toString() ?? '-'),
-                _Line(label: '精力', value: today.energyScore?.toString() ?? '-'),
+                _Line(
+                  label: '心情',
+                  value:
+                      normalizeWellbeingScore(
+                        today.moodScore,
+                        today.wellbeingScoreScale,
+                      )?.toString() ??
+                      '-',
+                ),
+                _Line(
+                  label: '精力',
+                  value:
+                      normalizeWellbeingScore(
+                        today.energyScore,
+                        today.wellbeingScoreScale,
+                      )?.toString() ??
+                      '-',
+                ),
+                _Line(label: '心情描述', value: today.moodDescription ?? '-'),
+                _Line(label: '精力描述', value: today.energyDescription ?? '-'),
                 _Line(
                   label: '科研时间',
                   value: today.researchMinutes?.toString() ?? '-',

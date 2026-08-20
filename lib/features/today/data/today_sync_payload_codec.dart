@@ -33,9 +33,11 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
     return SplayTreeMap<String, Object?>.of({
       'created_at': payload.createdAt,
       'daily_note': payload.dailyNote,
+      'energy_description': payload.energyDescription,
       'energy_score': payload.energyScore,
       'learning_minutes': payload.learningMinutes,
       'mood_score': payload.moodScore,
+      'mood_description': payload.moodDescription,
       'priority_1': payload.priority1,
       'priority_1_completed': payload.priority1Completed,
       'priority_1_goal_id': payload.priority1GoalId,
@@ -49,6 +51,7 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
       'record_status': payload.status.name,
       'research_minutes': payload.researchMinutes,
       'timezone_offset_minutes': payload.timezoneOffsetMinutes,
+      'wellbeing_score_scale': payload.wellbeingScoreScale,
     });
   }
 
@@ -60,7 +63,7 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
     if (!isUuid(recordId)) {
       throw const SyncException('云端 Today ID 不是合法 UUID。');
     }
-    const requiredKeys = {
+    const legacyKeys = {
       'created_at',
       'daily_note',
       'energy_score',
@@ -80,8 +83,19 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
       'research_minutes',
       'timezone_offset_minutes',
     };
-    if (json.length != requiredKeys.length ||
-        !json.keys.every(requiredKeys.contains)) {
+    const currentKeys = {
+      ...legacyKeys,
+      'energy_description',
+      'mood_description',
+      'wellbeing_score_scale',
+    };
+    final isLegacy =
+        json.length == legacyKeys.length &&
+        json.keys.every(legacyKeys.contains);
+    final isCurrent =
+        json.length == currentKeys.length &&
+        json.keys.every(currentKeys.contains);
+    if (!isLegacy && !isCurrent) {
       throw const SyncException('云端 Today payload 字段集合无效。');
     }
     final statusValue = json['record_status'];
@@ -103,7 +117,14 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
       priority3Completed: _bool(json, 'priority_3_completed'),
       priority3GoalId: _nullableString(json, 'priority_3_goal_id'),
       moodScore: _nullableInt(json, 'mood_score'),
+      wellbeingScoreScale: isLegacy ? 5 : _int(json, 'wellbeing_score_scale'),
+      moodDescription: isLegacy
+          ? null
+          : _nullableString(json, 'mood_description'),
       energyScore: _nullableInt(json, 'energy_score'),
+      energyDescription: isLegacy
+          ? null
+          : _nullableString(json, 'energy_description'),
       researchMinutes: _nullableInt(json, 'research_minutes'),
       learningMinutes: _nullableInt(json, 'learning_minutes'),
       dailyNote: _nullableString(json, 'daily_note'),
@@ -144,9 +165,21 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
       payload.priority3Completed,
       payload.priority3GoalId,
     );
+    if (payload.wellbeingScoreScale != 5 && payload.wellbeingScoreScale != 10) {
+      throw const SyncException('Today 评分量表必须为 5 或 10。');
+    }
     for (final score in [payload.moodScore, payload.energyScore]) {
-      if (score != null && (score < 1 || score > 5)) {
-        throw const SyncException('Today 评分必须为空或 1 到 5。');
+      if (score != null && (score < 1 || score > payload.wellbeingScoreScale)) {
+        throw const SyncException('Today 评分超出量表范围。');
+      }
+    }
+    for (final description in [
+      payload.moodDescription,
+      payload.energyDescription,
+    ]) {
+      if (description != null &&
+          (description.trim().isEmpty || description.length > 80)) {
+        throw const SyncException('Today 评分描述必须为 1 到 80 字。');
       }
     }
     for (final minutes in [payload.researchMinutes, payload.learningMinutes]) {

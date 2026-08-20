@@ -28,6 +28,7 @@ final class HealthSaveData {
     int? exerciseDurationMinutes,
     String? exerciseType,
     int? physicalStateScore,
+    String? physicalStateDescription,
     String? note,
   }) {
     const dateTimeService = DateTimeService();
@@ -41,7 +42,7 @@ final class HealthSaveData {
       throw InvalidHealthMetricException('weightKg', weightKg);
     }
     if (physicalStateScore != null &&
-        (physicalStateScore < 1 || physicalStateScore > 5)) {
+        (physicalStateScore < 1 || physicalStateScore > 10)) {
       throw InvalidHealthMetricException(
         'physicalStateScore',
         physicalStateScore,
@@ -56,6 +57,7 @@ final class HealthSaveData {
       exerciseDurationMinutes: exerciseDurationMinutes,
       exerciseType: _trimToNull(exerciseType),
       physicalStateScore: physicalStateScore,
+      physicalStateDescription: _normalizeDescription(physicalStateDescription),
       note: _trimToNull(note),
     );
   }
@@ -68,6 +70,7 @@ final class HealthSaveData {
     required this.exerciseDurationMinutes,
     required this.exerciseType,
     required this.physicalStateScore,
+    required this.physicalStateDescription,
     required this.note,
   });
 
@@ -78,6 +81,7 @@ final class HealthSaveData {
   final int? exerciseDurationMinutes;
   final String? exerciseType;
   final int? physicalStateScore;
+  final String? physicalStateDescription;
   final String? note;
 
   static void _validateNonNegative(String name, int? value) {
@@ -89,5 +93,16 @@ final class HealthSaveData {
   static String? _trimToNull(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String? _normalizeDescription(String? value) {
+    final normalized = _trimToNull(value);
+    if (normalized != null && normalized.length > 80) {
+      throw InvalidHealthMetricException(
+        'physicalStateDescription',
+        normalized,
+      );
+    }
+    return normalized;
   }
 }

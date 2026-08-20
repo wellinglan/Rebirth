@@ -19,6 +19,7 @@ final class TodayHealthSummary {
     this.exerciseType,
     this.exerciseDurationMinutes,
     this.physicalStateScore,
+    this.physicalStateDescription,
     this.note,
   });
 
@@ -29,6 +30,7 @@ final class TodayHealthSummary {
   final String? exerciseType;
   final int? exerciseDurationMinutes;
   final int? physicalStateScore;
+  final String? physicalStateDescription;
   final String? note;
 }
 
@@ -40,7 +42,9 @@ final class TodayEntry {
     required this.timezoneOffsetMinutes,
     required List<TodayPriority> priorities,
     required this.moodScore,
+    this.moodDescription,
     required this.energyScore,
+    this.energyDescription,
     required this.researchMinutes,
     required this.learningMinutes,
     required this.dailyNote,
@@ -64,7 +68,9 @@ final class TodayEntry {
   final int timezoneOffsetMinutes;
   final List<TodayPriority> priorities;
   final int? moodScore;
+  final String? moodDescription;
   final int? energyScore;
+  final String? energyDescription;
   final int? researchMinutes;
   final int? learningMinutes;
   final String? dailyNote;
@@ -83,7 +89,9 @@ final class TodayEntry {
   bool get hasContent =>
       priorities.any((priority) => priority.isPopulated) ||
       moodScore != null ||
+      (moodDescription?.trim().isNotEmpty ?? false) ||
       energyScore != null ||
+      (energyDescription?.trim().isNotEmpty ?? false) ||
       researchMinutes != null ||
       learningMinutes != null ||
       (dailyNote?.trim().isNotEmpty ?? false) ||
@@ -98,6 +106,7 @@ final class TodayEntry {
             (summary.exerciseType?.trim().isNotEmpty ?? false) ||
             summary.exerciseDurationMinutes != null ||
             summary.physicalStateScore != null ||
+            (summary.physicalStateDescription?.trim().isNotEmpty ?? false) ||
             (summary.note?.trim().isNotEmpty ?? false));
   }
 }

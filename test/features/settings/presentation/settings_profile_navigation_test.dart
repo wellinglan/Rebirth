@@ -5,9 +5,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/app/rebirth_app.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
@@ -57,6 +59,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTodayShell(tester);
 
     expect(find.byKey(const ValueKey('homeNavigationRail')), findsOneWidget);
     for (final label in ['今日', '复盘', '计划', '健康', '成长', 'AI 教练']) {
@@ -178,6 +181,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await _openTodayShell(tester);
       await tester.tap(find.byKey(const ValueKey('settingsEntryButton')));
       await tester.pumpAndSettle();
 
@@ -226,12 +230,20 @@ void main() {
       expect(revisionSource, isNot(contains('features/')));
       expect(routeNamesSource, contains("'/settings/profile'"));
       expect(routerSource, isNot(contains('RoutePaths.profile')));
-      expect(databaseSource, contains('int get schemaVersion => 12'));
+      expect(databaseSource, contains('int get schemaVersion => 13'));
       expect(pubspec, isNot(contains('firebase_auth')));
       expect(pubspec, isNot(contains('supabase')));
       expect(pubspec, isNot(contains('oauth')));
     },
   );
+}
+
+Future<void> _openTodayShell(WidgetTester tester) async {
+  final homeContext = tester.element(
+    find.byKey(const ValueKey('productionHomePage')),
+  );
+  GoRouter.of(homeContext).go(RoutePaths.today);
+  await tester.pumpAndSettle();
 }
 
 final class _MemorySessionStore implements AuthSessionStore {

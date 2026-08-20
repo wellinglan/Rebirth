@@ -38,6 +38,8 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
       'exercise_type': payload.exerciseType,
       'note': payload.note,
       'physical_state_score': payload.physicalStateScore,
+      'physical_state_score_scale': payload.physicalStateScoreScale,
+      'physical_state_description': payload.physicalStateDescription,
       'record_date': payload.recordDate,
       'sleep_duration_minutes': payload.sleepDurationMinutes,
       'source_record_id': payload.sourceRecordId,
@@ -55,7 +57,7 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
     if (!isUuid(recordId)) {
       throw const SyncException('云端 Health ID 不是合法 UUID。');
     }
-    const requiredKeys = {
+    const legacyKeys = {
       'created_at',
       'data_source',
       'exercise_duration_minutes',
@@ -69,8 +71,18 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
       'water_intake_ml',
       'weight_kg',
     };
-    if (json.length != requiredKeys.length ||
-        !json.keys.every(requiredKeys.contains)) {
+    const currentKeys = {
+      ...legacyKeys,
+      'physical_state_description',
+      'physical_state_score_scale',
+    };
+    final isLegacy =
+        json.length == legacyKeys.length &&
+        json.keys.every(legacyKeys.contains);
+    final isCurrent =
+        json.length == currentKeys.length &&
+        json.keys.every(currentKeys.contains);
+    if (!isLegacy && !isCurrent) {
       throw const SyncException('云端 Health payload 字段集合无效。');
     }
     final payload = HealthSyncPayload(
@@ -82,6 +94,12 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
       exerciseType: _nullableString(json, 'exercise_type'),
       exerciseDurationMinutes: _nullableInt(json, 'exercise_duration_minutes'),
       physicalStateScore: _nullableInt(json, 'physical_state_score'),
+      physicalStateScoreScale: isLegacy
+          ? 5
+          : _int(json, 'physical_state_score_scale'),
+      physicalStateDescription: isLegacy
+          ? null
+          : _nullableString(json, 'physical_state_description'),
       note: _nullableString(json, 'note'),
       dataSource: _string(json, 'data_source'),
       sourceRecordId: _nullableString(json, 'source_record_id'),
@@ -109,19 +127,27 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
         !_isNonNegative(payload.waterIntakeMl) ||
         !_isNonNegative(payload.exerciseDurationMinutes) ||
         (payload.weightKg != null && payload.weightKg! <= 0) ||
+        (payload.physicalStateScoreScale != 5 &&
+            payload.physicalStateScoreScale != 10) ||
         (payload.physicalStateScore != null &&
             (payload.physicalStateScore! < 1 ||
-                payload.physicalStateScore! > 5))) {
+                payload.physicalStateScore! >
+                    payload.physicalStateScoreScale))) {
       throw const SyncException('Health 日期、时区、指标、来源或创建时间无效。');
     }
     for (final value in [
       payload.exerciseType,
       payload.note,
       payload.sourceRecordId,
+      payload.physicalStateDescription,
     ]) {
       if (value != null && value.trim().isEmpty) {
         throw const SyncException('Health 文本字段不能是空白文本。');
       }
+    }
+    if (payload.physicalStateDescription case final description?
+        when description.length > 80) {
+      throw const SyncException('Health 身体状态描述不得超过 80 字。');
     }
   }
 

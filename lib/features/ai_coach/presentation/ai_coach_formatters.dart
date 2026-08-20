@@ -54,8 +54,8 @@ abstract final class AiCoachFormatters {
   static String score(num? value) {
     if (value == null) return '未记录';
     return value is int || value == value.roundToDouble()
-        ? '${value.round()} / 5'
-        : '${value.toStringAsFixed(1)} / 5';
+        ? '${value.round()} / 10'
+        : '${value.toStringAsFixed(1)} / 10';
   }
 
   static String timestamp(int? milliseconds) {

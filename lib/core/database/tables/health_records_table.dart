@@ -30,6 +30,10 @@ class HealthRecords extends Table
 
   IntColumn get physicalStateScore => integer().nullable()();
 
+  IntColumn get physicalStateScoreScale => integer().nullable()();
+
+  TextColumn get physicalStateDescription => text().nullable()();
+
   TextColumn get note => text().nullable()();
 
   TextColumn get dataSource => text().withDefault(const Constant('manual'))();
@@ -44,7 +48,12 @@ class HealthRecords extends Table
     'CHECK (weight_kg IS NULL OR weight_kg > 0)',
     'CHECK (water_intake_ml IS NULL OR water_intake_ml >= 0)',
     'CHECK (exercise_duration_minutes IS NULL OR exercise_duration_minutes >= 0)',
-    'CHECK (physical_state_score IS NULL OR physical_state_score BETWEEN 1 AND 5)',
+    'CHECK (physical_state_score_scale IS NULL OR physical_state_score_scale IN (5, 10))',
+    'CHECK (physical_state_score IS NULL OR '
+        '(COALESCE(physical_state_score_scale, 5) = 5 AND physical_state_score BETWEEN 1 AND 5) OR '
+        '(physical_state_score_scale = 10 AND physical_state_score BETWEEN 1 AND 10))',
+    'CHECK (physical_state_description IS NULL OR '
+        'length(physical_state_description) <= 80)',
     "CHECK (data_source IN ('manual', 'health_connect', 'apple_health'))",
     'CHECK (created_at >= 0)',
     'CHECK (updated_at >= 0)',

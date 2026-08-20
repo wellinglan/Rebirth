@@ -4,6 +4,7 @@ import 'package:rebirth/features/health/domain/health_entry.dart';
 import 'package:rebirth/features/health/domain/health_repository.dart';
 import 'package:rebirth/features/health/domain/health_save_data.dart';
 import 'package:rebirth/features/health/domain/health_summary.dart';
+import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 
 import 'health_local_data_source.dart';
 
@@ -144,7 +145,11 @@ final class HealthRepositoryImpl implements HealthRepository {
       waterIntakeMl: record.waterIntakeMl,
       exerciseDurationMinutes: record.exerciseDurationMinutes,
       exerciseType: record.exerciseType,
-      physicalStateScore: record.physicalStateScore,
+      physicalStateScore: normalizeWellbeingScore(
+        record.physicalStateScore,
+        record.physicalStateScoreScale,
+      ),
+      physicalStateDescription: record.physicalStateDescription,
       note: record.note,
       timezoneOffsetMinutes: record.timezoneOffsetMinutes,
       createdAt: record.createdAt,

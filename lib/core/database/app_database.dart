@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -187,6 +187,28 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createTable(aiReportFeedback);
         await _createAiReportFeedbackIndexes();
       }
+      if (from < 13) {
+        await migrator.alterTable(
+          TableMigration(
+            todayRecords,
+            newColumns: [
+              todayRecords.wellbeingScoreScale,
+              todayRecords.moodDescription,
+              todayRecords.energyDescription,
+            ],
+          ),
+        );
+        await migrator.alterTable(
+          TableMigration(
+            healthRecords,
+            newColumns: [
+              healthRecords.physicalStateScoreScale,
+              healthRecords.physicalStateDescription,
+            ],
+          ),
+        );
+        await _createTodayAndHealthIndexes();
+      }
     },
     beforeOpen: (details) async {
       if (details.versionBefore case final previous?
@@ -212,6 +234,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _createGoalIndexes() async {
     for (final statement in _goalIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createTodayAndHealthIndexes() async {
+    for (final statement in _todayAndHealthIndexes) {
       await customStatement(statement);
     }
   }
@@ -487,6 +515,25 @@ const _goalIndexes = <String>[
       'ON goals (user_id, goal_level, status)',
   'CREATE INDEX IF NOT EXISTS goals_user_target_date '
       'ON goals (user_id, target_date)',
+];
+
+const _todayAndHealthIndexes = <String>[
+  'CREATE UNIQUE INDEX IF NOT EXISTS today_records_user_date_active '
+      'ON today_records (user_id, record_date) WHERE deleted_at IS NULL',
+  'CREATE INDEX IF NOT EXISTS today_records_user_date_desc '
+      'ON today_records (user_id, record_date DESC)',
+  'CREATE INDEX IF NOT EXISTS today_records_sync_status_updated_at '
+      'ON today_records (sync_status, updated_at)',
+  'CREATE UNIQUE INDEX IF NOT EXISTS health_records_user_date_active '
+      'ON health_records (user_id, record_date) WHERE deleted_at IS NULL',
+  'CREATE UNIQUE INDEX IF NOT EXISTS health_records_today_record_active '
+      'ON health_records (today_record_id) '
+      'WHERE today_record_id IS NOT NULL AND deleted_at IS NULL',
+  'CREATE INDEX IF NOT EXISTS health_records_user_date_desc '
+      'ON health_records (user_id, record_date DESC)',
+  'CREATE UNIQUE INDEX IF NOT EXISTS health_records_external_source '
+      'ON health_records (data_source, source_record_id) '
+      'WHERE source_record_id IS NOT NULL AND deleted_at IS NULL',
 ];
 
 const _syncConflictIndexes = <String>[

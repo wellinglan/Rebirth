@@ -49,7 +49,7 @@ void main() {
     await expectLater(
       container
           .read(todayControllerProvider.notifier)
-          .updateMoodEnergy(moodScore: 6),
+          .updateMoodEnergy(moodScore: 11),
       throwsArgumentError,
     );
     expect(

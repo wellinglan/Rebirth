@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart';
+import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 
 import '../../domain/personal_data_capability.dart';
 import '../../domain/personal_data_contribution.dart';
@@ -108,6 +109,14 @@ final class TodayPersonalDataProvider implements PersonalDataProvider {
     TodayRecord record,
     PersonalDataSensitivity sensitivity,
   ) {
+    final moodScore = normalizeWellbeingScore(
+      record.moodScore,
+      record.wellbeingScoreScale,
+    );
+    final energyScore = normalizeWellbeingScore(
+      record.energyScore,
+      record.wellbeingScoreScale,
+    );
     final priorities = [
       (record.priority1, record.priority1Completed),
       (record.priority2, record.priority2Completed),
@@ -135,26 +144,26 @@ final class TodayPersonalDataProvider implements PersonalDataProvider {
         unit: '项',
         priority: 20,
       ),
-      if (record.moodScore != null)
+      if (moodScore != null)
         fact(
           key: 'today.mood_score',
           label: '心情',
           value: PersonalDataScoreValue(
-            value: record.moodScore!.toDouble(),
+            value: moodScore.toDouble(),
             minimum: 1,
-            maximum: 5,
+            maximum: 10,
           ),
           sensitivity: sensitivity,
           priority: 30,
         ),
-      if (record.energyScore != null)
+      if (energyScore != null)
         fact(
           key: 'today.energy_score',
           label: '精力',
           value: PersonalDataScoreValue(
-            value: record.energyScore!.toDouble(),
+            value: energyScore.toDouble(),
             minimum: 1,
-            maximum: 5,
+            maximum: 10,
           ),
           sensitivity: sensitivity,
           priority: 40,

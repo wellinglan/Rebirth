@@ -10,6 +10,8 @@ final class HealthSyncPayload implements SyncEntityPayload {
     required this.exerciseType,
     required this.exerciseDurationMinutes,
     required this.physicalStateScore,
+    this.physicalStateScoreScale = 10,
+    this.physicalStateDescription,
     required this.note,
     required this.dataSource,
     required this.sourceRecordId,
@@ -24,6 +26,8 @@ final class HealthSyncPayload implements SyncEntityPayload {
   final String? exerciseType;
   final int? exerciseDurationMinutes;
   final int? physicalStateScore;
+  final int physicalStateScoreScale;
+  final String? physicalStateDescription;
   final String? note;
   final String dataSource;
   final String? sourceRecordId;
@@ -36,5 +40,6 @@ final class HealthSyncPayload implements SyncEntityPayload {
       exerciseType != null ||
       exerciseDurationMinutes != null ||
       physicalStateScore != null ||
+      physicalStateDescription != null ||
       note != null;
 }

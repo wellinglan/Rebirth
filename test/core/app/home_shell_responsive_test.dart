@@ -2,9 +2,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/app/rebirth_app.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
@@ -70,9 +72,7 @@ Future<void> _pumpApp(
   await tester.binding.setSurfaceSize(Size(width, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
-  addTearDown(
-    tester.platformDispatcher.clearTextScaleFactorTestValue,
-  );
+  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   final database = AppDatabase.forTesting(NativeDatabase.memory());
   addTearDown(database.close);
   final bootstrap = await database.bootstrapDao.bootstrap(
@@ -99,5 +99,10 @@ Future<void> _pumpApp(
       child: const RebirthApp(),
     ),
   );
+  await tester.pumpAndSettle();
+  final homeContext = tester.element(
+    find.byKey(const ValueKey('productionHomePage')),
+  );
+  GoRouter.of(homeContext).go(RoutePaths.today);
   await tester.pumpAndSettle();
 }

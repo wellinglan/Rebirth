@@ -16,7 +16,10 @@ final class TodaySyncPayload implements SyncEntityPayload {
     required this.priority3Completed,
     required this.priority3GoalId,
     required this.moodScore,
+    this.wellbeingScoreScale = 10,
+    this.moodDescription,
     required this.energyScore,
+    this.energyDescription,
     required this.researchMinutes,
     required this.learningMinutes,
     required this.dailyNote,
@@ -36,7 +39,10 @@ final class TodaySyncPayload implements SyncEntityPayload {
   final bool priority3Completed;
   final String? priority3GoalId;
   final int? moodScore;
+  final int wellbeingScoreScale;
+  final String? moodDescription;
   final int? energyScore;
+  final String? energyDescription;
   final int? researchMinutes;
   final int? learningMinutes;
   final String? dailyNote;

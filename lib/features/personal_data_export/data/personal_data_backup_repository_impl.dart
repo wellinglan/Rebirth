@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart' as db;
+import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 
 import '../domain/personal_data_backup.dart';
 import '../domain/personal_data_backup_repository.dart';
@@ -106,8 +107,16 @@ final class PersonalDataBackupRepositoryImpl
           recordDate: row.recordDate,
           timezoneOffsetMinutes: row.timezoneOffsetMinutes,
           priorities: priorities,
-          moodScore: row.moodScore,
-          energyScore: row.energyScore,
+          moodScore: normalizeWellbeingScore(
+            row.moodScore,
+            row.wellbeingScoreScale,
+          ),
+          moodDescription: row.moodDescription,
+          energyScore: normalizeWellbeingScore(
+            row.energyScore,
+            row.wellbeingScoreScale,
+          ),
+          energyDescription: row.energyDescription,
           researchMinutes: row.researchMinutes,
           learningMinutes: row.learningMinutes,
           dailyNote: row.dailyNote,
@@ -284,7 +293,11 @@ final class PersonalDataBackupRepositoryImpl
           waterIntakeMl: row.waterIntakeMl,
           exerciseType: row.exerciseType,
           exerciseDurationMinutes: row.exerciseDurationMinutes,
-          physicalStateScore: row.physicalStateScore,
+          physicalStateScore: normalizeWellbeingScore(
+            row.physicalStateScore,
+            row.physicalStateScoreScale,
+          ),
+          physicalStateDescription: row.physicalStateDescription,
           note: row.note,
           dataSource: row.dataSource,
           createdAt: _utcIso(row.createdAt),

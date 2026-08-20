@@ -8,6 +8,7 @@ final class TodayHealthInput {
     this.exerciseType,
     this.exerciseDurationMinutes,
     this.physicalStateScore,
+    this.physicalStateDescription,
     this.note,
   });
 
@@ -17,6 +18,7 @@ final class TodayHealthInput {
   final String? exerciseType;
   final int? exerciseDurationMinutes;
   final int? physicalStateScore;
+  final String? physicalStateDescription;
   final String? note;
 }
 
@@ -28,7 +30,9 @@ final class TodaySaveData {
       TodayPriority(),
     ],
     this.moodScore,
+    this.moodDescription,
     this.energyScore,
+    this.energyDescription,
     this.researchMinutes,
     this.learningMinutes,
     this.dailyNote,
@@ -38,7 +42,9 @@ final class TodaySaveData {
 
   final List<TodayPriority> priorities;
   final int? moodScore;
+  final String? moodDescription;
   final int? energyScore;
+  final String? energyDescription;
   final int? researchMinutes;
   final int? learningMinutes;
   final String? dailyNote;

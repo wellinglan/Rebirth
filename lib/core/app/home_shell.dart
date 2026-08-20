@@ -35,6 +35,12 @@ class HomeShell extends StatelessWidget {
             title: Text(_titles[navigationShell.currentIndex]),
             actions: [
               IconButton(
+                key: const ValueKey('homeEntryButton'),
+                onPressed: () => context.go(RoutePaths.home),
+                tooltip: '主页',
+                icon: const Icon(Icons.home_outlined),
+              ),
+              IconButton(
                 key: const ValueKey('settingsEntryButton'),
                 onPressed: () => context.push(RoutePaths.settings),
                 tooltip: '设置',

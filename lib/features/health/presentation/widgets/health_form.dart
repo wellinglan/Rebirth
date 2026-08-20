@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:rebirth/features/health/domain/health_entry.dart';
 import 'package:rebirth/features/health/domain/health_save_data.dart';
-import 'package:rebirth/shared/widgets/duration_input_field.dart';
+import 'package:rebirth/shared/widgets/duration_step_input.dart';
+import 'package:rebirth/shared/widgets/quick_increment_control.dart';
+import 'package:rebirth/shared/widgets/water_cup_indicator.dart';
+import 'package:rebirth/shared/widgets/wellbeing_rating_field.dart';
 
 class HealthForm extends StatefulWidget {
   const HealthForm({
@@ -22,18 +25,19 @@ class HealthForm extends StatefulWidget {
 }
 
 class _HealthFormState extends State<HealthForm> {
-  static const _sleepQuickValues = <int>[360, 390, 420, 450, 480, 510];
-  static const _exerciseQuickValues = <int>[15, 30, 45, 60, 90, 120];
-  static const _waterQuickValues = <int>[500, 1000, 1500, 2000, 2500];
-
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _weightController;
   late final TextEditingController _waterController;
   late final TextEditingController _exerciseTypeController;
   late final TextEditingController _noteController;
+  late final TextEditingController _physicalStateDescriptionController;
   int? _sleepDurationMinutes;
   int? _exerciseDurationMinutes;
+  int? _waterIntakeMl;
   int? _physicalStateScore;
+  int _sleepStep = 15;
+  int _exerciseStep = 15;
+  int _waterStep = 250;
   bool _isSubmitting = false;
 
   @override
@@ -43,6 +47,7 @@ class _HealthFormState extends State<HealthForm> {
     _waterController = TextEditingController();
     _exerciseTypeController = TextEditingController();
     _noteController = TextEditingController();
+    _physicalStateDescriptionController = TextEditingController();
     _syncFromEntry(widget.entry);
   }
 
@@ -61,6 +66,7 @@ class _HealthFormState extends State<HealthForm> {
     _waterController.dispose();
     _exerciseTypeController.dispose();
     _noteController.dispose();
+    _physicalStateDescriptionController.dispose();
     super.dispose();
   }
 
@@ -75,12 +81,14 @@ class _HealthFormState extends State<HealthForm> {
           const SizedBox(height: 4),
           Text(widget.entry.recordDate),
           const SizedBox(height: 20),
-          DurationInputField(
+          DurationStepInput(
             key: const ValueKey('healthSleepDurationField'),
             label: '睡眠时长',
-            initialMinutes: widget.entry.sleepDurationMinutes,
-            quickValues: _sleepQuickValues,
-            onChanged: (value) => _sleepDurationMinutes = value,
+            icon: Icons.bedtime_outlined,
+            value: _sleepDurationMinutes,
+            selectedStep: _sleepStep,
+            onStepChanged: (value) => setState(() => _sleepStep = value),
+            onChanged: (value) => setState(() => _sleepDurationMinutes = value),
           ),
           const SizedBox(height: 20),
           TextFormField(
@@ -94,35 +102,96 @@ class _HealthFormState extends State<HealthForm> {
             validator: _validateWeight,
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            key: const ValueKey('healthWaterField'),
-            controller: _waterController,
-            keyboardType: const TextInputType.numberWithOptions(signed: true),
-            decoration: const InputDecoration(
-              labelText: '饮水（ml）',
-              border: OutlineInputBorder(),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(8),
             ),
-            validator: _validateWater,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              for (final value in _waterQuickValues)
-                ActionChip(
-                  label: Text('$value ml'),
-                  onPressed: () => _waterController.text = '$value',
-                ),
-            ],
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cup = WaterCupIndicator(waterIntakeMl: _waterIntakeMl);
+                  final controls = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.water_drop_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '饮水',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      QuickIncrementControl(
+                        value: _waterIntakeMl,
+                        stepOptions: const [100, 250, 500],
+                        selectedStep: _waterStep,
+                        unit: 'ml',
+                        minimumValue: 0,
+                        label: '饮水量',
+                        onStepChanged: (value) =>
+                            setState(() => _waterStep = value),
+                        onChanged: _setWater,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        key: const ValueKey('healthWaterField'),
+                        controller: _waterController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          signed: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: '精确饮水量（ml，可选）',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: _validateWater,
+                        onChanged: (value) {
+                          final parsed = int.tryParse(value.trim());
+                          setState(() {
+                            _waterIntakeMl = value.trim().isEmpty
+                                ? null
+                                : parsed != null && parsed >= 0
+                                ? parsed
+                                : _waterIntakeMl;
+                          });
+                        },
+                      ),
+                    ],
+                  );
+                  if (constraints.maxWidth < 560) {
+                    return Column(
+                      children: [cup, const SizedBox(height: 12), controls],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(width: 180, child: cup),
+                      const SizedBox(width: 20),
+                      Expanded(child: controls),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
           const SizedBox(height: 20),
-          DurationInputField(
+          DurationStepInput(
             key: const ValueKey('healthExerciseDurationField'),
             label: '运动时长',
-            initialMinutes: widget.entry.exerciseDurationMinutes,
-            quickValues: _exerciseQuickValues,
-            onChanged: (value) => _exerciseDurationMinutes = value,
+            icon: Icons.directions_run_outlined,
+            value: _exerciseDurationMinutes,
+            selectedStep: _exerciseStep,
+            onStepChanged: (value) => setState(() => _exerciseStep = value),
+            onChanged: (value) =>
+                setState(() => _exerciseDurationMinutes = value),
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -135,22 +204,19 @@ class _HealthFormState extends State<HealthForm> {
             ),
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<int?>(
+          WellbeingRatingField(
             key: const ValueKey('healthPhysicalStateField'),
-            initialValue: _physicalStateScore,
-            decoration: const InputDecoration(
-              labelText: '身体状态（可选）',
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem<int?>(value: null, child: Text('未填写')),
-              DropdownMenuItem<int?>(value: 1, child: Text('1 · 很疲惫')),
-              DropdownMenuItem<int?>(value: 2, child: Text('2 · 偏疲惫')),
-              DropdownMenuItem<int?>(value: 3, child: Text('3 · 正常')),
-              DropdownMenuItem<int?>(value: 4, child: Text('4 · 状态好')),
-              DropdownMenuItem<int?>(value: 5, child: Text('5 · 精神很好')),
-            ],
-            onChanged: (value) => setState(() => _physicalStateScore = value),
+            label: '身体状态',
+            icon: Icons.accessibility_new_outlined,
+            value: _physicalStateScore,
+            description: _physicalStateDescriptionController.text,
+            descriptionHint: '一句话记下身体感受',
+            onScoreChanged: (value) =>
+                setState(() => _physicalStateScore = value),
+            onDescriptionChanged: (value) {
+              _physicalStateDescriptionController.text = value;
+              setState(() {});
+            },
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -206,10 +272,11 @@ class _HealthFormState extends State<HealthForm> {
       recordDate: widget.entry.recordDate,
       sleepDurationMinutes: _sleepDurationMinutes,
       weightKg: _parseDouble(_weightController.text),
-      waterIntakeMl: _parseInt(_waterController.text),
+      waterIntakeMl: _waterIntakeMl,
       exerciseDurationMinutes: _exerciseDurationMinutes,
       exerciseType: _exerciseTypeController.text,
       physicalStateScore: _physicalStateScore,
+      physicalStateDescription: _physicalStateDescriptionController.text,
       note: _noteController.text,
     );
 
@@ -258,11 +325,6 @@ class _HealthFormState extends State<HealthForm> {
     return null;
   }
 
-  int? _parseInt(String value) {
-    final text = value.trim();
-    return text.isEmpty ? null : int.parse(text);
-  }
-
   double? _parseDouble(String value) {
     final text = value.trim();
     return text.isEmpty ? null : double.parse(text);
@@ -273,8 +335,18 @@ class _HealthFormState extends State<HealthForm> {
     _exerciseDurationMinutes = entry.exerciseDurationMinutes;
     _weightController.text = entry.weightKg?.toString() ?? '';
     _waterController.text = entry.waterIntakeMl?.toString() ?? '';
+    _waterIntakeMl = entry.waterIntakeMl;
     _exerciseTypeController.text = entry.exerciseType ?? '';
     _physicalStateScore = entry.physicalStateScore;
+    _physicalStateDescriptionController.text =
+        entry.physicalStateDescription ?? '';
     _noteController.text = entry.note ?? '';
+  }
+
+  void _setWater(int? value) {
+    setState(() {
+      _waterIntakeMl = value;
+      _waterController.text = value?.toString() ?? '';
+    });
   }
 }

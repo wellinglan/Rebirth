@@ -13,7 +13,7 @@ void main() {
 
   test('formats score to one decimal place', () {
     expect(GrowthFormatters.score(null), '暂无数据');
-    expect(GrowthFormatters.score(3.75), '3.8 / 5');
+    expect(GrowthFormatters.score(3.75), '3.8 / 10');
   });
 
   test('formats same-month, cross-month, and cross-year date ranges', () {

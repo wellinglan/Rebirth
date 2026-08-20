@@ -36,12 +36,19 @@ class TodayController extends AsyncNotifier<TodayEntry> {
     });
   }
 
-  Future<void> updateMoodEnergy({int? moodScore, int? energyScore}) {
+  Future<void> updateMoodEnergy({
+    int? moodScore,
+    int? energyScore,
+    String? moodDescription,
+    String? energyDescription,
+  }) {
     return _runWithCurrent((repository, current) {
       return repository.updateMoodEnergy(
         recordDate: current.recordDate,
         moodScore: moodScore,
         energyScore: energyScore,
+        moodDescription: moodDescription,
+        energyDescription: energyDescription,
       );
     });
   }

@@ -35,7 +35,7 @@ void main() {
       throwsA(isA<InvalidHealthMetricException>()),
     );
     expect(
-      () => HealthSaveData(recordDate: '2026-07-14', physicalStateScore: 6),
+      () => HealthSaveData(recordDate: '2026-07-14', physicalStateScore: 11),
       throwsA(isA<InvalidHealthMetricException>()),
     );
   });

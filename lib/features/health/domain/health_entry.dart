@@ -10,6 +10,7 @@ final class HealthEntry {
     required this.exerciseDurationMinutes,
     required this.exerciseType,
     required this.physicalStateScore,
+    this.physicalStateDescription,
     required this.note,
     required this.timezoneOffsetMinutes,
     required this.createdAt,
@@ -26,6 +27,7 @@ final class HealthEntry {
   final int? exerciseDurationMinutes;
   final String? exerciseType;
   final int? physicalStateScore;
+  final String? physicalStateDescription;
   final String? note;
   final int timezoneOffsetMinutes;
   final int createdAt;
@@ -38,5 +40,6 @@ final class HealthEntry {
       exerciseDurationMinutes != null ||
       exerciseType != null ||
       physicalStateScore != null ||
+      physicalStateDescription != null ||
       note != null;
 }

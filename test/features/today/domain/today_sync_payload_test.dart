@@ -10,19 +10,21 @@ void main() {
   test('canonical JSON and SHA-256 fingerprint are stable', () {
     final payload = _payload();
     const expected =
-        '{"created_at":10,"daily_note":null,"energy_score":4,'
-        '"learning_minutes":0,"mood_score":5,"priority_1":"Research",'
+        '{"created_at":10,"daily_note":null,"energy_description":null,'
+        '"energy_score":4,"learning_minutes":0,"mood_description":null,'
+        '"mood_score":5,"priority_1":"Research",'
         '"priority_1_completed":true,"priority_1_goal_id":null,'
         '"priority_2":null,"priority_2_completed":false,'
         '"priority_2_goal_id":null,"priority_3":null,'
         '"priority_3_completed":false,"priority_3_goal_id":null,'
         '"record_date":"2026-07-28","record_status":"completed",'
-        '"research_minutes":90,"timezone_offset_minutes":480}';
+        '"research_minutes":90,"timezone_offset_minutes":480,'
+        '"wellbeing_score_scale":10}';
 
     expect(codec.canonicalJson(payload), expected);
     expect(
       codec.fingerprint(payload),
-      'b7473a0e8a7da58bf7298287daa94f0f5a962e0d9dbb4b2f8d35ded9ffeedb25',
+      '2a9c335e7fd89508aca8191895b20e7fc1f1d060dc2df87ebac48aee439c23c9',
     );
   });
 
@@ -39,6 +41,18 @@ void main() {
     expect(encoded, isNot(contains('user_id')));
     expect(encoded, isNot(contains('sync_status')));
     expect(encoded, isNot(contains('server_version')));
+  });
+
+  test('legacy payload without scale is interpreted as 1 through 5', () {
+    final legacy = {...codec.encode(_payload())}
+      ..remove('wellbeing_score_scale')
+      ..remove('mood_description')
+      ..remove('energy_description');
+    final decoded = codec.decode(recordId: _recordId, json: legacy);
+
+    expect(decoded.wellbeingScoreScale, 5);
+    expect(decoded.moodDescription, isNull);
+    expect(decoded.energyDescription, isNull);
   });
 
   test('codec rejects missing and extra fields', () {
@@ -62,7 +76,7 @@ void main() {
   test('codec rejects invalid dates, scores, minutes, and priorities', () {
     for (final payload in [
       _payload(recordDate: '2026-02-30'),
-      _payload(moodScore: 6),
+      _payload(moodScore: 11),
       _payload(researchMinutes: -1),
       _payload(priority1: null, priority1Completed: true),
     ]) {

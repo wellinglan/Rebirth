@@ -46,6 +46,8 @@ void main() {
         recordDate: '2026-07-14',
         sleepDurationMinutes: 450,
         waterIntakeMl: 1500,
+        physicalStateScore: 10,
+        physicalStateDescription: '  rested  ',
       ),
     );
     currentTime = currentTime.add(const Duration(minutes: 10));
@@ -64,7 +66,23 @@ void main() {
     expect(updated.sleepDurationMinutes, 0);
     expect(updated.waterIntakeMl, isNull);
     expect(updated.exerciseType, '跑步');
+    expect(updated.physicalStateScore, isNull);
     expect(await database.select(database.healthRecords).get(), hasLength(1));
+  });
+
+  test('physical state uses scale 10 and normalizes description', () async {
+    final entry = await repository.saveForDate(
+      HealthSaveData(
+        recordDate: '2026-07-14',
+        physicalStateScore: 10,
+        physicalStateDescription: '  rested  ',
+      ),
+    );
+    final raw = await database.select(database.healthRecords).getSingle();
+
+    expect(entry.physicalStateScore, 10);
+    expect(entry.physicalStateDescription, 'rested');
+    expect(raw.physicalStateScoreScale, 10);
   });
 
   test('getByDate and inclusive date range are date-descending', () async {
@@ -169,7 +187,7 @@ void main() {
     final settings = await database.select(database.appSettings).getSingle();
 
     expect(raw.originDeviceId, settings.localInstallationId);
-    expect(database.schemaVersion, 12);
+    expect(database.schemaVersion, 13);
   });
 
   test('Today health save is readable through Health', () async {

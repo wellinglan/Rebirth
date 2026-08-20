@@ -5,7 +5,11 @@ import 'package:rebirth/features/health/domain/health_entry.dart';
 import 'health_formatters.dart';
 
 class HealthHistoryCard extends StatelessWidget {
-  const HealthHistoryCard({required this.entry, required this.onTap, super.key});
+  const HealthHistoryCard({
+    required this.entry,
+    required this.onTap,
+    super.key,
+  });
 
   final HealthEntry entry;
   final VoidCallback onTap;
@@ -18,7 +22,7 @@ class HealthHistoryCard extends StatelessWidget {
       '饮水 ${entry.waterIntakeMl == null ? '未填写' : '${entry.waterIntakeMl} ml'}',
       '体重 ${formatHealthWeight(entry.weightKg)}',
       if (entry.physicalStateScore != null)
-        '身体状态 ${entry.physicalStateScore}/5',
+        '身体状态 ${entry.physicalStateScore}/10',
     ];
 
     return Card(

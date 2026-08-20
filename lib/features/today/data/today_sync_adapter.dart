@@ -497,7 +497,10 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                   priority3Completed: Value(payload.priority3Completed),
                   priority3GoalId: Value(payload.priority3GoalId),
                   moodScore: Value(payload.moodScore),
+                  wellbeingScoreScale: Value(payload.wellbeingScoreScale),
+                  moodDescription: Value(payload.moodDescription),
                   energyScore: Value(payload.energyScore),
+                  energyDescription: Value(payload.energyDescription),
                   researchMinutes: Value(payload.researchMinutes),
                   learningMinutes: Value(payload.learningMinutes),
                   dailyNote: Value(payload.dailyNote),
@@ -531,7 +534,10 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                   priority3Completed: Value(payload.priority3Completed),
                   priority3GoalId: Value(payload.priority3GoalId),
                   moodScore: Value(payload.moodScore),
+                  wellbeingScoreScale: Value(payload.wellbeingScoreScale),
+                  moodDescription: Value(payload.moodDescription),
                   energyScore: Value(payload.energyScore),
+                  energyDescription: Value(payload.energyDescription),
                   researchMinutes: Value(payload.researchMinutes),
                   learningMinutes: Value(payload.learningMinutes),
                   dailyNote: Value(payload.dailyNote),
@@ -762,8 +768,21 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                 remotePayload?.priority3GoalId ?? local.priority3GoalId,
               ),
               moodScore: Value(remotePayload?.moodScore ?? local.moodScore),
+              wellbeingScoreScale: Value(
+                remotePayload?.wellbeingScoreScale ?? local.wellbeingScoreScale,
+              ),
+              moodDescription: Value(
+                remotePayload == null
+                    ? local.moodDescription
+                    : remotePayload.moodDescription,
+              ),
               energyScore: Value(
                 remotePayload?.energyScore ?? local.energyScore,
+              ),
+              energyDescription: Value(
+                remotePayload == null
+                    ? local.energyDescription
+                    : remotePayload.energyDescription,
               ),
               researchMinutes: Value(
                 remotePayload?.researchMinutes ?? local.researchMinutes,
@@ -819,8 +838,21 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                 remotePayload?.priority3GoalId ?? local.priority3GoalId,
               ),
               moodScore: Value(remotePayload?.moodScore ?? local.moodScore),
+              wellbeingScoreScale: Value(
+                remotePayload?.wellbeingScoreScale ?? local.wellbeingScoreScale,
+              ),
+              moodDescription: Value(
+                remotePayload == null
+                    ? local.moodDescription
+                    : remotePayload.moodDescription,
+              ),
               energyScore: Value(
                 remotePayload?.energyScore ?? local.energyScore,
+              ),
+              energyDescription: Value(
+                remotePayload == null
+                    ? local.energyDescription
+                    : remotePayload.energyDescription,
               ),
               researchMinutes: Value(
                 remotePayload?.researchMinutes ?? local.researchMinutes,
@@ -942,7 +974,9 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
         row.priority3GoalId != null ||
         row.priority3Completed ||
         row.moodScore != null ||
+        row.moodDescription != null ||
         row.energyScore != null ||
+        row.energyDescription != null ||
         row.researchMinutes != null ||
         row.learningMinutes != null ||
         row.dailyNote != null ||
@@ -963,7 +997,10 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
       priority3Completed: row.priority3Completed,
       priority3GoalId: row.priority3GoalId,
       moodScore: row.moodScore,
+      wellbeingScoreScale: row.wellbeingScoreScale ?? 5,
+      moodDescription: row.moodDescription,
       energyScore: row.energyScore,
+      energyDescription: row.energyDescription,
       researchMinutes: row.researchMinutes,
       learningMinutes: row.learningMinutes,
       dailyNote: row.dailyNote,

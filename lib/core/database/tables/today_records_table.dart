@@ -52,7 +52,13 @@ class TodayRecords extends Table
 
   IntColumn get moodScore => integer().nullable()();
 
+  IntColumn get wellbeingScoreScale => integer().nullable()();
+
+  TextColumn get moodDescription => text().nullable()();
+
   IntColumn get energyScore => integer().nullable()();
+
+  TextColumn get energyDescription => text().nullable()();
 
   IntColumn get researchMinutes => integer().nullable()();
 
@@ -69,8 +75,15 @@ class TodayRecords extends Table
     'CHECK (priority_1_completed IN (0, 1))',
     'CHECK (priority_2_completed IN (0, 1))',
     'CHECK (priority_3_completed IN (0, 1))',
-    'CHECK (mood_score IS NULL OR mood_score BETWEEN 1 AND 5)',
-    'CHECK (energy_score IS NULL OR energy_score BETWEEN 1 AND 5)',
+    'CHECK (wellbeing_score_scale IS NULL OR wellbeing_score_scale IN (5, 10))',
+    'CHECK (mood_score IS NULL OR '
+        '(COALESCE(wellbeing_score_scale, 5) = 5 AND mood_score BETWEEN 1 AND 5) OR '
+        '(wellbeing_score_scale = 10 AND mood_score BETWEEN 1 AND 10))',
+    'CHECK (energy_score IS NULL OR '
+        '(COALESCE(wellbeing_score_scale, 5) = 5 AND energy_score BETWEEN 1 AND 5) OR '
+        '(wellbeing_score_scale = 10 AND energy_score BETWEEN 1 AND 10))',
+    'CHECK (mood_description IS NULL OR length(mood_description) <= 80)',
+    'CHECK (energy_description IS NULL OR length(energy_description) <= 80)',
     'CHECK (research_minutes IS NULL OR research_minutes >= 0)',
     'CHECK (learning_minutes IS NULL OR learning_minutes >= 0)',
     "CHECK (record_status IN ('draft', 'completed'))",

@@ -25,6 +25,8 @@ abstract interface class TodayRepository {
     required String recordDate,
     required int? moodScore,
     required int? energyScore,
+    String? moodDescription,
+    String? energyDescription,
   });
 
   Future<TodayEntry> updateResearchLearningMinutes({

@@ -51,9 +51,9 @@ final class GrowthDaySnapshot {
   }
 
   void _validateScore(int? value, String field) {
-    if (value != null && (value < 1 || value > 5)) {
+    if (value != null && (value < 1 || value > 10)) {
       throw GrowthDataIntegrityException(
-        '$field for $date must be between 1 and 5.',
+        '$field for $date must be between 1 and 10.',
       );
     }
   }

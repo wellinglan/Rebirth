@@ -2,9 +2,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/app/rebirth_app.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
+import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
@@ -44,6 +46,14 @@ void main() {
         child: const RebirthApp(),
       ),
     );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('productionHomePage')), findsOneWidget);
+    expect(find.text('本地固定寄语 · 不调用 AI'), findsOneWidget);
+    final homeContext = tester.element(
+      find.byKey(const ValueKey('productionHomePage')),
+    );
+    GoRouter.of(homeContext).go(RoutePaths.today);
     await tester.pumpAndSettle();
 
     expect(find.text('2026-07-10'), findsOneWidget);

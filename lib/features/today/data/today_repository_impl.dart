@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_repository.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
@@ -92,6 +93,10 @@ final class TodayRepositoryImpl implements TodayRepository {
     final priorities = _normalizePriorities(data.priorities);
     _validateScore(data.moodScore, 'moodScore');
     _validateScore(data.energyScore, 'energyScore');
+    final moodDescription = normalizeWellbeingDescription(data.moodDescription);
+    final energyDescription = normalizeWellbeingDescription(
+      data.energyDescription,
+    );
     _validateMinutes(data.researchMinutes, 'researchMinutes');
     _validateMinutes(data.learningMinutes, 'learningMinutes');
     _validateHealth(data.health);
@@ -115,7 +120,10 @@ final class TodayRepositoryImpl implements TodayRepository {
         priority3Completed: Value(priorities[2].completed),
         priority3GoalId: Value(priorities[2].goalId),
         moodScore: Value(data.moodScore),
+        wellbeingScoreScale: const Value(currentWellbeingScoreScale),
+        moodDescription: Value(moodDescription),
         energyScore: Value(data.energyScore),
+        energyDescription: Value(energyDescription),
         researchMinutes: Value(data.researchMinutes),
         learningMinutes: Value(data.learningMinutes),
         dailyNote: Value(data.dailyNote),
@@ -165,15 +173,26 @@ final class TodayRepositoryImpl implements TodayRepository {
     required String recordDate,
     required int? moodScore,
     required int? energyScore,
+    String? moodDescription,
+    String? energyDescription,
   }) async {
     _validateRecordDate(recordDate);
     _validateScore(moodScore, 'moodScore');
     _validateScore(energyScore, 'energyScore');
+    final normalizedMoodDescription = normalizeWellbeingDescription(
+      moodDescription,
+    );
+    final normalizedEnergyDescription = normalizeWellbeingDescription(
+      energyDescription,
+    );
     return _updateToday(
       recordDate: recordDate,
       changesForTimestamp: (timestamp) => TodayRecordsCompanion(
         moodScore: Value(moodScore),
+        wellbeingScoreScale: const Value(currentWellbeingScoreScale),
+        moodDescription: Value(normalizedMoodDescription),
         energyScore: Value(energyScore),
+        energyDescription: Value(normalizedEnergyDescription),
         updatedAt: Value(timestamp),
         syncStatus: const Value('pending'),
       ),
@@ -290,8 +309,16 @@ final class TodayRepositoryImpl implements TodayRepository {
           goalId: today.priority3GoalId,
         ),
       ],
-      moodScore: today.moodScore,
-      energyScore: today.energyScore,
+      moodScore: normalizeWellbeingScore(
+        today.moodScore,
+        today.wellbeingScoreScale,
+      ),
+      moodDescription: today.moodDescription,
+      energyScore: normalizeWellbeingScore(
+        today.energyScore,
+        today.wellbeingScoreScale,
+      ),
+      energyDescription: today.energyDescription,
       researchMinutes: today.researchMinutes,
       learningMinutes: today.learningMinutes,
       dailyNote: today.dailyNote,
@@ -311,7 +338,11 @@ final class TodayRepositoryImpl implements TodayRepository {
               waterIntakeMl: health.waterIntakeMl,
               exerciseType: health.exerciseType,
               exerciseDurationMinutes: health.exerciseDurationMinutes,
-              physicalStateScore: health.physicalStateScore,
+              physicalStateScore: normalizeWellbeingScore(
+                health.physicalStateScore,
+                health.physicalStateScoreScale,
+              ),
+              physicalStateDescription: health.physicalStateDescription,
               note: health.note,
             ),
     );
@@ -355,8 +386,8 @@ final class TodayRepositoryImpl implements TodayRepository {
   }
 
   void _validateScore(int? score, String name) {
-    if (score != null && (score < 1 || score > 5)) {
-      throw ArgumentError.value(score, name, 'Score must be between 1 and 5.');
+    if (score != null && (score < 1 || score > 10)) {
+      throw ArgumentError.value(score, name, 'Score must be between 1 and 10.');
     }
   }
 
@@ -375,6 +406,7 @@ final class TodayRepositoryImpl implements TodayRepository {
     _validateMinutes(health.waterIntakeMl, 'waterIntakeMl');
     _validateMinutes(health.exerciseDurationMinutes, 'exerciseDurationMinutes');
     _validateScore(health.physicalStateScore, 'physicalStateScore');
+    normalizeWellbeingDescription(health.physicalStateDescription);
     if (health.weightKg != null && health.weightKg! <= 0) {
       throw ArgumentError.value(
         health.weightKg,

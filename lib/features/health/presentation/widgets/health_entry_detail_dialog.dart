@@ -34,7 +34,11 @@ class HealthEntryDetailDialog extends StatelessWidget {
         label: '身体状态',
         value: entry.physicalStateScore == null
             ? '未填写'
-            : '${entry.physicalStateScore}/5',
+            : '${entry.physicalStateScore}/10',
+      ),
+      (
+        label: '身体感受',
+        value: entry.physicalStateDescription ?? '未填写',
       ),
       (label: '备注', value: entry.note ?? '未填写'),
     ];

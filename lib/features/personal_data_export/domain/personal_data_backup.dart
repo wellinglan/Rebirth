@@ -110,7 +110,9 @@ final class TodayBackupRecord implements PersonalDataBackupRecord {
     required this.timezoneOffsetMinutes,
     required List<TodayPriorityBackupRecord> priorities,
     required this.moodScore,
+    this.moodDescription,
     required this.energyScore,
+    this.energyDescription,
     required this.researchMinutes,
     required this.learningMinutes,
     required this.dailyNote,
@@ -125,7 +127,9 @@ final class TodayBackupRecord implements PersonalDataBackupRecord {
   final int timezoneOffsetMinutes;
   final List<TodayPriorityBackupRecord> priorities;
   final int? moodScore;
+  final String? moodDescription;
   final int? energyScore;
+  final String? energyDescription;
   final int? researchMinutes;
   final int? learningMinutes;
   final String? dailyNote;
@@ -141,7 +145,10 @@ final class TodayBackupRecord implements PersonalDataBackupRecord {
     'timezone_offset_minutes': timezoneOffsetMinutes,
     'priorities': priorities.map((item) => item.toJson()).toList(),
     'mood_score': moodScore,
+    'mood_description': moodDescription,
     'energy_score': energyScore,
+    'energy_description': energyDescription,
+    'wellbeing_score_scale': 10,
     'research_minutes': researchMinutes,
     'learning_minutes': learningMinutes,
     'daily_note': dailyNote,
@@ -330,6 +337,7 @@ final class HealthBackupRecord implements PersonalDataBackupRecord {
     required this.exerciseType,
     required this.exerciseDurationMinutes,
     required this.physicalStateScore,
+    this.physicalStateDescription,
     required this.note,
     required this.dataSource,
     required this.createdAt,
@@ -347,6 +355,7 @@ final class HealthBackupRecord implements PersonalDataBackupRecord {
   final String? exerciseType;
   final int? exerciseDurationMinutes;
   final int? physicalStateScore;
+  final String? physicalStateDescription;
   final String? note;
   final String dataSource;
   final String createdAt;
@@ -365,6 +374,8 @@ final class HealthBackupRecord implements PersonalDataBackupRecord {
     'exercise_type': exerciseType,
     'exercise_duration_minutes': exerciseDurationMinutes,
     'physical_state_score': physicalStateScore,
+    'physical_state_description': physicalStateDescription,
+    'physical_state_score_scale': 10,
     'note': note,
     'data_source': dataSource,
     'created_at': createdAt,

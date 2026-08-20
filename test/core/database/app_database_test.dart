@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 12 with AI report feedback', () async {
+  test('creates schema version 13 with AI report feedback', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -47,7 +47,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 12);
+    expect(versionRow.read<int>('user_version'), 13);
   });
 
   test(
