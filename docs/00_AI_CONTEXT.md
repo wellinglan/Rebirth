@@ -812,5 +812,8 @@ Today 的 Mood/Energy 与 Health 的 Physical State 在领域层统一为可空 
 Sync Protocol 保持 2，API Version 保持 1，Server PostgreSQL/Alembic 不变。当前
 客户端 payload 增加 scale 和描述字段；旧 payload 缺少 scale 时按 1-5 解码。混用
 旧客户端可能在其重新上传记录时丢失未知描述字段，因此跨设备编辑前必须同时升级。
-完整合同见 `docs/57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md`；48 项人工矩阵
-当前全部 NOT EXECUTED，Gate OPEN。
+Server 同步校验必须同时接受完整旧格式与完整新格式，并拒绝字段不完整或分数超过声明
+量表的 payload；持久化 JSON 保持客户端原样。人工验收曾发现旧部署仍只接受 1-5，
+因此修复后的 API 部署和 E1-E5 重测是当前 Gate 阻断项。完整合同见
+`docs/57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md`；51 项人工矩阵当前为
+34 PASS / 3 FAIL / 14 NOT EXECUTED，Gate OPEN。

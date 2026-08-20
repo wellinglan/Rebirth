@@ -23,9 +23,10 @@ reviewed source is running on the private Alpha Server.
 
 Sprint 17A.1 remains the accepted developer-only prototype evidence. Sprint
 17B promotes that direction into account-scoped production Home, Today, and
-Health flows and advances Flutter schema to 13. This source implementation is
-not yet manually accepted: its 48-row Windows/Android, persistence, migration,
-sync/conflict, account, and accessibility matrix remains entirely NOT EXECUTED.
+Health flows and advances Flutter schema to 13. Its 51-row matrix currently
+records 34 PASS / 3 FAIL / 14 NOT EXECUTED. E1-E3 exposed that the deployed
+Server still rejected the expanded Today/Health payload; the dual-format
+validation fix requires deployment and E1-E5 retest before acceptance.
 Private Alpha candidates must upgrade both clients before editing the expanded
 Today/Health payload because older clients cannot preserve unknown description
 fields.

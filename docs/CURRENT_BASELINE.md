@@ -210,7 +210,7 @@ configured today.
 | 16B | Version-bound structured AI Report feedback and aggregate quality signal | Flutter schema 12; Alembic `20260812_0008`; API 1 and Sync Protocol 2 unchanged | 3 PASS / 0 FAIL / 36 NOT EXECUTED | Alpha deployment identity passed; remaining product matrix is open and explicitly suspended |
 | 17A | Product experience audit and UI design system foundation | No schema/API/protocol change | 0 PASS / 0 FAIL / 30 NOT EXECUTED | Responsive and theme automation added; final feature visual direction remains open |
 | 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
-| 17B | Home / Today / Health production experience integration | Flutter schema 13; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 48 NOT EXECUTED | Source and automation implemented; production manual Gate remains OPEN |
+| 17B | Home / Today / Health production experience integration | Flutter schema 13; dual-format Server validation; API 1 and Sync Protocol 2 unchanged | 34 PASS / 3 FAIL / 14 NOT EXECUTED | E1-E3 exposed the pre-fix Server payload rejection; deploy the fixed API and retest E1-E5 before the Gate can close |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach

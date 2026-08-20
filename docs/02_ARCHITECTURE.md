@@ -1074,4 +1074,7 @@ AI input, Personal Data, export, and conflict presentation see only normalized
 1-10 values. Sync codecs accept an exact legacy key set (implicit scale 5) or
 the current expanded key set (explicit scale plus descriptions). The existing
 SyncCoordinator, OCC, cursor, tombstone, and conflict resolution paths remain
-authoritative. API Version 1 and Sync Protocol 2 are unchanged.
+authoritative. Server request validation mirrors those two exact payload
+shapes and keeps submitted JSON unchanged; this is validation at the existing
+transport boundary, not a second sync path. API Version 1 and Sync Protocol 2
+are unchanged.

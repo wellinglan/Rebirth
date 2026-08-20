@@ -3,6 +3,7 @@
 > Sprint: 17B
 > Baseline: `3eaf4c11f9b7bfdf8b78d18992fd1aaa9abaa593`
 > Implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
+> Sync contract repair commit: `f7b1bb6dcf5aedc1c50bc1951cf6eb7e82309668`
 > Implementation status: complete in source; manual Gate OPEN
 
 ## Product Boundary
@@ -72,12 +73,22 @@ but if it edits and uploads the same record it cannot preserve fields it does
 not understand. Both devices should therefore be upgraded before editing or
 resolving Today/Health conflicts.
 
+Manual acceptance exposed that the initially deployed Server still validated
+only the legacy 1-5 payload and forbade the new fields. The source fix extends
+the existing `TodaySyncPayload` and `HealthSyncPayload` validators to accept
+either the exact legacy contract or the complete expanded contract. A partial
+extension, a score above its declared 5/10 scale, blank descriptions, and
+descriptions over 80 characters remain rejected. Payload JSON continues to be
+stored and returned exactly as submitted, so legacy rows are not rewritten.
+The fixed API image must be deployed before E1-E5 are retested.
+
 ## Data And Security Boundaries
 
 - Home, Today, and Health remain scoped to the authenticated account.
 - Account change or logout invalidates the overview state.
-- No server model, Alembic revision, Provider, Prompt, usage ledger, or quota
-  changes are part of this Sprint.
+- No persistent server model, Alembic revision, Provider, Prompt, usage ledger,
+  or quota changes are part of this Sprint. Server sync request validation is
+  expanded only to carry the new client fields without data loss.
 - No automatic AI, network image, automatic sync, background sync, medical
   target, or gamification is introduced.
 - Date and time reads use `DateTimeService`; business code does not bypass it.
@@ -88,8 +99,9 @@ API Version 1 and Sync Protocol 2 remain unchanged.
 
 ## Release Gate
 
-The **Home / Today / Health Production Integration Gate** remains **OPEN** until
-the manual matrix in
-`docs/manual_tests/62_home_today_health_production_integration.md` is executed
-on Windows and Android. Automated tests and builds are evidence for the source
-implementation only and are not manual PASS.
+The **Home / Today / Health Production Integration Gate** remains **OPEN**. The
+initial cross-device run exposed and documented a Server validation blocker;
+the fixed API must be deployed and E1-E5 must pass. The remaining matrix in
+`docs/manual_tests/62_home_today_health_production_integration.md` must also be
+executed on Windows and Android. Automated tests and builds are evidence for
+the source implementation only and are not manual PASS.
