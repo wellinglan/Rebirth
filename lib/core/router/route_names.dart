@@ -10,6 +10,7 @@ abstract final class RouteNames {
   static const today = 'today';
   static const todayHistory = 'todayHistory';
   static const journal = 'journal';
+  static const journalHistory = 'journalHistory';
   static const journalPrompts = 'journalPrompts';
   static const plan = 'plan';
   static const growth = 'growth';
@@ -46,6 +47,7 @@ abstract final class RoutePaths {
   static const today = '/today';
   static const todayHistory = '/today/history';
   static const journal = '/journal';
+  static const journalHistory = '/journal/history';
   static const journalPrompts = '/journal/prompts';
   static const plan = '/plan';
   static const growth = '/growth';

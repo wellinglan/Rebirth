@@ -16,9 +16,11 @@ class JournalForm extends StatefulWidget {
     required this.recordDate,
     required this.onSaveDraft,
     required this.onComplete,
+    this.title = '今日复盘',
     this.prompts = const [],
     this.onApplyLatestPrompts,
     this.onManagePrompts,
+    this.onOpenHistory,
     this.onReopen,
     this.onOpenDailyInsight,
     this.onDelete,
@@ -27,9 +29,11 @@ class JournalForm extends StatefulWidget {
 
   final JournalEntry? entry;
   final String recordDate;
+  final String title;
   final List<JournalPromptDefinition> prompts;
   final Future<JournalEntry> Function()? onApplyLatestPrompts;
   final VoidCallback? onManagePrompts;
+  final VoidCallback? onOpenHistory;
   final Future<void> Function(JournalSaveData data) onSaveDraft;
   final Future<void> Function(JournalSaveData data) onComplete;
   final Future<void> Function()? onReopen;
@@ -97,44 +101,72 @@ class _JournalFormState extends State<JournalForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text('今日复盘', style: theme.textTheme.titleLarge),
+                      child: Text(
+                        widget.title,
+                        style: theme.textTheme.titleLarge,
+                      ),
                     ),
-                    if (widget.onManagePrompts != null)
+                    if (widget.onOpenHistory != null)
                       IconButton(
-                        key: const ValueKey('manageJournalPromptsButton'),
-                        tooltip: '管理复盘问题',
-                        onPressed: _isSaving ? null : widget.onManagePrompts,
-                        icon: const Icon(Icons.tune),
-                      ),
-                    if (widget.entry?.status == JournalEntryStatus.draft &&
-                        widget.onApplyLatestPrompts != null)
-                      IconButton(
-                        key: const ValueKey('applyLatestJournalPromptsButton'),
-                        tooltip: '应用最新问题',
-                        onPressed: _isSaving ? null : _confirmApplyLatest,
-                        icon: const Icon(Icons.refresh),
-                      ),
-                    if (widget.onOpenDailyInsight != null)
-                      IconButton(
-                        key: const ValueKey(
-                          'openDailyInsightFromJournalButton',
-                        ),
-                        tooltip: '生成该日洞察（仅读取已保存记录）',
-                        onPressed: () => widget.onOpenDailyInsight!(
-                          widget.recordDate,
-                          _hasUnsavedChanges,
-                        ),
-                        icon: const Icon(Icons.auto_awesome_outlined),
-                      ),
-                    if (widget.entry != null && widget.onDelete != null)
-                      IconButton(
-                        key: const ValueKey('deleteJournalButton'),
-                        tooltip: '删除该 Journal',
-                        onPressed: _isSaving ? null : widget.onDelete,
-                        icon: const Icon(Icons.delete_outline),
+                        key: const ValueKey('openJournalHistoryButton'),
+                        tooltip: '查看历史复盘',
+                        onPressed: _isSaving ? null : widget.onOpenHistory,
+                        icon: const Icon(Icons.history),
                       ),
                   ],
                 ),
+                if (widget.onManagePrompts != null ||
+                    (widget.entry?.status == JournalEntryStatus.draft &&
+                        widget.onApplyLatestPrompts != null) ||
+                    widget.onOpenDailyInsight != null ||
+                    (widget.entry != null && widget.onDelete != null))
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: AppSpacing.xs,
+                      runSpacing: AppSpacing.xs,
+                      children: [
+                        if (widget.onManagePrompts != null)
+                          IconButton(
+                            key: const ValueKey('manageJournalPromptsButton'),
+                            tooltip: '管理复盘问题',
+                            onPressed: _isSaving
+                                ? null
+                                : widget.onManagePrompts,
+                            icon: const Icon(Icons.tune),
+                          ),
+                        if (widget.entry?.status == JournalEntryStatus.draft &&
+                            widget.onApplyLatestPrompts != null)
+                          IconButton(
+                            key: const ValueKey(
+                              'applyLatestJournalPromptsButton',
+                            ),
+                            tooltip: '应用最新问题',
+                            onPressed: _isSaving ? null : _confirmApplyLatest,
+                            icon: const Icon(Icons.refresh),
+                          ),
+                        if (widget.onOpenDailyInsight != null)
+                          IconButton(
+                            key: const ValueKey(
+                              'openDailyInsightFromJournalButton',
+                            ),
+                            tooltip: '生成该日洞察（仅读取已保存记录）',
+                            onPressed: () => widget.onOpenDailyInsight!(
+                              widget.recordDate,
+                              _hasUnsavedChanges,
+                            ),
+                            icon: const Icon(Icons.auto_awesome_outlined),
+                          ),
+                        if (widget.entry != null && widget.onDelete != null)
+                          IconButton(
+                            key: const ValueKey('deleteJournalButton'),
+                            tooltip: '删除该 Journal',
+                            onPressed: _isSaving ? null : widget.onDelete,
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 6),
                 Text(
                   widget.entry?.entryDate ?? '写下今天值得理解的部分',

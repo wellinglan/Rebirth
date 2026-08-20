@@ -61,16 +61,19 @@ void main() {
       find.byKey(const ValueKey('openDailyInsightFromJournalButton')),
       findsOneWidget,
     );
-    expect(find.text('最近复盘'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('journalHistoryEmptyState')),
+      find.byKey(const ValueKey('openJournalHistoryButton')),
       findsOneWidget,
     );
+    expect(find.text('最近复盘'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('journalHistoryEmptyState')),
+      findsNothing,
+    );
+    expect(repository.listRecentCalls, 0);
   });
 
-  testWidgets('history loading does not replace the today form', (
-    tester,
-  ) async {
+  testWidgets('JournalPage does not preload pending history', (tester) async {
     final historyGate = Completer<List<JournalEntry>>();
     final repository = _FakeJournalRepository(pendingHistoryLoad: historyGate);
     await _pumpJournalPage(tester, repository);
@@ -80,11 +83,14 @@ void main() {
     expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('journalHistoryLoadingState')),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(repository.listRecentCalls, 0);
   });
 
-  testWidgets('history error has an independent retry action', (tester) async {
+  testWidgets('JournalPage does not touch a failing history query', (
+    tester,
+  ) async {
     final repository = _FakeJournalRepository(
       historyLoadError: StateError('history failed for test'),
     );
@@ -94,19 +100,9 @@ void main() {
     expect(find.byKey(const ValueKey('saveJournalButton')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('journalHistoryErrorState')),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.text('历史复盘暂时无法加载'), findsOneWidget);
-
-    repository.historyLoadError = null;
-    await tester.tap(find.byTooltip('重新加载历史复盘'));
-    await tester.pumpAndSettle();
-
-    expect(repository.listRecentCalls, 2);
-    expect(
-      find.byKey(const ValueKey('journalHistoryEmptyState')),
-      findsOneWidget,
-    );
+    expect(repository.listRecentCalls, 0);
   });
 
   testWidgets('JournalPage fills an existing today entry', (tester) async {
@@ -119,14 +115,32 @@ void main() {
     expect(_fieldText(tester, 'journalEmotionField'), '对进度的担心');
     expect(_fieldText(tester, 'journalLearningField'), '先验证最小假设');
     expect(_fieldText(tester, 'journalAdjustmentField'), '优先整理数据');
-    expect(find.byKey(const ValueKey('journalHistoryList')), findsOneWidget);
+    expect(find.byKey(const ValueKey('journalHistoryList')), findsNothing);
+    expect(find.text('完成关键实验'), findsOneWidget);
+    expect(find.text('记录状态：草稿'), findsOneWidget);
+  });
+
+  testWidgets('Journal title actions wrap at 320px and TextScaler 2.0', (
+    tester,
+  ) async {
+    final repository = _FakeJournalRepository(entry: _sampleEntry());
+    await _pumpJournalPage(
+      tester,
+      repository,
+      surfaceSize: const Size(320, 900),
+      textScaleFactor: 2,
+    );
+    await tester.pumpAndSettle();
+
     expect(
-      find.byKey(const ValueKey('journalHistoryItem_journal-id')),
+      find.byKey(const ValueKey('openJournalHistoryButton')),
       findsOneWidget,
     );
-    expect(find.text('完成关键实验'), findsWidgets);
-    expect(find.text('记录状态：草稿'), findsOneWidget);
-    expect(find.text('历史复盘 · 草稿'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('manageJournalPromptsButton')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Daily Insight entry warns before ignoring unsaved edits', (
@@ -153,67 +167,6 @@ void main() {
     expect(find.text('尚未保存的新内容'), findsOneWidget);
   });
 
-  testWidgets('tapping history opens a read-only detail dialog', (
-    tester,
-  ) async {
-    final historyEntry = _sampleEntry();
-    final repository = _FakeJournalRepository(
-      entry: historyEntry,
-      historyEntries: [historyEntry],
-    );
-    await _pumpJournalPage(tester, repository);
-    await tester.pumpAndSettle();
-    final item = find.byKey(const ValueKey('journalHistoryItem_journal-id'));
-    await Scrollable.ensureVisible(tester.element(item), alignment: 0.5);
-    await tester.pumpAndSettle();
-    await tester.tap(item);
-    await tester.pumpAndSettle();
-
-    final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
-    expect(dialog, findsOneWidget);
-    expect(
-      find.descendant(of: dialog, matching: find.text('2026-07-13')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('今天最重要的完成是什么？')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('完成关键实验')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('等待实验结果')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('对进度的担心')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('先验证最小假设')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('优先整理数据')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('历史复盘 · 草稿')),
-      findsOneWidget,
-    );
-
-    final question = tester.widget<Text>(
-      find.descendant(of: dialog, matching: find.text('今天最重要的完成是什么？')),
-    );
-    final answer = tester.widget<Text>(
-      find.descendant(of: dialog, matching: find.text('完成关键实验')),
-    );
-    expect(question.style?.fontWeight, FontWeight.w600);
-    expect(answer.style?.fontWeight, FontWeight.w400);
-  });
-
   testWidgets('detail keeps empty answers readable', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -231,7 +184,7 @@ void main() {
     expect(find.text('草稿'), findsNothing);
   });
 
-  testWidgets('exact date opens only the matching saved detail once', (
+  testWidgets('exact date opens the matching saved editing flow', (
     tester,
   ) async {
     final savedEntry = _sampleEntry();
@@ -242,28 +195,13 @@ void main() {
     await _pumpJournalPage(tester, repository, targetDate: '2026-07-13');
     await tester.pumpAndSettle();
 
-    final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
-    expect(dialog, findsOneWidget);
     expect(
-      find.descendant(of: dialog, matching: find.text('先验证最小假设')),
+      find.byKey(const ValueKey('journalHistoricalEditorPage')),
       findsOneWidget,
     );
+    expect(find.text('编辑历史复盘'), findsOneWidget);
+    expect(_fieldText(tester, 'journalLearningField'), '先验证最小假设');
     expect(repository.listByDateCalls, 1);
-
-    tester
-        .element(find.byKey(const ValueKey('journalTargetNotice')))
-        .markNeedsBuild();
-    await tester.pumpAndSettle();
-    expect(dialog, findsOneWidget);
-
-    await tester.tap(find.text('关闭'));
-    await tester.pumpAndSettle();
-    expect(dialog, findsNothing);
-    tester
-        .element(find.byKey(const ValueKey('journalTargetNotice')))
-        .markNeedsBuild();
-    await tester.pumpAndSettle();
-    expect(dialog, findsNothing);
   });
 
   testWidgets('missing exact date stays on Journal and explains the result', (
@@ -296,7 +234,7 @@ void main() {
   });
 
   testWidgets(
-    'exact-date detail reads saved data instead of unsaved form text',
+    'exact-date editor reads saved data instead of another unsaved form',
     (tester) async {
       final repository = _FakeJournalRepository(entry: _sampleEntry());
       await _pumpJournalPage(tester, repository);
@@ -311,12 +249,11 @@ void main() {
       await _pumpJournalPage(tester, repository, targetDate: '2026-07-13');
       await tester.pumpAndSettle();
 
-      final dialog = find.byKey(const ValueKey('journalEntryDetailDialog'));
-      expect(dialog, findsOneWidget);
       expect(
-        find.descendant(of: dialog, matching: find.text('先验证最小假设')),
+        find.byKey(const ValueKey('journalHistoricalEditorPage')),
         findsOneWidget,
       );
+      expect(_fieldText(tester, 'journalLearningField'), '先验证最小假设');
       expect(find.text('尚未保存且不得读取'), findsNothing);
     },
   );
@@ -348,11 +285,7 @@ void main() {
     expect(repository.lastSaved?.learning, '学会拆分问题');
     expect(repository.lastSaved?.mostImportantAccomplishment, isNull);
     expect(find.text('复盘草稿已保存'), findsOneWidget);
-    expect(repository.listRecentCalls, 2);
-    expect(
-      find.byKey(const ValueKey('journalHistoryItem_journal-id')),
-      findsOneWidget,
-    );
+    expect(repository.listRecentCalls, 0);
   });
 
   testWidgets('saving disables the button and keeps form content', (
@@ -400,13 +333,13 @@ void main() {
     expect(_fieldText(tester, 'journalEmotionField'), '失败后仍然保留');
     expect(find.byKey(const ValueKey('journalErrorState')), findsNothing);
     expect(repository.saveAttempts, 1);
-    expect(repository.listRecentCalls, 1);
+    expect(repository.listRecentCalls, 0);
 
     await _tapSave(tester);
     expect(repository.saveAttempts, 2);
     expect(repository.lastSaved?.emotionSource, '失败后仍然保留');
     expect(find.text('复盘草稿已保存'), findsOneWidget);
-    expect(repository.listRecentCalls, 2);
+    expect(repository.listRecentCalls, 0);
   });
 
   testWidgets('completing a draft saves current content and locks editing', (
@@ -529,6 +462,7 @@ void main() {
   test('Journal presentation has no database implementation imports', () {
     const paths = <String>[
       'lib/features/journal/presentation/journal_page.dart',
+      'lib/features/journal/presentation/journal_history_page.dart',
       'lib/features/journal/presentation/journal_controller.dart',
       'lib/features/journal/presentation/journal_today_controller.dart',
       'lib/features/journal/presentation/widgets/journal_form.dart',
@@ -551,8 +485,10 @@ Future<void> _pumpJournalPage(
   WidgetTester tester,
   JournalRepository repository, {
   String? targetDate,
+  Size surfaceSize = const Size(900, 900),
+  double textScaleFactor = 1,
 }) async {
-  await tester.binding.setSurfaceSize(const Size(900, 900));
+  await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
@@ -566,6 +502,12 @@ Future<void> _pumpJournalPage(
         ),
       ],
       child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScaleFactor)),
+          child: child!,
+        ),
         home: Scaffold(body: JournalPage(targetDate: targetDate)),
       ),
     ),

@@ -14,6 +14,7 @@ void main() {
 
   test('builds Journal URL for an exact date', () {
     expect(RoutePaths.journalForDate('2026-07-16'), '/journal?date=2026-07-16');
+    expect(RoutePaths.journalHistory, '/journal/history');
   });
 
   test('date query values are URL encoded', () {

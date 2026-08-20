@@ -10,9 +10,7 @@ import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'journal_controller.dart';
 import 'journal_prompt_controller.dart';
 import 'journal_today_controller.dart';
-import 'widgets/journal_entry_detail_dialog.dart';
 import 'widgets/journal_form.dart';
-import 'widgets/journal_history_list.dart';
 
 class JournalPage extends ConsumerStatefulWidget {
   const JournalPage({this.targetDate, super.key});
@@ -24,36 +22,30 @@ class JournalPage extends ConsumerStatefulWidget {
 }
 
 class _JournalPageState extends ConsumerState<JournalPage> {
-  String? _handledTargetDate;
+  JournalEntry? _historicalEntry;
 
   @override
   void didUpdateWidget(covariant JournalPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.targetDate != widget.targetDate) {
-      _handledTargetDate = null;
+      _historicalEntry = null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final targetDate = widget.targetDate;
+    if (targetDate != null) return _buildHistoricalEditor(targetDate);
+    return _buildTodayEditor();
+  }
+
+  Widget _buildTodayEditor() {
     final journalState = ref.watch(journalTodayControllerProvider);
     final promptState = ref.watch(journalPromptControllerProvider);
-    final historyState = ref.watch(journalControllerProvider);
-    final dateTimeService = ref.watch(dateTimeServiceProvider);
-    final today = dateTimeService.currentLocalDateString();
-    final targetDate = widget.targetDate;
-    final targetDateIsValid =
-        targetDate == null ||
-        dateTimeService.isValidLocalDateString(targetDate);
-    final targetEntry = targetDate != null && targetDateIsValid
-        ? ref.watch(journalEntryForDateProvider(targetDate))
-        : null;
-    final matchedEntry = targetEntry?.asData?.value;
-    if (matchedEntry != null && matchedEntry.entryDate == targetDate) {
-      _scheduleTargetDialog(matchedEntry, today);
-    }
+    final today = ref.watch(dateTimeServiceProvider).currentLocalDateString();
 
     return SafeArea(
+      key: const ValueKey('journalPage'),
       child: journalState.when(
         loading: () => const Center(
           child: CircularProgressIndicator(
@@ -78,12 +70,6 @@ class _JournalPageState extends ConsumerState<JournalPage> {
         ),
         data: (entry) => ListView(
           children: [
-            if (targetDate != null)
-              _JournalTargetNotice(
-                targetDate: targetDate,
-                isValid: targetDateIsValid,
-                state: targetEntry,
-              ),
             if (entry == null && promptState.isLoading)
               const Padding(
                 padding: EdgeInsets.all(32),
@@ -118,48 +104,120 @@ class _JournalPageState extends ConsumerState<JournalPage> {
                 entry: entry,
                 recordDate: entry?.entryDate ?? today,
                 prompts: promptState.asData?.value.activePrompts ?? const [],
-                onSaveDraft: (data) =>
-                    _saveTodayEntry(ref, data, complete: false),
-                onComplete: (data) =>
-                    _saveTodayEntry(ref, data, complete: true),
-                onReopen: entry == null ? null : () => _reopenTodayEntry(ref),
+                onSaveDraft: (data) => _saveTodayEntry(data, complete: false),
+                onComplete: (data) => _saveTodayEntry(data, complete: true),
+                onReopen: entry == null ? null : _reopenTodayEntry,
                 onApplyLatestPrompts: entry?.status == JournalEntryStatus.draft
-                    ? () => _applyLatestPrompts(ref)
+                    ? _applyLatestPrompts
                     : null,
                 onManagePrompts: () => context.push(RoutePaths.journalPrompts),
+                onOpenHistory: () => context.push(RoutePaths.journalHistory),
                 onDelete: entry == null
                     ? null
-                    : () => _confirmDelete(context, entry),
+                    : () => _confirmDelete(entry, closeAfterDelete: false),
                 onOpenDailyInsight: (recordDate, hasUnsavedChanges) =>
                     _openDailyInsight(
-                      context,
                       recordDate,
                       hasUnsavedChanges: hasUnsavedChanges,
                     ),
               ),
-            const Divider(height: 1),
-            JournalHistoryList(
-              state: historyState,
-              today: today,
-              onRetry: () async {
-                try {
-                  await ref.read(journalControllerProvider.notifier).reload();
-                } catch (_) {
-                  // The history widget continues to expose its local error state.
-                }
-              },
-              onEntryTap: (historyEntry) {
-                _showEntryDetail(context, historyEntry, today);
-              },
-            ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildHistoricalEditor(String targetDate) {
+    final dateTimeService = ref.watch(dateTimeServiceProvider);
+    final isValid = dateTimeService.isValidLocalDateString(targetDate);
+    final targetState = isValid
+        ? ref.watch(journalEntryForDateProvider(targetDate))
+        : const AsyncData<JournalEntry?>(null);
+    final visibleState = _historicalEntry?.entryDate == targetDate
+        ? AsyncData<JournalEntry?>(_historicalEntry)
+        : targetState;
+
+    return SafeArea(
+      key: const ValueKey('journalHistoricalEditorPage'),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 20, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  key: const ValueKey('journalHistoricalEditorBackButton'),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  tooltip: '返回历史复盘',
+                  icon: const Icon(Icons.arrow_back),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    '编辑历史复盘',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: !isValid
+                ? const _HistoricalJournalMessage(
+                    message: '日期参数无效，无法定位 Journal 记录。',
+                  )
+                : visibleState.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(
+                        key: ValueKey('journalTargetLoadingState'),
+                      ),
+                    ),
+                    error: (error, stackTrace) => _HistoricalJournalMessage(
+                      message: '$targetDate 的 Journal 记录暂时无法读取。',
+                      onRetry: () => ref.invalidate(
+                        journalEntryForDateProvider(targetDate),
+                      ),
+                    ),
+                    data: (entry) => entry == null
+                        ? _HistoricalJournalMessage(
+                            message: '未找到 $targetDate 的 Journal 记录。',
+                          )
+                        : ListView(
+                            children: [
+                              JournalForm(
+                                title: targetDate,
+                                entry: entry,
+                                recordDate: entry.entryDate,
+                                onSaveDraft: (data) =>
+                                    _saveHistoricalEntry(entry, data),
+                                onComplete: (data) =>
+                                    _saveHistoricalEntry(entry, data),
+                                onReopen:
+                                    entry.status == JournalEntryStatus.completed
+                                    ? () => _reopenHistoricalEntry(entry)
+                                    : null,
+                                onDelete: () => _confirmDelete(
+                                  entry,
+                                  closeAfterDelete: true,
+                                ),
+                                onOpenDailyInsight:
+                                    (recordDate, hasUnsavedChanges) =>
+                                        _openDailyInsight(
+                                          recordDate,
+                                          hasUnsavedChanges: hasUnsavedChanges,
+                                        ),
+                              ),
+                            ],
+                          ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openDailyInsight(
-    BuildContext context,
     String recordDate, {
     required bool hasUnsavedChanges,
   }) async {
@@ -187,13 +245,12 @@ class _JournalPageState extends ConsumerState<JournalPage> {
             ),
           ) ??
           false;
-      if (!continueWithSaved || !context.mounted) return;
+      if (!continueWithSaved || !mounted) return;
     }
     await context.push(RoutePaths.aiCoachDaily(recordDate));
   }
 
   Future<void> _saveTodayEntry(
-    WidgetRef ref,
     JournalSaveData data, {
     required bool complete,
   }) async {
@@ -203,61 +260,60 @@ class _JournalPageState extends ConsumerState<JournalPage> {
     } else {
       await controller.saveDraft(data);
     }
-    await _reloadJournalHistory(ref);
+    ref.invalidate(journalControllerProvider);
   }
 
-  Future<void> _reopenTodayEntry(WidgetRef ref) async {
+  Future<void> _reopenTodayEntry() async {
     await ref.read(journalTodayControllerProvider.notifier).reopen();
-    await _reloadJournalHistory(ref);
+    ref.invalidate(journalControllerProvider);
   }
 
-  Future<JournalEntry> _applyLatestPrompts(WidgetRef ref) async {
+  Future<JournalEntry> _applyLatestPrompts() async {
     final saved = await ref
         .read(journalTodayControllerProvider.notifier)
         .applyLatestPrompts();
-    await _reloadJournalHistory(ref);
+    ref.invalidate(journalControllerProvider);
     return saved;
   }
 
-  Future<void> _reloadJournalHistory(WidgetRef ref) async {
-    try {
-      await ref.read(journalControllerProvider.notifier).reload();
-    } catch (_) {
-      // The save succeeded; the history area exposes its own retry state.
-    }
-  }
-
-  Future<void> _showEntryDetail(
-    BuildContext context,
+  Future<void> _saveHistoricalEntry(
     JournalEntry entry,
-    String today,
-  ) {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => JournalEntryDetailDialog(
-        entry: entry,
-        today: today,
-        onDelete: () => _confirmDelete(this.context, entry),
-      ),
-    );
+    JournalSaveData data,
+  ) async {
+    final saved = await ref
+        .read(journalControllerProvider.notifier)
+        .updateEntry(id: entry.id, data: data);
+    if (!mounted) return;
+    setState(() => _historicalEntry = saved);
   }
 
-  Future<void> _confirmDelete(BuildContext context, JournalEntry entry) async {
+  Future<void> _reopenHistoricalEntry(JournalEntry entry) async {
+    final saved = await ref
+        .read(journalControllerProvider.notifier)
+        .reopenEntry(entry.id);
+    if (!mounted) return;
+    setState(() => _historicalEntry = saved);
+  }
+
+  Future<void> _confirmDelete(
+    JournalEntry entry, {
+    required bool closeAfterDelete,
+  }) async {
     final confirmed =
         await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (dialogContext) => AlertDialog(
             key: const ValueKey('confirmDeleteJournalDialog'),
             title: const Text('删除这篇 Journal？'),
             content: const Text('记录会在本地隐藏，并在下次手动同步时把删除状态同步到其他设备。'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => Navigator.of(dialogContext).pop(false),
                 child: const Text('取消'),
               ),
               FilledButton(
                 key: const ValueKey('confirmDeleteJournalButton'),
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
                 child: const Text('删除'),
               ),
             ],
@@ -270,63 +326,53 @@ class _JournalPageState extends ConsumerState<JournalPage> {
       await ref.read(journalTodayControllerProvider.notifier).reload();
       ref.invalidate(journalEntryForDateProvider(entry.entryDate));
       if (!mounted) return;
-      ScaffoldMessenger.of(this.context)
+      ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('Journal 已删除，等待手动同步')));
+      if (closeAfterDelete) Navigator.of(context).maybePop();
     } on JournalConflictPendingException {
       if (!mounted) return;
-      ScaffoldMessenger.of(this.context)
+      ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(content: Text('该 Journal 存在同步冲突，请先在设置的同步中心处理')),
         );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(this.context)
+      ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('删除失败，本地记录未改变')));
     }
   }
-
-  void _scheduleTargetDialog(JournalEntry entry, String today) {
-    if (_handledTargetDate == entry.entryDate) return;
-    _handledTargetDate = entry.entryDate;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _showEntryDetail(context, entry, today);
-    });
-  }
 }
 
-class _JournalTargetNotice extends StatelessWidget {
-  const _JournalTargetNotice({
-    required this.targetDate,
-    required this.isValid,
-    required this.state,
-  });
+class _HistoricalJournalMessage extends StatelessWidget {
+  const _HistoricalJournalMessage({required this.message, this.onRetry});
 
-  final String targetDate;
-  final bool isValid;
-  final AsyncValue<JournalEntry?>? state;
+  final String message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final message = !isValid
-        ? '日期参数无效，无法定位 Journal 记录。'
-        : state?.when(
-                loading: () => '正在查找 $targetDate 的 Journal 记录...',
-                error: (error, stackTrace) => '$targetDate 的 Journal 记录暂时无法读取。',
-                data: (entry) => entry?.entryDate == targetDate
-                    ? '已定位 $targetDate 的 Journal 记录。'
-                    : '未找到 $targetDate 的 Journal 记录。',
-              ) ??
-              '日期参数无效，无法定位 Journal 记录。';
-    return Container(
-      key: const ValueKey('journalTargetNotice'),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Text(message),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          key: const ValueKey('journalTargetNotice'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, textAlign: TextAlign.center),
+            if (onRetry != null) ...[
+              const SizedBox(height: 12),
+              IconButton(
+                onPressed: onRetry,
+                tooltip: '重新读取历史复盘',
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -8,11 +8,8 @@ final journalControllerProvider =
       JournalController.new,
     );
 
-final journalEntryForDateProvider =
-    FutureProvider.autoDispose.family<JournalEntry?, String>((
-      ref,
-      entryDate,
-    ) async {
+final journalEntryForDateProvider = FutureProvider.autoDispose
+    .family<JournalEntry?, String>((ref, entryDate) async {
       final entries = await ref
           .watch(journalRepositoryProvider)
           .listByDate(entryDate);
@@ -47,15 +44,27 @@ class JournalController extends AsyncNotifier<List<JournalEntry>> {
     });
   }
 
-  Future<void> updateEntry({
+  Future<JournalEntry> updateEntry({
     required String id,
     required JournalSaveData data,
-  }) {
-    return _mutate(() async {
+  }) async {
+    late JournalEntry saved;
+    await _mutate(() async {
       final repository = ref.read(journalRepositoryProvider);
-      await repository.updateEntry(id: id, data: data);
+      saved = await repository.updateEntry(id: id, data: data);
       return repository.listRecent(limit: _limit);
     });
+    return saved;
+  }
+
+  Future<JournalEntry> reopenEntry(String id) async {
+    late JournalEntry saved;
+    await _mutate(() async {
+      final repository = ref.read(journalRepositoryProvider);
+      saved = await repository.reopen(id);
+      return repository.listRecent(limit: _limit);
+    });
+    return saved;
   }
 
   Future<void> deleteEntry(String id) {

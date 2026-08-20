@@ -21,6 +21,7 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/experience_preview/presentation/experience_preview_page.dart';
 import '../../features/health/presentation/health_page.dart';
 import '../../features/journal/presentation/journal_page.dart';
+import '../../features/journal/presentation/journal_history_page.dart';
 import '../../features/journal/presentation/journal_prompt_management_page.dart';
 import '../../features/plan/presentation/plan_page.dart';
 import '../../features/personal_data/presentation/personal_data_overview_page.dart';
@@ -147,6 +148,13 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
                 name: RouteNames.journal,
                 builder: (context, state) =>
                     JournalPage(targetDate: state.uri.queryParameters['date']),
+                routes: [
+                  GoRoute(
+                    path: 'history',
+                    name: RouteNames.journalHistory,
+                    builder: (context, state) => const JournalHistoryPage(),
+                  ),
+                ],
               ),
             ],
           ),

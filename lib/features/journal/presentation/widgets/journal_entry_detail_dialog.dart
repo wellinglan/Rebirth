@@ -7,12 +7,14 @@ class JournalEntryDetailDialog extends StatelessWidget {
   const JournalEntryDetailDialog({
     required this.entry,
     required this.today,
+    this.onEdit,
     this.onDelete,
     super.key,
   });
 
   final JournalEntry entry;
   final String today;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   @override
@@ -40,6 +42,16 @@ class JournalEntryDetailDialog extends StatelessWidget {
         ),
       ),
       actions: [
+        if (onEdit != null)
+          TextButton.icon(
+            key: const ValueKey('editJournalFromHistoryButton'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              onEdit!();
+            },
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('编辑'),
+          ),
         if (onDelete != null)
           TextButton.icon(
             key: const ValueKey('deleteJournalFromHistoryButton'),
