@@ -74,9 +74,9 @@ Drift or server implementation classes.
 |---|---|---|---|---|
 | Profile | Account-scoped profile and settings | Yes | OCC and shared conflict framework | Unified Sync Center: 113 PASS / 0 FAIL / 0 NOT EXECUTED |
 | Plan | Hierarchical goals, dates, lifecycle, archive/filter | Yes | Explicit shared conflict recovery | Unified matrix accepted; Android date layout regression accepted separately |
-| Today | Daily priorities, nullable 1-10 Mood/Energy with descriptions, stepped durations, and note | Yes | Explicit Today recovery, null/zero preserved | Sprint 17B production matrix OPEN at 0 PASS / 0 FAIL / 48 NOT EXECUTED |
+| Today | Daily priorities, nullable 1-10 Mood/Energy with descriptions, stepped durations, and note | Yes | Explicit Today recovery, null/zero preserved | Sprint 17B production matrix accepted at 48 PASS / 0 FAIL / 3 NOT EXECUTED |
 | Journal | Draft/complete/reopen and prompt snapshots | Yes | Explicit Journal recovery | 39 PASS / 0 FAIL / 0 NOT EXECUTED |
-| Health | Sensitive local health records with water visualization/step input and nullable 1-10 physical-state description | Yes | Explicit shared conflict recovery | Sprint 17B production matrix OPEN at 0 PASS / 0 FAIL / 48 NOT EXECUTED |
+| Health | Sensitive local health records with water visualization/step input and nullable 1-10 physical-state description | Yes | Explicit shared conflict recovery | Sprint 17B production matrix accepted at 48 PASS / 0 FAIL / 3 NOT EXECUTED |
 | Growth | Read-only local projections | No | Not a sync aggregate | 71 PASS / 0 FAIL / 6 safe fault-injection rows NOT EXECUTED |
 | Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
 | Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |

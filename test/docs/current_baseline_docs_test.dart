@@ -352,6 +352,20 @@ void main() {
     final registry = File(manualRegistryPath).readAsStringSync();
 
     expect(baseline, contains('17B Home / Today / Health'));
+    expect(
+      RegExp(
+        r'\| Today \|.*Sprint 17B production matrix accepted at '
+        r'48 PASS / 0 FAIL / 3 NOT EXECUTED \|',
+      ).hasMatch(baseline),
+      isTrue,
+    );
+    expect(
+      RegExp(
+        r'\| Health \|.*Sprint 17B production matrix accepted at '
+        r'48 PASS / 0 FAIL / 3 NOT EXECUTED \|',
+      ).hasMatch(baseline),
+      isTrue,
+    );
     expect(contract, contains('schema 12 to 13'));
     expect(contract, contains('oldScore * 2'));
     expect(contract, contains('API Version 1'));
