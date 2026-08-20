@@ -3,7 +3,8 @@ import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 import 'package:rebirth/core/theme/app_typography.dart';
-import 'package:rebirth/shared/widgets/duration_step_input.dart';
+import 'package:rebirth/shared/widgets/compact_duration_editor.dart';
+import 'package:rebirth/shared/widgets/metric_description_field.dart';
 import 'package:rebirth/shared/widgets/wellbeing_rating_field.dart';
 
 class TodayForm extends StatefulWidget {
@@ -32,14 +33,15 @@ class _TodayFormState extends State<TodayForm> {
   late final TextEditingController _dailyNoteController;
   late final TextEditingController _moodDescriptionController;
   late final TextEditingController _energyDescriptionController;
+  late final TextEditingController _researchDescriptionController;
+  late final TextEditingController _learningDescriptionController;
 
   late List<bool> _priorityCompleted;
   int? _moodScore;
   int? _energyScore;
   int? _researchMinutes;
   int? _learningMinutes;
-  int _researchStep = 15;
-  int _learningStep = 15;
+  int _metricEditorResetToken = 0;
   bool _isSaving = false;
 
   @override
@@ -52,6 +54,8 @@ class _TodayFormState extends State<TodayForm> {
     _dailyNoteController = TextEditingController();
     _moodDescriptionController = TextEditingController();
     _energyDescriptionController = TextEditingController();
+    _researchDescriptionController = TextEditingController();
+    _learningDescriptionController = TextEditingController();
     _syncFromEntry(widget.entry);
   }
 
@@ -71,6 +75,8 @@ class _TodayFormState extends State<TodayForm> {
     _dailyNoteController.dispose();
     _moodDescriptionController.dispose();
     _energyDescriptionController.dispose();
+    _researchDescriptionController.dispose();
+    _learningDescriptionController.dispose();
     super.dispose();
   }
 
@@ -153,7 +159,8 @@ class _TodayFormState extends State<TodayForm> {
                     icon: Icons.sentiment_satisfied_alt_outlined,
                     value: _moodScore,
                     description: _moodDescriptionController.text,
-                    descriptionHint: '一句话记下今天的心情',
+                    descriptionHint: '用一句话描述今天的心情',
+                    resetToken: _metricEditorResetToken,
                     onScoreChanged: (value) =>
                         setState(() => _moodScore = value),
                     onDescriptionChanged: (value) {
@@ -168,7 +175,8 @@ class _TodayFormState extends State<TodayForm> {
                     icon: Icons.bolt_outlined,
                     value: _energyScore,
                     description: _energyDescriptionController.text,
-                    descriptionHint: '一句话记下精力状态',
+                    descriptionHint: '用一句话描述今天的精力',
+                    resetToken: _metricEditorResetToken,
                     onScoreChanged: (value) =>
                         setState(() => _energyScore = value),
                     onDescriptionChanged: (value) {
@@ -179,47 +187,45 @@ class _TodayFormState extends State<TodayForm> {
                   const SizedBox(height: 28),
                   _SectionTitle(title: '时间投入'),
                   const SizedBox(height: 10),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final fieldWidth = constraints.maxWidth < 480
-                          ? constraints.maxWidth
-                          : (constraints.maxWidth - 12) / 2;
-                      return Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          SizedBox(
-                            width: fieldWidth,
-                            child: DurationStepInput(
-                              key: const ValueKey('researchMinutesField'),
-                              label: '科研时间',
-                              icon: Icons.science_outlined,
-                              value: _researchMinutes,
-                              selectedStep: _researchStep,
-                              onStepChanged: (value) =>
-                                  setState(() => _researchStep = value),
-                              onChanged: (value) {
-                                setState(() => _researchMinutes = value);
-                              },
-                            ),
-                          ),
-                          SizedBox(
-                            width: fieldWidth,
-                            child: DurationStepInput(
-                              key: const ValueKey('learningMinutesField'),
-                              label: '学习时间',
-                              icon: Icons.menu_book_outlined,
-                              value: _learningMinutes,
-                              selectedStep: _learningStep,
-                              onStepChanged: (value) =>
-                                  setState(() => _learningStep = value),
-                              onChanged: (value) {
-                                setState(() => _learningMinutes = value);
-                              },
-                            ),
-                          ),
-                        ],
-                      );
+                  CompactDurationEditor(
+                    key: const ValueKey('researchMinutesField'),
+                    label: '科研时间',
+                    icon: Icons.science_outlined,
+                    value: _researchMinutes,
+                    resetToken: _metricEditorResetToken,
+                    onChanged: (value) {
+                      setState(() => _researchMinutes = value);
+                    },
+                  ),
+                  MetricDescriptionField(
+                    label: '科研时间',
+                    value: _researchDescriptionController.text,
+                    hintText: '记录今天的科研内容或感受',
+                    resetToken: _metricEditorResetToken,
+                    onChanged: (value) {
+                      _researchDescriptionController.text = value;
+                      setState(() {});
+                    },
+                  ),
+                  const Divider(height: 24),
+                  CompactDurationEditor(
+                    key: const ValueKey('learningMinutesField'),
+                    label: '学习时间',
+                    icon: Icons.menu_book_outlined,
+                    value: _learningMinutes,
+                    resetToken: _metricEditorResetToken,
+                    onChanged: (value) {
+                      setState(() => _learningMinutes = value);
+                    },
+                  ),
+                  MetricDescriptionField(
+                    label: '学习时间',
+                    value: _learningDescriptionController.text,
+                    hintText: '记录今天的学习内容或收获',
+                    resetToken: _metricEditorResetToken,
+                    onChanged: (value) {
+                      _learningDescriptionController.text = value;
+                      setState(() {});
                     },
                   ),
                   const SizedBox(height: 28),
@@ -327,7 +333,9 @@ class _TodayFormState extends State<TodayForm> {
       energyScore: _energyScore,
       energyDescription: _nullableText(_energyDescriptionController.text),
       researchMinutes: _researchMinutes,
+      researchDescription: _nullableText(_researchDescriptionController.text),
       learningMinutes: _learningMinutes,
+      learningDescription: _nullableText(_learningDescriptionController.text),
       dailyNote: _nullableText(_dailyNoteController.text),
       status: widget.entry.status,
     );
@@ -335,6 +343,9 @@ class _TodayFormState extends State<TodayForm> {
     setState(() => _isSaving = true);
     try {
       await widget.onSave(data);
+      if (mounted) {
+        setState(() => _metricEditorResetToken++);
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -360,8 +371,11 @@ class _TodayFormState extends State<TodayForm> {
     _energyScore = entry.energyScore;
     _energyDescriptionController.text = entry.energyDescription ?? '';
     _researchMinutes = entry.researchMinutes;
+    _researchDescriptionController.text = entry.researchDescription ?? '';
     _learningMinutes = entry.learningMinutes;
+    _learningDescriptionController.text = entry.learningDescription ?? '';
     _dailyNoteController.text = entry.dailyNote ?? '';
+    _metricEditorResetToken++;
   }
 
   bool get _hasAnyInput {
@@ -373,7 +387,9 @@ class _TodayFormState extends State<TodayForm> {
         _energyScore != null ||
         _energyDescriptionController.text.trim().isNotEmpty ||
         _researchMinutes != null ||
+        _researchDescriptionController.text.trim().isNotEmpty ||
         _learningMinutes != null ||
+        _learningDescriptionController.text.trim().isNotEmpty ||
         _dailyNoteController.text.trim().isNotEmpty;
   }
 

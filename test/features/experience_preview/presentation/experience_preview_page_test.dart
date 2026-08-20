@@ -72,6 +72,8 @@ void main() {
     expect(find.byKey(const ValueKey('精力Icon')), findsOneWidget);
 
     tester.widget<Slider>(find.byKey(const ValueKey('心情Slider'))).onChanged!(7);
+    await tester.tap(find.byKey(const ValueKey('心情DescriptionAdd')));
+    await tester.pump();
     await tester.enterText(
       find.byKey(const ValueKey('心情Description')),
       '今天比较轻松',
@@ -90,6 +92,8 @@ void main() {
     await _pumpPage(tester, service: fixedNow, width: 720);
     await _selectView(tester, '今日');
     tester.widget<Slider>(find.byKey(const ValueKey('心情Slider'))).onChanged!(6);
+    await tester.tap(find.byKey(const ValueKey('心情DescriptionAdd')));
+    await tester.pump();
     await tester.enterText(
       find.byKey(const ValueKey('心情Description')),
       '需要休息一下',
@@ -97,9 +101,7 @@ void main() {
     await tester.pump();
 
     tester
-        .widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.restart_alt),
-        )
+        .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.restart_alt))
         .onPressed!();
     await tester.pump();
 

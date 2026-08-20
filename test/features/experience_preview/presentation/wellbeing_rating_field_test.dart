@@ -87,6 +87,8 @@ void main() {
       onDescriptionChanged: descriptions.add,
     );
 
+    await tester.tap(find.byKey(const ValueKey('心情DescriptionAdd')));
+    await tester.pump();
     await tester.enterText(
       find.byKey(const ValueKey('心情Description')),
       '有一点紧张',

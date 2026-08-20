@@ -192,10 +192,14 @@ void main() {
     final noteField = find.byKey(const ValueKey('dailyNoteField'));
     await tester.ensureVisible(noteField);
     await tester.enterText(noteField, '失败后不能丢失');
+    await _enterDuration(tester, '科研时间', hours: '0', minutes: '45');
+    expect(repository.saveAttempts, 0);
     await _tapSave(tester);
 
     expect(find.text('保存失败，请重试'), findsOneWidget);
     expect(_fieldText(tester, 'dailyNoteField'), '失败后不能丢失');
+    expect(_fieldText(tester, '科研时间MinutesField'), '45');
+    expect(_actionButton(tester, '科研时间Undo').onPressed, isNotNull);
     expect(repository.saveAttempts, 1);
     expect(
       tester
@@ -207,7 +211,9 @@ void main() {
     await _tapSave(tester);
     expect(repository.saveAttempts, 2);
     expect(repository.lastSaved?.dailyNote, '失败后不能丢失');
+    expect(repository.lastSaved?.researchMinutes, 45);
     expect(find.text('今日记录已保存'), findsOneWidget);
+    expect(_actionButton(tester, '科研时间Undo').onPressed, isNull);
   });
 
   testWidgets('research minutes keeps empty and zero distinct', (tester) async {
@@ -217,58 +223,63 @@ void main() {
 
     expect(find.text('未记录'), findsWidgets);
 
-    await _tapIncrement(tester, '科研时间Increase');
-    await _tapIncrement(tester, '科研时间Decrease');
+    await _enterDuration(tester, '科研时间', hours: '0', minutes: '0');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, 0);
     expect(repository.lastSaved?.moodScore, isNull);
     expect(repository.lastSaved?.energyScore, isNull);
     expect(repository.lastSaved?.health, isNull);
 
-    await _tapIncrement(tester, '科研时间Clear');
+    await _tapControl(tester, '科研时间Clear');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, isNull);
   });
 
-  testWidgets('duration steppers save total minutes', (tester) async {
-    final repository = _FakeTodayRepository(entry: _sampleEntry());
-    await _pumpTodayPage(tester, repository);
-    await tester.pumpAndSettle();
-
-    for (var index = 0; index < 6; index++) {
-      await _tapIncrement(tester, '科研时间Increase');
-    }
-    await _tapIncrement(tester, '学习时间Increase');
-    await _tapIncrement(tester, '学习时间Decrease');
-    await _tapSave(tester);
-
-    expect(repository.lastSaved?.researchMinutes, 90);
-    expect(repository.lastSaved?.learningMinutes, 0);
-    expect(repository.lastSaved?.health, isNull);
-  });
-
-  testWidgets('rapid duration increments are not lost', (tester) async {
-    final repository = _FakeTodayRepository(entry: _sampleEntry());
-    await _pumpTodayPage(tester, repository);
-    await tester.pumpAndSettle();
-
-    await _tapIncrement(tester, '科研时间Increase');
-    await _tapIncrement(tester, '科研时间Increase');
-    await _tapSave(tester);
-    expect(repository.lastSaved?.researchMinutes, 30);
-  });
-
-  testWidgets('duration step selector changes future increments only', (
+  testWidgets('duration editors save total minutes and narratives', (
     tester,
   ) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await _tapIncrement(tester, '科研时间StepSelector');
-    await tester.tap(find.text('30 分钟').last);
+    await _enterDuration(tester, '科研时间', hours: '1', minutes: '30');
+    await _enterDuration(tester, '学习时间', hours: '0', minutes: '0');
+    await _tapControl(tester, '科研时间DescriptionAdd');
+    await tester.enterText(
+      find.byKey(const ValueKey('科研时间Description')),
+      '完成实验复核',
+    );
+    await _tapSave(tester);
+
+    expect(repository.lastSaved?.researchMinutes, 90);
+    expect(repository.lastSaved?.researchDescription, '完成实验复核');
+    expect(repository.lastSaved?.learningMinutes, 0);
+    expect(repository.lastSaved?.health, isNull);
+  });
+
+  testWidgets('successive custom duration additions are not lost', (
+    tester,
+  ) async {
+    final repository = _FakeTodayRepository(entry: _sampleEntry());
+    await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();
-    await _tapIncrement(tester, '科研时间Increase');
+
+    await _addDuration(tester, '科研时间', minutes: '15');
+    await _addDuration(tester, '科研时间', minutes: '15');
+    await _tapSave(tester);
+    expect(repository.lastSaved?.researchMinutes, 30);
+  });
+
+  testWidgets('duration undo restores the previous unsaved value', (
+    tester,
+  ) async {
+    final repository = _FakeTodayRepository(entry: _sampleEntry());
+    await _pumpTodayPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await _enterDuration(tester, '科研时间', hours: '0', minutes: '30');
+    await _addDuration(tester, '科研时间', minutes: '30');
+    await _tapControl(tester, '科研时间Undo');
     await _tapSave(tester);
     expect(repository.lastSaved?.researchMinutes, 30);
   });
@@ -325,6 +336,9 @@ void main() {
       'lib/features/today/presentation/widgets/today_form.dart',
       'lib/shared/widgets/duration_input_field.dart',
       'lib/shared/widgets/duration_step_input.dart',
+      'lib/shared/widgets/compact_duration_editor.dart',
+      'lib/shared/widgets/compact_quantity_editor.dart',
+      'lib/shared/widgets/metric_description_field.dart',
       'lib/shared/widgets/wellbeing_rating_field.dart',
     ];
 
@@ -373,11 +387,57 @@ String _fieldText(WidgetTester tester, String key) {
       .text;
 }
 
-Future<void> _tapIncrement(WidgetTester tester, String key) async {
+IconButton _actionButton(WidgetTester tester, String key) {
+  return tester.widget<IconButton>(
+    find.descendant(
+      of: find.byKey(ValueKey(key)),
+      matching: find.byType(IconButton),
+    ),
+  );
+}
+
+Future<void> _tapControl(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
   await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _enterDuration(
+  WidgetTester tester,
+  String label, {
+  required String hours,
+  required String minutes,
+}) async {
+  final hoursField = find.byKey(ValueKey('${label}HoursField'));
+  await Scrollable.ensureVisible(tester.element(hoursField), alignment: 0.5);
+  await tester.pumpAndSettle();
+  await tester.enterText(hoursField, hours);
+  await tester.enterText(find.byKey(ValueKey('${label}MinutesField')), minutes);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _addDuration(
+  WidgetTester tester,
+  String label, {
+  String hours = '',
+  String minutes = '',
+}) async {
+  await _tapControl(tester, '${label}Add');
+  if (hours.isNotEmpty) {
+    await tester.enterText(
+      find.byKey(ValueKey('${label}AddHoursField')),
+      hours,
+    );
+  }
+  if (minutes.isNotEmpty) {
+    await tester.enterText(
+      find.byKey(ValueKey('${label}AddMinutesField')),
+      minutes,
+    );
+  }
+  await tester.tap(find.byKey(ValueKey('${label}ConfirmAdd')));
   await tester.pumpAndSettle();
 }
 
@@ -469,11 +529,16 @@ final class _FakeTodayRepository implements TodayRepository {
         : TodayHealthSummary(
             id: entry.health?.id ?? 'health-id',
             sleepDurationMinutes: data.health!.sleepDurationMinutes,
+            sleepDescription: data.health!.sleepDescription,
             weightKg: data.health!.weightKg,
+            weightDescription: data.health!.weightDescription,
             waterIntakeMl: data.health!.waterIntakeMl,
+            waterDescription: data.health!.waterDescription,
             exerciseType: data.health!.exerciseType,
             exerciseDurationMinutes: data.health!.exerciseDurationMinutes,
+            exerciseDescription: data.health!.exerciseDescription,
             physicalStateScore: data.health!.physicalStateScore,
+            physicalStateDescription: data.health!.physicalStateDescription,
             note: data.health!.note,
           );
     entry = TodayEntry(
@@ -483,9 +548,13 @@ final class _FakeTodayRepository implements TodayRepository {
       timezoneOffsetMinutes: entry.timezoneOffsetMinutes,
       priorities: data.priorities,
       moodScore: data.moodScore,
+      moodDescription: data.moodDescription,
       energyScore: data.energyScore,
+      energyDescription: data.energyDescription,
       researchMinutes: data.researchMinutes,
+      researchDescription: data.researchDescription,
       learningMinutes: data.learningMinutes,
+      learningDescription: data.learningDescription,
       dailyNote: data.dailyNote,
       status: data.status,
       createdAt: entry.createdAt,

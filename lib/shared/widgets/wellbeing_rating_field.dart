@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/theme/app_layout.dart';
 import '../../core/theme/app_motion.dart';
+import 'metric_description_field.dart';
 
 abstract final class WellbeingRatingPalette {
   static const low = Color(0xFFE4A0A0);
@@ -57,6 +58,7 @@ class WellbeingRatingField extends StatefulWidget {
     super.key,
     this.minimumValue = 1,
     this.maximumValue = 10,
+    this.resetToken,
   }) : assert(minimumValue < maximumValue),
        assert(value == null || value >= minimumValue),
        assert(value == null || value <= maximumValue);
@@ -70,6 +72,7 @@ class WellbeingRatingField extends StatefulWidget {
   final int maximumValue;
   final ValueChanged<int?> onScoreChanged;
   final ValueChanged<String> onDescriptionChanged;
+  final Object? resetToken;
 
   @override
   State<WellbeingRatingField> createState() => _WellbeingRatingFieldState();
@@ -77,8 +80,6 @@ class WellbeingRatingField extends StatefulWidget {
 
 class _WellbeingRatingFieldState extends State<WellbeingRatingField> {
   late int? _score = widget.value;
-  late final TextEditingController _descriptionController =
-      TextEditingController(text: widget.description);
   late final FocusNode _sliderFocusNode = FocusNode(
     debugLabel: '${widget.label}评分',
     onKeyEvent: _handleSliderKey,
@@ -90,18 +91,10 @@ class _WellbeingRatingFieldState extends State<WellbeingRatingField> {
     if (widget.value != oldWidget.value && widget.value != _score) {
       _score = widget.value;
     }
-    if (widget.description != oldWidget.description &&
-        widget.description != _descriptionController.text) {
-      _descriptionController.value = TextEditingValue(
-        text: widget.description,
-        selection: TextSelection.collapsed(offset: widget.description.length),
-      );
-    }
   }
 
   @override
   void dispose() {
-    _descriptionController.dispose();
     _sliderFocusNode.dispose();
     super.dispose();
   }
@@ -122,162 +115,147 @@ class _WellbeingRatingFieldState extends State<WellbeingRatingField> {
       key: ValueKey('${widget.label}Semantics'),
       container: true,
       label: '${widget.label}，$scoreText',
-      child: DecoratedBox(
+      child: Padding(
         key: ValueKey('${widget.label}RatingSurface'),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ExcludeSemantics(
-                        child: Icon(
-                          widget.icon,
-                          key: ValueKey('${widget.label}Icon'),
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        widget.label,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        scoreText,
-                        key: ValueKey('${widget.label}ScoreText'),
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: score == null
-                                  ? Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant
-                                  : Theme.of(context).colorScheme.onSurface,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      if (score != null) ...[
-                        const SizedBox(width: AppSpacing.xs),
-                        IconButton(
-                          key: ValueKey('${widget.label}Clear'),
-                          tooltip: '清空${widget.label}评分',
-                          onPressed: () => _emitScore(null),
-                          icon: const Icon(Icons.clear),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TweenAnimationBuilder<Color?>(
-                key: ValueKey('${widget.label}ColorAnimation'),
-                tween: ColorTween(end: targetColor),
-                duration: motionDuration,
-                builder: (context, animatedColor, _) {
-                  final activeColor = animatedColor ?? targetColor;
-                  return Semantics(
-                    key: ValueKey('${widget.label}SliderSemantics'),
-                    label: '调整${widget.label}评分',
-                    value: score == null
-                        ? '未记录'
-                        : '$score 分，共 ${widget.maximumValue} 分',
-                    increasedValue: _semanticAdjustedValue(1),
-                    decreasedValue: _semanticAdjustedValue(-1),
-                    onIncrease: () => _adjustScore(1),
-                    onDecrease: score == null ? null : () => _adjustScore(-1),
-                    child: ExcludeSemantics(
-                      child: SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 12,
-                          trackShape: _WellbeingTrackShape(
-                            activeColor: activeColor,
-                            showActive: score != null,
-                          ),
-                          thumbColor: Colors.white,
-                          thumbShape: score == null
-                              ? SliderComponentShape.noThumb
-                              : _WellbeingThumbShape(borderColor: activeColor),
-                          overlayColor: activeColor.withValues(alpha: 0.16),
-                          tickMarkShape: const RoundSliderTickMarkShape(
-                            tickMarkRadius: 2,
-                          ),
-                          activeTickMarkColor: Colors.white.withValues(
-                            alpha: 0.92,
-                          ),
-                          inactiveTickMarkColor: Theme.of(
-                            context,
-                          ).colorScheme.outline,
-                        ),
-                        child: Slider(
-                          key: ValueKey('${widget.label}Slider'),
-                          focusNode: _sliderFocusNode,
-                          value: (score ?? widget.minimumValue).toDouble(),
-                          min: widget.minimumValue.toDouble(),
-                          max: widget.maximumValue.toDouble(),
-                          divisions: widget.maximumValue - widget.minimumValue,
-                          label: score?.toString(),
-                          onChanged: (raw) => _emitScore(raw.round()),
-                        ),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ExcludeSemantics(
+                      child: Icon(
+                        widget.icon,
+                        key: ValueKey('${widget.label}Icon'),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                  );
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('${widget.minimumValue}'),
-                    Text('${widget.maximumValue}'),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      widget.label,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ],
                 ),
-              ),
-              if (score == null) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: OutlinedButton.icon(
-                    key: ValueKey('${widget.label}Start'),
-                    onPressed: _startFromMiddle,
-                    icon: const Icon(Icons.touch_app_outlined),
-                    label: const Text('开始记录'),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      scoreText,
+                      key: ValueKey('${widget.label}ScoreText'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: score == null
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (score != null) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      IconButton(
+                        key: ValueKey('${widget.label}Clear'),
+                        tooltip: '清空${widget.label}评分',
+                        onPressed: () => _emitScore(null),
+                        icon: const Icon(Icons.clear),
+                      ),
+                    ],
+                  ],
                 ),
               ],
-              const SizedBox(height: AppSpacing.sm),
-              TextField(
-                key: ValueKey('${widget.label}Description'),
-                controller: _descriptionController,
-                maxLength: 80,
-                maxLines: 1,
-                textInputAction: TextInputAction.done,
-                decoration: InputDecoration(
-                  labelText: '${widget.label}描述（可选）',
-                  hintText: widget.descriptionHint,
-                  counterText: '',
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TweenAnimationBuilder<Color?>(
+              key: ValueKey('${widget.label}ColorAnimation'),
+              tween: ColorTween(end: targetColor),
+              duration: motionDuration,
+              builder: (context, animatedColor, _) {
+                final activeColor = animatedColor ?? targetColor;
+                return Semantics(
+                  key: ValueKey('${widget.label}SliderSemantics'),
+                  label: '调整${widget.label}评分',
+                  value: score == null
+                      ? '未记录'
+                      : '$score 分，共 ${widget.maximumValue} 分',
+                  increasedValue: _semanticAdjustedValue(1),
+                  decreasedValue: _semanticAdjustedValue(-1),
+                  onIncrease: () => _adjustScore(1),
+                  onDecrease: score == null ? null : () => _adjustScore(-1),
+                  child: ExcludeSemantics(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 12,
+                        trackShape: _WellbeingTrackShape(
+                          activeColor: activeColor,
+                          showActive: score != null,
+                        ),
+                        thumbColor: Colors.white,
+                        thumbShape: score == null
+                            ? SliderComponentShape.noThumb
+                            : _WellbeingThumbShape(borderColor: activeColor),
+                        overlayColor: activeColor.withValues(alpha: 0.16),
+                        tickMarkShape: const RoundSliderTickMarkShape(
+                          tickMarkRadius: 2,
+                        ),
+                        activeTickMarkColor: Colors.white.withValues(
+                          alpha: 0.92,
+                        ),
+                        inactiveTickMarkColor: Theme.of(
+                          context,
+                        ).colorScheme.outline,
+                      ),
+                      child: Slider(
+                        key: ValueKey('${widget.label}Slider'),
+                        focusNode: _sliderFocusNode,
+                        value: (score ?? widget.minimumValue).toDouble(),
+                        min: widget.minimumValue.toDouble(),
+                        max: widget.maximumValue.toDouble(),
+                        divisions: widget.maximumValue - widget.minimumValue,
+                        label: score?.toString(),
+                        onChanged: (raw) => _emitScore(raw.round()),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${widget.minimumValue}'),
+                  Text('${widget.maximumValue}'),
+                ],
+              ),
+            ),
+            if (score == null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  key: ValueKey('${widget.label}Start'),
+                  onPressed: _startFromMiddle,
+                  icon: const Icon(Icons.touch_app_outlined),
+                  label: const Text('开始记录'),
                 ),
-                onChanged: widget.onDescriptionChanged,
               ),
             ],
-          ),
+            const SizedBox(height: AppSpacing.sm),
+            MetricDescriptionField(
+              label: widget.label,
+              value: widget.description,
+              hintText: widget.descriptionHint,
+              resetToken: widget.resetToken,
+              onChanged: widget.onDescriptionChanged,
+            ),
+          ],
         ),
       ),
     );

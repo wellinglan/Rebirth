@@ -59,9 +59,8 @@ void main() {
     await _pumpHealthPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await _tapControl(tester, '睡眠时长Increase');
-    await _tapControl(tester, '睡眠时长Decrease');
-    await tester.enterText(find.byKey(const ValueKey('healthWaterField')), '0');
+    await _enterDuration(tester, '睡眠时长', hours: '0', minutes: '0');
+    await _enterField(tester, '饮水ValueField', '0');
     await _tapSave(tester);
 
     expect(repository.lastSaved?.sleepDurationMinutes, 0);
@@ -80,10 +79,7 @@ void main() {
     await _pumpHealthPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const ValueKey('healthWaterField')),
-      '-1',
-    );
+    await tester.enterText(find.byKey(const ValueKey('饮水ValueField')), '-1');
     await _tapSave(tester);
 
     expect(find.text('请输入非负整数'), findsOneWidget);
@@ -130,16 +126,66 @@ void main() {
       find.byKey(const ValueKey('healthExerciseTypeField')),
       '骑行',
     );
+    await _enterField(tester, '饮水ValueField', '500');
+    expect(repository.saveAttempts, 0);
     await _tapSave(tester);
 
     expect(find.text('保存失败，请重试'), findsOneWidget);
     expect(_fieldText(tester, 'healthExerciseTypeField'), '骑行');
+    expect(_fieldText(tester, '饮水ValueField'), '500');
+    expect(_actionButton(tester, '饮水Undo').onPressed, isNotNull);
     expect(find.byKey(const ValueKey('healthErrorState')), findsNothing);
 
     await _tapSave(tester);
     expect(repository.saveAttempts, 2);
     expect(repository.lastSaved?.exerciseType, '骑行');
+    expect(repository.lastSaved?.waterIntakeMl, 500);
     expect(find.text('健康记录已保存'), findsOneWidget);
+    expect(_actionButton(tester, '饮水Undo').onPressed, isNull);
+  });
+
+  testWidgets('compact health metrics and narratives save together', (
+    tester,
+  ) async {
+    final repository = _FakeHealthRepository(history: const []);
+    await _pumpHealthPage(tester, repository);
+    await tester.pumpAndSettle();
+
+    await _enterDuration(tester, '睡眠时长', hours: '7', minutes: '30');
+    await _enterDescription(tester, '睡眠时长', '夜里醒来一次');
+    await _enterField(tester, '体重ValueField', '68.5');
+    await _enterDescription(tester, '体重', '晨起测量');
+    await _enterField(tester, '饮水ValueField', '750');
+    expect(_fieldText(tester, '饮水ValueField'), '750');
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('waterCupExactValue')))
+          .data,
+      '750 ml',
+    );
+    await _addQuantity(tester, '饮水', '250');
+    expect(_fieldText(tester, '饮水ValueField'), '1000');
+    await _tapControl(tester, '饮水Clear');
+    await _tapControl(tester, '饮水Undo');
+    expect(_fieldText(tester, '饮水ValueField'), '1000');
+    await _enterDescription(tester, '饮水', '分次补水');
+    await _enterDuration(tester, '运动时长', hours: '0', minutes: '30');
+    await _enterDescription(tester, '运动时长', '轻松慢跑');
+    await _enterDescription(tester, '身体状态', '恢复良好');
+
+    expect(repository.saveAttempts, 0);
+    await _tapSave(tester);
+
+    final saved = repository.lastSaved!;
+    expect(saved.sleepDurationMinutes, 450);
+    expect(saved.sleepDescription, '夜里醒来一次');
+    expect(saved.weightKg, 68.5);
+    expect(saved.weightDescription, '晨起测量');
+    expect(saved.waterIntakeMl, 1000);
+    expect(saved.waterDescription, '分次补水');
+    expect(saved.exerciseDurationMinutes, 30);
+    expect(saved.exerciseDescription, '轻松慢跑');
+    expect(saved.physicalStateDescription, '恢复良好');
   });
 
   testWidgets('history card opens a read-only detail dialog', (tester) async {
@@ -254,6 +300,55 @@ Future<void> _tapControl(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _enterField(WidgetTester tester, String key, String value) async {
+  final finder = find.byKey(ValueKey(key));
+  await _ensureVisible(tester, finder);
+  await tester.enterText(finder, value);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _enterDuration(
+  WidgetTester tester,
+  String label, {
+  required String hours,
+  required String minutes,
+}) async {
+  await _enterField(tester, '${label}HoursField', hours);
+  await _enterField(tester, '${label}MinutesField', minutes);
+}
+
+Future<void> _enterDescription(
+  WidgetTester tester,
+  String label,
+  String value,
+) async {
+  final add = find.byKey(ValueKey('${label}DescriptionAdd'));
+  if (add.evaluate().isNotEmpty) {
+    await _tapControl(tester, '${label}DescriptionAdd');
+  }
+  await _enterField(tester, '${label}Description', value);
+}
+
+Future<void> _addQuantity(
+  WidgetTester tester,
+  String label,
+  String value,
+) async {
+  await _tapControl(tester, '${label}Add');
+  await tester.enterText(find.byKey(ValueKey('${label}AddValueField')), value);
+  await tester.tap(find.byKey(ValueKey('${label}ConfirmAdd')));
+  await tester.pumpAndSettle();
+}
+
+IconButton _actionButton(WidgetTester tester, String key) {
+  return tester.widget<IconButton>(
+    find.descendant(
+      of: find.byKey(ValueKey(key)),
+      matching: find.byType(IconButton),
+    ),
+  );
+}
+
 String _fieldText(WidgetTester tester, String key) {
   return tester
       .widget<TextFormField>(find.byKey(ValueKey(key)))
@@ -313,9 +408,13 @@ final class _FakeHealthRepository implements HealthRepository {
     today = _entry(
       date: data.recordDate,
       sleep: data.sleepDurationMinutes,
+      sleepDescription: data.sleepDescription,
       exercise: data.exerciseDurationMinutes,
+      exerciseDescription: data.exerciseDescription,
       water: data.waterIntakeMl,
+      waterDescription: data.waterDescription,
       weight: data.weightKg,
+      weightDescription: data.weightDescription,
       exerciseType: data.exerciseType,
       physicalState: data.physicalStateScore,
       note: data.note,
