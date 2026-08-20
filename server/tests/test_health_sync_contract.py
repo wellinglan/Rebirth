@@ -29,6 +29,22 @@ def _payload(
     }
 
 
+def _current_payload(
+    *,
+    score_scale: int = 10,
+    physical_state_score: int = 9,
+) -> dict[str, object]:
+    payload = _payload()
+    payload.update(
+        {
+            "physical_state_score": physical_state_score,
+            "physical_state_score_scale": score_scale,
+            "physical_state_description": "Recovered after exercise",
+        }
+    )
+    return payload
+
+
 def _item(
     *,
     record_id: str = HEALTH_ID,
@@ -87,6 +103,51 @@ def test_health_create_retry_and_pull_are_typed_and_idempotent(
     assert pulled.json()["items"][0]["payload"] == _payload()
 
 
+def test_health_current_physical_state_payload_round_trips_without_field_loss(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    payload = _current_payload()
+
+    pushed = _push(
+        client,
+        auth_headers,
+        registered_device,
+        _item(payload=payload),
+    )
+    pulled = client.post(
+        "/sync/pull",
+        headers=auth_headers,
+        json={
+            "device_id": registered_device,
+            "since_server_version": 0,
+            "tables": ["health_records"],
+        },
+    )
+
+    assert pushed.status_code == 200
+    assert pulled.status_code == 200
+    assert pulled.json()["items"][0]["payload"] == payload
+
+
+def test_health_current_scale_five_payload_remains_supported(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    payload = _current_payload(score_scale=5, physical_state_score=5)
+
+    response = _push(
+        client,
+        auth_headers,
+        registered_device,
+        _item(payload=payload),
+    )
+
+    assert response.status_code == 200
+
+
 def test_health_rejects_invalid_payload(
     client: TestClient,
     auth_headers: dict[str, str],
@@ -112,6 +173,30 @@ def test_health_rejects_invalid_payload(
 
     assert score_response.status_code == 422
     assert extra_response.status_code == 422
+
+
+def test_health_rejects_partial_or_inconsistent_physical_state_extensions(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    partial = _payload()
+    partial["physical_state_score_scale"] = 10
+    mismatched = _current_payload(score_scale=5, physical_state_score=6)
+    overlong = _current_payload()
+    overlong["physical_state_description"] = "x" * 81
+
+    responses = [
+        _push(
+            client,
+            auth_headers,
+            registered_device,
+            _item(payload=payload),
+        )
+        for payload in (partial, mismatched, overlong)
+    ]
+
+    assert all(response.status_code == 422 for response in responses)
 
 
 def test_health_tombstone_requires_an_empty_payload(
