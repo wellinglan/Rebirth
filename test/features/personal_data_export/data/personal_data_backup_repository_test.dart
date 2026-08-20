@@ -83,7 +83,9 @@ void main() {
 
       final today = _records(data, 'today').single;
       expect(today['research_minutes'], 0);
+      expect(today['research_description'], '科研描述');
       expect(today['learning_minutes'], isNull);
+      expect(today['learning_description'], '仅有学习描述');
       expect(today['daily_note'], '');
       expect((today['priorities'] as List).first['goal_id'], _id(12));
 
@@ -104,7 +106,11 @@ void main() {
 
       final health = _records(data, 'health').single;
       expect(health['sleep_duration_minutes'], 450);
+      expect(health['sleep_description'], '睡眠描述');
+      expect(health['weight_description'], '仅有体重描述');
+      expect(health['water_description'], '饮水描述');
       expect(health['exercise_duration_minutes'], 0);
+      expect(health['exercise_description'], '运动描述');
       expect(health['note'], '敏感健康备注');
 
       final report = _records(data, 'ai_reports').single;
@@ -127,6 +133,8 @@ void main() {
 
       for (final forbidden in const [
         '账号 B 的秘密目标',
+        '账号 B 的科研描述',
+        '账号 B 的睡眠描述',
         'secret-input-hash',
         'secret-input-snapshot',
         'secret-provider',
@@ -328,7 +336,9 @@ Future<void> _seed(AppDatabase database, String userA) async {
           priority1Completed: const Value(true),
           priority1GoalId: Value(_id(12)),
           researchMinutes: const Value(0),
+          researchDescription: const Value('科研描述'),
           learningMinutes: const Value(null),
+          learningDescription: const Value('仅有学习描述'),
           dailyNote: const Value(''),
           recordStatus: const Value('completed'),
           createdAt: const Value(_now),
@@ -336,6 +346,19 @@ Future<void> _seed(AppDatabase database, String userA) async {
           syncStatus: const Value('synced'),
           serverVersion: const Value(7),
           lastSyncedAt: const Value(_now),
+        ),
+      );
+  await database
+      .into(database.todayRecords)
+      .insert(
+        TodayRecordsCompanion.insert(
+          id: Value(_id(22)),
+          userId: _id(2),
+          recordDate: '2026-08-05',
+          timezoneOffsetMinutes: 480,
+          researchDescription: const Value('账号 B 的科研描述'),
+          createdAt: const Value(_now),
+          updatedAt: const Value(_now),
         ),
       );
 
@@ -412,7 +435,11 @@ Future<void> _seed(AppDatabase database, String userA) async {
           recordDate: '2026-08-05',
           timezoneOffsetMinutes: 480,
           sleepDurationMinutes: const Value(450),
+          sleepDescription: const Value('睡眠描述'),
+          weightDescription: const Value('仅有体重描述'),
+          waterDescription: const Value('饮水描述'),
           exerciseDurationMinutes: const Value(0),
+          exerciseDescription: const Value('运动描述'),
           physicalStateScore: const Value(4),
           note: const Value('敏感健康备注'),
           dataSource: const Value('health_connect'),
@@ -421,6 +448,19 @@ Future<void> _seed(AppDatabase database, String userA) async {
           updatedAt: const Value(_now),
           syncStatus: const Value('synced'),
           serverVersion: const Value(6),
+        ),
+      );
+  await database
+      .into(database.healthRecords)
+      .insert(
+        HealthRecordsCompanion.insert(
+          id: Value(_id(52)),
+          userId: _id(2),
+          recordDate: '2026-08-05',
+          timezoneOffsetMinutes: 480,
+          sleepDescription: const Value('账号 B 的睡眠描述'),
+          createdAt: const Value(_now),
+          updatedAt: const Value(_now),
         ),
       );
 

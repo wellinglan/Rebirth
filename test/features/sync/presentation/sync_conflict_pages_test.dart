@@ -156,6 +156,10 @@ void main() {
     expect(find.text('日期：2026-07-28'), findsNWidgets(2));
     expect(find.text('心情：4'), findsOneWidget);
     expect(find.text('心情：5'), findsOneWidget);
+    expect(find.text('科研描述：Local research'), findsOneWidget);
+    expect(find.text('科研描述：Remote research'), findsOneWidget);
+    expect(find.text('学习描述：Local learning'), findsOneWidget);
+    expect(find.text('学习描述：Remote learning'), findsOneWidget);
     expect(find.byKey(const ValueKey('adoptRemoteButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('keepLocalButton')), findsOneWidget);
     expect(
@@ -958,7 +962,9 @@ TodaySyncPayload _todayPayload({required int mood, required String note}) {
     moodScore: mood,
     energyScore: 3,
     researchMinutes: 90,
+    researchDescription: mood == 4 ? 'Local research' : 'Remote research',
     learningMinutes: 0,
+    learningDescription: mood == 4 ? 'Local learning' : 'Remote learning',
     dailyNote: note,
     status: TodayRecordStatus.draft,
     createdAt: 100,

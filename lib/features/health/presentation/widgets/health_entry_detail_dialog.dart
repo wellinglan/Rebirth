@@ -18,17 +18,21 @@ class HealthEntryDetailDialog extends StatelessWidget {
     final rows = <({String label, String value})>[
       (label: '日期', value: entry.recordDate),
       (label: '睡眠', value: formatHealthDuration(entry.sleepDurationMinutes)),
+      (label: '睡眠描述', value: entry.sleepDescription ?? '未填写'),
       (label: '体重', value: formatHealthWeight(entry.weightKg)),
+      (label: '体重描述', value: entry.weightDescription ?? '未填写'),
       (
         label: '饮水',
         value: entry.waterIntakeMl == null
             ? '未填写'
             : '${entry.waterIntakeMl} ml',
       ),
+      (label: '饮水描述', value: entry.waterDescription ?? '未填写'),
       (
         label: '运动时长',
         value: formatHealthDuration(entry.exerciseDurationMinutes),
       ),
+      (label: '运动描述', value: entry.exerciseDescription ?? '未填写'),
       (label: '运动类型', value: entry.exerciseType ?? '未填写'),
       (
         label: '身体状态',
@@ -36,10 +40,7 @@ class HealthEntryDetailDialog extends StatelessWidget {
             ? '未填写'
             : '${entry.physicalStateScore}/10',
       ),
-      (
-        label: '身体感受',
-        value: entry.physicalStateDescription ?? '未填写',
-      ),
+      (label: '身体感受', value: entry.physicalStateDescription ?? '未填写'),
       (label: '备注', value: entry.note ?? '未填写'),
     ];
 

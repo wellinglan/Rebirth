@@ -503,10 +503,12 @@ class _VersionSummary extends StatelessWidget {
                   label: '科研时间',
                   value: today.researchMinutes?.toString() ?? '-',
                 ),
+                _Line(label: '科研描述', value: today.researchDescription ?? '-'),
                 _Line(
                   label: '学习时间',
                   value: today.learningMinutes?.toString() ?? '-',
                 ),
+                _Line(label: '学习描述', value: today.learningDescription ?? '-'),
               ] else ...[
                 _Line(label: '标题', value: plan?.title ?? '已删除的 Plan 目标'),
                 _Line(

@@ -11,20 +11,22 @@ void main() {
     final payload = _payload();
     const expected =
         '{"created_at":10,"daily_note":null,"energy_description":null,'
-        '"energy_score":4,"learning_minutes":0,"mood_description":null,'
-        '"mood_score":5,"priority_1":"Research",'
+        '"energy_score":4,"learning_description":null,'
+        '"learning_minutes":0,"mood_description":null,"mood_score":5,'
+        '"priority_1":"Research",'
         '"priority_1_completed":true,"priority_1_goal_id":null,'
         '"priority_2":null,"priority_2_completed":false,'
         '"priority_2_goal_id":null,"priority_3":null,'
         '"priority_3_completed":false,"priority_3_goal_id":null,'
         '"record_date":"2026-07-28","record_status":"completed",'
-        '"research_minutes":90,"timezone_offset_minutes":480,'
+        '"research_description":"Focused work","research_minutes":90,'
+        '"timezone_offset_minutes":480,'
         '"wellbeing_score_scale":10}';
 
     expect(codec.canonicalJson(payload), expected);
     expect(
       codec.fingerprint(payload),
-      '2a9c335e7fd89508aca8191895b20e7fc1f1d060dc2df87ebac48aee439c23c9',
+      '02f183e443adc9cea08bb1ffcaddd1d4538d63562af007ca893d46a52e0eadef',
     );
   });
 
@@ -36,6 +38,8 @@ void main() {
     expect(decoded.dailyNote, isNull);
     expect(decoded.learningMinutes, 0);
     expect(decoded.researchMinutes, 90);
+    expect(decoded.researchDescription, 'Focused work');
+    expect(decoded.learningDescription, isNull);
     expect(decoded.priority1Completed, isTrue);
     expect(decoded.status, TodayRecordStatus.completed);
     expect(encoded, isNot(contains('user_id')));
@@ -47,12 +51,27 @@ void main() {
     final legacy = {...codec.encode(_payload())}
       ..remove('wellbeing_score_scale')
       ..remove('mood_description')
-      ..remove('energy_description');
+      ..remove('energy_description')
+      ..remove('research_description')
+      ..remove('learning_description');
     final decoded = codec.decode(recordId: _recordId, json: legacy);
 
     expect(decoded.wellbeingScoreScale, 5);
     expect(decoded.moodDescription, isNull);
     expect(decoded.energyDescription, isNull);
+    expect(decoded.researchDescription, isNull);
+    expect(decoded.learningDescription, isNull);
+  });
+
+  test('Sprint 17B payload remains supported without metric narratives', () {
+    final current = {...codec.encode(_payload())}
+      ..remove('research_description')
+      ..remove('learning_description');
+    final decoded = codec.decode(recordId: _recordId, json: current);
+
+    expect(decoded.wellbeingScoreScale, 10);
+    expect(decoded.researchDescription, isNull);
+    expect(decoded.learningDescription, isNull);
   });
 
   test('codec rejects missing and extra fields', () {
@@ -61,6 +80,13 @@ void main() {
       () => codec.decode(
         recordId: _recordId,
         json: {...encoded}..remove('record_date'),
+      ),
+      throwsA(isA<SyncException>()),
+    );
+    expect(
+      () => codec.decode(
+        recordId: _recordId,
+        json: {...encoded}..remove('learning_description'),
       ),
       throwsA(isA<SyncException>()),
     );
@@ -79,6 +105,7 @@ void main() {
       _payload(moodScore: 11),
       _payload(researchMinutes: -1),
       _payload(priority1: null, priority1Completed: true),
+      _payload(researchDescription: 'x' * 81),
     ]) {
       expect(() => codec.encode(payload), throwsA(isA<SyncException>()));
     }
@@ -93,6 +120,7 @@ TodaySyncPayload _payload({
   bool priority1Completed = true,
   int? moodScore = 5,
   int? researchMinutes = 90,
+  String? researchDescription = 'Focused work',
 }) {
   return TodaySyncPayload(
     recordDate: recordDate,
@@ -109,6 +137,7 @@ TodaySyncPayload _payload({
     moodScore: moodScore,
     energyScore: 4,
     researchMinutes: researchMinutes,
+    researchDescription: researchDescription,
     learningMinutes: 0,
     dailyNote: null,
     status: TodayRecordStatus.completed,

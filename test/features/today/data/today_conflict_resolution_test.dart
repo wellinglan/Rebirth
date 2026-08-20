@@ -62,11 +62,15 @@ void main() {
       TodaySaveData(
         dailyNote: 'Local Today',
         researchMinutes: null,
+        researchDescription: 'Local research narrative',
         learningMinutes: 0,
+        learningDescription: 'Local learning narrative',
         health: withHealth
             ? const TodayHealthInput(
                 sleepDurationMinutes: 450,
+                sleepDescription: 'Local sleep narrative',
                 exerciseDurationMinutes: 30,
+                exerciseDescription: 'Local exercise narrative',
                 physicalStateScore: 4,
               )
             : null,
@@ -204,6 +208,8 @@ void main() {
     expect(abandoned.syncStatus, 'synced');
     expect(canonical.deletedAt, isNull);
     expect(canonical.dailyNote, 'Local Today');
+    expect(canonical.researchDescription, 'Local research narrative');
+    expect(canonical.learningDescription, 'Local learning narrative');
     expect(canonical.serverVersion, 6);
     expect(canonical.syncStatus, 'pending');
     expect(healthAfter.todayRecordId, _remoteId);
@@ -245,6 +251,8 @@ void main() {
     expect(result.status, SyncEntityStatus.succeeded);
     expect(active.id, _remoteId);
     expect(active.dailyNote, 'Remote Today');
+    expect(active.researchDescription, 'Remote research narrative');
+    expect(active.learningDescription, 'Remote learning narrative');
     expect(active.serverVersion, 6);
     expect(healthAfter.todayRecordId, _remoteId);
     expect(healthAfter.sleepDurationMinutes, healthBefore.sleepDurationMinutes);
@@ -481,9 +489,14 @@ TodaySyncPayload _localPayload(TodayRecord row) {
     priority3Completed: row.priority3Completed,
     priority3GoalId: row.priority3GoalId,
     moodScore: row.moodScore,
+    wellbeingScoreScale: row.wellbeingScoreScale ?? 5,
+    moodDescription: row.moodDescription,
     energyScore: row.energyScore,
+    energyDescription: row.energyDescription,
     researchMinutes: row.researchMinutes,
+    researchDescription: row.researchDescription,
     learningMinutes: row.learningMinutes,
+    learningDescription: row.learningDescription,
     dailyNote: row.dailyNote,
     status: TodayRecordStatus.draft,
     createdAt: row.createdAt,
@@ -505,7 +518,9 @@ const _remotePayload = TodaySyncPayload(
   moodScore: 5,
   energyScore: 4,
   researchMinutes: 120,
+  researchDescription: 'Remote research narrative',
   learningMinutes: 30,
+  learningDescription: 'Remote learning narrative',
   dailyNote: 'Remote Today',
   status: TodayRecordStatus.completed,
   createdAt: 100,

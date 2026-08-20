@@ -502,7 +502,9 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                   energyScore: Value(payload.energyScore),
                   energyDescription: Value(payload.energyDescription),
                   researchMinutes: Value(payload.researchMinutes),
+                  researchDescription: Value(payload.researchDescription),
                   learningMinutes: Value(payload.learningMinutes),
+                  learningDescription: Value(payload.learningDescription),
                   dailyNote: Value(payload.dailyNote),
                   recordStatus: Value(payload.status.name),
                   createdAt: Value(payload.createdAt),
@@ -539,7 +541,9 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
                   energyScore: Value(payload.energyScore),
                   energyDescription: Value(payload.energyDescription),
                   researchMinutes: Value(payload.researchMinutes),
+                  researchDescription: Value(payload.researchDescription),
                   learningMinutes: Value(payload.learningMinutes),
+                  learningDescription: Value(payload.learningDescription),
                   dailyNote: Value(payload.dailyNote),
                   recordStatus: Value(payload.status.name),
                   createdAt: Value(payload.createdAt),
@@ -787,8 +791,18 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
               researchMinutes: Value(
                 remotePayload?.researchMinutes ?? local.researchMinutes,
               ),
+              researchDescription: Value(
+                remotePayload == null
+                    ? local.researchDescription
+                    : remotePayload.researchDescription,
+              ),
               learningMinutes: Value(
                 remotePayload?.learningMinutes ?? local.learningMinutes,
+              ),
+              learningDescription: Value(
+                remotePayload == null
+                    ? local.learningDescription
+                    : remotePayload.learningDescription,
               ),
               dailyNote: Value(remotePayload?.dailyNote ?? local.dailyNote),
               recordStatus: Value(
@@ -857,8 +871,18 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
               researchMinutes: Value(
                 remotePayload?.researchMinutes ?? local.researchMinutes,
               ),
+              researchDescription: Value(
+                remotePayload == null
+                    ? local.researchDescription
+                    : remotePayload.researchDescription,
+              ),
               learningMinutes: Value(
                 remotePayload?.learningMinutes ?? local.learningMinutes,
+              ),
+              learningDescription: Value(
+                remotePayload == null
+                    ? local.learningDescription
+                    : remotePayload.learningDescription,
               ),
               dailyNote: Value(remotePayload?.dailyNote ?? local.dailyNote),
               recordStatus: Value(
@@ -978,7 +1002,9 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
         row.energyScore != null ||
         row.energyDescription != null ||
         row.researchMinutes != null ||
+        row.researchDescription != null ||
         row.learningMinutes != null ||
+        row.learningDescription != null ||
         row.dailyNote != null ||
         row.recordStatus == TodayRecordStatus.completed.name;
   }
@@ -1002,7 +1028,9 @@ final class TodaySyncAdapter implements SyncEntityAdapter {
       energyScore: row.energyScore,
       energyDescription: row.energyDescription,
       researchMinutes: row.researchMinutes,
+      researchDescription: row.researchDescription,
       learningMinutes: row.learningMinutes,
+      learningDescription: row.learningDescription,
       dailyNote: row.dailyNote,
       status: switch (row.recordStatus) {
         'draft' => TodayRecordStatus.draft,

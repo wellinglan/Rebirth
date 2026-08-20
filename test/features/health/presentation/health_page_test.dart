@@ -149,6 +149,10 @@ void main() {
       exercise: 30,
       water: 1500,
       weight: 65.5,
+      sleepDescription: '历史睡眠描述',
+      weightDescription: '历史体重描述',
+      waterDescription: '历史饮水描述',
+      exerciseDescription: '历史运动描述',
     );
     final repository = _FakeHealthRepository(history: [historyEntry]);
     await _pumpHealthPage(tester, repository);
@@ -171,6 +175,12 @@ void main() {
       find.descendant(of: dialog, matching: find.text('65.5 kg')),
       findsOneWidget,
     );
+    for (final description in const ['历史睡眠描述', '历史体重描述', '历史饮水描述', '历史运动描述']) {
+      expect(
+        find.descendant(of: dialog, matching: find.text(description)),
+        findsOneWidget,
+      );
+    }
     expect(
       find.descendant(of: dialog, matching: find.text('关闭')),
       findsOneWidget,
@@ -334,6 +344,10 @@ HealthEntry _entry({
   String? exerciseType,
   int? physicalState,
   String? note,
+  String? sleepDescription,
+  String? weightDescription,
+  String? waterDescription,
+  String? exerciseDescription,
   int updatedAt = 1,
 }) {
   return HealthEntry(
@@ -342,9 +356,13 @@ HealthEntry _entry({
     todayRecordId: null,
     recordDate: date,
     sleepDurationMinutes: sleep,
+    sleepDescription: sleepDescription,
     weightKg: weight,
+    weightDescription: weightDescription,
     waterIntakeMl: water,
+    waterDescription: waterDescription,
     exerciseDurationMinutes: exercise,
+    exerciseDescription: exerciseDescription,
     exerciseType: exerciseType,
     physicalStateScore: physicalState,
     note: note,

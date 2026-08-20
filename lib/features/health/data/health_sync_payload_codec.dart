@@ -35,6 +35,7 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
       'created_at': payload.createdAt,
       'data_source': payload.dataSource,
       'exercise_duration_minutes': payload.exerciseDurationMinutes,
+      'exercise_description': payload.exerciseDescription,
       'exercise_type': payload.exerciseType,
       'note': payload.note,
       'physical_state_score': payload.physicalStateScore,
@@ -42,10 +43,13 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
       'physical_state_description': payload.physicalStateDescription,
       'record_date': payload.recordDate,
       'sleep_duration_minutes': payload.sleepDurationMinutes,
+      'sleep_description': payload.sleepDescription,
       'source_record_id': payload.sourceRecordId,
       'timezone_offset_minutes': payload.timezoneOffsetMinutes,
       'water_intake_ml': payload.waterIntakeMl,
+      'water_description': payload.waterDescription,
       'weight_kg': payload.weightKg,
+      'weight_description': payload.weightDescription,
     });
   }
 
@@ -76,23 +80,45 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
       'physical_state_description',
       'physical_state_score_scale',
     };
+    const narrativeKeys = {
+      ...currentKeys,
+      'exercise_description',
+      'sleep_description',
+      'water_description',
+      'weight_description',
+    };
     final isLegacy =
         json.length == legacyKeys.length &&
         json.keys.every(legacyKeys.contains);
     final isCurrent =
         json.length == currentKeys.length &&
         json.keys.every(currentKeys.contains);
-    if (!isLegacy && !isCurrent) {
+    final hasNarratives =
+        json.length == narrativeKeys.length &&
+        json.keys.every(narrativeKeys.contains);
+    if (!isLegacy && !isCurrent && !hasNarratives) {
       throw const SyncException('云端 Health payload 字段集合无效。');
     }
     final payload = HealthSyncPayload(
       recordDate: _string(json, 'record_date'),
       timezoneOffsetMinutes: _int(json, 'timezone_offset_minutes'),
       sleepDurationMinutes: _nullableInt(json, 'sleep_duration_minutes'),
+      sleepDescription: hasNarratives
+          ? _nullableString(json, 'sleep_description')
+          : null,
       weightKg: _nullableDouble(json, 'weight_kg'),
+      weightDescription: hasNarratives
+          ? _nullableString(json, 'weight_description')
+          : null,
       waterIntakeMl: _nullableInt(json, 'water_intake_ml'),
+      waterDescription: hasNarratives
+          ? _nullableString(json, 'water_description')
+          : null,
       exerciseType: _nullableString(json, 'exercise_type'),
       exerciseDurationMinutes: _nullableInt(json, 'exercise_duration_minutes'),
+      exerciseDescription: hasNarratives
+          ? _nullableString(json, 'exercise_description')
+          : null,
       physicalStateScore: _nullableInt(json, 'physical_state_score'),
       physicalStateScoreScale: isLegacy
           ? 5
@@ -140,14 +166,25 @@ final class HealthSyncPayloadCodec implements SyncConflictPayloadCodec {
       payload.note,
       payload.sourceRecordId,
       payload.physicalStateDescription,
+      payload.sleepDescription,
+      payload.weightDescription,
+      payload.waterDescription,
+      payload.exerciseDescription,
     ]) {
       if (value != null && value.trim().isEmpty) {
         throw const SyncException('Health 文本字段不能是空白文本。');
       }
     }
-    if (payload.physicalStateDescription case final description?
-        when description.length > 80) {
-      throw const SyncException('Health 身体状态描述不得超过 80 字。');
+    for (final description in [
+      payload.physicalStateDescription,
+      payload.sleepDescription,
+      payload.weightDescription,
+      payload.waterDescription,
+      payload.exerciseDescription,
+    ]) {
+      if (description != null && description.length > 80) {
+        throw const SyncException('Health 指标描述不得超过 80 字。');
+      }
     }
   }
 

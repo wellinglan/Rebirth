@@ -114,7 +114,9 @@ final class TodayBackupRecord implements PersonalDataBackupRecord {
     required this.energyScore,
     this.energyDescription,
     required this.researchMinutes,
+    this.researchDescription,
     required this.learningMinutes,
+    this.learningDescription,
     required this.dailyNote,
     required this.status,
     required this.createdAt,
@@ -131,7 +133,9 @@ final class TodayBackupRecord implements PersonalDataBackupRecord {
   final int? energyScore;
   final String? energyDescription;
   final int? researchMinutes;
+  final String? researchDescription;
   final int? learningMinutes;
+  final String? learningDescription;
   final String? dailyNote;
   final String status;
   final String createdAt;
@@ -150,7 +154,9 @@ final class TodayBackupRecord implements PersonalDataBackupRecord {
     'energy_description': energyDescription,
     'wellbeing_score_scale': 10,
     'research_minutes': researchMinutes,
+    'research_description': researchDescription,
     'learning_minutes': learningMinutes,
+    'learning_description': learningDescription,
     'daily_note': dailyNote,
     'status': status,
     'created_at': createdAt,
@@ -332,10 +338,14 @@ final class HealthBackupRecord implements PersonalDataBackupRecord {
     required this.recordDate,
     required this.timezoneOffsetMinutes,
     required this.sleepDurationMinutes,
+    this.sleepDescription,
     required this.weightKg,
+    this.weightDescription,
     required this.waterIntakeMl,
+    this.waterDescription,
     required this.exerciseType,
     required this.exerciseDurationMinutes,
+    this.exerciseDescription,
     required this.physicalStateScore,
     this.physicalStateDescription,
     required this.note,
@@ -350,10 +360,14 @@ final class HealthBackupRecord implements PersonalDataBackupRecord {
   final String recordDate;
   final int timezoneOffsetMinutes;
   final int? sleepDurationMinutes;
+  final String? sleepDescription;
   final double? weightKg;
+  final String? weightDescription;
   final int? waterIntakeMl;
+  final String? waterDescription;
   final String? exerciseType;
   final int? exerciseDurationMinutes;
+  final String? exerciseDescription;
   final int? physicalStateScore;
   final String? physicalStateDescription;
   final String? note;
@@ -369,10 +383,14 @@ final class HealthBackupRecord implements PersonalDataBackupRecord {
     'record_date': recordDate,
     'timezone_offset_minutes': timezoneOffsetMinutes,
     'sleep_duration_minutes': sleepDurationMinutes,
+    'sleep_description': sleepDescription,
     'weight_kg': weightKg,
+    'weight_description': weightDescription,
     'water_intake_ml': waterIntakeMl,
+    'water_description': waterDescription,
     'exercise_type': exerciseType,
     'exercise_duration_minutes': exerciseDurationMinutes,
+    'exercise_description': exerciseDescription,
     'physical_state_score': physicalStateScore,
     'physical_state_description': physicalStateDescription,
     'physical_state_score_scale': 10,

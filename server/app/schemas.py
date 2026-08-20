@@ -126,7 +126,9 @@ class TodaySyncPayload(BaseModel):
     mood_description: str | None = Field(default=None, max_length=80)
     energy_description: str | None = Field(default=None, max_length=80)
     research_minutes: int | None = Field(default=None, ge=0)
+    research_description: str | None = Field(default=None, max_length=80)
     learning_minutes: int | None = Field(default=None, ge=0)
+    learning_description: str | None = Field(default=None, max_length=80)
     daily_note: str | None
     record_status: TodayRecordStatus
     created_at: int = Field(ge=0)
@@ -161,14 +163,19 @@ class TodaySyncPayload(BaseModel):
             raise ValueError("priority text must not be blank")
         return trimmed
 
-    @field_validator("mood_description", "energy_description")
+    @field_validator(
+        "mood_description",
+        "energy_description",
+        "research_description",
+        "learning_description",
+    )
     @classmethod
-    def validate_wellbeing_description(cls, value: str | None) -> str | None:
+    def validate_metric_description(cls, value: str | None) -> str | None:
         if value is None:
             return None
         trimmed = value.strip()
         if not trimmed:
-            raise ValueError("wellbeing descriptions must not be blank")
+            raise ValueError("metric descriptions must not be blank")
         return trimmed
 
     @model_validator(mode="after")
@@ -189,15 +196,26 @@ class TodaySyncPayload(BaseModel):
 
     @model_validator(mode="after")
     def validate_wellbeing_contract(self) -> "TodaySyncPayload":
-        extension_fields = {
+        wellbeing_fields = {
             "wellbeing_score_scale",
             "mood_description",
             "energy_description",
         }
-        present = extension_fields.intersection(self.model_fields_set)
-        if present and present != extension_fields:
+        narrative_fields = {
+            "research_description",
+            "learning_description",
+        }
+        wellbeing_present = wellbeing_fields.intersection(self.model_fields_set)
+        narrative_present = narrative_fields.intersection(self.model_fields_set)
+        if wellbeing_present and wellbeing_present != wellbeing_fields:
             raise ValueError("Today wellbeing extension fields must be complete")
-        scale = self.wellbeing_score_scale if present else 5
+        if narrative_present and narrative_present != narrative_fields:
+            raise ValueError("Today narrative extension fields must be complete")
+        if narrative_present and wellbeing_present != wellbeing_fields:
+            raise ValueError(
+                "Today narrative payload requires wellbeing extension fields"
+            )
+        scale = self.wellbeing_score_scale if wellbeing_present else 5
         if scale is None:
             raise ValueError("wellbeing_score_scale is required for new payloads")
         if self.mood_score is not None and self.mood_score > scale:
@@ -416,10 +434,14 @@ class HealthSyncPayload(BaseModel):
     record_date: str
     timezone_offset_minutes: int = Field(ge=-840, le=840)
     sleep_duration_minutes: int | None = Field(default=None, ge=0)
+    sleep_description: str | None = Field(default=None, max_length=80)
     weight_kg: float | None = Field(default=None, gt=0)
+    weight_description: str | None = Field(default=None, max_length=80)
     water_intake_ml: int | None = Field(default=None, ge=0)
+    water_description: str | None = Field(default=None, max_length=80)
     exercise_type: str | None
     exercise_duration_minutes: int | None = Field(default=None, ge=0)
+    exercise_description: str | None = Field(default=None, max_length=80)
     physical_state_score: int | None = Field(default=None, ge=1, le=10)
     physical_state_score_scale: Literal[5, 10] | None = None
     physical_state_description: str | None = Field(
@@ -449,9 +471,15 @@ class HealthSyncPayload(BaseModel):
             raise ValueError("Health text must not be blank")
         return trimmed
 
-    @field_validator("physical_state_description")
+    @field_validator(
+        "physical_state_description",
+        "sleep_description",
+        "weight_description",
+        "water_description",
+        "exercise_description",
+    )
     @classmethod
-    def validate_physical_state_description(
+    def validate_metric_description(
         cls,
         value: str | None,
     ) -> str | None:
@@ -459,19 +487,34 @@ class HealthSyncPayload(BaseModel):
             return None
         trimmed = value.strip()
         if not trimmed:
-            raise ValueError("physical_state_description must not be blank")
+            raise ValueError("metric descriptions must not be blank")
         return trimmed
 
     @model_validator(mode="after")
     def validate_physical_state_contract(self) -> "HealthSyncPayload":
-        extension_fields = {
+        physical_state_fields = {
             "physical_state_score_scale",
             "physical_state_description",
         }
-        present = extension_fields.intersection(self.model_fields_set)
-        if present and present != extension_fields:
+        narrative_fields = {
+            "sleep_description",
+            "weight_description",
+            "water_description",
+            "exercise_description",
+        }
+        physical_state_present = physical_state_fields.intersection(
+            self.model_fields_set
+        )
+        narrative_present = narrative_fields.intersection(self.model_fields_set)
+        if physical_state_present and physical_state_present != physical_state_fields:
             raise ValueError("Health physical state extension fields must be complete")
-        scale = self.physical_state_score_scale if present else 5
+        if narrative_present and narrative_present != narrative_fields:
+            raise ValueError("Health narrative extension fields must be complete")
+        if narrative_present and physical_state_present != physical_state_fields:
+            raise ValueError(
+                "Health narrative payload requires physical state extension fields"
+            )
+        scale = self.physical_state_score_scale if physical_state_present else 5
         if scale is None:
             raise ValueError(
                 "physical_state_score_scale is required for new payloads"

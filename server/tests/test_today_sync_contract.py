@@ -54,6 +54,17 @@ def _current_payload(
     return payload
 
 
+def _narrative_payload() -> dict[str, object]:
+    payload = _current_payload()
+    payload.update(
+        {
+            "research_description": "Focused on the sync contract",
+            "learning_description": None,
+        }
+    )
+    return payload
+
+
 def _item(
     *,
     record_id: str = TODAY_ID,
@@ -140,6 +151,34 @@ def test_today_current_wellbeing_payload_round_trips_without_field_loss(
     assert pulled.json()["items"][0]["payload"] == payload
 
 
+def test_today_narrative_payload_round_trips_null_and_text_without_field_loss(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    payload = _narrative_payload()
+
+    pushed = _push(
+        client,
+        auth_headers,
+        registered_device,
+        _item(payload=payload),
+    )
+    pulled = client.post(
+        "/sync/pull",
+        headers=auth_headers,
+        json={
+            "device_id": registered_device,
+            "since_server_version": 0,
+            "tables": ["today_records"],
+        },
+    )
+
+    assert pushed.status_code == 200
+    assert pulled.status_code == 200
+    assert pulled.json()["items"][0]["payload"] == payload
+
+
 def test_today_current_scale_five_payload_remains_supported(
     client: TestClient,
     auth_headers: dict[str, str],
@@ -203,6 +242,36 @@ def test_today_rejects_partial_or_inconsistent_wellbeing_extensions(
             _item(payload=payload),
         )
         for payload in (partial, mismatched, overlong)
+    ]
+
+    assert all(response.status_code == 422 for response in responses)
+
+
+def test_today_rejects_partial_or_detached_narrative_extensions(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    registered_device: str,
+) -> None:
+    partial = _current_payload()
+    partial["research_description"] = "Only one new key"
+    detached = _payload()
+    detached.update(
+        {
+            "research_description": "Missing wellbeing generation",
+            "learning_description": None,
+        }
+    )
+    overlong = _narrative_payload()
+    overlong["learning_description"] = "x" * 81
+
+    responses = [
+        _push(
+            client,
+            auth_headers,
+            registered_device,
+            _item(payload=payload),
+        )
+        for payload in (partial, detached, overlong)
     ]
 
     assert all(response.status_code == 422 for response in responses)
@@ -307,7 +376,15 @@ def test_today_pull_is_isolated_by_jwt_user(
     auth_headers: dict[str, str],
     registered_device: str,
 ) -> None:
-    assert _push(client, auth_headers, registered_device, _item()).status_code == 200
+    assert (
+        _push(
+            client,
+            auth_headers,
+            registered_device,
+            _item(payload=_narrative_payload()),
+        ).status_code
+        == 200
+    )
     login = client.post(
         "/auth/dev-login",
         json={"dev_user_key": "today-other-user"},

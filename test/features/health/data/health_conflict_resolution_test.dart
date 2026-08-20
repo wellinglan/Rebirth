@@ -51,6 +51,8 @@ void main() {
       HealthSaveData(
         recordDate: '2026-07-28',
         sleepDurationMinutes: 420,
+        sleepDescription: 'Local sleep narrative',
+        waterDescription: 'Local water narrative',
         note: 'Local Health',
       ),
     );
@@ -104,6 +106,8 @@ void main() {
     final row = await database.select(database.healthRecords).getSingle();
     final requested = await conflicts.getConflict(scope, conflict.id);
     expect(row.note, 'Local Health');
+    expect(row.sleepDescription, 'Local sleep narrative');
+    expect(row.waterDescription, 'Local water narrative');
     expect(row.serverVersion, 6);
     expect(row.syncStatus, 'pending');
     expect(
@@ -141,6 +145,8 @@ void main() {
     expect(result.status, SyncEntityStatus.succeeded);
     expect(row.note, 'Remote Health');
     expect(row.sleepDurationMinutes, 450);
+    expect(row.sleepDescription, 'Remote sleep narrative');
+    expect(row.waterDescription, 'Remote water narrative');
     expect(row.serverVersion, 6);
     expect(row.syncStatus, 'synced');
     expect(
@@ -158,10 +164,14 @@ const _remotePayload = HealthSyncPayload(
   recordDate: '2026-07-28',
   timezoneOffsetMinutes: 480,
   sleepDurationMinutes: 450,
+  sleepDescription: 'Remote sleep narrative',
   weightKg: 65.5,
+  weightDescription: 'Remote weight narrative',
   waterIntakeMl: 1500,
+  waterDescription: 'Remote water narrative',
   exerciseType: 'run',
   exerciseDurationMinutes: 30,
+  exerciseDescription: 'Remote exercise narrative',
   physicalStateScore: 4,
   note: 'Remote Health',
   dataSource: 'manual',
@@ -174,11 +184,17 @@ HealthSyncPayload _payloadFromRow(db.HealthRecord row) {
     recordDate: row.recordDate,
     timezoneOffsetMinutes: row.timezoneOffsetMinutes,
     sleepDurationMinutes: row.sleepDurationMinutes,
+    sleepDescription: row.sleepDescription,
     weightKg: row.weightKg,
+    weightDescription: row.weightDescription,
     waterIntakeMl: row.waterIntakeMl,
+    waterDescription: row.waterDescription,
     exerciseType: row.exerciseType,
     exerciseDurationMinutes: row.exerciseDurationMinutes,
+    exerciseDescription: row.exerciseDescription,
     physicalStateScore: row.physicalStateScore,
+    physicalStateScoreScale: row.physicalStateScoreScale ?? 5,
+    physicalStateDescription: row.physicalStateDescription,
     note: row.note,
     dataSource: row.dataSource,
     sourceRecordId: row.sourceRecordId,

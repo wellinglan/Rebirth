@@ -21,7 +21,9 @@ final class TodaySyncPayload implements SyncEntityPayload {
     required this.energyScore,
     this.energyDescription,
     required this.researchMinutes,
+    this.researchDescription,
     required this.learningMinutes,
+    this.learningDescription,
     required this.dailyNote,
     required this.status,
     required this.createdAt,
@@ -44,7 +46,9 @@ final class TodaySyncPayload implements SyncEntityPayload {
   final int? energyScore;
   final String? energyDescription;
   final int? researchMinutes;
+  final String? researchDescription;
   final int? learningMinutes;
+  final String? learningDescription;
   final String? dailyNote;
   final TodayRecordStatus status;
   final int createdAt;

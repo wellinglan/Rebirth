@@ -37,7 +37,9 @@ void main() {
       TodaySaveData(
         priorities: const [TodayPriority(text: 'Research', completed: true)],
         researchMinutes: 90,
+        researchDescription: 'Focused research',
         learningMinutes: 0,
+        learningDescription: 'Reviewed notes',
         dailyNote: null,
       ),
     );
@@ -52,7 +54,9 @@ void main() {
     expect(pending.single.clientVersion, 0);
     expect(payload.recordDate, '2026-07-28');
     expect(payload.researchMinutes, 90);
+    expect(payload.researchDescription, 'Focused research');
     expect(payload.learningMinutes, 0);
+    expect(payload.learningDescription, 'Reviewed notes');
     expect(payload.dailyNote, isNull);
     expect(encoded, isNot(contains('health')));
     expect(raw.syncStatus, 'pending');
@@ -129,6 +133,8 @@ void main() {
     expect(rows.single.id, isNot(placeholder.id));
     expect(rows.single.syncStatus, 'synced');
     expect(loaded?.dailyNote, 'Cloud Today');
+    expect(loaded?.researchDescription, 'Cloud research');
+    expect(loaded?.learningDescription, 'Cloud learning');
   });
 
   test(
@@ -371,7 +377,9 @@ TodaySyncPayload _payload({String? priority1GoalId}) {
     moodScore: 4,
     energyScore: 3,
     researchMinutes: 90,
+    researchDescription: 'Cloud research',
     learningMinutes: 0,
+    learningDescription: 'Cloud learning',
     dailyNote: 'Cloud Today',
     status: TodayRecordStatus.draft,
     createdAt: 10,
@@ -402,9 +410,14 @@ SyncChange _remoteChange({
       priority3Completed: value.priority3Completed,
       priority3GoalId: value.priority3GoalId,
       moodScore: value.moodScore,
+      wellbeingScoreScale: value.wellbeingScoreScale,
+      moodDescription: value.moodDescription,
       energyScore: value.energyScore,
+      energyDescription: value.energyDescription,
       researchMinutes: value.researchMinutes,
+      researchDescription: value.researchDescription,
       learningMinutes: value.learningMinutes,
+      learningDescription: value.learningDescription,
       dailyNote: note,
       status: value.status,
       createdAt: value.createdAt,

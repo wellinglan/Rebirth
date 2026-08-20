@@ -37,6 +37,7 @@ void main() {
     expect(encoded.keys, {
       'created_at',
       'data_source',
+      'exercise_description',
       'exercise_duration_minutes',
       'exercise_type',
       'note',
@@ -44,15 +45,22 @@ void main() {
       'physical_state_score_scale',
       'physical_state_description',
       'record_date',
+      'sleep_description',
       'sleep_duration_minutes',
       'source_record_id',
       'timezone_offset_minutes',
       'water_intake_ml',
+      'water_description',
       'weight_kg',
+      'weight_description',
     });
     expect(decoded.recordDate, '2026-07-28');
     expect(decoded.sleepDurationMinutes, 450);
+    expect(decoded.sleepDescription, 'Rested well');
     expect(decoded.weightKg, 65.5);
+    expect(decoded.weightDescription, isNull);
+    expect(decoded.waterDescription, 'Drank steadily');
+    expect(decoded.exerciseDescription, 'Easy run');
     expect(decoded.dataSource, 'manual');
   });
 
@@ -60,11 +68,62 @@ void main() {
     const codec = HealthSyncPayloadCodec();
     final legacy = {...codec.encode(_payload())}
       ..remove('physical_state_score_scale')
-      ..remove('physical_state_description');
+      ..remove('physical_state_description')
+      ..remove('sleep_description')
+      ..remove('weight_description')
+      ..remove('water_description')
+      ..remove('exercise_description');
     final decoded = codec.decode(recordId: _remoteId, json: legacy);
 
     expect(decoded.physicalStateScoreScale, 5);
     expect(decoded.physicalStateDescription, isNull);
+    expect(decoded.sleepDescription, isNull);
+  });
+
+  test('codec accepts Sprint 17B payload without metric narratives', () {
+    const codec = HealthSyncPayloadCodec();
+    final current = {...codec.encode(_payload())}
+      ..remove('sleep_description')
+      ..remove('weight_description')
+      ..remove('water_description')
+      ..remove('exercise_description');
+    final decoded = codec.decode(recordId: _remoteId, json: current);
+
+    expect(decoded.physicalStateScoreScale, 10);
+    expect(decoded.sleepDescription, isNull);
+  });
+
+  test('codec rejects partial narrative generations and overlong text', () {
+    const codec = HealthSyncPayloadCodec();
+    final encoded = codec.encode(_payload());
+
+    expect(
+      () => codec.decode(
+        recordId: _remoteId,
+        json: {...encoded}..remove('water_description'),
+      ),
+      throwsA(isA<SyncException>()),
+    );
+    expect(
+      () => codec.encode(
+        HealthSyncPayload(
+          recordDate: '2026-07-28',
+          timezoneOffsetMinutes: 480,
+          sleepDurationMinutes: null,
+          sleepDescription: List.filled(81, 'x').join(),
+          weightKg: null,
+          waterIntakeMl: null,
+          exerciseType: null,
+          exerciseDurationMinutes: null,
+          physicalStateScore: null,
+          note: null,
+          dataSource: 'manual',
+          sourceRecordId: null,
+          createdAt: 10,
+        ),
+      ),
+      throwsA(isA<SyncException>()),
+    );
   });
 
   test('blank local placeholder is not uploaded', () async {
@@ -78,7 +137,9 @@ void main() {
       HealthSaveData(
         recordDate: '2026-07-28',
         sleepDurationMinutes: 450,
+        sleepDescription: 'Rested well',
         waterIntakeMl: 1200,
+        waterDescription: 'Drank steadily',
       ),
     );
 
@@ -90,7 +151,9 @@ void main() {
     expect(pending.single.clientVersion, 0);
     expect(payload.recordDate, '2026-07-28');
     expect(payload.sleepDurationMinutes, 450);
+    expect(payload.sleepDescription, 'Rested well');
     expect(payload.waterIntakeMl, 1200);
+    expect(payload.waterDescription, 'Drank steadily');
   });
 
   test(
@@ -135,6 +198,7 @@ void main() {
     expect(row.todayRecordId, isNull);
     expect(row.recordDate, '2026-07-28');
     expect(row.sleepDurationMinutes, 450);
+    expect(row.sleepDescription, 'Rested well');
     expect(row.syncStatus, 'synced');
     expect(row.serverVersion, 1);
   });
@@ -306,10 +370,14 @@ HealthSyncPayload _payload({String note = 'Cloud Health'}) {
     recordDate: '2026-07-28',
     timezoneOffsetMinutes: 480,
     sleepDurationMinutes: 450,
+    sleepDescription: 'Rested well',
     weightKg: 65.5,
+    weightDescription: null,
     waterIntakeMl: 1500,
+    waterDescription: 'Drank steadily',
     exerciseType: 'run',
     exerciseDurationMinutes: 30,
+    exerciseDescription: 'Easy run',
     physicalStateScore: 4,
     note: note,
     dataSource: 'manual',

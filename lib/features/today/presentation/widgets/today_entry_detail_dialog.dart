@@ -39,14 +39,25 @@ class TodayEntryDetailDialog extends StatelessWidget {
               _DetailValue(label: 'Mood', value: _score(entry.moodScore)),
               _DetailValue(label: '心情描述', value: _text(entry.moodDescription)),
               _DetailValue(label: 'Energy', value: _score(entry.energyScore)),
-              _DetailValue(label: '精力描述', value: _text(entry.energyDescription)),
+              _DetailValue(
+                label: '精力描述',
+                value: _text(entry.energyDescription),
+              ),
               _DetailValue(
                 label: '科研时间',
                 value: formatDurationMinutes(entry.researchMinutes),
               ),
               _DetailValue(
+                label: '科研描述',
+                value: _text(entry.researchDescription),
+              ),
+              _DetailValue(
                 label: '学习时间',
                 value: formatDurationMinutes(entry.learningMinutes),
+              ),
+              _DetailValue(
+                label: '学习描述',
+                value: _text(entry.learningDescription),
               ),
               _DetailValue(label: '今日一句话', value: _text(entry.dailyNote)),
               _DetailValue(
@@ -54,8 +65,16 @@ class TodayEntryDetailDialog extends StatelessWidget {
                 value: formatDurationMinutes(health?.sleepDurationMinutes),
               ),
               _DetailValue(
+                label: '睡眠描述',
+                value: _text(health?.sleepDescription),
+              ),
+              _DetailValue(
                 label: '运动时长',
                 value: formatDurationMinutes(health?.exerciseDurationMinutes),
+              ),
+              _DetailValue(
+                label: '运动描述',
+                value: _text(health?.exerciseDescription),
               ),
               _DetailValue(
                 label: '身体状态',

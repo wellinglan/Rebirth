@@ -36,6 +36,7 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
       'energy_description': payload.energyDescription,
       'energy_score': payload.energyScore,
       'learning_minutes': payload.learningMinutes,
+      'learning_description': payload.learningDescription,
       'mood_score': payload.moodScore,
       'mood_description': payload.moodDescription,
       'priority_1': payload.priority1,
@@ -50,6 +51,7 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
       'record_date': payload.recordDate,
       'record_status': payload.status.name,
       'research_minutes': payload.researchMinutes,
+      'research_description': payload.researchDescription,
       'timezone_offset_minutes': payload.timezoneOffsetMinutes,
       'wellbeing_score_scale': payload.wellbeingScoreScale,
     });
@@ -89,13 +91,21 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
       'mood_description',
       'wellbeing_score_scale',
     };
+    const narrativeKeys = {
+      ...currentKeys,
+      'learning_description',
+      'research_description',
+    };
     final isLegacy =
         json.length == legacyKeys.length &&
         json.keys.every(legacyKeys.contains);
     final isCurrent =
         json.length == currentKeys.length &&
         json.keys.every(currentKeys.contains);
-    if (!isLegacy && !isCurrent) {
+    final hasNarratives =
+        json.length == narrativeKeys.length &&
+        json.keys.every(narrativeKeys.contains);
+    if (!isLegacy && !isCurrent && !hasNarratives) {
       throw const SyncException('云端 Today payload 字段集合无效。');
     }
     final statusValue = json['record_status'];
@@ -126,7 +136,13 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
           ? null
           : _nullableString(json, 'energy_description'),
       researchMinutes: _nullableInt(json, 'research_minutes'),
+      researchDescription: hasNarratives
+          ? _nullableString(json, 'research_description')
+          : null,
       learningMinutes: _nullableInt(json, 'learning_minutes'),
+      learningDescription: hasNarratives
+          ? _nullableString(json, 'learning_description')
+          : null,
       dailyNote: _nullableString(json, 'daily_note'),
       status: status,
       createdAt: _int(json, 'created_at'),
@@ -176,10 +192,12 @@ final class TodaySyncPayloadCodec implements SyncConflictPayloadCodec {
     for (final description in [
       payload.moodDescription,
       payload.energyDescription,
+      payload.researchDescription,
+      payload.learningDescription,
     ]) {
       if (description != null &&
           (description.trim().isEmpty || description.length > 80)) {
-        throw const SyncException('Today 评分描述必须为 1 到 80 字。');
+        throw const SyncException('Today 指标描述必须为 1 到 80 字。');
       }
     }
     for (final minutes in [payload.researchMinutes, payload.learningMinutes]) {
