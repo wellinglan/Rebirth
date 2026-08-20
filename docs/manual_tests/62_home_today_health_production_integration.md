@@ -4,8 +4,8 @@
 > Baseline: `3eaf4c11f9b7bfdf8b78d18992fd1aaa9abaa593`
 > Implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
 > Sync contract repair commit: `f7b1bb6dcf5aedc1c50bc1951cf6eb7e82309668`
-> Gate: **OPEN**
-> Result: **40 PASS / 0 FAIL / 11 NOT EXECUTED**
+> Gate: **CLOSED**
+> Result: **48 PASS / 0 FAIL / 3 NOT EXECUTED**
 > Cross-device repair: E1-E3 initially exposed a Server payload-validation
 > mismatch; after deploying `26090f75900079291b79f7aa625818379ea6f70d`,
 > E1-E6 all passed on current Windows and Android clients.
@@ -60,22 +60,22 @@ PASS. Record exact observations and screenshots for any failure.
 | E4 | Conflict | Today Adopt Remote and Keep Local preserve normalized score/descriptions | PASS | Accepted on 2026-08-20 |
 | E5 | Conflict | Health Adopt Remote and Keep Local preserve normalized score/description | PASS | Accepted on 2026-08-20 |
 | E6 | Compatibility | Both devices are upgraded before editing new score/description fields | PASS | Accepted on 2026-08-20 |
-| F1 | Accounts | Account A Home/Today/Health data is invisible to Account B | NOT EXECUTED | |
-| F2 | Accounts | Logout clears the previous account Home summary | NOT EXECUTED | |
-| F3 | Export | Full export contains normalized 1-10 scores, descriptions, and scale metadata | NOT EXECUTED | Inspect without publishing personal content |
-| F4 | Privacy | UI/logs expose no credential, token, endpoint secret, prompt, or other account data | NOT EXECUTED | |
-| G1 | Responsive | Android 320/360/412 px has no horizontal or RenderFlex overflow | NOT EXECUTED | |
-| G2 | Responsive | Windows 720/1200 px remains readable and reasonably compact | NOT EXECUTED | |
-| G3 | Accessibility | TextScaler 1.0/1.3/1.5/2.0 keeps text and actions available | NOT EXECUTED | |
-| G4 | Accessibility | Tab, Enter, Space, arrows, TalkBack, and Semantics identify values/actions | NOT EXECUTED | |
+| F1 | Accounts | Account A Home/Today/Health data is invisible to Account B | PASS | Accepted on 2026-08-20 |
+| F2 | Accounts | Logout clears the previous account Home summary | PASS | Accepted on 2026-08-20 |
+| F3 | Export | Full export contains normalized 1-10 scores, descriptions, and scale metadata | PASS | Accepted on 2026-08-20 without publishing personal content |
+| F4 | Privacy | UI/logs expose no credential, token, endpoint secret, prompt, or other account data | PASS | Accepted on 2026-08-20 |
+| G1 | Responsive | Android 320/360/412 px has no horizontal or RenderFlex overflow | PASS | Accepted on 2026-08-20 |
+| G2 | Responsive | Windows 720/1200 px remains readable and reasonably compact | PASS | Accepted on 2026-08-20 |
+| G3 | Accessibility | TextScaler 1.0/1.3/1.5/2.0 keeps text and actions available | PASS | Accepted on 2026-08-20 |
+| G4 | Accessibility | Tab, Enter, Space, arrows, TalkBack, and Semantics identify values/actions | PASS | Accepted on 2026-08-20 |
 
 ## Final Decision
 
-- PASS: 40
+- PASS: 48
 - FAIL: 0
-- NOT EXECUTED: 11
-- Gate: **OPEN**
-- Blocking evidence: account-isolation/export/privacy and responsive/
-  accessibility execution remain outstanding. D3-D4 and A10 retain explicit
-  automated substitutions. Cross-device E1-E6 passed after the fixed API was
-  deployed.
+- NOT EXECUTED: 3
+- Gate: **CLOSED**
+- Acceptance basis: all product-level manual checks passed. A10 and D3-D4
+  retain explicit automated substitutions because no safe product-level
+  failure injection or retained schema-12 fixture was available. Cross-device
+  E1-E6 passed after the fixed API was deployed.

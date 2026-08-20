@@ -4,7 +4,7 @@
 > Baseline: `3eaf4c11f9b7bfdf8b78d18992fd1aaa9abaa593`
 > Implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
 > Sync contract repair commit: `f7b1bb6dcf5aedc1c50bc1951cf6eb7e82309668`
-> Implementation status: complete in source; manual Gate OPEN
+> Implementation status: complete; manual Gate CLOSED
 
 ## Product Boundary
 
@@ -100,9 +100,9 @@ API Version 1 and Sync Protocol 2 remain unchanged.
 
 ## Release Gate
 
-The **Home / Today / Health Production Integration Gate** remains **OPEN**. The
-initial cross-device run exposed and documented a Server validation blocker,
-which passed E1-E6 after the fixed API deployment. The remaining account,
-privacy, responsive, and accessibility matrix in
-`docs/manual_tests/62_home_today_health_production_integration.md` must still
-be executed. Automated substitutions remain explicit for A10 and D3-D4.
+The **Home / Today / Health Production Integration Gate** is **CLOSED**. All
+product-level manual checks passed, including E1-E6 after the fixed API
+deployment and the account, privacy, responsive, and accessibility batches.
+A10 and D3-D4 remain honestly NOT EXECUTED with explicit automated
+substitutions because no safe failure injection or retained schema-12 fixture
+was available.

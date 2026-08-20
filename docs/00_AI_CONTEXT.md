@@ -816,4 +816,4 @@ Server 同步校验必须同时接受完整旧格式与完整新格式，并拒�
 量表的 payload；持久化 JSON 保持客户端原样。人工验收曾发现旧部署仍只接受 1-5，
 修复 API 部署后 E1-E6 已在 Windows/Android 双端通过。完整合同见
 `docs/57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md`；51 项人工矩阵当前为
-40 PASS / 0 FAIL / 11 NOT EXECUTED，Gate 仍因账号、隐私和响应式验收保持 OPEN。
+48 PASS / 0 FAIL / 3 NOT EXECUTED；A10、D3-D4 由自动化证据替代，Gate CLOSED。

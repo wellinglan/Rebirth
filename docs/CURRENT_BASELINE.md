@@ -12,7 +12,7 @@
 > Sprint 17A.1 Prototype Revision 1 starting HEAD: `7a056414896fdfd4ec9731429ef0cd8b7005098d`
 > Sprint 17B starting HEAD: `3eaf4c11f9b7bfdf8b78d18992fd1aaa9abaa593`
 > Sprint 17B implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
-> Current working Sprint: **17B Home / Today / Health Production Experience Integration implemented; manual Gate OPEN**
+> Current working Sprint: **17B Home / Today / Health Production Experience Integration accepted; manual Gate CLOSED**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -210,7 +210,7 @@ configured today.
 | 16B | Version-bound structured AI Report feedback and aggregate quality signal | Flutter schema 12; Alembic `20260812_0008`; API 1 and Sync Protocol 2 unchanged | 3 PASS / 0 FAIL / 36 NOT EXECUTED | Alpha deployment identity passed; remaining product matrix is open and explicitly suspended |
 | 17A | Product experience audit and UI design system foundation | No schema/API/protocol change | 0 PASS / 0 FAIL / 30 NOT EXECUTED | Responsive and theme automation added; final feature visual direction remains open |
 | 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
-| 17B | Home / Today / Health production experience integration | Flutter schema 13; dual-format Server validation; API 1 and Sync Protocol 2 unchanged | 40 PASS / 0 FAIL / 11 NOT EXECUTED | Fixed API deployed and E1-E6 passed; account, privacy, responsive, and accessibility evidence remains open |
+| 17B | Home / Today / Health production experience integration | Flutter schema 13; dual-format Server validation; API 1 and Sync Protocol 2 unchanged | 48 PASS / 0 FAIL / 3 NOT EXECUTED | Gate closed; all product-level checks passed, with explicit automated substitutions for A10 and D3-D4 |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
