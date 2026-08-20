@@ -94,6 +94,52 @@ void main() {
     expect(cleared.researchMinutes, isNull);
   });
 
+  test(
+    'metric narratives normalize and remain content without values',
+    () async {
+      final saved = await repository.saveToday(
+        TodaySaveData(
+          researchDescription: '  完成实验方案复核  ',
+          learningDescription: '   ',
+          health: const TodayHealthInput(
+            sleepDescription: '  夜间醒来一次  ',
+            weightDescription: '晨起测量',
+            waterDescription: '分次饮水',
+            exerciseDescription: '轻松慢跑',
+          ),
+        ),
+      );
+      final rawToday = await database.select(database.todayRecords).getSingle();
+      final rawHealth = await database
+          .select(database.healthRecords)
+          .getSingle();
+
+      expect(saved.researchMinutes, isNull);
+      expect(saved.researchDescription, '完成实验方案复核');
+      expect(saved.learningDescription, isNull);
+      expect(saved.health?.sleepDescription, '夜间醒来一次');
+      expect(saved.health?.weightDescription, '晨起测量');
+      expect(saved.health?.waterDescription, '分次饮水');
+      expect(saved.health?.exerciseDescription, '轻松慢跑');
+      expect(saved.hasContent, isTrue);
+      expect(rawToday.researchDescription, '完成实验方案复核');
+      expect(rawHealth.sleepDescription, '夜间醒来一次');
+    },
+  );
+
+  test('metric narratives reject more than 80 characters', () async {
+    await expectLater(
+      repository.saveToday(TodaySaveData(researchDescription: 'x' * 81)),
+      throwsArgumentError,
+    );
+    await expectLater(
+      repository.saveToday(
+        TodaySaveData(health: TodayHealthInput(waterDescription: 'x' * 81)),
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('mood and energy score validation accepts only 1 through 10', () async {
     final entry = await repository.getToday();
 

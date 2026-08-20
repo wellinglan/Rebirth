@@ -141,9 +141,13 @@ final class HealthRepositoryImpl implements HealthRepository {
       todayRecordId: record.todayRecordId,
       recordDate: record.recordDate,
       sleepDurationMinutes: record.sleepDurationMinutes,
+      sleepDescription: record.sleepDescription,
       weightKg: record.weightKg,
+      weightDescription: record.weightDescription,
       waterIntakeMl: record.waterIntakeMl,
+      waterDescription: record.waterDescription,
       exerciseDurationMinutes: record.exerciseDurationMinutes,
+      exerciseDescription: record.exerciseDescription,
       exerciseType: record.exerciseType,
       physicalStateScore: normalizeWellbeingScore(
         record.physicalStateScore,

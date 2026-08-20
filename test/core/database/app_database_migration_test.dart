@@ -9,7 +9,7 @@ import 'package:rebirth/features/health/data/health_repository_impl.dart';
 import 'package:rebirth/features/today/data/today_repository_impl.dart';
 
 void main() {
-  test('v2 to v13 preserves goals and adds current tables', () async {
+  test('v2 to v14 preserves goals and adds current tables', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -36,7 +36,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 13);
+    expect(version.read<int>('user_version'), 14);
 
     final goal =
         await (migrated.select(migrated.goals)..where(
@@ -72,7 +72,7 @@ void main() {
 
     final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
     addTearDown(migrated.close);
-    expect(migrated.schemaVersion, 13);
+    expect(migrated.schemaVersion, 14);
     final existing = await migrated.select(migrated.goals).getSingle();
     expect(existing.title, 'v1 普通目标');
     expect(existing.archivedAt, isNull);
@@ -103,7 +103,7 @@ void main() {
     );
   });
 
-  test('v3 to v13 preserves goals and creates conflict indexes', () async {
+  test('v3 to v14 preserves goals and creates conflict indexes', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -132,7 +132,7 @@ void main() {
     final version = await migrated
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.read<int>('user_version'), 13);
+    expect(version.read<int>('user_version'), 14);
     final goal = await migrated.select(migrated.goals).getSingle();
     expect(goal.id, '00000000-0000-4000-8000-000000000021');
     expect(goal.syncStatus, 'conflict');
@@ -157,7 +157,7 @@ void main() {
   });
 
   test(
-    'v4 to v13 preserves data and supersedes unhydrated legacy conflicts',
+    'v4 to v14 preserves data and supersedes unhydrated legacy conflicts',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -206,7 +206,7 @@ void main() {
 
       final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
       addTearDown(migrated.close);
-      expect(migrated.schemaVersion, 13);
+      expect(migrated.schemaVersion, 14);
       expect(await migrated.select(migrated.goals).get(), hasLength(1));
       expect(await migrated.select(migrated.userProfiles).get(), hasLength(1));
       expect(await migrated.select(migrated.appSettings).get(), hasLength(1));
@@ -231,7 +231,7 @@ void main() {
   );
 
   test(
-    'v5 to v13 backfills existing binding without claiming legacy data',
+    'v5 to v14 backfills existing binding without claiming legacy data',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -320,7 +320,7 @@ CREATE TABLE cloud_account_bindings_v5 (
   );
 
   test(
-    'v6 to v13 preserves legacy quarantine and business sync metadata',
+    'v6 to v14 preserves legacy quarantine and business sync metadata',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -395,7 +395,7 @@ CREATE TABLE cloud_account_bindings_v6 (
           .select(migrated.cloudAccountBindings)
           .getSingle();
       final profile = await migrated.select(migrated.userProfiles).getSingle();
-      expect(migrated.schemaVersion, 13);
+      expect(migrated.schemaVersion, 14);
       expect(binding.syncEligibilityStatus, 'legacy_review_required');
       expect(binding.verificationStatus, 'not_verified');
       expect(binding.verificationTime, isNull);
@@ -407,7 +407,7 @@ CREATE TABLE cloud_account_bindings_v6 (
     },
   );
 
-  test('v7 to v13 adds nullable remote identity and prompt schema', () async {
+  test('v7 to v14 adds nullable remote identity and prompt schema', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -452,13 +452,13 @@ CREATE TABLE cloud_account_bindings_v6 (
     addTearDown(migrated.close);
     final conflict = await migrated.select(migrated.syncConflicts).getSingle();
 
-    expect(migrated.schemaVersion, 13);
+    expect(migrated.schemaVersion, 14);
     expect(conflict.recordId, '70000000-0000-4000-8000-000000000081');
     expect(conflict.remoteRecordId, isNull);
   });
 
   test(
-    'v8 to v13 backfills prompt configuration and Journal snapshots',
+    'v8 to v14 backfills prompt configuration and Journal snapshots',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -500,7 +500,7 @@ CREATE TABLE cloud_account_bindings_v6 (
           .select(migrated.journalEntryPromptItems)
           .get();
 
-      expect(migrated.schemaVersion, 13);
+      expect(migrated.schemaVersion, 14);
       expect(configuration.userId, bootstrap.activeUserId);
       expect(configuration.logicalKey, 'default');
       expect(prompts, hasLength(5));
@@ -547,7 +547,7 @@ CREATE TABLE cloud_account_bindings_v6 (
     },
   );
 
-  test('v9 to v13 backfills immutable AI report version one', () async {
+  test('v9 to v14 backfills immutable AI report version one', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
@@ -607,7 +607,7 @@ CREATE TABLE cloud_account_bindings_v6 (
       migrated.aiReportVersions,
     )..where((row) => row.reportId.equals(failedReportId))).getSingle();
 
-    expect(migrated.schemaVersion, 13);
+    expect(migrated.schemaVersion, 14);
     expect(report.id, reportId);
     expect(report.title, '每周回顾');
     expect(report.currentVersion, 1);
@@ -627,7 +627,7 @@ CREATE TABLE cloud_account_bindings_v6 (
   });
 
   test(
-    'v10 to v13 preserves conflicts and permits AI report conflicts',
+    'v10 to v14 preserves conflicts and permits AI report conflicts',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -658,7 +658,7 @@ CREATE TABLE cloud_account_bindings_v6 (
 
       final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
       addTearDown(migrated.close);
-      expect(migrated.schemaVersion, 13);
+      expect(migrated.schemaVersion, 14);
       expect(await migrated.select(migrated.syncConflicts).get(), hasLength(1));
 
       await migrated
@@ -684,7 +684,7 @@ CREATE TABLE cloud_account_bindings_v6 (
   );
 
   test(
-    'v11 to v13 preserves account data and creates feedback storage',
+    'v11 to v14 preserves account data and creates feedback storage',
     () async {
       final fixture = await _createDatabaseFixture();
       addTearDown(fixture.dispose);
@@ -698,7 +698,7 @@ CREATE TABLE cloud_account_bindings_v6 (
 
       final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
       addTearDown(migrated.close);
-      expect(migrated.schemaVersion, 13);
+      expect(migrated.schemaVersion, 14);
       expect(
         await (migrated.select(migrated.userProfiles)
               ..where((row) => row.id.equals(bootstrap.activeUserId)))
@@ -728,38 +728,42 @@ CREATE TABLE cloud_account_bindings_v6 (
     },
   );
 
-  test('v12 to v13 preserves legacy scores and normalizes on read', () async {
+  test('v12 to v14 preserves legacy scores and normalizes on read', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
     final bootstrap = await original.bootstrapDao.bootstrap(
       createUnboundProfile: true,
     );
-    await original.into(original.todayRecords).insert(
-      TodayRecordsCompanion.insert(
-        id: const Value('92000000-0000-4000-8000-000000000001'),
-        userId: bootstrap.activeUserId,
-        recordDate: '2026-08-20',
-        timezoneOffsetMinutes: 480,
-        moodScore: const Value(1),
-        energyScore: const Value(5),
-        createdAt: const Value(100),
-        updatedAt: const Value(200),
-        originDeviceId: Value(bootstrap.localInstallationId),
-      ),
-    );
-    await original.into(original.healthRecords).insert(
-      HealthRecordsCompanion.insert(
-        id: const Value('92000000-0000-4000-8000-000000000002'),
-        userId: bootstrap.activeUserId,
-        recordDate: '2026-08-20',
-        timezoneOffsetMinutes: 480,
-        physicalStateScore: const Value(3),
-        createdAt: const Value(110),
-        updatedAt: const Value(210),
-        originDeviceId: Value(bootstrap.localInstallationId),
-      ),
-    );
+    await original
+        .into(original.todayRecords)
+        .insert(
+          TodayRecordsCompanion.insert(
+            id: const Value('92000000-0000-4000-8000-000000000001'),
+            userId: bootstrap.activeUserId,
+            recordDate: '2026-08-20',
+            timezoneOffsetMinutes: 480,
+            moodScore: const Value(1),
+            energyScore: const Value(5),
+            createdAt: const Value(100),
+            updatedAt: const Value(200),
+            originDeviceId: Value(bootstrap.localInstallationId),
+          ),
+        );
+    await original
+        .into(original.healthRecords)
+        .insert(
+          HealthRecordsCompanion.insert(
+            id: const Value('92000000-0000-4000-8000-000000000002'),
+            userId: bootstrap.activeUserId,
+            recordDate: '2026-08-20',
+            timezoneOffsetMinutes: 480,
+            physicalStateScore: const Value(3),
+            createdAt: const Value(110),
+            updatedAt: const Value(210),
+            originDeviceId: Value(bootstrap.localInstallationId),
+          ),
+        );
     await original.customStatement('PRAGMA user_version = 12');
     await original.close();
 
@@ -786,7 +790,99 @@ CREATE TABLE cloud_account_bindings_v6 (
     expect(health?.physicalStateScore, 6);
   });
 
-  test('schema 13 refuses an automatic downgrade to schema 9', () async {
+  test('v13 to v14 adds nullable narratives without rewriting data', () async {
+    final fixture = await _createDatabaseFixture();
+    addTearDown(fixture.dispose);
+    final original = AppDatabase.forTesting(NativeDatabase(fixture.file));
+    final bootstrap = await original.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
+    await original
+        .into(original.todayRecords)
+        .insert(
+          TodayRecordsCompanion.insert(
+            id: const Value('93000000-0000-4000-8000-000000000001'),
+            userId: bootstrap.activeUserId,
+            recordDate: '2026-08-21',
+            timezoneOffsetMinutes: 480,
+            researchMinutes: const Value(0),
+            learningMinutes: const Value(45),
+            createdAt: const Value(100),
+            updatedAt: const Value(200),
+            syncStatus: const Value('synced'),
+            serverVersion: const Value(7),
+            lastSyncedAt: const Value(190),
+            originDeviceId: Value(bootstrap.localInstallationId),
+          ),
+        );
+    await original
+        .into(original.healthRecords)
+        .insert(
+          HealthRecordsCompanion.insert(
+            id: const Value('93000000-0000-4000-8000-000000000002'),
+            userId: bootstrap.activeUserId,
+            recordDate: '2026-08-21',
+            timezoneOffsetMinutes: 480,
+            sleepDurationMinutes: const Value(0),
+            waterIntakeMl: const Value(1250),
+            createdAt: const Value(110),
+            updatedAt: const Value(210),
+            syncStatus: const Value('pending'),
+            serverVersion: const Value(8),
+            lastSyncedAt: const Value(195),
+            originDeviceId: Value(bootstrap.localInstallationId),
+          ),
+        );
+    for (final column in const <String>[
+      'research_description',
+      'learning_description',
+    ]) {
+      await original.customStatement(
+        'ALTER TABLE today_records DROP COLUMN $column',
+      );
+    }
+    for (final column in const <String>[
+      'sleep_description',
+      'weight_description',
+      'water_description',
+      'exercise_description',
+    ]) {
+      await original.customStatement(
+        'ALTER TABLE health_records DROP COLUMN $column',
+      );
+    }
+    await original.customStatement('PRAGMA user_version = 13');
+    await original.close();
+
+    final migrated = AppDatabase.forTesting(NativeDatabase(fixture.file));
+    addTearDown(migrated.close);
+    final today = await migrated.select(migrated.todayRecords).getSingle();
+    final health = await migrated.select(migrated.healthRecords).getSingle();
+
+    expect(migrated.schemaVersion, 14);
+    expect(today.researchMinutes, 0);
+    expect(today.learningMinutes, 45);
+    expect(today.researchDescription, isNull);
+    expect(today.learningDescription, isNull);
+    expect(today.createdAt, 100);
+    expect(today.updatedAt, 200);
+    expect(today.syncStatus, 'synced');
+    expect(today.serverVersion, 7);
+    expect(today.lastSyncedAt, 190);
+    expect(health.sleepDurationMinutes, 0);
+    expect(health.waterIntakeMl, 1250);
+    expect(health.sleepDescription, isNull);
+    expect(health.weightDescription, isNull);
+    expect(health.waterDescription, isNull);
+    expect(health.exerciseDescription, isNull);
+    expect(health.createdAt, 110);
+    expect(health.updatedAt, 210);
+    expect(health.syncStatus, 'pending');
+    expect(health.serverVersion, 8);
+    expect(health.lastSyncedAt, 195);
+  });
+
+  test('schema 14 refuses an automatic downgrade to schema 9', () async {
     final fixture = await _createDatabaseFixture();
     addTearDown(fixture.dispose);
     final current = AppDatabase.forTesting(NativeDatabase(fixture.file));

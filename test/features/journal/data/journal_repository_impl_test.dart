@@ -401,6 +401,6 @@ void main() {
 
     expect(await database.select(database.journalEntries).get(), isEmpty);
     expect(clockReads, 0);
-    expect(database.schemaVersion, 13);
+    expect(database.schemaVersion, 14);
   });
 }

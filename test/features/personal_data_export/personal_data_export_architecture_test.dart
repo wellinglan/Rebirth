@@ -84,7 +84,7 @@ void main() {
     final database = File(
       'lib/core/database/app_database.dart',
     ).readAsStringSync();
-    expect(database, contains('int get schemaVersion => 13;'));
+    expect(database, contains('int get schemaVersion => 14;'));
     expect(
       Directory('lib/features/personal_data_export')
           .listSync(recursive: true)

@@ -3121,6 +3121,18 @@ class $TodayRecordsTable extends TodayRecords
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _researchDescriptionMeta =
+      const VerificationMeta('researchDescription');
+  @override
+  late final GeneratedColumn<String> researchDescription =
+      GeneratedColumn<String>(
+        'research_description',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: 'NULL CHECK (length(research_description) <= 80)',
+      );
   static const VerificationMeta _learningMinutesMeta = const VerificationMeta(
     'learningMinutes',
   );
@@ -3132,6 +3144,18 @@ class $TodayRecordsTable extends TodayRecords
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _learningDescriptionMeta =
+      const VerificationMeta('learningDescription');
+  @override
+  late final GeneratedColumn<String> learningDescription =
+      GeneratedColumn<String>(
+        'learning_description',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: 'NULL CHECK (length(learning_description) <= 80)',
+      );
   static const VerificationMeta _dailyNoteMeta = const VerificationMeta(
     'dailyNote',
   );
@@ -3183,7 +3207,9 @@ class $TodayRecordsTable extends TodayRecords
     energyScore,
     energyDescription,
     researchMinutes,
+    researchDescription,
     learningMinutes,
+    learningDescription,
     dailyNote,
     recordStatus,
   ];
@@ -3403,12 +3429,30 @@ class $TodayRecordsTable extends TodayRecords
         ),
       );
     }
+    if (data.containsKey('research_description')) {
+      context.handle(
+        _researchDescriptionMeta,
+        researchDescription.isAcceptableOrUnknown(
+          data['research_description']!,
+          _researchDescriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('learning_minutes')) {
       context.handle(
         _learningMinutesMeta,
         learningMinutes.isAcceptableOrUnknown(
           data['learning_minutes']!,
           _learningMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('learning_description')) {
+      context.handle(
+        _learningDescriptionMeta,
+        learningDescription.isAcceptableOrUnknown(
+          data['learning_description']!,
+          _learningDescriptionMeta,
         ),
       );
     }
@@ -3540,9 +3584,17 @@ class $TodayRecordsTable extends TodayRecords
         DriftSqlType.int,
         data['${effectivePrefix}research_minutes'],
       ),
+      researchDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}research_description'],
+      ),
       learningMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}learning_minutes'],
+      ),
+      learningDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}learning_description'],
       ),
       dailyNote: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -3588,7 +3640,9 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
   final int? energyScore;
   final String? energyDescription;
   final int? researchMinutes;
+  final String? researchDescription;
   final int? learningMinutes;
+  final String? learningDescription;
   final String? dailyNote;
   final String recordStatus;
   const TodayRecord({
@@ -3618,7 +3672,9 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     this.energyScore,
     this.energyDescription,
     this.researchMinutes,
+    this.researchDescription,
     this.learningMinutes,
+    this.learningDescription,
     this.dailyNote,
     required this.recordStatus,
   });
@@ -3683,8 +3739,14 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     if (!nullToAbsent || researchMinutes != null) {
       map['research_minutes'] = Variable<int>(researchMinutes);
     }
+    if (!nullToAbsent || researchDescription != null) {
+      map['research_description'] = Variable<String>(researchDescription);
+    }
     if (!nullToAbsent || learningMinutes != null) {
       map['learning_minutes'] = Variable<int>(learningMinutes);
+    }
+    if (!nullToAbsent || learningDescription != null) {
+      map['learning_description'] = Variable<String>(learningDescription);
     }
     if (!nullToAbsent || dailyNote != null) {
       map['daily_note'] = Variable<String>(dailyNote);
@@ -3753,9 +3815,15 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
       researchMinutes: researchMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(researchMinutes),
+      researchDescription: researchDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(researchDescription),
       learningMinutes: learningMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(learningMinutes),
+      learningDescription: learningDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learningDescription),
       dailyNote: dailyNote == null && nullToAbsent
           ? const Value.absent()
           : Value(dailyNote),
@@ -3801,7 +3869,13 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
         json['energyDescription'],
       ),
       researchMinutes: serializer.fromJson<int?>(json['researchMinutes']),
+      researchDescription: serializer.fromJson<String?>(
+        json['researchDescription'],
+      ),
       learningMinutes: serializer.fromJson<int?>(json['learningMinutes']),
+      learningDescription: serializer.fromJson<String?>(
+        json['learningDescription'],
+      ),
       dailyNote: serializer.fromJson<String?>(json['dailyNote']),
       recordStatus: serializer.fromJson<String>(json['recordStatus']),
     );
@@ -3836,7 +3910,9 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
       'energyScore': serializer.toJson<int?>(energyScore),
       'energyDescription': serializer.toJson<String?>(energyDescription),
       'researchMinutes': serializer.toJson<int?>(researchMinutes),
+      'researchDescription': serializer.toJson<String?>(researchDescription),
       'learningMinutes': serializer.toJson<int?>(learningMinutes),
+      'learningDescription': serializer.toJson<String?>(learningDescription),
       'dailyNote': serializer.toJson<String?>(dailyNote),
       'recordStatus': serializer.toJson<String>(recordStatus),
     };
@@ -3869,7 +3945,9 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     Value<int?> energyScore = const Value.absent(),
     Value<String?> energyDescription = const Value.absent(),
     Value<int?> researchMinutes = const Value.absent(),
+    Value<String?> researchDescription = const Value.absent(),
     Value<int?> learningMinutes = const Value.absent(),
+    Value<String?> learningDescription = const Value.absent(),
     Value<String?> dailyNote = const Value.absent(),
     String? recordStatus,
   }) => TodayRecord(
@@ -3917,9 +3995,15 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     researchMinutes: researchMinutes.present
         ? researchMinutes.value
         : this.researchMinutes,
+    researchDescription: researchDescription.present
+        ? researchDescription.value
+        : this.researchDescription,
     learningMinutes: learningMinutes.present
         ? learningMinutes.value
         : this.learningMinutes,
+    learningDescription: learningDescription.present
+        ? learningDescription.value
+        : this.learningDescription,
     dailyNote: dailyNote.present ? dailyNote.value : this.dailyNote,
     recordStatus: recordStatus ?? this.recordStatus,
   );
@@ -3985,9 +4069,15 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
       researchMinutes: data.researchMinutes.present
           ? data.researchMinutes.value
           : this.researchMinutes,
+      researchDescription: data.researchDescription.present
+          ? data.researchDescription.value
+          : this.researchDescription,
       learningMinutes: data.learningMinutes.present
           ? data.learningMinutes.value
           : this.learningMinutes,
+      learningDescription: data.learningDescription.present
+          ? data.learningDescription.value
+          : this.learningDescription,
       dailyNote: data.dailyNote.present ? data.dailyNote.value : this.dailyNote,
       recordStatus: data.recordStatus.present
           ? data.recordStatus.value
@@ -4024,7 +4114,9 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
           ..write('energyScore: $energyScore, ')
           ..write('energyDescription: $energyDescription, ')
           ..write('researchMinutes: $researchMinutes, ')
+          ..write('researchDescription: $researchDescription, ')
           ..write('learningMinutes: $learningMinutes, ')
+          ..write('learningDescription: $learningDescription, ')
           ..write('dailyNote: $dailyNote, ')
           ..write('recordStatus: $recordStatus')
           ..write(')'))
@@ -4059,7 +4151,9 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
     energyScore,
     energyDescription,
     researchMinutes,
+    researchDescription,
     learningMinutes,
+    learningDescription,
     dailyNote,
     recordStatus,
   ]);
@@ -4093,7 +4187,9 @@ class TodayRecord extends DataClass implements Insertable<TodayRecord> {
           other.energyScore == this.energyScore &&
           other.energyDescription == this.energyDescription &&
           other.researchMinutes == this.researchMinutes &&
+          other.researchDescription == this.researchDescription &&
           other.learningMinutes == this.learningMinutes &&
+          other.learningDescription == this.learningDescription &&
           other.dailyNote == this.dailyNote &&
           other.recordStatus == this.recordStatus);
 }
@@ -4125,7 +4221,9 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
   final Value<int?> energyScore;
   final Value<String?> energyDescription;
   final Value<int?> researchMinutes;
+  final Value<String?> researchDescription;
   final Value<int?> learningMinutes;
+  final Value<String?> learningDescription;
   final Value<String?> dailyNote;
   final Value<String> recordStatus;
   final Value<int> rowid;
@@ -4156,7 +4254,9 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     this.energyScore = const Value.absent(),
     this.energyDescription = const Value.absent(),
     this.researchMinutes = const Value.absent(),
+    this.researchDescription = const Value.absent(),
     this.learningMinutes = const Value.absent(),
+    this.learningDescription = const Value.absent(),
     this.dailyNote = const Value.absent(),
     this.recordStatus = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -4188,7 +4288,9 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     this.energyScore = const Value.absent(),
     this.energyDescription = const Value.absent(),
     this.researchMinutes = const Value.absent(),
+    this.researchDescription = const Value.absent(),
     this.learningMinutes = const Value.absent(),
+    this.learningDescription = const Value.absent(),
     this.dailyNote = const Value.absent(),
     this.recordStatus = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -4222,7 +4324,9 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     Expression<int>? energyScore,
     Expression<String>? energyDescription,
     Expression<int>? researchMinutes,
+    Expression<String>? researchDescription,
     Expression<int>? learningMinutes,
+    Expression<String>? learningDescription,
     Expression<String>? dailyNote,
     Expression<String>? recordStatus,
     Expression<int>? rowid,
@@ -4259,7 +4363,11 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
       if (energyScore != null) 'energy_score': energyScore,
       if (energyDescription != null) 'energy_description': energyDescription,
       if (researchMinutes != null) 'research_minutes': researchMinutes,
+      if (researchDescription != null)
+        'research_description': researchDescription,
       if (learningMinutes != null) 'learning_minutes': learningMinutes,
+      if (learningDescription != null)
+        'learning_description': learningDescription,
       if (dailyNote != null) 'daily_note': dailyNote,
       if (recordStatus != null) 'record_status': recordStatus,
       if (rowid != null) 'rowid': rowid,
@@ -4293,7 +4401,9 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     Value<int?>? energyScore,
     Value<String?>? energyDescription,
     Value<int?>? researchMinutes,
+    Value<String?>? researchDescription,
     Value<int?>? learningMinutes,
+    Value<String?>? learningDescription,
     Value<String?>? dailyNote,
     Value<String>? recordStatus,
     Value<int>? rowid,
@@ -4326,7 +4436,9 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
       energyScore: energyScore ?? this.energyScore,
       energyDescription: energyDescription ?? this.energyDescription,
       researchMinutes: researchMinutes ?? this.researchMinutes,
+      researchDescription: researchDescription ?? this.researchDescription,
       learningMinutes: learningMinutes ?? this.learningMinutes,
+      learningDescription: learningDescription ?? this.learningDescription,
       dailyNote: dailyNote ?? this.dailyNote,
       recordStatus: recordStatus ?? this.recordStatus,
       rowid: rowid ?? this.rowid,
@@ -4416,8 +4528,14 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
     if (researchMinutes.present) {
       map['research_minutes'] = Variable<int>(researchMinutes.value);
     }
+    if (researchDescription.present) {
+      map['research_description'] = Variable<String>(researchDescription.value);
+    }
     if (learningMinutes.present) {
       map['learning_minutes'] = Variable<int>(learningMinutes.value);
+    }
+    if (learningDescription.present) {
+      map['learning_description'] = Variable<String>(learningDescription.value);
     }
     if (dailyNote.present) {
       map['daily_note'] = Variable<String>(dailyNote.value);
@@ -4460,7 +4578,9 @@ class TodayRecordsCompanion extends UpdateCompanion<TodayRecord> {
           ..write('energyScore: $energyScore, ')
           ..write('energyDescription: $energyDescription, ')
           ..write('researchMinutes: $researchMinutes, ')
+          ..write('researchDescription: $researchDescription, ')
           ..write('learningMinutes: $learningMinutes, ')
+          ..write('learningDescription: $learningDescription, ')
           ..write('dailyNote: $dailyNote, ')
           ..write('recordStatus: $recordStatus, ')
           ..write('rowid: $rowid')
@@ -8056,6 +8176,18 @@ class $HealthRecordsTable extends HealthRecords
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sleepDescriptionMeta = const VerificationMeta(
+    'sleepDescription',
+  );
+  @override
+  late final GeneratedColumn<String> sleepDescription = GeneratedColumn<String>(
+    'sleep_description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL CHECK (length(sleep_description) <= 80)',
+  );
   static const VerificationMeta _weightKgMeta = const VerificationMeta(
     'weightKg',
   );
@@ -8067,6 +8199,19 @@ class $HealthRecordsTable extends HealthRecords
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _weightDescriptionMeta = const VerificationMeta(
+    'weightDescription',
+  );
+  @override
+  late final GeneratedColumn<String> weightDescription =
+      GeneratedColumn<String>(
+        'weight_description',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: 'NULL CHECK (length(weight_description) <= 80)',
+      );
   static const VerificationMeta _waterIntakeMlMeta = const VerificationMeta(
     'waterIntakeMl',
   );
@@ -8077,6 +8222,18 @@ class $HealthRecordsTable extends HealthRecords
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _waterDescriptionMeta = const VerificationMeta(
+    'waterDescription',
+  );
+  @override
+  late final GeneratedColumn<String> waterDescription = GeneratedColumn<String>(
+    'water_description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL CHECK (length(water_description) <= 80)',
   );
   static const VerificationMeta _exerciseTypeMeta = const VerificationMeta(
     'exerciseType',
@@ -8099,6 +8256,18 @@ class $HealthRecordsTable extends HealthRecords
         true,
         type: DriftSqlType.int,
         requiredDuringInsert: false,
+      );
+  static const VerificationMeta _exerciseDescriptionMeta =
+      const VerificationMeta('exerciseDescription');
+  @override
+  late final GeneratedColumn<String> exerciseDescription =
+      GeneratedColumn<String>(
+        'exercise_description',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: 'NULL CHECK (length(exercise_description) <= 80)',
       );
   static const VerificationMeta _physicalStateScoreMeta =
       const VerificationMeta('physicalStateScore');
@@ -8179,10 +8348,14 @@ class $HealthRecordsTable extends HealthRecords
     recordDate,
     timezoneOffsetMinutes,
     sleepDurationMinutes,
+    sleepDescription,
     weightKg,
+    weightDescription,
     waterIntakeMl,
+    waterDescription,
     exerciseType,
     exerciseDurationMinutes,
+    exerciseDescription,
     physicalStateScore,
     physicalStateScoreScale,
     physicalStateDescription,
@@ -8301,10 +8474,28 @@ class $HealthRecordsTable extends HealthRecords
         ),
       );
     }
+    if (data.containsKey('sleep_description')) {
+      context.handle(
+        _sleepDescriptionMeta,
+        sleepDescription.isAcceptableOrUnknown(
+          data['sleep_description']!,
+          _sleepDescriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('weight_kg')) {
       context.handle(
         _weightKgMeta,
         weightKg.isAcceptableOrUnknown(data['weight_kg']!, _weightKgMeta),
+      );
+    }
+    if (data.containsKey('weight_description')) {
+      context.handle(
+        _weightDescriptionMeta,
+        weightDescription.isAcceptableOrUnknown(
+          data['weight_description']!,
+          _weightDescriptionMeta,
+        ),
       );
     }
     if (data.containsKey('water_intake_ml')) {
@@ -8313,6 +8504,15 @@ class $HealthRecordsTable extends HealthRecords
         waterIntakeMl.isAcceptableOrUnknown(
           data['water_intake_ml']!,
           _waterIntakeMlMeta,
+        ),
+      );
+    }
+    if (data.containsKey('water_description')) {
+      context.handle(
+        _waterDescriptionMeta,
+        waterDescription.isAcceptableOrUnknown(
+          data['water_description']!,
+          _waterDescriptionMeta,
         ),
       );
     }
@@ -8331,6 +8531,15 @@ class $HealthRecordsTable extends HealthRecords
         exerciseDurationMinutes.isAcceptableOrUnknown(
           data['exercise_duration_minutes']!,
           _exerciseDurationMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exercise_description')) {
+      context.handle(
+        _exerciseDescriptionMeta,
+        exerciseDescription.isAcceptableOrUnknown(
+          data['exercise_description']!,
+          _exerciseDescriptionMeta,
         ),
       );
     }
@@ -8443,13 +8652,25 @@ class $HealthRecordsTable extends HealthRecords
         DriftSqlType.int,
         data['${effectivePrefix}sleep_duration_minutes'],
       ),
+      sleepDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sleep_description'],
+      ),
       weightKg: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}weight_kg'],
       ),
+      weightDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}weight_description'],
+      ),
       waterIntakeMl: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}water_intake_ml'],
+      ),
+      waterDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}water_description'],
       ),
       exerciseType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -8458,6 +8679,10 @@ class $HealthRecordsTable extends HealthRecords
       exerciseDurationMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}exercise_duration_minutes'],
+      ),
+      exerciseDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_description'],
       ),
       physicalStateScore: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -8506,10 +8731,14 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
   final String recordDate;
   final int timezoneOffsetMinutes;
   final int? sleepDurationMinutes;
+  final String? sleepDescription;
   final double? weightKg;
+  final String? weightDescription;
   final int? waterIntakeMl;
+  final String? waterDescription;
   final String? exerciseType;
   final int? exerciseDurationMinutes;
+  final String? exerciseDescription;
   final int? physicalStateScore;
   final int? physicalStateScoreScale;
   final String? physicalStateDescription;
@@ -8530,10 +8759,14 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     required this.recordDate,
     required this.timezoneOffsetMinutes,
     this.sleepDurationMinutes,
+    this.sleepDescription,
     this.weightKg,
+    this.weightDescription,
     this.waterIntakeMl,
+    this.waterDescription,
     this.exerciseType,
     this.exerciseDurationMinutes,
+    this.exerciseDescription,
     this.physicalStateScore,
     this.physicalStateScoreScale,
     this.physicalStateDescription,
@@ -8569,17 +8802,29 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     if (!nullToAbsent || sleepDurationMinutes != null) {
       map['sleep_duration_minutes'] = Variable<int>(sleepDurationMinutes);
     }
+    if (!nullToAbsent || sleepDescription != null) {
+      map['sleep_description'] = Variable<String>(sleepDescription);
+    }
     if (!nullToAbsent || weightKg != null) {
       map['weight_kg'] = Variable<double>(weightKg);
     }
+    if (!nullToAbsent || weightDescription != null) {
+      map['weight_description'] = Variable<String>(weightDescription);
+    }
     if (!nullToAbsent || waterIntakeMl != null) {
       map['water_intake_ml'] = Variable<int>(waterIntakeMl);
+    }
+    if (!nullToAbsent || waterDescription != null) {
+      map['water_description'] = Variable<String>(waterDescription);
     }
     if (!nullToAbsent || exerciseType != null) {
       map['exercise_type'] = Variable<String>(exerciseType);
     }
     if (!nullToAbsent || exerciseDurationMinutes != null) {
       map['exercise_duration_minutes'] = Variable<int>(exerciseDurationMinutes);
+    }
+    if (!nullToAbsent || exerciseDescription != null) {
+      map['exercise_description'] = Variable<String>(exerciseDescription);
     }
     if (!nullToAbsent || physicalStateScore != null) {
       map['physical_state_score'] = Variable<int>(physicalStateScore);
@@ -8631,18 +8876,30 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
       sleepDurationMinutes: sleepDurationMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(sleepDurationMinutes),
+      sleepDescription: sleepDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sleepDescription),
       weightKg: weightKg == null && nullToAbsent
           ? const Value.absent()
           : Value(weightKg),
+      weightDescription: weightDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weightDescription),
       waterIntakeMl: waterIntakeMl == null && nullToAbsent
           ? const Value.absent()
           : Value(waterIntakeMl),
+      waterDescription: waterDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(waterDescription),
       exerciseType: exerciseType == null && nullToAbsent
           ? const Value.absent()
           : Value(exerciseType),
       exerciseDurationMinutes: exerciseDurationMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(exerciseDurationMinutes),
+      exerciseDescription: exerciseDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exerciseDescription),
       physicalStateScore: physicalStateScore == null && nullToAbsent
           ? const Value.absent()
           : Value(physicalStateScore),
@@ -8683,11 +8940,19 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
       sleepDurationMinutes: serializer.fromJson<int?>(
         json['sleepDurationMinutes'],
       ),
+      sleepDescription: serializer.fromJson<String?>(json['sleepDescription']),
       weightKg: serializer.fromJson<double?>(json['weightKg']),
+      weightDescription: serializer.fromJson<String?>(
+        json['weightDescription'],
+      ),
       waterIntakeMl: serializer.fromJson<int?>(json['waterIntakeMl']),
+      waterDescription: serializer.fromJson<String?>(json['waterDescription']),
       exerciseType: serializer.fromJson<String?>(json['exerciseType']),
       exerciseDurationMinutes: serializer.fromJson<int?>(
         json['exerciseDurationMinutes'],
+      ),
+      exerciseDescription: serializer.fromJson<String?>(
+        json['exerciseDescription'],
       ),
       physicalStateScore: serializer.fromJson<int?>(json['physicalStateScore']),
       physicalStateScoreScale: serializer.fromJson<int?>(
@@ -8718,12 +8983,16 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
       'recordDate': serializer.toJson<String>(recordDate),
       'timezoneOffsetMinutes': serializer.toJson<int>(timezoneOffsetMinutes),
       'sleepDurationMinutes': serializer.toJson<int?>(sleepDurationMinutes),
+      'sleepDescription': serializer.toJson<String?>(sleepDescription),
       'weightKg': serializer.toJson<double?>(weightKg),
+      'weightDescription': serializer.toJson<String?>(weightDescription),
       'waterIntakeMl': serializer.toJson<int?>(waterIntakeMl),
+      'waterDescription': serializer.toJson<String?>(waterDescription),
       'exerciseType': serializer.toJson<String?>(exerciseType),
       'exerciseDurationMinutes': serializer.toJson<int?>(
         exerciseDurationMinutes,
       ),
+      'exerciseDescription': serializer.toJson<String?>(exerciseDescription),
       'physicalStateScore': serializer.toJson<int?>(physicalStateScore),
       'physicalStateScoreScale': serializer.toJson<int?>(
         physicalStateScoreScale,
@@ -8751,10 +9020,14 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     String? recordDate,
     int? timezoneOffsetMinutes,
     Value<int?> sleepDurationMinutes = const Value.absent(),
+    Value<String?> sleepDescription = const Value.absent(),
     Value<double?> weightKg = const Value.absent(),
+    Value<String?> weightDescription = const Value.absent(),
     Value<int?> waterIntakeMl = const Value.absent(),
+    Value<String?> waterDescription = const Value.absent(),
     Value<String?> exerciseType = const Value.absent(),
     Value<int?> exerciseDurationMinutes = const Value.absent(),
+    Value<String?> exerciseDescription = const Value.absent(),
     Value<int?> physicalStateScore = const Value.absent(),
     Value<int?> physicalStateScoreScale = const Value.absent(),
     Value<String?> physicalStateDescription = const Value.absent(),
@@ -8783,14 +9056,26 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     sleepDurationMinutes: sleepDurationMinutes.present
         ? sleepDurationMinutes.value
         : this.sleepDurationMinutes,
+    sleepDescription: sleepDescription.present
+        ? sleepDescription.value
+        : this.sleepDescription,
     weightKg: weightKg.present ? weightKg.value : this.weightKg,
+    weightDescription: weightDescription.present
+        ? weightDescription.value
+        : this.weightDescription,
     waterIntakeMl: waterIntakeMl.present
         ? waterIntakeMl.value
         : this.waterIntakeMl,
+    waterDescription: waterDescription.present
+        ? waterDescription.value
+        : this.waterDescription,
     exerciseType: exerciseType.present ? exerciseType.value : this.exerciseType,
     exerciseDurationMinutes: exerciseDurationMinutes.present
         ? exerciseDurationMinutes.value
         : this.exerciseDurationMinutes,
+    exerciseDescription: exerciseDescription.present
+        ? exerciseDescription.value
+        : this.exerciseDescription,
     physicalStateScore: physicalStateScore.present
         ? physicalStateScore.value
         : this.physicalStateScore,
@@ -8837,16 +9122,28 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
       sleepDurationMinutes: data.sleepDurationMinutes.present
           ? data.sleepDurationMinutes.value
           : this.sleepDurationMinutes,
+      sleepDescription: data.sleepDescription.present
+          ? data.sleepDescription.value
+          : this.sleepDescription,
       weightKg: data.weightKg.present ? data.weightKg.value : this.weightKg,
+      weightDescription: data.weightDescription.present
+          ? data.weightDescription.value
+          : this.weightDescription,
       waterIntakeMl: data.waterIntakeMl.present
           ? data.waterIntakeMl.value
           : this.waterIntakeMl,
+      waterDescription: data.waterDescription.present
+          ? data.waterDescription.value
+          : this.waterDescription,
       exerciseType: data.exerciseType.present
           ? data.exerciseType.value
           : this.exerciseType,
       exerciseDurationMinutes: data.exerciseDurationMinutes.present
           ? data.exerciseDurationMinutes.value
           : this.exerciseDurationMinutes,
+      exerciseDescription: data.exerciseDescription.present
+          ? data.exerciseDescription.value
+          : this.exerciseDescription,
       physicalStateScore: data.physicalStateScore.present
           ? data.physicalStateScore.value
           : this.physicalStateScore,
@@ -8882,10 +9179,14 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
           ..write('recordDate: $recordDate, ')
           ..write('timezoneOffsetMinutes: $timezoneOffsetMinutes, ')
           ..write('sleepDurationMinutes: $sleepDurationMinutes, ')
+          ..write('sleepDescription: $sleepDescription, ')
           ..write('weightKg: $weightKg, ')
+          ..write('weightDescription: $weightDescription, ')
           ..write('waterIntakeMl: $waterIntakeMl, ')
+          ..write('waterDescription: $waterDescription, ')
           ..write('exerciseType: $exerciseType, ')
           ..write('exerciseDurationMinutes: $exerciseDurationMinutes, ')
+          ..write('exerciseDescription: $exerciseDescription, ')
           ..write('physicalStateScore: $physicalStateScore, ')
           ..write('physicalStateScoreScale: $physicalStateScoreScale, ')
           ..write('physicalStateDescription: $physicalStateDescription, ')
@@ -8911,10 +9212,14 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
     recordDate,
     timezoneOffsetMinutes,
     sleepDurationMinutes,
+    sleepDescription,
     weightKg,
+    weightDescription,
     waterIntakeMl,
+    waterDescription,
     exerciseType,
     exerciseDurationMinutes,
+    exerciseDescription,
     physicalStateScore,
     physicalStateScoreScale,
     physicalStateDescription,
@@ -8939,10 +9244,14 @@ class HealthRecord extends DataClass implements Insertable<HealthRecord> {
           other.recordDate == this.recordDate &&
           other.timezoneOffsetMinutes == this.timezoneOffsetMinutes &&
           other.sleepDurationMinutes == this.sleepDurationMinutes &&
+          other.sleepDescription == this.sleepDescription &&
           other.weightKg == this.weightKg &&
+          other.weightDescription == this.weightDescription &&
           other.waterIntakeMl == this.waterIntakeMl &&
+          other.waterDescription == this.waterDescription &&
           other.exerciseType == this.exerciseType &&
           other.exerciseDurationMinutes == this.exerciseDurationMinutes &&
+          other.exerciseDescription == this.exerciseDescription &&
           other.physicalStateScore == this.physicalStateScore &&
           other.physicalStateScoreScale == this.physicalStateScoreScale &&
           other.physicalStateDescription == this.physicalStateDescription &&
@@ -8965,10 +9274,14 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
   final Value<String> recordDate;
   final Value<int> timezoneOffsetMinutes;
   final Value<int?> sleepDurationMinutes;
+  final Value<String?> sleepDescription;
   final Value<double?> weightKg;
+  final Value<String?> weightDescription;
   final Value<int?> waterIntakeMl;
+  final Value<String?> waterDescription;
   final Value<String?> exerciseType;
   final Value<int?> exerciseDurationMinutes;
+  final Value<String?> exerciseDescription;
   final Value<int?> physicalStateScore;
   final Value<int?> physicalStateScoreScale;
   final Value<String?> physicalStateDescription;
@@ -8990,10 +9303,14 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     this.recordDate = const Value.absent(),
     this.timezoneOffsetMinutes = const Value.absent(),
     this.sleepDurationMinutes = const Value.absent(),
+    this.sleepDescription = const Value.absent(),
     this.weightKg = const Value.absent(),
+    this.weightDescription = const Value.absent(),
     this.waterIntakeMl = const Value.absent(),
+    this.waterDescription = const Value.absent(),
     this.exerciseType = const Value.absent(),
     this.exerciseDurationMinutes = const Value.absent(),
+    this.exerciseDescription = const Value.absent(),
     this.physicalStateScore = const Value.absent(),
     this.physicalStateScoreScale = const Value.absent(),
     this.physicalStateDescription = const Value.absent(),
@@ -9016,10 +9333,14 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     required String recordDate,
     required int timezoneOffsetMinutes,
     this.sleepDurationMinutes = const Value.absent(),
+    this.sleepDescription = const Value.absent(),
     this.weightKg = const Value.absent(),
+    this.weightDescription = const Value.absent(),
     this.waterIntakeMl = const Value.absent(),
+    this.waterDescription = const Value.absent(),
     this.exerciseType = const Value.absent(),
     this.exerciseDurationMinutes = const Value.absent(),
+    this.exerciseDescription = const Value.absent(),
     this.physicalStateScore = const Value.absent(),
     this.physicalStateScoreScale = const Value.absent(),
     this.physicalStateDescription = const Value.absent(),
@@ -9044,10 +9365,14 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     Expression<String>? recordDate,
     Expression<int>? timezoneOffsetMinutes,
     Expression<int>? sleepDurationMinutes,
+    Expression<String>? sleepDescription,
     Expression<double>? weightKg,
+    Expression<String>? weightDescription,
     Expression<int>? waterIntakeMl,
+    Expression<String>? waterDescription,
     Expression<String>? exerciseType,
     Expression<int>? exerciseDurationMinutes,
+    Expression<String>? exerciseDescription,
     Expression<int>? physicalStateScore,
     Expression<int>? physicalStateScoreScale,
     Expression<String>? physicalStateDescription,
@@ -9072,11 +9397,16 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
         'timezone_offset_minutes': timezoneOffsetMinutes,
       if (sleepDurationMinutes != null)
         'sleep_duration_minutes': sleepDurationMinutes,
+      if (sleepDescription != null) 'sleep_description': sleepDescription,
       if (weightKg != null) 'weight_kg': weightKg,
+      if (weightDescription != null) 'weight_description': weightDescription,
       if (waterIntakeMl != null) 'water_intake_ml': waterIntakeMl,
+      if (waterDescription != null) 'water_description': waterDescription,
       if (exerciseType != null) 'exercise_type': exerciseType,
       if (exerciseDurationMinutes != null)
         'exercise_duration_minutes': exerciseDurationMinutes,
+      if (exerciseDescription != null)
+        'exercise_description': exerciseDescription,
       if (physicalStateScore != null)
         'physical_state_score': physicalStateScore,
       if (physicalStateScoreScale != null)
@@ -9104,10 +9434,14 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     Value<String>? recordDate,
     Value<int>? timezoneOffsetMinutes,
     Value<int?>? sleepDurationMinutes,
+    Value<String?>? sleepDescription,
     Value<double?>? weightKg,
+    Value<String?>? weightDescription,
     Value<int?>? waterIntakeMl,
+    Value<String?>? waterDescription,
     Value<String?>? exerciseType,
     Value<int?>? exerciseDurationMinutes,
+    Value<String?>? exerciseDescription,
     Value<int?>? physicalStateScore,
     Value<int?>? physicalStateScoreScale,
     Value<String?>? physicalStateDescription,
@@ -9131,11 +9465,15 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
       timezoneOffsetMinutes:
           timezoneOffsetMinutes ?? this.timezoneOffsetMinutes,
       sleepDurationMinutes: sleepDurationMinutes ?? this.sleepDurationMinutes,
+      sleepDescription: sleepDescription ?? this.sleepDescription,
       weightKg: weightKg ?? this.weightKg,
+      weightDescription: weightDescription ?? this.weightDescription,
       waterIntakeMl: waterIntakeMl ?? this.waterIntakeMl,
+      waterDescription: waterDescription ?? this.waterDescription,
       exerciseType: exerciseType ?? this.exerciseType,
       exerciseDurationMinutes:
           exerciseDurationMinutes ?? this.exerciseDurationMinutes,
+      exerciseDescription: exerciseDescription ?? this.exerciseDescription,
       physicalStateScore: physicalStateScore ?? this.physicalStateScore,
       physicalStateScoreScale:
           physicalStateScoreScale ?? this.physicalStateScoreScale,
@@ -9192,11 +9530,20 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
     if (sleepDurationMinutes.present) {
       map['sleep_duration_minutes'] = Variable<int>(sleepDurationMinutes.value);
     }
+    if (sleepDescription.present) {
+      map['sleep_description'] = Variable<String>(sleepDescription.value);
+    }
     if (weightKg.present) {
       map['weight_kg'] = Variable<double>(weightKg.value);
     }
+    if (weightDescription.present) {
+      map['weight_description'] = Variable<String>(weightDescription.value);
+    }
     if (waterIntakeMl.present) {
       map['water_intake_ml'] = Variable<int>(waterIntakeMl.value);
+    }
+    if (waterDescription.present) {
+      map['water_description'] = Variable<String>(waterDescription.value);
     }
     if (exerciseType.present) {
       map['exercise_type'] = Variable<String>(exerciseType.value);
@@ -9205,6 +9552,9 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
       map['exercise_duration_minutes'] = Variable<int>(
         exerciseDurationMinutes.value,
       );
+    }
+    if (exerciseDescription.present) {
+      map['exercise_description'] = Variable<String>(exerciseDescription.value);
     }
     if (physicalStateScore.present) {
       map['physical_state_score'] = Variable<int>(physicalStateScore.value);
@@ -9250,10 +9600,14 @@ class HealthRecordsCompanion extends UpdateCompanion<HealthRecord> {
           ..write('recordDate: $recordDate, ')
           ..write('timezoneOffsetMinutes: $timezoneOffsetMinutes, ')
           ..write('sleepDurationMinutes: $sleepDurationMinutes, ')
+          ..write('sleepDescription: $sleepDescription, ')
           ..write('weightKg: $weightKg, ')
+          ..write('weightDescription: $weightDescription, ')
           ..write('waterIntakeMl: $waterIntakeMl, ')
+          ..write('waterDescription: $waterDescription, ')
           ..write('exerciseType: $exerciseType, ')
           ..write('exerciseDurationMinutes: $exerciseDurationMinutes, ')
+          ..write('exerciseDescription: $exerciseDescription, ')
           ..write('physicalStateScore: $physicalStateScore, ')
           ..write('physicalStateScoreScale: $physicalStateScoreScale, ')
           ..write('physicalStateDescription: $physicalStateDescription, ')
@@ -18183,7 +18537,9 @@ typedef $$TodayRecordsTableCreateCompanionBuilder =
       Value<int?> energyScore,
       Value<String?> energyDescription,
       Value<int?> researchMinutes,
+      Value<String?> researchDescription,
       Value<int?> learningMinutes,
+      Value<String?> learningDescription,
       Value<String?> dailyNote,
       Value<String> recordStatus,
       Value<int> rowid,
@@ -18216,7 +18572,9 @@ typedef $$TodayRecordsTableUpdateCompanionBuilder =
       Value<int?> energyScore,
       Value<String?> energyDescription,
       Value<int?> researchMinutes,
+      Value<String?> researchDescription,
       Value<int?> learningMinutes,
+      Value<String?> learningDescription,
       Value<String?> dailyNote,
       Value<String> recordStatus,
       Value<int> rowid,
@@ -18450,8 +18808,18 @@ class $$TodayRecordsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get researchDescription => $composableBuilder(
+    column: $table.researchDescription,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get learningMinutes => $composableBuilder(
     column: $table.learningMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get learningDescription => $composableBuilder(
+    column: $table.learningDescription,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18727,8 +19095,18 @@ class $$TodayRecordsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get researchDescription => $composableBuilder(
+    column: $table.researchDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get learningMinutes => $composableBuilder(
     column: $table.learningMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get learningDescription => $composableBuilder(
+    column: $table.learningDescription,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -18938,8 +19316,18 @@ class $$TodayRecordsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get researchDescription => $composableBuilder(
+    column: $table.researchDescription,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get learningMinutes => $composableBuilder(
     column: $table.learningMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get learningDescription => $composableBuilder(
+    column: $table.learningDescription,
     builder: (column) => column,
   );
 
@@ -19155,7 +19543,9 @@ class $$TodayRecordsTableTableManager
                 Value<int?> energyScore = const Value.absent(),
                 Value<String?> energyDescription = const Value.absent(),
                 Value<int?> researchMinutes = const Value.absent(),
+                Value<String?> researchDescription = const Value.absent(),
                 Value<int?> learningMinutes = const Value.absent(),
+                Value<String?> learningDescription = const Value.absent(),
                 Value<String?> dailyNote = const Value.absent(),
                 Value<String> recordStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -19186,7 +19576,9 @@ class $$TodayRecordsTableTableManager
                 energyScore: energyScore,
                 energyDescription: energyDescription,
                 researchMinutes: researchMinutes,
+                researchDescription: researchDescription,
                 learningMinutes: learningMinutes,
+                learningDescription: learningDescription,
                 dailyNote: dailyNote,
                 recordStatus: recordStatus,
                 rowid: rowid,
@@ -19219,7 +19611,9 @@ class $$TodayRecordsTableTableManager
                 Value<int?> energyScore = const Value.absent(),
                 Value<String?> energyDescription = const Value.absent(),
                 Value<int?> researchMinutes = const Value.absent(),
+                Value<String?> researchDescription = const Value.absent(),
                 Value<int?> learningMinutes = const Value.absent(),
+                Value<String?> learningDescription = const Value.absent(),
                 Value<String?> dailyNote = const Value.absent(),
                 Value<String> recordStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -19250,7 +19644,9 @@ class $$TodayRecordsTableTableManager
                 energyScore: energyScore,
                 energyDescription: energyDescription,
                 researchMinutes: researchMinutes,
+                researchDescription: researchDescription,
                 learningMinutes: learningMinutes,
+                learningDescription: learningDescription,
                 dailyNote: dailyNote,
                 recordStatus: recordStatus,
                 rowid: rowid,
@@ -21852,10 +22248,14 @@ typedef $$HealthRecordsTableCreateCompanionBuilder =
       required String recordDate,
       required int timezoneOffsetMinutes,
       Value<int?> sleepDurationMinutes,
+      Value<String?> sleepDescription,
       Value<double?> weightKg,
+      Value<String?> weightDescription,
       Value<int?> waterIntakeMl,
+      Value<String?> waterDescription,
       Value<String?> exerciseType,
       Value<int?> exerciseDurationMinutes,
+      Value<String?> exerciseDescription,
       Value<int?> physicalStateScore,
       Value<int?> physicalStateScoreScale,
       Value<String?> physicalStateDescription,
@@ -21879,10 +22279,14 @@ typedef $$HealthRecordsTableUpdateCompanionBuilder =
       Value<String> recordDate,
       Value<int> timezoneOffsetMinutes,
       Value<int?> sleepDurationMinutes,
+      Value<String?> sleepDescription,
       Value<double?> weightKg,
+      Value<String?> weightDescription,
       Value<int?> waterIntakeMl,
+      Value<String?> waterDescription,
       Value<String?> exerciseType,
       Value<int?> exerciseDurationMinutes,
+      Value<String?> exerciseDescription,
       Value<int?> physicalStateScore,
       Value<int?> physicalStateScoreScale,
       Value<String?> physicalStateDescription,
@@ -22000,13 +22404,28 @@ class $$HealthRecordsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get sleepDescription => $composableBuilder(
+    column: $table.sleepDescription,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<double> get weightKg => $composableBuilder(
     column: $table.weightKg,
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get weightDescription => $composableBuilder(
+    column: $table.weightDescription,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get waterIntakeMl => $composableBuilder(
     column: $table.waterIntakeMl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get waterDescription => $composableBuilder(
+    column: $table.waterDescription,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -22017,6 +22436,11 @@ class $$HealthRecordsTableFilterComposer
 
   ColumnFilters<int> get exerciseDurationMinutes => $composableBuilder(
     column: $table.exerciseDurationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get exerciseDescription => $composableBuilder(
+    column: $table.exerciseDescription,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -22161,13 +22585,28 @@ class $$HealthRecordsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get sleepDescription => $composableBuilder(
+    column: $table.sleepDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get weightKg => $composableBuilder(
     column: $table.weightKg,
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get weightDescription => $composableBuilder(
+    column: $table.weightDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get waterIntakeMl => $composableBuilder(
     column: $table.waterIntakeMl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get waterDescription => $composableBuilder(
+    column: $table.waterDescription,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -22178,6 +22617,11 @@ class $$HealthRecordsTableOrderingComposer
 
   ColumnOrderings<int> get exerciseDurationMinutes => $composableBuilder(
     column: $table.exerciseDurationMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get exerciseDescription => $composableBuilder(
+    column: $table.exerciseDescription,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -22314,11 +22758,26 @@ class $$HealthRecordsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get sleepDescription => $composableBuilder(
+    column: $table.sleepDescription,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get weightKg =>
       $composableBuilder(column: $table.weightKg, builder: (column) => column);
 
+  GeneratedColumn<String> get weightDescription => $composableBuilder(
+    column: $table.weightDescription,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get waterIntakeMl => $composableBuilder(
     column: $table.waterIntakeMl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get waterDescription => $composableBuilder(
+    column: $table.waterDescription,
     builder: (column) => column,
   );
 
@@ -22329,6 +22788,11 @@ class $$HealthRecordsTableAnnotationComposer
 
   GeneratedColumn<int> get exerciseDurationMinutes => $composableBuilder(
     column: $table.exerciseDurationMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get exerciseDescription => $composableBuilder(
+    column: $table.exerciseDescription,
     builder: (column) => column,
   );
 
@@ -22448,10 +22912,14 @@ class $$HealthRecordsTableTableManager
                 Value<String> recordDate = const Value.absent(),
                 Value<int> timezoneOffsetMinutes = const Value.absent(),
                 Value<int?> sleepDurationMinutes = const Value.absent(),
+                Value<String?> sleepDescription = const Value.absent(),
                 Value<double?> weightKg = const Value.absent(),
+                Value<String?> weightDescription = const Value.absent(),
                 Value<int?> waterIntakeMl = const Value.absent(),
+                Value<String?> waterDescription = const Value.absent(),
                 Value<String?> exerciseType = const Value.absent(),
                 Value<int?> exerciseDurationMinutes = const Value.absent(),
+                Value<String?> exerciseDescription = const Value.absent(),
                 Value<int?> physicalStateScore = const Value.absent(),
                 Value<int?> physicalStateScoreScale = const Value.absent(),
                 Value<String?> physicalStateDescription = const Value.absent(),
@@ -22473,10 +22941,14 @@ class $$HealthRecordsTableTableManager
                 recordDate: recordDate,
                 timezoneOffsetMinutes: timezoneOffsetMinutes,
                 sleepDurationMinutes: sleepDurationMinutes,
+                sleepDescription: sleepDescription,
                 weightKg: weightKg,
+                weightDescription: weightDescription,
                 waterIntakeMl: waterIntakeMl,
+                waterDescription: waterDescription,
                 exerciseType: exerciseType,
                 exerciseDurationMinutes: exerciseDurationMinutes,
+                exerciseDescription: exerciseDescription,
                 physicalStateScore: physicalStateScore,
                 physicalStateScoreScale: physicalStateScoreScale,
                 physicalStateDescription: physicalStateDescription,
@@ -22500,10 +22972,14 @@ class $$HealthRecordsTableTableManager
                 required String recordDate,
                 required int timezoneOffsetMinutes,
                 Value<int?> sleepDurationMinutes = const Value.absent(),
+                Value<String?> sleepDescription = const Value.absent(),
                 Value<double?> weightKg = const Value.absent(),
+                Value<String?> weightDescription = const Value.absent(),
                 Value<int?> waterIntakeMl = const Value.absent(),
+                Value<String?> waterDescription = const Value.absent(),
                 Value<String?> exerciseType = const Value.absent(),
                 Value<int?> exerciseDurationMinutes = const Value.absent(),
+                Value<String?> exerciseDescription = const Value.absent(),
                 Value<int?> physicalStateScore = const Value.absent(),
                 Value<int?> physicalStateScoreScale = const Value.absent(),
                 Value<String?> physicalStateDescription = const Value.absent(),
@@ -22525,10 +23001,14 @@ class $$HealthRecordsTableTableManager
                 recordDate: recordDate,
                 timezoneOffsetMinutes: timezoneOffsetMinutes,
                 sleepDurationMinutes: sleepDurationMinutes,
+                sleepDescription: sleepDescription,
                 weightKg: weightKg,
+                weightDescription: weightDescription,
                 waterIntakeMl: waterIntakeMl,
+                waterDescription: waterDescription,
                 exerciseType: exerciseType,
                 exerciseDurationMinutes: exerciseDurationMinutes,
+                exerciseDescription: exerciseDescription,
                 physicalStateScore: physicalStateScore,
                 physicalStateScoreScale: physicalStateScoreScale,
                 physicalStateDescription: physicalStateDescription,

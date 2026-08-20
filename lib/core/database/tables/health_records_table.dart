@@ -20,13 +20,29 @@ class HealthRecords extends Table
 
   IntColumn get sleepDurationMinutes => integer().nullable()();
 
+  TextColumn get sleepDescription => text().nullable().customConstraint(
+    'NULL CHECK (length(sleep_description) <= 80)',
+  )();
+
   RealColumn get weightKg => real().nullable()();
 
+  TextColumn get weightDescription => text().nullable().customConstraint(
+    'NULL CHECK (length(weight_description) <= 80)',
+  )();
+
   IntColumn get waterIntakeMl => integer().nullable()();
+
+  TextColumn get waterDescription => text().nullable().customConstraint(
+    'NULL CHECK (length(water_description) <= 80)',
+  )();
 
   TextColumn get exerciseType => text().nullable()();
 
   IntColumn get exerciseDurationMinutes => integer().nullable()();
+
+  TextColumn get exerciseDescription => text().nullable().customConstraint(
+    'NULL CHECK (length(exercise_description) <= 80)',
+  )();
 
   IntColumn get physicalStateScore => integer().nullable()();
 

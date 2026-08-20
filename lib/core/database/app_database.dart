@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -208,6 +208,44 @@ class AppDatabase extends _$AppDatabase {
           ),
         );
         await _createTodayAndHealthIndexes();
+      }
+      if (from < 14) {
+        if (!await _columnExists('today_records', 'research_description')) {
+          await migrator.addColumn(
+            todayRecords,
+            todayRecords.researchDescription,
+          );
+        }
+        if (!await _columnExists('today_records', 'learning_description')) {
+          await migrator.addColumn(
+            todayRecords,
+            todayRecords.learningDescription,
+          );
+        }
+        if (!await _columnExists('health_records', 'sleep_description')) {
+          await migrator.addColumn(
+            healthRecords,
+            healthRecords.sleepDescription,
+          );
+        }
+        if (!await _columnExists('health_records', 'weight_description')) {
+          await migrator.addColumn(
+            healthRecords,
+            healthRecords.weightDescription,
+          );
+        }
+        if (!await _columnExists('health_records', 'water_description')) {
+          await migrator.addColumn(
+            healthRecords,
+            healthRecords.waterDescription,
+          );
+        }
+        if (!await _columnExists('health_records', 'exercise_description')) {
+          await migrator.addColumn(
+            healthRecords,
+            healthRecords.exerciseDescription,
+          );
+        }
       }
     },
     beforeOpen: (details) async {

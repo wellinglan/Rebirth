@@ -1,4 +1,5 @@
 import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/utils/metric_description.dart';
 
 final class InvalidHealthDateException implements Exception {
   const InvalidHealthDateException(this.recordDate);
@@ -23,9 +24,13 @@ final class HealthSaveData {
   factory HealthSaveData({
     required String recordDate,
     int? sleepDurationMinutes,
+    String? sleepDescription,
     double? weightKg,
+    String? weightDescription,
     int? waterIntakeMl,
+    String? waterDescription,
     int? exerciseDurationMinutes,
+    String? exerciseDescription,
     String? exerciseType,
     int? physicalStateScore,
     String? physicalStateDescription,
@@ -52,9 +57,25 @@ final class HealthSaveData {
     return HealthSaveData._(
       recordDate: recordDate,
       sleepDurationMinutes: sleepDurationMinutes,
+      sleepDescription: normalizeMetricDescription(
+        sleepDescription,
+        name: 'sleepDescription',
+      ),
       weightKg: weightKg,
+      weightDescription: normalizeMetricDescription(
+        weightDescription,
+        name: 'weightDescription',
+      ),
       waterIntakeMl: waterIntakeMl,
+      waterDescription: normalizeMetricDescription(
+        waterDescription,
+        name: 'waterDescription',
+      ),
       exerciseDurationMinutes: exerciseDurationMinutes,
+      exerciseDescription: normalizeMetricDescription(
+        exerciseDescription,
+        name: 'exerciseDescription',
+      ),
       exerciseType: _trimToNull(exerciseType),
       physicalStateScore: physicalStateScore,
       physicalStateDescription: _normalizeDescription(physicalStateDescription),
@@ -65,9 +86,13 @@ final class HealthSaveData {
   const HealthSaveData._({
     required this.recordDate,
     required this.sleepDurationMinutes,
+    required this.sleepDescription,
     required this.weightKg,
+    required this.weightDescription,
     required this.waterIntakeMl,
+    required this.waterDescription,
     required this.exerciseDurationMinutes,
+    required this.exerciseDescription,
     required this.exerciseType,
     required this.physicalStateScore,
     required this.physicalStateDescription,
@@ -76,9 +101,13 @@ final class HealthSaveData {
 
   final String recordDate;
   final int? sleepDurationMinutes;
+  final String? sleepDescription;
   final double? weightKg;
+  final String? weightDescription;
   final int? waterIntakeMl;
+  final String? waterDescription;
   final int? exerciseDurationMinutes;
+  final String? exerciseDescription;
   final String? exerciseType;
   final int? physicalStateScore;
   final String? physicalStateDescription;

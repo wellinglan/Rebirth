@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 13 with AI report feedback', () async {
+  test('creates schema version 14 with metric narratives', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -47,7 +47,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 13);
+    expect(versionRow.read<int>('user_version'), 14);
   });
 
   test(
@@ -240,6 +240,36 @@ void main() {
 
     expect(records[0].researchMinutes, isNull);
     expect(records[1].researchMinutes, 0);
+  });
+
+  test('metric narrative columns enforce the 80 character limit', () async {
+    final bootstrap = await database.bootstrapDao.bootstrap(
+      createUnboundProfile: true,
+    );
+
+    await database
+        .into(database.todayRecords)
+        .insert(
+          TodayRecordsCompanion.insert(
+            userId: bootstrap.activeUserId,
+            recordDate: '2026-07-20',
+            timezoneOffsetMinutes: 480,
+            researchDescription: Value('x' * 80),
+          ),
+        );
+    await expectLater(
+      database
+          .into(database.healthRecords)
+          .insert(
+            HealthRecordsCompanion.insert(
+              userId: bootstrap.activeUserId,
+              recordDate: '2026-07-20',
+              timezoneOffsetMinutes: 480,
+              waterDescription: Value('x' * 81),
+            ),
+          ),
+      throwsA(isA<Exception>()),
+    );
   });
 
   test('enables and enforces SQLite foreign keys', () async {

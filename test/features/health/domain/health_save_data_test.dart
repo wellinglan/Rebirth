@@ -11,14 +11,9 @@ void main() {
 
   test('rejects negative duration and water metrics', () {
     for (final create in <HealthSaveData Function()>[
-      () => HealthSaveData(
-        recordDate: '2026-07-14',
-        sleepDurationMinutes: -1,
-      ),
-      () => HealthSaveData(
-        recordDate: '2026-07-14',
-        exerciseDurationMinutes: -1,
-      ),
+      () => HealthSaveData(recordDate: '2026-07-14', sleepDurationMinutes: -1),
+      () =>
+          HealthSaveData(recordDate: '2026-07-14', exerciseDurationMinutes: -1),
       () => HealthSaveData(recordDate: '2026-07-14', waterIntakeMl: -1),
     ]) {
       expect(create, throwsA(isA<InvalidHealthMetricException>()));
@@ -65,5 +60,29 @@ void main() {
     expect(zero.sleepDurationMinutes, 0);
     expect(zero.exerciseDurationMinutes, 0);
     expect(zero.waterIntakeMl, 0);
+  });
+
+  test('normalizes all metric narratives and keeps them without values', () {
+    final data = HealthSaveData(
+      recordDate: '2026-07-14',
+      sleepDescription: '  睡眠平稳  ',
+      weightDescription: '晨起测量',
+      waterDescription: '   ',
+      exerciseDescription: '散步后放松',
+    );
+
+    expect(data.sleepDurationMinutes, isNull);
+    expect(data.sleepDescription, '睡眠平稳');
+    expect(data.weightDescription, '晨起测量');
+    expect(data.waterDescription, isNull);
+    expect(data.exerciseDescription, '散步后放松');
+  });
+
+  test('rejects metric narratives longer than 80 characters', () {
+    expect(
+      () =>
+          HealthSaveData(recordDate: '2026-07-14', sleepDescription: 'x' * 81),
+      throwsArgumentError,
+    );
   });
 }

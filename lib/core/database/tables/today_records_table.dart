@@ -62,7 +62,15 @@ class TodayRecords extends Table
 
   IntColumn get researchMinutes => integer().nullable()();
 
+  TextColumn get researchDescription => text().nullable().customConstraint(
+    'NULL CHECK (length(research_description) <= 80)',
+  )();
+
   IntColumn get learningMinutes => integer().nullable()();
+
+  TextColumn get learningDescription => text().nullable().customConstraint(
+    'NULL CHECK (length(learning_description) <= 80)',
+  )();
 
   TextColumn get dailyNote => text().nullable()();
 

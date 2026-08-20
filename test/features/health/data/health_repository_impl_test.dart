@@ -85,6 +85,27 @@ void main() {
     expect(raw.physicalStateScoreScale, 10);
   });
 
+  test('metric narratives persist independently from numeric values', () async {
+    final entry = await repository.saveForDate(
+      HealthSaveData(
+        recordDate: '2026-07-14',
+        sleepDescription: '  入睡较慢  ',
+        weightDescription: '晨起测量',
+        waterDescription: '分次补水',
+        exerciseDescription: '舒缓拉伸',
+      ),
+    );
+    final raw = await database.select(database.healthRecords).getSingle();
+
+    expect(entry.hasMetrics, isTrue);
+    expect(entry.sleepDescription, '入睡较慢');
+    expect(entry.weightDescription, '晨起测量');
+    expect(entry.waterDescription, '分次补水');
+    expect(entry.exerciseDescription, '舒缓拉伸');
+    expect(raw.sleepDescription, '入睡较慢');
+    expect(raw.updatedAt, currentTime.toUtc().millisecondsSinceEpoch);
+  });
+
   test('getByDate and inclusive date range are date-descending', () async {
     for (final day in [10, 12, 14]) {
       currentTime = DateTime(2026, 7, day, 9);
@@ -187,7 +208,7 @@ void main() {
     final settings = await database.select(database.appSettings).getSingle();
 
     expect(raw.originDeviceId, settings.localInstallationId);
-    expect(database.schemaVersion, 13);
+    expect(database.schemaVersion, 14);
   });
 
   test('Today health save is readable through Health', () async {

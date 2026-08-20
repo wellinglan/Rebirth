@@ -247,9 +247,7 @@ void main() {
     expect(repository.lastSaved?.health, isNull);
   });
 
-  testWidgets('rapid duration increments are not lost', (
-    tester,
-  ) async {
+  testWidgets('rapid duration increments are not lost', (tester) async {
     final repository = _FakeTodayRepository(entry: _sampleEntry());
     await _pumpTodayPage(tester, repository);
     await tester.pumpAndSettle();

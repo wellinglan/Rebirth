@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
+import 'package:rebirth/core/utils/metric_description.dart';
 import 'package:rebirth/core/wellbeing/wellbeing_score.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_repository.dart';
@@ -99,7 +100,15 @@ final class TodayRepositoryImpl implements TodayRepository {
     );
     _validateMinutes(data.researchMinutes, 'researchMinutes');
     _validateMinutes(data.learningMinutes, 'learningMinutes');
-    _validateHealth(data.health);
+    final researchDescription = normalizeMetricDescription(
+      data.researchDescription,
+      name: 'researchDescription',
+    );
+    final learningDescription = normalizeMetricDescription(
+      data.learningDescription,
+      name: 'learningDescription',
+    );
+    final health = _normalizeHealth(data.health);
 
     final snapshot = dateTimeService.currentSnapshot();
     final bootstrap = await _database.bootstrapDao.bootstrap();
@@ -125,13 +134,15 @@ final class TodayRepositoryImpl implements TodayRepository {
         energyScore: Value(data.energyScore),
         energyDescription: Value(energyDescription),
         researchMinutes: Value(data.researchMinutes),
+        researchDescription: Value(researchDescription),
         learningMinutes: Value(data.learningMinutes),
+        learningDescription: Value(learningDescription),
         dailyNote: Value(data.dailyNote),
         recordStatus: Value(data.status.name),
         updatedAt: Value(snapshot.utcMilliseconds),
         syncStatus: const Value('pending'),
       ),
-      health: data.health,
+      health: health,
     );
 
     return _toDomain(entry);
@@ -320,7 +331,9 @@ final class TodayRepositoryImpl implements TodayRepository {
       ),
       energyDescription: today.energyDescription,
       researchMinutes: today.researchMinutes,
+      researchDescription: today.researchDescription,
       learningMinutes: today.learningMinutes,
+      learningDescription: today.learningDescription,
       dailyNote: today.dailyNote,
       status: switch (today.recordStatus) {
         'draft' => TodayRecordStatus.draft,
@@ -334,10 +347,14 @@ final class TodayRepositoryImpl implements TodayRepository {
           : TodayHealthSummary(
               id: health.id,
               sleepDurationMinutes: health.sleepDurationMinutes,
+              sleepDescription: health.sleepDescription,
               weightKg: health.weightKg,
+              weightDescription: health.weightDescription,
               waterIntakeMl: health.waterIntakeMl,
+              waterDescription: health.waterDescription,
               exerciseType: health.exerciseType,
               exerciseDurationMinutes: health.exerciseDurationMinutes,
+              exerciseDescription: health.exerciseDescription,
               physicalStateScore: normalizeWellbeingScore(
                 health.physicalStateScore,
                 health.physicalStateScoreScale,
@@ -397,9 +414,9 @@ final class TodayRepositoryImpl implements TodayRepository {
     }
   }
 
-  void _validateHealth(TodayHealthInput? health) {
+  TodayHealthInput? _normalizeHealth(TodayHealthInput? health) {
     if (health == null) {
-      return;
+      return null;
     }
 
     _validateMinutes(health.sleepDurationMinutes, 'sleepDurationMinutes');
@@ -414,5 +431,33 @@ final class TodayRepositoryImpl implements TodayRepository {
         'Weight must be greater than zero.',
       );
     }
+    return TodayHealthInput(
+      sleepDurationMinutes: health.sleepDurationMinutes,
+      sleepDescription: normalizeMetricDescription(
+        health.sleepDescription,
+        name: 'sleepDescription',
+      ),
+      weightKg: health.weightKg,
+      weightDescription: normalizeMetricDescription(
+        health.weightDescription,
+        name: 'weightDescription',
+      ),
+      waterIntakeMl: health.waterIntakeMl,
+      waterDescription: normalizeMetricDescription(
+        health.waterDescription,
+        name: 'waterDescription',
+      ),
+      exerciseType: health.exerciseType,
+      exerciseDurationMinutes: health.exerciseDurationMinutes,
+      exerciseDescription: normalizeMetricDescription(
+        health.exerciseDescription,
+        name: 'exerciseDescription',
+      ),
+      physicalStateScore: health.physicalStateScore,
+      physicalStateDescription: normalizeWellbeingDescription(
+        health.physicalStateDescription,
+      ),
+      note: health.note,
+    );
   }
 }
