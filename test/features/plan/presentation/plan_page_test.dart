@@ -55,16 +55,16 @@ void main() {
     expect(find.text('年度'), findsOneWidget);
     expect(find.text('进行中'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('planGoalCompleted_root-goal')),
+      find.byKey(const ValueKey('planGoalHierarchyRoot_root-goal')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('planGoalStatusMenu_root-goal')),
-      findsNothing,
+      find.byKey(const ValueKey('planGoalActionsMenu_root-goal')),
+      findsOneWidget,
     );
-    expect(find.text('开始日期：2026-07-01'), findsOneWidget);
-    expect(find.text('目标日期：2027-07-01'), findsOneWidget);
-    expect(find.text('优先级：2'), findsOneWidget);
+    expect(find.text('Plan / 年度研究方向'), findsOneWidget);
+    expect(find.text('2026-07-01 → 2027-07-01'), findsOneWidget);
+    expect(find.text('优先级 2'), findsOneWidget);
     expect(find.text('整理长期研究路线'), findsOneWidget);
     expect(find.text('子目标'), findsOneWidget);
     expect(find.text('添加子目标'), findsOneWidget);
@@ -285,6 +285,25 @@ void main() {
     );
   }
 
+  testWidgets('wide Windows layout constrains the hierarchy reading width', (
+    tester,
+  ) async {
+    await _pumpPlanPage(
+      tester,
+      _FakePlanRepository(goals: [_rootGoal()]),
+      size: const Size(1200, 900),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('planGoalItem_root-goal')))
+          .width,
+      lessThan(1100),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('child action enters child view and back returns to root', (
     tester,
   ) async {
@@ -292,9 +311,12 @@ void main() {
     await _pumpPlanPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await tester.tap(
-      find.byKey(const ValueKey('viewPlanGoalChildren_root-goal')),
+    final childButton = find.byKey(
+      const ValueKey('viewPlanGoalChildren_root-goal'),
     );
+    await tester.ensureVisible(childButton);
+    await tester.pumpAndSettle();
+    await tester.tap(childButton);
     await tester.pumpAndSettle();
 
     expect(find.text('年度研究方向'), findsWidgets);
@@ -312,6 +334,64 @@ void main() {
     expect(find.text('让今天与长期方向相连'), findsOneWidget);
     expect(find.text('新建目标'), findsOneWidget);
     expect(find.text('年度研究方向'), findsOneWidget);
+  });
+
+  testWidgets('child view shows indentation, connector, and full goal path', (
+    tester,
+  ) async {
+    final root = _rootGoal();
+    final child = _rootGoal(
+      id: 'quarter-goal',
+      title: '第一季度实验',
+      parentGoalId: root.id,
+      level: PlanGoalLevel.quarter,
+    );
+    await _pumpPlanPage(tester, _FakePlanRepository(goals: [root, child]));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('viewPlanGoalChildren_root-goal')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('planGoalHierarchyChild_quarter-goal')),
+      findsOneWidget,
+    );
+    expect(find.text('Plan / 年度研究方向 / 第一季度实验'), findsOneWidget);
+  });
+
+  testWidgets('deep hierarchy remains readable at 320px and TextScaler 2.0', (
+    tester,
+  ) async {
+    final root = _rootGoal(title: '一个很长但仍然需要完整识别的年度研究方向');
+    final child = _rootGoal(
+      id: 'quarter-goal',
+      title: '第一季度关键实验与验证计划',
+      parentGoalId: root.id,
+      level: PlanGoalLevel.quarter,
+    );
+    await _pumpPlanPage(
+      tester,
+      _FakePlanRepository(goals: [root, child]),
+      size: const Size(320, 900),
+      textScale: 2,
+    );
+    await tester.pumpAndSettle();
+
+    final childButton = find.byKey(
+      const ValueKey('viewPlanGoalChildren_root-goal'),
+    );
+    await tester.ensureVisible(childButton);
+    await tester.pumpAndSettle();
+    await tester.tap(childButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('planGoalHierarchyChild_quarter-goal')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('direct add child creates with card parent and lower level', (
@@ -361,40 +441,35 @@ void main() {
     expect(repository.lastCreated?.parentGoalId, 'root-goal');
   });
 
-  testWidgets('completion checkbox updates the goal through the controller', (
+  testWidgets('compact menu updates goal status through the controller', (
     tester,
   ) async {
     final repository = _FakePlanRepository(goals: [_rootGoal()]);
     await _pumpPlanPage(tester, repository);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('planGoalCompleted_root-goal')));
-    await tester.pumpAndSettle();
+    await _selectGoalStatus(tester, 'root-goal', PlanGoalStatus.completed);
 
-    expect(repository.lastCompleted, isTrue);
+    expect(repository.lastStatus, PlanGoalStatus.completed);
     expect(find.text('已完成'), findsOneWidget);
   });
 
-  testWidgets(
-    'completion failure shows a snackbar and keeps the current list',
-    (tester) async {
-      final repository = _FakePlanRepository(
-        goals: [_rootGoal()],
-        completionFailures: 1,
-      );
-      await _pumpPlanPage(tester, repository);
-      await tester.pumpAndSettle();
+  testWidgets('status failure shows a snackbar and keeps the current list', (
+    tester,
+  ) async {
+    final repository = _FakePlanRepository(
+      goals: [_rootGoal()],
+      completionFailures: 1,
+    );
+    await _pumpPlanPage(tester, repository);
+    await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.byKey(const ValueKey('planGoalCompleted_root-goal')),
-      );
-      await tester.pumpAndSettle();
+    await _selectGoalStatus(tester, 'root-goal', PlanGoalStatus.completed);
 
-      expect(find.text('完成状态更新失败，请重试'), findsOneWidget);
-      expect(find.text('进行中'), findsOneWidget);
-      expect(find.byKey(const ValueKey('planErrorState')), findsNothing);
-    },
-  );
+    expect(find.text('目标状态更新失败，请重试'), findsOneWidget);
+    expect(find.text('进行中'), findsOneWidget);
+    expect(find.byKey(const ValueKey('planErrorState')), findsNothing);
+  });
 
   testWidgets('more menu archives and restores a goal', (tester) async {
     final repository = _FakePlanRepository(goals: [_rootGoal()]);
@@ -620,6 +695,19 @@ Future<void> _closeFilters(WidgetTester tester) async {
   expect(find.byKey(const ValueKey('planFilterPanel')), findsNothing);
 }
 
+Future<void> _selectGoalStatus(
+  WidgetTester tester,
+  String goalId,
+  PlanGoalStatus status,
+) async {
+  await tester.tap(find.byKey(ValueKey('planGoalActionsMenu_$goalId')));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(ValueKey('setPlanGoalStatus_${goalId}_${status.name}')),
+  );
+  await tester.pumpAndSettle();
+}
+
 Future<void> _submitForm(WidgetTester tester) async {
   final button = find.byKey(const ValueKey('submitPlanGoalButton'));
   await tester.ensureVisible(button);
@@ -630,6 +718,7 @@ Future<void> _submitForm(WidgetTester tester) async {
 PlanGoal _rootGoal({
   String id = 'root-goal',
   String title = '年度研究方向',
+  String? parentGoalId,
   PlanGoalLevel level = PlanGoalLevel.year,
   String? startDate = '2026-07-01',
   String? targetDate = '2027-07-01',
@@ -639,7 +728,7 @@ PlanGoal _rootGoal({
   return PlanGoal(
     id: id,
     userId: 'user-id',
-    parentGoalId: null,
+    parentGoalId: parentGoalId,
     title: title,
     description: '整理长期研究路线',
     goalLevel: level,
@@ -671,6 +760,7 @@ final class _FakePlanRepository implements PlanRepository {
   int createAttempts = 0;
   PlanGoalSaveData? lastCreated;
   bool? lastCompleted;
+  PlanGoalStatus? lastStatus;
   int restoreCalls = 0;
   int deleteCalls = 0;
 
@@ -737,6 +827,11 @@ final class _FakePlanRepository implements PlanRepository {
     required String id,
     required PlanGoalStatus status,
   }) async {
+    if (completionFailures > 0) {
+      completionFailures -= 1;
+      throw StateError('status failed for test');
+    }
+    lastStatus = status;
     return _setStatus(id, status);
   }
 

@@ -121,6 +121,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                           : _PlanGoalList(
                               goals: data.goals,
                               today: data.today,
+                              hierarchyDepth: data.breadcrumbs.length,
+                              ancestorTitles: data.breadcrumbs
+                                  .map((goal) => goal.title)
+                                  .toList(growable: false),
                               onEdit: (goal) => _openGoalForm(
                                 context,
                                 ref,
@@ -138,13 +142,8 @@ class _PlanPageState extends ConsumerState<PlanPage> {
                                   goal.goalLevel,
                                 ),
                               ),
-                              onCompletionChanged: (goal, completed) =>
-                                  _updateCompletion(
-                                    context,
-                                    ref,
-                                    goal.id,
-                                    completed,
-                                  ),
+                              onStatusChanged: (goal, status) =>
+                                  _updateStatus(context, ref, goal.id, status),
                               onAction: (goal, action) =>
                                   _handleAction(context, ref, goal, action),
                             ),
@@ -263,21 +262,21 @@ class _PlanPageState extends ConsumerState<PlanPage> {
         : controller.updateGoal(id: goal.id, data: data);
   }
 
-  Future<void> _updateCompletion(
+  Future<void> _updateStatus(
     BuildContext context,
     WidgetRef ref,
     String goalId,
-    bool completed,
+    PlanGoalStatus status,
   ) async {
     try {
       await ref
           .read(planControllerProvider.notifier)
-          .updateCompletion(id: goalId, completed: completed);
+          .updateStatus(id: goalId, status: status);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('完成状态更新失败，请重试')));
+          ..showSnackBar(const SnackBar(content: Text('目标状态更新失败，请重试')));
       }
     }
   }
@@ -389,33 +388,55 @@ class _PlanHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isRoot) ...[
-            Row(
-              children: [
-                IconButton(
-                  key: const ValueKey('planBackButton'),
-                  tooltip: '返回上一级',
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back),
-                ),
-                const SizedBox(width: 4),
-                TextButton(
-                  key: const ValueKey('planRootBreadcrumbButton'),
-                  onPressed: onRoot,
-                  child: const Text('Plan'),
-                ),
-                for (
-                  var index = 0;
-                  index < (view?.breadcrumbs.length ?? 0);
-                  index++
-                ) ...[
-                  const Icon(Icons.chevron_right, size: 18),
-                  TextButton(
-                    key: ValueKey('planBreadcrumb_$index'),
-                    onPressed: () => onBreadcrumb(index),
-                    child: Text(view!.breadcrumbs[index].title),
-                  ),
-                ],
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final breadcrumbWidth = (constraints.maxWidth - 48)
+                    .clamp(120.0, 220.0)
+                    .toDouble();
+                return Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    IconButton(
+                      key: const ValueKey('planBackButton'),
+                      tooltip: '返回上一级',
+                      onPressed: onBack,
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    TextButton(
+                      key: const ValueKey('planRootBreadcrumbButton'),
+                      onPressed: onRoot,
+                      child: const Text('Plan'),
+                    ),
+                    for (
+                      var index = 0;
+                      index < (view?.breadcrumbs.length ?? 0);
+                      index++
+                    )
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.chevron_right, size: 18),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: breadcrumbWidth,
+                            ),
+                            child: TextButton(
+                              key: ValueKey('planBreadcrumb_$index'),
+                              onPressed: () => onBreadcrumb(index),
+                              child: Text(
+                                view!.breadcrumbs[index].title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 6),
           ],
@@ -536,20 +557,24 @@ class _PlanGoalList extends StatelessWidget {
   const _PlanGoalList({
     required this.goals,
     required this.today,
+    required this.hierarchyDepth,
+    required this.ancestorTitles,
     required this.onEdit,
     required this.onOpenChildren,
     required this.onAddChild,
-    required this.onCompletionChanged,
+    required this.onStatusChanged,
     required this.onAction,
   });
 
   final List<PlanGoal> goals;
   final String today;
+  final int hierarchyDepth;
+  final List<String> ancestorTitles;
   final ValueChanged<PlanGoal> onEdit;
   final ValueChanged<PlanGoal> onOpenChildren;
   final ValueChanged<PlanGoal> onAddChild;
-  final Future<void> Function(PlanGoal goal, bool completed)
-  onCompletionChanged;
+  final Future<void> Function(PlanGoal goal, PlanGoalStatus status)
+  onStatusChanged;
   final Future<void> Function(PlanGoal goal, PlanGoalAction action) onAction;
 
   @override
@@ -567,22 +592,41 @@ class _PlanGoalList extends StatelessWidget {
           SizedBox(height: index == 0 ? AppLayout.cardGap : AppSpacing.xs),
       itemBuilder: (context, index) {
         if (index == 0) {
-          return Text(
-            '共 ${goals.length} 个目标',
-            style: Theme.of(context).textTheme.titleMedium,
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppLayout.maxContentWidth,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: Text(
+                  '共 ${goals.length} 个目标',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
           );
         }
 
         final goal = goals[index - 1];
-        return PlanGoalCard(
-          goal: goal,
-          today: today,
-          onEdit: () => onEdit(goal),
-          onOpenChildren: () => onOpenChildren(goal),
-          onAddChild: () => onAddChild(goal),
-          onCompletionChanged: (completed) =>
-              onCompletionChanged(goal, completed).ignore(),
-          onAction: (action) => onAction(goal, action).ignore(),
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: AppLayout.maxContentWidth,
+            ),
+            child: PlanGoalCard(
+              goal: goal,
+              today: today,
+              hierarchyDepth: hierarchyDepth,
+              ancestorTitles: ancestorTitles,
+              onEdit: () => onEdit(goal),
+              onOpenChildren: () => onOpenChildren(goal),
+              onAddChild: () => onAddChild(goal),
+              onStatusChanged: (status) =>
+                  onStatusChanged(goal, status).ignore(),
+              onAction: (action) => onAction(goal, action).ignore(),
+            ),
+          ),
         );
       },
     );

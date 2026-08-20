@@ -51,7 +51,9 @@ void main() {
     expect(goals.single.parentGoalId, isNull);
 
     final goalId = goals.single.id;
-    await tester.tap(find.byKey(ValueKey('planGoalItem_$goalId')));
+    await tester.tap(find.byKey(ValueKey('planGoalActionsMenu_$goalId')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('editPlanGoal_$goalId')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('planGoalTitleField')),
@@ -64,7 +66,11 @@ void main() {
     expect(goals.single.id, goalId);
     expect(goals.single.title, '已编辑的真实目标');
 
-    await tester.tap(find.byKey(ValueKey('planGoalCompleted_$goalId')));
+    await tester.tap(find.byKey(ValueKey('planGoalActionsMenu_$goalId')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(ValueKey('setPlanGoalStatus_${goalId}_completed')),
+    );
     await tester.pumpAndSettle();
 
     final completed = await container
