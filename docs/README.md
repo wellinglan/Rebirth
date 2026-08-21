@@ -88,6 +88,7 @@ deferred, or unsupported now.
 - [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) - Active foundation; feature-level visual direction remains open
 - [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) - Accepted developer-only historical comparison
 - [Home / Today / Health Production Integration](57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md) - Active implementation; manual Gate open
+- [AI Coach Conversational Experience](59_AI_COACH_CONVERSATIONAL_MVP.md) - Sprint 18A implementation contract; Gate open
 
 ## Historical Sprint Records
 
