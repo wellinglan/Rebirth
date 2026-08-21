@@ -34,7 +34,10 @@ void main() {
     );
     await _pumpHome(tester, gateway: gateway, reports: reports);
 
-    expect(find.text('今天想从哪里开始？'), findsOneWidget);
+    expect(find.text('AI 教练'), findsOneWidget);
+    expect(find.text('洞察与回顾'), findsOneWidget);
+    expect(find.byKey(const ValueKey('startAiChatButton')), findsOneWidget);
+    expect(find.text('和 AI 教练聊一聊'), findsOneWidget);
     expect(find.text('AI 可用'), findsOneWidget);
     expect(find.textContaining('今天剩余 8 次'), findsOneWidget);
     expect(find.text('今日洞察'), findsOneWidget);
@@ -65,6 +68,8 @@ void main() {
     addTearDown(router.dispose);
     await _pumpHome(tester, gateway: gateway, reports: reports, router: router);
 
+    await tester.ensureVisible(find.text('查看本周报告'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('查看本周报告'));
     await tester.pumpAndSettle();
 
@@ -85,6 +90,8 @@ void main() {
       router: router,
     );
 
+    await tester.ensureVisible(find.text('生成每周回顾'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('生成每周回顾'));
     await tester.pumpAndSettle();
 
@@ -155,6 +162,10 @@ void main() {
     );
 
     expect(find.text('设置 AI 授权'), findsWidgets);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('openAiConsentSettingsButton')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('openAiConsentSettingsButton')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('aiConsentSettingsPage')), findsOneWidget);

@@ -21,7 +21,7 @@ void main() {
     }
   });
 
-  test('schema version 13 keeps AI presentation boundaries', () {
+  test('schema version 15 keeps AI presentation boundaries', () {
     final database = File(
       'lib/core/database/app_database.dart',
     ).readAsStringSync();
@@ -39,6 +39,12 @@ void main() {
       ).readAsStringSync(),
       File(
         'lib/features/ai_coach/presentation/ai_weekly_report_page.dart',
+      ).readAsStringSync(),
+      File(
+        'lib/features/ai_coach/presentation/ai_chat_page.dart',
+      ).readAsStringSync(),
+      File(
+        'lib/features/ai_coach/presentation/ai_chat_history_page.dart',
       ).readAsStringSync(),
     ];
     expect(presentation, isNotEmpty);
@@ -87,9 +93,44 @@ void main() {
       'aiReportHistoryControllerProvider',
       'aiReportFeedbackProvider',
       'aiReportFeedbackControllerFamily',
+      'aiChatCoordinatorProvider',
+      'aiChatControllerProvider',
     ]) {
       expect(invalidator, contains('ref.invalidate($provider)'));
     }
+  });
+
+  test('AI chat remains local-only and outside report and sync pipelines', () {
+    final presentation = [
+      File(
+        'lib/features/ai_coach/presentation/ai_chat_page.dart',
+      ).readAsStringSync(),
+      File(
+        'lib/features/ai_coach/presentation/ai_chat_history_page.dart',
+      ).readAsStringSync(),
+      File(
+        'lib/features/ai_coach/presentation/widgets/ai_chat_conversation_view.dart',
+      ).readAsStringSync(),
+    ];
+    for (final source in presentation) {
+      expect(source, isNot(contains('package:drift')));
+      expect(source, isNot(contains('app_database')));
+      expect(source, isNot(contains('local_ai_chat_repository')));
+      expect(source, isNot(contains('remote_ai_chat_gateway')));
+      expect(source, isNot(contains('SyncCoordinator')));
+    }
+
+    final syncEntities = File(
+      'lib/features/sync/domain/sync_entity_type.dart',
+    ).readAsStringSync();
+    expect(syncEntities, isNot(contains('aiChat')));
+
+    final coordinator = File(
+      'lib/features/ai_coach/application/ai_chat_coordinator.dart',
+    ).readAsStringSync();
+    expect(coordinator, isNot(contains('AiReportRepository')));
+    expect(coordinator, isNot(contains('SyncCoordinator')));
+    expect(coordinator, isNot(contains('DateTime.now')));
   });
 
   test('structured feedback appears only on report detail surfaces', () {
