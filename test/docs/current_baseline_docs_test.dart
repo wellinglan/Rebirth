@@ -34,6 +34,9 @@ void main() {
       'docs/58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md';
   const coreExperienceMatrixPath =
       'docs/manual_tests/63_plan_journal_growth_and_metric_narratives.md';
+  const aiChatContractPath = 'docs/59_AI_COACH_CONVERSATIONAL_MVP.md';
+  const aiChatMatrixPath =
+      'docs/manual_tests/64_ai_coach_conversational_mvp.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -58,6 +61,8 @@ void main() {
         productionExperienceMatrixPath,
         coreExperiencePath,
         coreExperienceMatrixPath,
+        aiChatContractPath,
+        aiChatMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -93,13 +98,13 @@ void main() {
     expect(schemaMatch, isNotNull);
     expect(apiMatch, isNotNull);
     expect(protocolMatch, isNotNull);
-    expect(schemaMatch!.group(1), '14');
+    expect(schemaMatch!.group(1), '15');
     expect(apiMatch!.group(1), '1');
     expect(apiMatch.group(2), '1');
     expect(protocolMatch!.group(1), '2');
     expect(protocolMatch.group(2), '2');
 
-    expect(baseline, contains('| Flutter schemaVersion | `14` |'));
+    expect(baseline, contains('| Flutter schemaVersion | `15` |'));
     expect(baseline, contains('| API Version | `1` |'));
     expect(baseline, contains('| Sync Protocol Version | `2` |'));
   });
@@ -406,13 +411,17 @@ void main() {
       hasLength(69),
     );
     expect(
-      RegExp(r'^\| [A-I]\d+ \|.*\| PASS \|', multiLine: true)
-          .allMatches(matrix),
+      RegExp(
+        r'^\| [A-I]\d+ \|.*\| PASS \|',
+        multiLine: true,
+      ).allMatches(matrix),
       hasLength(67),
     );
     expect(
-      RegExp(r'^\| [A-I]\d+ \|.*\| NOT EXECUTED \|', multiLine: true)
-          .allMatches(matrix),
+      RegExp(
+        r'^\| [A-I]\d+ \|.*\| NOT EXECUTED \|',
+        multiLine: true,
+      ).allMatches(matrix),
       hasLength(2),
     );
     expect(matrix, isNot(contains('| FAIL |')));
@@ -421,6 +430,37 @@ void main() {
     expect(matrix, contains('Gate is CLOSED WITH ACCEPTED AUTOMATED'));
     expect(registry, contains('Sprint 17C-E Core Experience'));
     expect(registry, contains('67 / 0 / 2'));
+  });
+
+  test('Sprint 18A docs keep conversational AI boundaries and Gate honest', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final contract = File(aiChatContractPath).readAsStringSync();
+    final matrix = File(aiChatMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('Sprint 18A'));
+    expect(baseline, contains('Flutter schema 15'));
+    expect(contract, contains('coach-chat-v1'));
+    expect(contract, contains('non-streaming'));
+    expect(contract, contains('local-device only'));
+    expect(contract, contains('API Version: `1`'));
+    expect(contract, contains('Sync Protocol: `2`'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 69 NOT EXECUTED'));
+    expect(
+      RegExp(r'^\| [A-H]\d+ \|', multiLine: true).allMatches(matrix),
+      hasLength(69),
+    );
+    expect(
+      RegExp(
+        r'^\| [A-H]\d+ \|.*\| NOT EXECUTED \|',
+        multiLine: true,
+      ).allMatches(matrix),
+      hasLength(69),
+    );
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(matrix, contains('Gate: **OPEN**'));
+    expect(registry, contains('AI Coach Conversational Experience'));
+    expect(registry, contains('0 / 0 / 69'));
   });
 }
 

@@ -1130,3 +1130,48 @@ All affected surfaces wrap at 320px and TextScaler 2.0. Icon-only actions retain
 narrative contents are deliberately excluded from Semantics values, logs,
 errors, statistics, and automatic Home/Growth summaries. See
 `docs/58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md`.
+
+## 32. AI Coach Conversational MVP
+
+Sprint 18A extends the existing governed generation path instead of creating a
+second AI stack:
+
+```text
+AiChatPage
+  -> AiChatController
+  -> AiChatCoordinator
+      -> local AiChatRepository (Drift schema 15)
+      -> AiChatInputAssembler (explicit context only)
+      -> AiChatGateway
+          -> authenticated POST /ai/chat/turns
+              -> existing AI generation service
+              -> Prompt Registry coach-chat-v1
+              -> existing AiProvider / Usage / Generation Ledger
+```
+
+The reliable turn transaction writes a user message and pending assistant
+placeholder before calling the network. A local write or request-binding
+failure therefore cannot call the Provider. A known remote failure marks the
+placeholder failed and permits only an explicit retry with a new request ID.
+Network uncertainty marks `outcome_unknown`; the user may explicitly query the
+existing request-status endpoint, but the client never automatically repeats
+generation.
+
+The Server accepts only `user` and `assistant` roles, bounds individual and
+aggregate input, requires the final role to be `user`, inserts the system Prompt
+itself, and derives account identity from JWT. `coach_chat` uses the existing
+quota, request lease, idempotency, result retention, and ledger semantics. No
+Chat thread/message table exists on PostgreSQL and no AI Report or Report
+Version is created.
+
+Chat context defaults to text-only. Growth, Today, Health, and Journal are read
+through existing repositories only after explicit selection. Active Goals are
+unsupported, and the six Sprint 17C-E metric narratives are not encoded into
+Chat context. Selection changes do not call AI and reset on new thread/account.
+
+Local threads and messages are strictly account-scoped and excluded from
+`SyncEntityType`; there is no cursor, adapter, tombstone, or conflict surface
+for Chat. The optional full-export module removes user, request, Provider,
+credential, and recovery identifiers. Widgets depend on the controller/domain
+models rather than Drift, AppDatabase, or gateway implementations. See
+`docs/59_AI_COACH_CONVERSATIONAL_MVP.md`.

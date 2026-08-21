@@ -1,5 +1,3 @@
-import 'dart:ui' show SemanticsFlag;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -150,7 +148,7 @@ void main() {
       find.byKey(const ValueKey('sendAiChatSemantics')),
     );
     expect(sendSemantics.label, contains('发送消息'));
-    expect(sendSemantics.hasFlag(SemanticsFlag.isButton), isTrue);
+    expect(sendSemantics.flagsCollection.isButton, isTrue);
     semantics.dispose();
   });
 

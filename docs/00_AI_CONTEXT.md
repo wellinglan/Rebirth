@@ -4,7 +4,30 @@
 > Status: Partially current / active mission with append-only Sprint history
 > Last Updated: 2026-08
 
-## Current Appendix: Sprint 17C-E Core Experience Consolidation
+## Current Appendix: Sprint 18A AI Coach Conversational MVP
+
+Sprint 18A adds explicit, non-streaming multi-turn Chat to AI Coach while
+reusing the existing authenticated AiProvider, consent, quota, Prompt
+governance, Generation Ledger, idempotency, leases, and status recovery. The
+only new generation route is `POST /ai/chat/turns`; identity comes from JWT and
+`coach-chat-v1` is inserted by the Server. Chat does not create AI Reports,
+modify business records, use tools/search/attachments, or run automatically.
+
+Flutter schema 15 adds account-scoped local Chat threads and messages. History
+persists across app restart but is deliberately absent from Sync Protocol 2.
+Text-only is the default; Growth, Today, Health, and Journal context can be
+attached only through an explicit per-thread selection that resets for a new
+thread or account. Active Goals and Sprint 17C-E metric descriptions remain
+excluded. Known failures require explicit retry; uncertain outcomes allow only
+an explicit status check. See `docs/59_AI_COACH_CONVERSATIONAL_MVP.md` and
+`docs/manual_tests/64_ai_coach_conversational_mvp.md`.
+
+The implementation and focused automation exist, but final CI, Candidate image
+publication/deployment, platform release builds, and all 69 manual rows remain
+unexecuted. The Sprint 18A Gate is OPEN. API Version remains 1, Sync Protocol
+remains 2, and Server Alembic head remains `20260812_0008`.
+
+## Historical Appendix: Sprint 17C-E Core Experience Consolidation
 
 Sprint 17C-E changes product presentation and structured Today/Health facts; it
 does not add AI capability. Plan filters and hierarchy are more compact,

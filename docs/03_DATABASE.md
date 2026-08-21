@@ -2,7 +2,7 @@
 
 > Classification: **Partially current design plus migration history**
 > The Sprint 1.5 design-only metadata below is historical. Appendices record
-> later migrations through Flutter `schemaVersion = 14`; current versions and
+> later migrations through Flutter `schemaVersion = 15`; current versions and
 > Server Alembic state are authoritative in `docs/CURRENT_BASELINE.md`.
 
 > 文档版本：v1.0  
@@ -1105,3 +1105,27 @@ The Server keeps the values inside existing generic Sync Protocol 2 JSON. No
 PostgreSQL business column, SQLAlchemy model, or Alembic revision is added;
 Alembic head remains `20260812_0008`. API Version remains `1` and Sync Protocol
 remains `2`.
+
+## Sprint 18A Local AI Chat
+
+Flutter Drift advances from `schemaVersion = 14` to `15`. The additive
+migration creates two account-scoped, local-only tables:
+
+- `ai_chat_threads`: UUID, `user_id`, nonblank local title, created/updated
+  timestamps, and nullable archive timestamp;
+- `ai_chat_messages`: UUID, thread/account identity, role, sequence, content,
+  nullable request ID, lifecycle status, Prompt version, nullable safety/error
+  metadata, and created/updated timestamps.
+
+Thread deletion cascades to its messages. The Repository enforces account
+ownership, role/status transitions, ordered sequence, one unresolved assistant
+turn, and transactional user-plus-pending creation. Supported message states
+are `pending`, `completed`, `failed`, and `outcome_unknown`; explicit deletion
+is complete local deletion rather than a sync tombstone.
+
+These tables are intentionally absent from Sync Protocol 2 and Server
+PostgreSQL. No sync adapter, cursor, OCC record, tombstone, SQLAlchemy model, or
+Alembic migration is added. Full Personal Data Export may include sanitized
+thread/message content, but excludes account IDs, request IDs, Provider data,
+credentials, and internal recovery metadata. Alembic head remains
+`20260812_0008`, API Version remains `1`, and Sync Protocol remains `2`.

@@ -2,7 +2,7 @@
 
 > Classification: **Active / authoritative**
 > Audited: **2026-08-21**
-> Audited code checkpoint: `877d359d5fe3eb4848edcffb991e0d221c4bd012`
+> Audited code checkpoint: `f29df4bd87c5ec650d139bfbdee225e964852ef0`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
@@ -14,7 +14,8 @@
 > Sprint 17B implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
 > Sprint 17C-E starting HEAD: `0a3bbcd2005ca30b02693a1d3ee573c36c908fa3`
 > Sprint 17C-E Candidate HEAD: `877d359d5fe3eb4848edcffb991e0d221c4bd012`
-> Current working Sprint: **17C-E Core Experience Consolidation accepted; manual Gate CLOSED**
+> Sprint 18A starting HEAD: `1ea0500bb6a670b69a6f4f65b00e110f0709af78`
+> Current working Sprint: **18A AI Coach Conversational MVP implemented; manual Gate OPEN**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -45,7 +46,7 @@ is not proof that a live Provider is configured.
 | Dart | `3.12.2` | Flutter toolchain and `pubspec.yaml` SDK constraint |
 | Python | `3.12` contract | CI and `python:3.12-slim`; patch version is not pinned |
 | PostgreSQL | `17` | CI service and `postgres:17-alpine`; digest is not pinned |
-| Flutter schemaVersion | `14` | `lib/core/database/app_database.dart` |
+| Flutter schemaVersion | `15` | `lib/core/database/app_database.dart` |
 | Server Alembic head | `20260812_0008` | `server/alembic/versions/` |
 | API Version | `1` | `/health` schema |
 | Sync Protocol Version | `2` | `/health` schema and sync contracts |
@@ -84,6 +85,7 @@ Drift or server implementation classes.
 | Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |
 | Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
 | AI Report | Persistent immutable versions, archive, library, export, and version-bound structured feedback | Yes, with dedicated feedback API after report sync | Explicit report and feedback OCC recovery | Sprint 14B-16B evidence summarized below |
+| AI Coach Chat | Explicit non-streaming multi-turn conversation with optional selected context and account-scoped local history | No; deliberately local-device only | Status-only recovery for uncertain requests; explicit retry for known failure | Sprint 18A source and automation implemented; 69-row manual Gate remains OPEN |
 
 The Sync Center registers exactly six user-facing modules in this order:
 
@@ -143,8 +145,9 @@ The Server has one Provider boundary with four selectable implementations:
 Provider choice, model, credentials, timeouts, quotas, and kill switch are
 server configuration. They are never client settings. The code supports
 explicit Daily and Weekly generation through one consolidated client
-application coordinator; it does not provide AI Chat, agents, tool calling,
-automatic background generation, or client-selected credentials.
+application coordinator plus explicit governed Chat. It does not provide
+agents, tool calling, automatic background generation, or client-selected
+credentials.
 
 Sprint 16A exposes `AI 教练` as a stable first-level Windows/Android
 destination. Its task-oriented home composes Daily, Weekly, recent reports,
@@ -214,6 +217,23 @@ configured today.
 | 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
 | 17B | Home / Today / Health production experience integration | Flutter schema 13; dual-format Server validation; API 1 and Sync Protocol 2 unchanged | 48 PASS / 0 FAIL / 3 NOT EXECUTED | Gate closed; all product-level checks passed, with explicit automated substitutions for A10 and D3-D4 |
 | 17C-E | Plan, Journal, Growth and metric narrative consolidation | Flutter schema 14; three-generation Today/Health validation; API 1 and Sync Protocol 2 unchanged | 67 PASS / 0 FAIL / 2 NOT EXECUTED | Gate closed with automated substitutions for unsafe failed-save injection and legacy payload fixture only |
+| 18A | AI Coach non-streaming conversational MVP | Flutter schema 15; no Server migration; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 69 NOT EXECUTED | Implementation and focused automation exist; final CI, image deployment, platform builds, and manual Gate remain open |
+
+Sprint 18A adds one authenticated `POST /ai/chat/turns` path using the existing
+AiProvider, consent, quota, Prompt Registry, Generation Ledger, request lease,
+idempotency, and status-recovery boundaries. `coach-chat-v1` is the only Chat
+Prompt contract. The Server does not persist thread history or create AI
+Reports, and it adds no PostgreSQL model or Alembic revision.
+
+Flutter schema 15 adds account-scoped local `ai_chat_threads` and
+`ai_chat_messages`. Sending writes the user message and assistant placeholder
+before the network call. Known failures permit explicit retry with a new
+request ID; uncertain results permit only an explicit status check. Chat is
+non-streaming, text-only, user-triggered, and deliberately excluded from Sync
+Protocol 2. Explicit optional context supports Growth, Today, Health, and
+Journal; Active Goals and the Sprint 17C-E metric narratives remain excluded.
+The [Sprint 18A matrix](manual_tests/64_ai_coach_conversational_mvp.md) remains
+0 PASS / 0 FAIL / 69 NOT EXECUTED, so the Gate is OPEN.
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
@@ -238,7 +258,7 @@ Gate is closed with accepted limitations: six controlled pending-recovery state
 injections and one request-binding persistence failure injection remain
 unavailable at product level and retain automated coverage only.
 
-## Sprint 17C-E Experience Baseline
+## Sprint 17C-E Core Experience Consolidation Baseline
 
 Sprint 17C-E adds six nullable, trimmed, 80-character metric narratives to
 Today and Health: Research, Learning, Sleep, Weight, Water, and Exercise. With
@@ -265,7 +285,8 @@ The authoritative contract is
 The 69-row [manual matrix](manual_tests/63_plan_journal_growth_and_metric_narratives.md)
 records 67 PASS / 0 FAIL / 2 NOT EXECUTED. D11 and G8 retain named automated
 evidence because their failure/legacy fixtures cannot be injected safely at
-product level. The Gate is **CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS**.
+product level. Its historical manual Gate CLOSED with the conclusion
+**CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS**.
 
 ## Full Personal Data Export Baseline
 
@@ -300,8 +321,8 @@ Public API groups are:
   session, identities, and guarded identity foundations;
 - `/devices/register`;
 - `/sync/verify-ownership`, `/sync/push`, and `/sync/pull`;
-- `/ai/capabilities`, `/ai/usage/me`, Daily/Weekly generation, and request
-  status recovery;
+- `/ai/capabilities`, `/ai/usage/me`, Daily/Weekly generation,
+  `/ai/chat/turns`, and request status recovery;
 - authenticated `/ai/report-feedback` list, upsert, and delete operations.
 
 The PostgreSQL model contains cloud users, canonical auth identities,
@@ -374,13 +395,14 @@ Current intentional product boundaries:
 - local-first records with explicit, manual synchronization;
 - no automatic sync or automatic AI generation;
 - explicit AI consent and selected source scopes;
+- explicit, local-device-only AI Chat with no automatic send or sync;
 - account-scoped data, conflicts, usage, and reports;
 - immutable AI Report versions;
 - mutable structured feedback bound to an immutable report version, with no
   free text and explicit manual cross-device convergence;
 - export without import/restore in Sprint 14F;
 - explicit full personal data export without import/restore in Sprint 15A;
-- no AI Chat, agents, or tool calling.
+- no AI agents, tool calling, streaming Chat, or web search.
 
 Current release debt/blockers:
 
