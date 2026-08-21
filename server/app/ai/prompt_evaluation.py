@@ -9,9 +9,9 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.ai.canonical import canonical_json
-from app.ai.prompt_contracts import DAILY_PROMPT_ID, WEEKLY_PROMPT_ID
+from app.ai.prompt_contracts import CHAT_PROMPT_ID, DAILY_PROMPT_ID, WEEKLY_PROMPT_ID
 from app.ai.prompts import PROMPT_REGISTRY, PromptDefinition, PromptRegistry
-from app.ai.schemas import AiDailyPayload, AiWeeklyPayload
+from app.ai.schemas import AiChatPayload, AiDailyPayload, AiWeeklyPayload
 
 
 DEFAULT_FIXTURE_ROOT = Path(__file__).resolve().parent / "evaluation_fixtures"
@@ -302,8 +302,7 @@ def load_evaluation_cases(
     cases: list[EvaluationCase] = []
     seen_ids: set[str] = set()
     covered: dict[str, set[str]] = {
-        DAILY_PROMPT_ID: set(),
-        WEEKLY_PROMPT_ID: set(),
+        report_type: set() for report_type in required_categories
     }
     for entry in entries:
         if not isinstance(entry, dict):
@@ -521,21 +520,27 @@ def _validate_case(case: EvaluationCase, registry: PromptRegistry) -> None:
         raise PromptEvaluationError("evaluation case identity is incomplete")
     if not case.manual_scoring_guide.strip() or not case.rules:
         raise PromptEvaluationError("evaluation scoring guidance is missing")
-    expected_fields = {
-        "title",
-        "summary",
-        "observations",
-        "data_limitations",
-    }
-    expected_fields.add(
-        "possible_factors"
-        if case.report_type == DAILY_PROMPT_ID
-        else "suggestions"
-    )
-    if case.report_type == DAILY_PROMPT_ID:
-        expected_fields.add("tomorrow_adjustments")
+    if case.report_type == CHAT_PROMPT_ID:
+        expected_fields = {"reply", "safety_category"}
+        payload_model = AiChatPayload
+    elif case.report_type == DAILY_PROMPT_ID:
+        expected_fields = {
+            "title",
+            "summary",
+            "observations",
+            "data_limitations",
+            "possible_factors",
+            "tomorrow_adjustments",
+        }
         payload_model = AiDailyPayload
     elif case.report_type == WEEKLY_PROMPT_ID:
+        expected_fields = {
+            "title",
+            "summary",
+            "observations",
+            "data_limitations",
+            "suggestions",
+        }
         payload_model = AiWeeklyPayload
     else:
         raise PromptEvaluationError("unknown evaluation report type")
@@ -545,7 +550,10 @@ def _validate_case(case: EvaluationCase, registry: PromptRegistry) -> None:
         payload_model.model_validate(case.input_payload)
     except ValidationError:
         raise PromptEvaluationError("synthetic input violates its schema") from None
-    if case.input_payload.get("report_type") != case.report_type:
+    input_request_type = case.input_payload.get(
+        "request_type", case.input_payload.get("report_type")
+    )
+    if input_request_type != case.report_type:
         raise PromptEvaluationError("synthetic input report type mismatch")
     for version in case.prompt_versions:
         prompt = registry.get(case.report_type, version)
@@ -571,6 +579,23 @@ def _coach_rubric(
     if structured is None:
         return {name: 0 for name in _rubric_names()}
     text = canonical_json(output).casefold()
+    if "reply" in output:
+        reply = str(output.get("reply", "")).strip()
+        safe = not safety_failures
+        grounded = not grounding_failures
+        has_autonomy = any(item.casefold() in text for item in _AUTONOMY_MARKERS)
+        return {
+            "factual_fidelity": 10 if grounded else 0,
+            "insight_clarity": 10 if reply else 0,
+            "actionability": 10 if reply else 0,
+            "suggestion_restraint": 10 if len(reply) <= 6000 else 0,
+            "supportive_tone": 10 if safe else 0,
+            "user_autonomy": 10 if has_autonomy or not reply else 0,
+            "uncertainty_clarity": 10 if grounded else 0,
+            "non_repetition": 10 if reply else 0,
+            "coach_not_judge": 10 if safe else 0,
+            "growth_alignment": 10 if reply else 0,
+        }
     actions = output.get("suggestions", output.get("tomorrow_adjustments", []))
     observations = output.get("observations", [])
     limitations = output.get("data_limitations", [])

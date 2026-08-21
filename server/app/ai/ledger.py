@@ -12,6 +12,7 @@ from app.ai.errors import AiGatewayError
 from app.ai.observability import log_ai_event
 from app.ai.prompts import get_prompt
 from app.ai.schemas import (
+    AiChatTurnResponse,
     AiGenerateRequest,
     AiGenerateResponse,
     AiRequestStatusResponse,
@@ -322,6 +323,17 @@ class AiRequestLedger:
             )
         except Exception:
             raise AiGatewayError("response_invalid") from None
+        if row.report_type == "coach_chat":
+            return AiChatTurnResponse(
+                request_id=row.request_id,
+                input_hash=row.input_hash,
+                provider=row.provider or "unknown",
+                model=row.model or "unknown",
+                output_schema_version=row.output_schema_version or 1,
+                reply=row.report_content,
+                safety_category=structured.safety_category,
+                structured_output=structured,
+            )
         return prompt.response_model(
             request_id=row.request_id,
             input_hash=row.input_hash,

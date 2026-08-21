@@ -18,11 +18,19 @@ from app.ai.errors import (
 )
 from app.ai.ledger import AiRequestLedger
 from app.ai.observability import log_ai_event
-from app.ai.prompts import get_generation_prompt, get_prompt, report_definitions
+from app.ai.prompts import (
+    chat_definition,
+    get_generation_prompt,
+    get_prompt,
+    report_definitions,
+)
 from app.ai.providers import AiProvider, ProviderPromptPayload, safety_identifier
 from app.ai.usage import AiUsageGuard, AiUsageReservation
 from app.ai.schemas import (
     AiCapabilitiesResponse,
+    AiChatContractResponse,
+    AiChatTurnRequest,
+    AiChatTurnResponse,
     AiDailyGenerateRequest,
     AiDailyGenerateResponse,
     AiGenerateRequest,
@@ -57,6 +65,7 @@ class AiGenerationService:
 
     def capabilities(self) -> AiCapabilitiesResponse:
         definitions = report_definitions()
+        chat = chat_definition()
         return AiCapabilitiesResponse(
             enabled=self.provider.enabled,
             provider=self.provider.name,
@@ -73,6 +82,9 @@ class AiGenerationService:
                 )
                 for item in definitions
             ],
+            chat_contract=AiChatContractResponse(
+                supported_scopes=list(chat.supported_scopes),
+            ),
             result_retention_hours=self.settings.ai_result_retention_hours,
             dedupe_retention_days=self.settings.ai_dedupe_retention_days,
             processing_lease_minutes=self.settings.ai_processing_lease_minutes,
@@ -115,6 +127,15 @@ class AiGenerationService:
         user_id: str,
         session: Session,
     ) -> AiDailyGenerateResponse | AiRequestStatusResponse:
+        return await self._generate(request, user_id=user_id, session=session)
+
+    async def generate_chat(
+        self,
+        request: AiChatTurnRequest,
+        *,
+        user_id: str,
+        session: Session,
+    ) -> AiChatTurnResponse | AiRequestStatusResponse:
         return await self._generate(request, user_id=user_id, session=session)
 
     async def evaluate_registered_prompt(
@@ -248,14 +269,13 @@ class AiGenerationService:
                 )
             except ValidationError:
                 raise AiGatewayError("response_invalid") from None
-            result = prompt.response_model(
-                request_id=request.request_id,
-                prompt_version=prompt.prompt_version,
-                input_hash=verified_hash,
+            result = _build_response(
+                request=request,
+                prompt=prompt,
+                structured=structured,
                 provider=generation.provider,
                 model=generation.model,
-                report_content=prompt.renderer(structured),
-                structured_output=structured,
+                verified_hash=verified_hash,
             )
             self.usage.mark_completed(
                 session,
@@ -379,12 +399,16 @@ class AiGenerationService:
         payload = request.payload
         if payload.schema_version != 1:
             raise UnsupportedContractError("invalid_input")
-        known_report_types = {item.report_type for item in report_definitions()}
-        expected_report_type = (
-            "daily_insight"
-            if isinstance(request, AiDailyGenerateRequest)
-            else "weekly_report"
-        )
+        if isinstance(request, AiChatTurnRequest):
+            expected_report_type = "coach_chat"
+            known_report_types = {chat_definition().report_type}
+        else:
+            known_report_types = {item.report_type for item in report_definitions()}
+            expected_report_type = (
+                "daily_insight"
+                if isinstance(request, AiDailyGenerateRequest)
+                else "weekly_report"
+            )
         if (
             payload.report_type not in known_report_types
             or payload.report_type != expected_report_type
@@ -507,6 +531,20 @@ def _mark_usage_failed(
 
 def _provider_payload(request: AiGenerateRequest) -> ProviderPromptPayload:
     payload = request.payload.model_dump(mode="json", exclude_none=False)
+    if isinstance(request, AiChatTurnRequest):
+        context = {
+            key: item
+            for key, item in payload["optional_context"].items()
+            if item is not None
+        }
+        return ProviderPromptPayload(
+            report_type=payload["request_type"],
+            prompt_version=payload["prompt_version"],
+            period=payload["context_period"],
+            scopes=sorted(payload["scopes"]),
+            data={scope: copy.deepcopy(context[scope]) for scope in payload["scopes"]},
+            messages=copy.deepcopy(payload["messages"]),
+        )
     payload["data"] = {
         key: item for key, item in payload["data"].items() if item is not None
     }
@@ -522,4 +560,35 @@ def _provider_payload(request: AiGenerateRequest) -> ProviderPromptPayload:
         period=payload["period"],
         scopes=sorted(payload["scopes"]),
         data=selected_data,
+    )
+
+
+def _build_response(
+    *,
+    request: AiGenerateRequest,
+    prompt,
+    structured,
+    provider: str,
+    model: str,
+    verified_hash: str,
+) -> AiGenerateResponse:
+    if isinstance(request, AiChatTurnRequest):
+        return AiChatTurnResponse(
+            request_id=request.request_id,
+            prompt_version=prompt.prompt_version,
+            input_hash=verified_hash,
+            provider=provider,
+            model=model,
+            reply=prompt.renderer(structured),
+            safety_category=structured.safety_category,
+            structured_output=structured,
+        )
+    return prompt.response_model(
+        request_id=request.request_id,
+        prompt_version=prompt.prompt_version,
+        input_hash=verified_hash,
+        provider=provider,
+        model=model,
+        report_content=prompt.renderer(structured),
+        structured_output=structured,
     )

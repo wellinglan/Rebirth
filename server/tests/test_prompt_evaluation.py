@@ -49,9 +49,9 @@ def test_default_fixture_root_is_packaged_with_runtime_app() -> None:
 def test_manifest_and_registry_static_governance_pass() -> None:
     report = validate_prompt_governance()
     assert report["status"] == "ok"
-    assert report["registry"]["prompt_count"] == 4
-    assert report["registry"]["active_count"] == 2
-    assert report["fixtures"]["case_count"] == 9
+    assert report["registry"]["prompt_count"] == 5
+    assert report["registry"]["active_count"] == 3
+    assert report["fixtures"]["case_count"] == 15
     assert report["provider_called"] is False
     assert report["database_required"] is False
 
@@ -61,7 +61,7 @@ def test_offline_evaluation_and_comparison_are_deterministic() -> None:
     second = evaluate_offline()
     assert json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
     assert first["status"] == "pass"
-    assert first["case_result_count"] == 18
+    assert first["case_result_count"] == 24
     assert first["critical_failure_count"] == 0
     assert first["operational"]["estimated_cost"] == "not_applicable"
     comparison = compare_offline(

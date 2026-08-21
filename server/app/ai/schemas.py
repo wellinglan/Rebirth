@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import json
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from app.ai.prompt_contracts import (
     DAILY_CANDIDATE_PROMPT_VERSION,
     DAILY_PROMPT_VERSION,
+    CHAT_PROMPT_VERSION,
     WEEKLY_CANDIDATE_PROMPT_VERSION,
     WEEKLY_PROMPT_VERSION,
 )
@@ -172,8 +174,127 @@ class AiDailyPayload(StrictModel):
         return self
 
 
+class AiChatPeriod(StrictModel):
+    start_date: date
+    end_date: date
+
+    @model_validator(mode="after")
+    def require_bounded_period(self) -> "AiChatPeriod":
+        delta = self.end_date - self.start_date
+        if delta < timedelta(0) or delta > timedelta(days=6):
+            raise ValueError("chat context period must contain one to seven dates")
+        return self
+
+
+class AiChatMessage(StrictModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("content")
+    @classmethod
+    def normalize_content(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("chat message must not be blank")
+        return normalized
+
+
+class AiChatTodayMetricData(StrictModel):
+    record_date: date
+    research_minutes: int | None = Field(default=None, ge=0)
+    learning_minutes: int | None = Field(default=None, ge=0)
+    mood_score: int | None = Field(default=None, ge=1, le=10)
+    energy_score: int | None = Field(default=None, ge=1, le=10)
+    wellbeing_score_scale: Literal[10] = 10
+    populated_priority_count: int = Field(ge=0, le=3)
+    completed_priority_count: int = Field(ge=0, le=3)
+    status: Literal["draft", "completed", "skipped"]
+
+
+class AiChatHealthMetricData(StrictModel):
+    record_date: date
+    sleep_duration_minutes: int | None = Field(default=None, ge=0)
+    exercise_duration_minutes: int | None = Field(default=None, ge=0)
+    physical_state_score: int | None = Field(default=None, ge=1, le=10)
+    physical_state_score_scale: Literal[10] = 10
+    water_intake_ml: int | None = Field(default=None, ge=0)
+    weight_kg: float | int | None = Field(default=None, ge=0)
+
+
+class AiChatContextData(StrictModel):
+    growth_summary: GrowthSummaryData | None = None
+    today_metrics: list[AiChatTodayMetricData] | None = Field(
+        default=None, max_length=7
+    )
+    health_metrics: list[AiChatHealthMetricData] | None = Field(
+        default=None, max_length=7
+    )
+    journal_reflections: list[JournalReflectionData] | None = Field(
+        default=None, max_length=7
+    )
+
+
+CHAT_SCOPES = WEEKLY_SCOPES
+
+
+class AiChatPayload(StrictModel):
+    schema_version: Literal[1] = 1
+    request_type: Literal["coach_chat"] = "coach_chat"
+    prompt_version: Literal[CHAT_PROMPT_VERSION] = CHAT_PROMPT_VERSION
+    messages: list[AiChatMessage] = Field(min_length=1, max_length=12)
+    context_period: AiChatPeriod
+    scopes: list[str] = Field(default_factory=list, max_length=4)
+    optional_context: AiChatContextData
+    sources: list[AiSource] = Field(default_factory=list, max_length=32)
+
+    @property
+    def report_type(self) -> str:
+        # The existing ledger column retains its historical name. Chat remains
+        # a separate request capability and never creates an AI Report row.
+        return self.request_type
+
+    @field_validator("scopes")
+    @classmethod
+    def unique_chat_scopes(cls, value: list[str]) -> list[str]:
+        if len(value) != len(set(value)):
+            raise ValueError("scopes must be unique")
+        if any(item not in CHAT_SCOPES for item in value):
+            raise ValueError("unsupported chat scope")
+        return value
+
+    @model_validator(mode="after")
+    def validate_chat_contract(self) -> "AiChatPayload":
+        if self.messages[0].role != "user" or self.messages[-1].role != "user":
+            raise ValueError("chat must start and end with a user message")
+        for previous, current in zip(self.messages, self.messages[1:]):
+            if previous.role == current.role:
+                raise ValueError("chat roles must alternate")
+        if sum(len(item.content) for item in self.messages) > 12_000:
+            raise ValueError("chat message history is too large")
+        _validate_data_scope_match(
+            self.optional_context,
+            self.scopes,
+            CHAT_SCOPES,
+        )
+        _validate_dates(
+            self.optional_context,
+            self.context_period.start_date,
+            self.context_period.end_date,
+        )
+        encoded_context = json.dumps(
+            self.optional_context.model_dump(mode="json", exclude_none=True),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        if len(encoded_context) > 32_000:
+            raise ValueError("chat optional context is too large")
+        if not self.scopes and self.sources:
+            raise ValueError("text-only chat cannot include source references")
+        return self
+
+
 def _validate_data_scope_match(
-    data: AiWeeklyData | AiDailyData,
+    data: AiWeeklyData | AiDailyData | AiChatContextData,
     scopes: list[str],
     known_scopes: frozenset[str],
 ) -> None:
@@ -187,7 +308,7 @@ def _validate_data_scope_match(
 
 
 def _validate_dates(
-    data: AiWeeklyData | AiDailyData,
+    data: AiWeeklyData | AiDailyData | AiChatContextData,
     start_date: date,
     end_date: date,
 ) -> None:
@@ -214,8 +335,14 @@ class AiDailyGenerateRequest(StrictModel):
     payload: AiDailyPayload
 
 
-AiGenerateRequest = AiWeeklyGenerateRequest | AiDailyGenerateRequest
-AiInputPayload = AiWeeklyPayload | AiDailyPayload
+class AiChatTurnRequest(StrictModel):
+    request_id: UUID
+    input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    payload: AiChatPayload
+
+
+AiGenerateRequest = AiWeeklyGenerateRequest | AiDailyGenerateRequest | AiChatTurnRequest
+AiInputPayload = AiWeeklyPayload | AiDailyPayload | AiChatPayload
 
 
 class AiObservation(StrictModel):
@@ -290,8 +417,21 @@ class AiDailyStructuredOutput(StrictModel):
         return value.strip()
 
 
+class AiChatStructuredOutput(StrictModel):
+    reply: str = Field(min_length=1, max_length=6000)
+    safety_category: Literal["normal", "caution", "high_risk"]
+
+    @field_validator("reply")
+    @classmethod
+    def normalize_reply(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("chat reply must not be blank")
+        return normalized
+
+
 AiStructuredOutput = Annotated[
-    AiDailyStructuredOutput | AiWeeklyStructuredOutput,
+    AiDailyStructuredOutput | AiWeeklyStructuredOutput | AiChatStructuredOutput,
     Field(union_mode="left_to_right"),
 ]
 
@@ -305,6 +445,19 @@ class AiReportContractResponse(StrictModel):
     supported_scopes: list[str] = Field(min_length=1)
 
 
+class AiChatContractResponse(StrictModel):
+    request_type: Literal["coach_chat"] = "coach_chat"
+    prompt_version: Literal[CHAT_PROMPT_VERSION] = CHAT_PROMPT_VERSION
+    input_schema_version: Literal[1] = 1
+    output_schema_version: Literal[1] = 1
+    max_messages: Literal[12] = 12
+    max_message_characters: Literal[2000] = 2000
+    max_history_characters: Literal[12000] = 12000
+    max_context_characters: Literal[32000] = 32000
+    supported_scopes: list[str] = Field(max_length=4)
+    streaming: Literal[False] = False
+
+
 class AiCapabilitiesResponse(StrictModel):
     enabled: bool
     provider: str
@@ -315,6 +468,7 @@ class AiCapabilitiesResponse(StrictModel):
     input_schema_version: Literal[1] = 1
     output_schema_version: Literal[1] = 1
     report_contracts: list[AiReportContractResponse] = Field(min_length=2)
+    chat_contract: AiChatContractResponse
     streaming: Literal[False] = False
     response_storage_requested: Literal[False] = False
     durable_request_ledger: Literal[True] = True
@@ -359,6 +513,27 @@ class AiDailyGenerateResponse(StrictModel):
     structured_output: AiDailyStructuredOutput
 
 
+class AiChatTurnResponse(StrictModel):
+    request_id: UUID
+    request_type: Literal["coach_chat"] = "coach_chat"
+    prompt_version: Literal[CHAT_PROMPT_VERSION] = CHAT_PROMPT_VERSION
+    input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    provider: str
+    model: str
+    output_schema_version: Literal[1] = 1
+    reply: str = Field(min_length=1, max_length=6000)
+    safety_category: Literal["normal", "caution", "high_risk"]
+    structured_output: AiChatStructuredOutput
+
+    @property
+    def report_type(self) -> str:
+        return self.request_type
+
+    @property
+    def report_content(self) -> str:
+        return self.reply
+
+
 class AiWeeklyCandidateGenerateResponse(AiWeeklyGenerateResponse):
     prompt_version: Literal[WEEKLY_CANDIDATE_PROMPT_VERSION] = (
         WEEKLY_CANDIDATE_PROMPT_VERSION
@@ -371,7 +546,7 @@ class AiDailyCandidateGenerateResponse(AiDailyGenerateResponse):
     )
 
 
-AiGenerateResponse = AiWeeklyGenerateResponse | AiDailyGenerateResponse
+AiGenerateResponse = AiWeeklyGenerateResponse | AiDailyGenerateResponse | AiChatTurnResponse
 
 
 AiRequestStatus = Literal[

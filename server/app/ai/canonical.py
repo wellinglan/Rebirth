@@ -5,11 +5,32 @@ import json
 import math
 from typing import Any
 
-from app.ai.schemas import AiInputPayload
+from app.ai.schemas import AiChatPayload, AiInputPayload
 
 
 def normalized_payload(payload: AiInputPayload) -> dict[str, Any]:
     value = payload.model_dump(mode="json", exclude_none=False)
+    if isinstance(payload, AiChatPayload):
+        value["optional_context"] = {
+            key: item
+            for key, item in value["optional_context"].items()
+            if item is not None
+        }
+        value["scopes"] = sorted(value["scopes"])
+        value["sources"] = sorted(
+            value["sources"], key=lambda item: (item["table"], item["id"])
+        )
+        for key, date_key in (
+            ("today_metrics", "record_date"),
+            ("health_metrics", "record_date"),
+            ("journal_reflections", "entry_date"),
+        ):
+            rows = value["optional_context"].get(key)
+            if rows is not None:
+                value["optional_context"][key] = sorted(
+                    rows, key=lambda item: item[date_key]
+                )
+        return value
     value["data"] = {
         key: item for key, item in value["data"].items() if item is not None
     }

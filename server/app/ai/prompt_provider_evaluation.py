@@ -21,6 +21,8 @@ from app.ai.prompt_evaluation import (
 from app.ai.prompts import PROMPT_REGISTRY
 from app.ai.providers import build_provider
 from app.ai.schemas import (
+    AiChatPayload,
+    AiChatTurnRequest,
     AiDailyGenerateRequest,
     AiDailyPayload,
     AiWeeklyGenerateRequest,
@@ -156,7 +158,14 @@ async def _evaluate_selected(
             request_ids.append(request_id)
             started = time.perf_counter_ns()
             try:
-                if case.report_type == "daily_insight":
+                if case.report_type == "coach_chat":
+                    payload = AiChatPayload.model_validate(payload_value)
+                    request = AiChatTurnRequest(
+                        request_id=request_id,
+                        input_hash=input_hash(payload),
+                        payload=payload,
+                    )
+                elif case.report_type == "daily_insight":
                     payload = AiDailyPayload.model_validate(payload_value)
                     request = AiDailyGenerateRequest(
                         request_id=request_id,

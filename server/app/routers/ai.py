@@ -8,6 +8,8 @@ from app.ai.errors import AiGatewayError
 from app.ai.feedback import AiReportFeedbackError
 from app.ai.schemas import (
     AiCapabilitiesResponse,
+    AiChatTurnRequest,
+    AiChatTurnResponse,
     AiDailyGenerateRequest,
     AiDailyGenerateResponse,
     AiErrorResponse,
@@ -97,6 +99,61 @@ def current_usage(
         user_id=user_id,
         session=session,
     )
+
+
+@router.post(
+    "/chat/turns",
+    response_model=AiChatTurnResponse,
+    responses={
+        202: {
+            "model": AiRequestStatusResponse,
+            "description": "The chat request is already processing.",
+        },
+        409: {
+            "model": AiErrorResponse,
+            "description": "Idempotency conflict or unknown provider outcome.",
+        },
+        410: {
+            "model": AiErrorResponse,
+            "description": "The temporary chat result has expired.",
+        },
+        422: {
+            "model": AiErrorResponse,
+            "description": "Invalid or unsupported chat input.",
+        },
+        429: {
+            "model": AiErrorResponse,
+            "description": "Provider or local AI usage limit reached.",
+        },
+        502: {
+            "model": AiErrorResponse,
+            "description": "Provider, request, or response failure.",
+        },
+        503: {"model": AiErrorResponse, "description": "Provider unavailable."},
+        504: {"model": AiErrorResponse, "description": "Provider timeout."},
+    },
+)
+async def generate_chat_turn(
+    body: AiChatTurnRequest,
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiChatTurnResponse | AiRequestStatusResponse | JSONResponse:
+    try:
+        result = await request.app.state.ai_generation_service.generate_chat(
+            body, user_id=user_id, session=session
+        )
+        if isinstance(result, AiRequestStatusResponse):
+            return JSONResponse(
+                status_code=202,
+                content=result.model_dump(mode="json"),
+            )
+        return result
+    except AiGatewayError as error:
+        return JSONResponse(
+            status_code=error.status_code,
+            content={"detail": {"code": error.code, "message": _message(error.code)}},
+        )
 
 
 @router.post(

@@ -5,6 +5,8 @@ from dataclasses import replace
 import pytest
 
 from app.ai.prompt_contracts import (
+    CHAT_PROMPT_ID,
+    CHAT_PROMPT_VERSION,
     DAILY_CANDIDATE_PROMPT_VERSION,
     DAILY_PROMPT_ID,
     DAILY_PROMPT_VERSION,
@@ -18,10 +20,12 @@ from app.ai.prompts import (
     PromptRegistryError,
     PromptStatus,
     all_prompt_definitions,
+    chat_definition,
     get_generation_prompt,
     report_definitions,
 )
 from app.ai.schemas import (
+    AiChatTurnResponse,
     AiDailyCandidateGenerateResponse,
     AiDailyGenerateResponse,
     AiWeeklyCandidateGenerateResponse,
@@ -32,6 +36,7 @@ from app.ai.schemas import (
 def test_registry_has_explicit_active_and_candidate_versions() -> None:
     definitions = all_prompt_definitions()
     assert [item.prompt_version for item in definitions] == [
+        CHAT_PROMPT_VERSION,
         DAILY_PROMPT_VERSION,
         DAILY_CANDIDATE_PROMPT_VERSION,
         WEEKLY_PROMPT_VERSION,
@@ -43,9 +48,11 @@ def test_registry_has_explicit_active_and_candidate_versions() -> None:
     ]
     assert PROMPT_REGISTRY.require_active(DAILY_PROMPT_ID).status is PromptStatus.ACTIVE
     assert PROMPT_REGISTRY.require_active(WEEKLY_PROMPT_ID).status is PromptStatus.ACTIVE
+    assert PROMPT_REGISTRY.require_active(CHAT_PROMPT_ID).status is PromptStatus.ACTIVE
 
 
 def test_candidate_never_becomes_generation_prompt_implicitly() -> None:
+    assert get_generation_prompt(CHAT_PROMPT_ID, CHAT_PROMPT_VERSION) is not None
     assert get_generation_prompt(DAILY_PROMPT_ID, DAILY_PROMPT_VERSION) is not None
     assert get_generation_prompt(WEEKLY_PROMPT_ID, WEEKLY_PROMPT_VERSION) is not None
     assert get_generation_prompt(DAILY_PROMPT_ID, DAILY_CANDIDATE_PROMPT_VERSION) is None
@@ -53,6 +60,7 @@ def test_candidate_never_becomes_generation_prompt_implicitly() -> None:
 
 
 def test_active_and_candidate_response_models_match_their_versions() -> None:
+    assert chat_definition().response_model is AiChatTurnResponse
     assert (
         PROMPT_REGISTRY.require_active(DAILY_PROMPT_ID).response_model
         is AiDailyGenerateResponse
@@ -79,6 +87,9 @@ def test_published_prompt_fingerprints_are_stable() -> None:
     assert {
         item.prompt_version: item.fingerprint for item in all_prompt_definitions()
     } == {
+        CHAT_PROMPT_VERSION: (
+            "9005fb13c4c8a8e9cacc1b0142d32ec38f3735d3d9ca76ccaf7d3a9d30077a07"
+        ),
         DAILY_PROMPT_VERSION: (
             "2aa0da88735ee55b07a29507c5e26861f99e361e8f3efa9777e4f51dac4acb1d"
         ),

@@ -21,8 +21,22 @@ class ProviderPromptPayload:
     period: dict[str, str]
     scopes: list[str]
     data: dict[str, Any]
+    messages: list[dict[str, str]] | None = None
+
+    @property
+    def request_type(self) -> str:
+        return self.report_type
 
     def to_json_value(self) -> dict[str, Any]:
+        if self.report_type == "coach_chat":
+            return {
+                "request_type": self.report_type,
+                "prompt_version": self.prompt_version,
+                "messages": self.messages or [],
+                "context_period": self.period,
+                "scopes": self.scopes,
+                "optional_context": self.data,
+            }
         return {
             "report_type": self.report_type,
             "prompt_version": self.prompt_version,
@@ -339,6 +353,16 @@ def build_provider(
 
 
 def _fake_success_output(payload: ProviderPromptPayload) -> dict[str, Any]:
+    if payload.report_type == "coach_chat":
+        latest = (payload.messages or [{"content": ""}])[-1]["content"]
+        high_risk = "immediate-danger-test" in latest
+        return {
+            "reply": (
+                "我听见了。这个确定性回复用于验证 AI 教练对话链路，"
+                "不会修改你的任何记录。"
+            ),
+            "safety_category": "high_risk" if high_risk else "normal",
+        }
     if payload.report_type == "daily_insight":
         missing_scopes = [
             scope

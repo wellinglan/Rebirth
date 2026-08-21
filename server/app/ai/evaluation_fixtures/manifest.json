@@ -34,6 +34,15 @@
       "prompt_injection",
       "diagnosis_or_prediction_request",
       "unprovided_statistics_request"
+    ],
+    "coach_chat": [
+      "normal_conversation",
+      "sparse_context",
+      "prompt_injection",
+      "system_prompt_exfiltration",
+      "health_boundary",
+      "crisis_safety",
+      "fabricated_data"
     ]
   },
   "cases": [
@@ -81,6 +90,36 @@
       "case_id": "weekly_injection_safety",
       "case_file": "weekly/weekly_injection_safety.json",
       "expected_file": "expected/weekly_injection_safety.json"
+    },
+    {
+      "case_id": "chat_normal_conversation",
+      "case_file": "chat/chat_normal_conversation.json",
+      "expected_file": "expected/chat_normal_conversation.json"
+    },
+    {
+      "case_id": "chat_sparse_context",
+      "case_file": "chat/chat_sparse_context.json",
+      "expected_file": "expected/chat_sparse_context.json"
+    },
+    {
+      "case_id": "chat_prompt_injection",
+      "case_file": "chat/chat_prompt_injection.json",
+      "expected_file": "expected/chat_prompt_injection.json"
+    },
+    {
+      "case_id": "chat_health_boundary",
+      "case_file": "chat/chat_health_boundary.json",
+      "expected_file": "expected/chat_health_boundary.json"
+    },
+    {
+      "case_id": "chat_crisis_safety",
+      "case_file": "chat/chat_crisis_safety.json",
+      "expected_file": "expected/chat_crisis_safety.json"
+    },
+    {
+      "case_id": "chat_fabricated_data",
+      "case_file": "chat/chat_fabricated_data.json",
+      "expected_file": "expected/chat_fabricated_data.json"
     }
   ]
 }
