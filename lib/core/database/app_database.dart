@@ -7,6 +7,8 @@ import 'database_connection.dart';
 import 'tables/ai_reports_table.dart';
 import 'tables/ai_report_versions_table.dart';
 import 'tables/ai_report_feedback_table.dart';
+import 'tables/ai_chat_messages_table.dart';
+import 'tables/ai_chat_threads_table.dart';
 import 'tables/app_settings_table.dart';
 import 'tables/cloud_account_bindings_table.dart';
 import 'tables/common_columns.dart';
@@ -37,6 +39,8 @@ part 'app_database.g.dart';
     AiReports,
     AiReportVersions,
     AiReportFeedback,
+    AiChatThreads,
+    AiChatMessages,
     SyncConflicts,
     InstallationInfo,
     CloudAccountBindings,
@@ -54,7 +58,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +70,7 @@ class AppDatabase extends _$AppDatabase {
       await _createJournalPromptIndexes();
       await _createAiReportVersionIndexesAndGuards();
       await _createAiReportFeedbackIndexes();
+      await _createAiChatIndexes();
     },
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
@@ -247,6 +252,15 @@ class AppDatabase extends _$AppDatabase {
           );
         }
       }
+      if (from < 15) {
+        if (!await _tableExists('ai_chat_threads')) {
+          await migrator.createTable(aiChatThreads);
+        }
+        if (!await _tableExists('ai_chat_messages')) {
+          await migrator.createTable(aiChatMessages);
+        }
+        await _createAiChatIndexes();
+      }
     },
     beforeOpen: (details) async {
       if (details.versionBefore case final previous?
@@ -314,6 +328,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _createAiReportFeedbackIndexes() async {
     for (final statement in _aiReportFeedbackIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createAiChatIndexes() async {
+    for (final statement in _aiChatIndexes) {
       await customStatement(statement);
     }
   }
@@ -503,7 +523,31 @@ WHERE report_status IN ('completed', 'failed')
     final columns = await customSelect('PRAGMA table_info($tableName)').get();
     return columns.any((row) => row.read<String>('name') == columnName);
   }
+
+  Future<bool> _tableExists(String tableName) async {
+    final row = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+      variables: [Variable.withString(tableName)],
+    ).getSingleOrNull();
+    return row != null;
+  }
 }
+
+const _aiChatIndexes = <String>[
+  'CREATE INDEX IF NOT EXISTS ai_chat_threads_user_updated_at '
+      'ON ai_chat_threads (user_id, updated_at DESC)',
+  'CREATE INDEX IF NOT EXISTS ai_chat_threads_user_archived_at '
+      'ON ai_chat_threads (user_id, archived_at, updated_at DESC)',
+  'CREATE INDEX IF NOT EXISTS ai_chat_messages_thread_created_at '
+      'ON ai_chat_messages (thread_id, sequence)',
+  'CREATE UNIQUE INDEX IF NOT EXISTS ai_chat_messages_thread_sequence '
+      'ON ai_chat_messages (thread_id, sequence)',
+  'CREATE INDEX IF NOT EXISTS ai_chat_messages_user_status_updated_at '
+      'ON ai_chat_messages (user_id, status, updated_at)',
+  'CREATE UNIQUE INDEX IF NOT EXISTS ai_chat_messages_user_request_active '
+      'ON ai_chat_messages (user_id, request_id) '
+      'WHERE request_id IS NOT NULL',
+];
 
 const _versionOneIndexes = <String>[
   'CREATE UNIQUE INDEX user_profiles_one_active '

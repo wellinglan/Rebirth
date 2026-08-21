@@ -20,6 +20,8 @@ abstract interface class PersonalDataBackupRepository {
   Future<List<AiReportFeedbackBackupRecord>> readAiReportFeedback(
     String localUserId,
   );
+
+  Future<List<AiChatThreadBackupRecord>> readAiChat(String localUserId);
 }
 
 final class PersonalDataBackupSourceException implements Exception {

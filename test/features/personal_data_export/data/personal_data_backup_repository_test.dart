@@ -38,6 +38,7 @@ void main() {
         HealthPersonalDataExportModule(repository),
         AiReportsPersonalDataExportModule(repository),
         AiReportFeedbackPersonalDataExportModule(repository),
+        AiChatPersonalDataExportModule(repository),
       ]);
       final snapshots = await database.transaction(
         () => registry.exportAll(userA, checkBoundary: () {}),
@@ -62,8 +63,9 @@ void main() {
         'health',
         'ai_reports',
         'ai_report_feedback',
+        'ai_chat',
       ]);
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
 
       final profile = _records(data, 'profile').single;
       expect(profile['display_name'], '账号 A');
@@ -131,6 +133,17 @@ void main() {
       expect(feedback['helpfulness'], 'not_helpful');
       expect(feedback['reason_codes'], ['not_actionable', 'too_generic']);
 
+      final chat = _records(data, 'ai_chat').single;
+      expect(chat['title'], '账号 A 的对话');
+      expect(chat, isNot(contains('user_id')));
+      final chatMessages = (chat['messages'] as List).cast<Map>();
+      expect(chatMessages.map((message) => message['role']), [
+        'user',
+        'assistant',
+      ]);
+      expect(chatMessages.last['content'], '账号 A 的回复正文');
+      expect(chatMessages.last, isNot(contains('request_id')));
+
       for (final forbidden in const [
         '账号 B 的秘密目标',
         '账号 B 的科研描述',
@@ -153,6 +166,8 @@ void main() {
         'conflict_payload',
         'generation_ledger',
         'usage_ledger',
+        '账号 B 的对话正文',
+        '99999999-9999-4999-8999-999999999999',
       ]) {
         expect(json.toLowerCase(), isNot(contains(forbidden.toLowerCase())));
       }
@@ -179,6 +194,7 @@ void main() {
     await repository.readHealth(userA);
     await repository.readAiReports(userA);
     await repository.readAiReportFeedback(userA);
+    await repository.readAiChat(userA);
 
     final afterGoal = await (database.select(
       database.goals,
@@ -514,6 +530,73 @@ Future<void> _seed(AppDatabase database, String userA) async {
           syncStatus: const Value('synced'),
           serverVersion: const Value(4),
           lastSyncedAt: const Value(_now),
+          createdAt: const Value(_now),
+          updatedAt: const Value(_now),
+        ),
+      );
+
+  await database
+      .into(database.aiChatThreads)
+      .insert(
+        AiChatThreadsCompanion.insert(
+          id: Value(_id(91)),
+          userId: userA,
+          title: '账号 A 的对话',
+          createdAt: const Value(_now),
+          updatedAt: const Value(_now + 2),
+        ),
+      );
+  await database.batch((batch) {
+    batch.insertAll(database.aiChatMessages, [
+      AiChatMessagesCompanion.insert(
+        id: Value(_id(92)),
+        threadId: _id(91),
+        userId: userA,
+        role: 'user',
+        sequence: 0,
+        content: const Value('账号 A 的用户正文'),
+        status: 'completed',
+        createdAt: const Value(_now),
+        updatedAt: const Value(_now),
+      ),
+      AiChatMessagesCompanion.insert(
+        id: Value(_id(93)),
+        threadId: _id(91),
+        userId: userA,
+        role: 'assistant',
+        sequence: 1,
+        content: const Value('账号 A 的回复正文'),
+        requestId: const Value('99999999-9999-4999-8999-999999999999'),
+        status: 'completed',
+        promptVersion: const Value('coach-chat-v1'),
+        safetyCategory: const Value('normal'),
+        createdAt: const Value(_now + 1),
+        updatedAt: const Value(_now + 2),
+      ),
+    ]);
+  });
+  await database
+      .into(database.aiChatThreads)
+      .insert(
+        AiChatThreadsCompanion.insert(
+          id: Value(_id(94)),
+          userId: _id(2),
+          title: '账号 B 的对话',
+          createdAt: const Value(_now),
+          updatedAt: const Value(_now),
+        ),
+      );
+  await database
+      .into(database.aiChatMessages)
+      .insert(
+        AiChatMessagesCompanion.insert(
+          id: Value(_id(95)),
+          threadId: _id(94),
+          userId: _id(2),
+          role: 'user',
+          sequence: 0,
+          content: const Value('账号 B 的对话正文'),
+          status: 'completed',
           createdAt: const Value(_now),
           updatedAt: const Value(_now),
         ),

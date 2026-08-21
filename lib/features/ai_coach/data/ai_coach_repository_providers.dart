@@ -6,6 +6,7 @@ import 'package:rebirth/core/network/api_client_provider.dart';
 import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_coach_input_assembler.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_consent_repository.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_chat_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_repository.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_remote_data_source.dart';
@@ -21,6 +22,7 @@ import 'package:rebirth/features/today/data/today_repository_provider.dart';
 import 'ai_coach_input_assembler_impl.dart';
 import 'canonical_json_encoder_impl.dart';
 import 'local_ai_consent_repository.dart';
+import 'local_ai_chat_repository.dart';
 import 'local_ai_report_repository.dart';
 import 'local_ai_report_feedback_repository.dart';
 import 'remote_ai_report_feedback_data_source.dart';
@@ -54,6 +56,13 @@ final inputHashServiceProvider = Provider<InputHashService>((ref) {
 
 final aiConsentRepositoryProvider = Provider<AiConsentRepository>((ref) {
   return LocalAiConsentRepository(
+    database: ref.watch(appDatabaseProvider),
+    dateTimeService: ref.watch(dateTimeServiceProvider),
+  );
+});
+
+final aiChatRepositoryProvider = Provider<AiChatRepository>((ref) {
+  return LocalAiChatRepository(
     database: ref.watch(appDatabaseProvider),
     dateTimeService: ref.watch(dateTimeServiceProvider),
   );

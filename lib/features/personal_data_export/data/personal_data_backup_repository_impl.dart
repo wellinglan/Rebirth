@@ -425,6 +425,62 @@ final class PersonalDataBackupRepositoryImpl
     return List.unmodifiable(result);
   }
 
+  @override
+  Future<List<AiChatThreadBackupRecord>> readAiChat(String localUserId) async {
+    final threads =
+        await (database.select(database.aiChatThreads)
+              ..where((item) => item.userId.equals(localUserId))
+              ..orderBy([
+                (item) => OrderingTerm.asc(item.createdAt),
+                (item) => OrderingTerm.asc(item.id),
+              ]))
+            .get();
+    if (threads.isEmpty) return const [];
+    final threadIds = threads
+        .map((thread) => thread.id)
+        .toList(growable: false);
+    final messages =
+        await (database.select(database.aiChatMessages)
+              ..where(
+                (item) =>
+                    item.threadId.isIn(threadIds) &
+                    item.userId.equals(localUserId),
+              )
+              ..orderBy([
+                (item) => OrderingTerm.asc(item.threadId),
+                (item) => OrderingTerm.asc(item.sequence),
+              ]))
+            .get();
+    final messagesByThread = <String, List<db.AiChatMessageRow>>{};
+    for (final message in messages) {
+      messagesByThread.putIfAbsent(message.threadId, () => []).add(message);
+    }
+    return List.unmodifiable(
+      threads.map(
+        (thread) => AiChatThreadBackupRecord(
+          id: thread.id,
+          title: thread.title,
+          createdAt: _utcIso(thread.createdAt),
+          updatedAt: _utcIso(thread.updatedAt),
+          archivedAt: _nullableUtcIso(thread.archivedAt),
+          messages: [
+            for (final message in messagesByThread[thread.id] ?? const [])
+              AiChatMessageBackupRecord(
+                id: message.id,
+                role: message.role,
+                sequence: message.sequence,
+                content: message.content,
+                status: message.status,
+                safetyCategory: message.safetyCategory,
+                createdAt: _utcIso(message.createdAt),
+                updatedAt: _utcIso(message.updatedAt),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<Set<String>> _goalIds(String localUserId) async {
     final rows =
         await (database.selectOnly(database.goals)

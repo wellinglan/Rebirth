@@ -142,3 +142,20 @@ final class AiReportFeedbackPersonalDataExportModule
     );
   }
 }
+
+final class AiChatPersonalDataExportModule implements PersonalDataExportModule {
+  const AiChatPersonalDataExportModule(this.repository);
+
+  final PersonalDataBackupRepository repository;
+
+  @override
+  String get id => 'ai_chat';
+
+  @override
+  Future<PersonalDataModuleSnapshot> export(String localUserId) async {
+    return PersonalDataModuleSnapshot(
+      id: id,
+      records: await repository.readAiChat(localUserId),
+    );
+  }
+}

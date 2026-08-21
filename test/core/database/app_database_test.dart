@@ -17,7 +17,7 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 14 with metric narratives', () async {
+  test('creates schema version 15 with local AI chat storage', () async {
     final rows = await database
         .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
         .get();
@@ -35,6 +35,8 @@ void main() {
         'ai_reports',
         'ai_report_versions',
         'ai_report_feedback',
+        'ai_chat_threads',
+        'ai_chat_messages',
         'sync_conflicts',
         'installation_info',
         'cloud_account_bindings',
@@ -47,7 +49,7 @@ void main() {
     final versionRow = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(versionRow.read<int>('user_version'), 14);
+    expect(versionRow.read<int>('user_version'), 15);
   });
 
   test(

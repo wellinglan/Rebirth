@@ -522,6 +522,68 @@ final class AiReportFeedbackBackupRecord implements PersonalDataBackupRecord {
   };
 }
 
+final class AiChatMessageBackupRecord implements PersonalDataBackupRecord {
+  const AiChatMessageBackupRecord({
+    required this.id,
+    required this.role,
+    required this.sequence,
+    required this.content,
+    required this.status,
+    required this.safetyCategory,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String role;
+  final int sequence;
+  final String content;
+  final String status;
+  final String? safetyCategory;
+  final String createdAt;
+  final String updatedAt;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'role': role,
+    'sequence': sequence,
+    'content': content,
+    'status': status,
+    'safety_category': safetyCategory,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+  };
+}
+
+final class AiChatThreadBackupRecord implements PersonalDataBackupRecord {
+  AiChatThreadBackupRecord({
+    required this.id,
+    required this.title,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.archivedAt,
+    required List<AiChatMessageBackupRecord> messages,
+  }) : messages = UnmodifiableListView(messages);
+
+  final String id;
+  final String title;
+  final String createdAt;
+  final String updatedAt;
+  final String? archivedAt;
+  final List<AiChatMessageBackupRecord> messages;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'title': title,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+    'archived_at': archivedAt,
+    'messages': messages.map((message) => message.toJson()).toList(),
+  };
+}
+
 final class PersonalDataModuleSnapshot {
   PersonalDataModuleSnapshot({
     required this.id,
