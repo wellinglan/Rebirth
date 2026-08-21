@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/features/account/presentation/account_controller.dart';
 import 'package:rebirth/features/ai_coach/application/ai_report_generation_coordinator.dart';
+import 'package:rebirth/features/ai_coach/application/ai_chat_coordinator.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_chat_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_pending_recovery_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_manual_generation_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
@@ -66,6 +68,8 @@ void invalidateAccountScopedProviders(Ref ref) {
   ref.invalidate(activeSyncConflictCountProvider);
   ref.invalidate(activeSyncConflictListProvider);
   ref.invalidate(aiReportGenerationCoordinatorProvider);
+  ref.invalidate(aiChatCoordinatorProvider);
+  ref.invalidate(aiChatControllerProvider);
   ref.invalidate(aiPendingRecoveryControllerProvider);
   ref.invalidate(aiManualGenerationControllerFamily);
   ref.invalidate(aiReportHistoryControllerProvider);

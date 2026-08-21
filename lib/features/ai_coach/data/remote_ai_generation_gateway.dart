@@ -194,6 +194,7 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
       dedupeRetentionDays: json['dedupe_retention_days'] as int,
       processingLeaseMinutes: json['processing_lease_minutes'] as int,
       exactlyOnceGuaranteed: json['exactly_once_guaranteed'] as bool,
+      chatContract: _decodeChatContract(json['chat_contract']),
     );
   }
 
@@ -490,6 +491,37 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
           );
         })
         .toList(growable: false);
+  }
+
+  AiChatGenerationContract? _decodeChatContract(Object? value) {
+    if (value == null) return null;
+    if (value is! Map ||
+        !_hasExactKeys(value.keys, {
+          'request_type',
+          'prompt_version',
+          'input_schema_version',
+          'output_schema_version',
+          'max_messages',
+          'max_message_characters',
+          'max_history_characters',
+          'max_context_characters',
+          'supported_scopes',
+          'streaming',
+        })) {
+      throw const FormatException('Invalid AI chat contract.');
+    }
+    return AiChatGenerationContract(
+      requestType: value['request_type'] as String,
+      promptVersion: value['prompt_version'] as String,
+      inputSchemaVersion: value['input_schema_version'] as int,
+      outputSchemaVersion: value['output_schema_version'] as int,
+      maximumMessages: value['max_messages'] as int,
+      maximumMessageCharacters: value['max_message_characters'] as int,
+      maximumHistoryCharacters: value['max_history_characters'] as int,
+      maximumContextCharacters: value['max_context_characters'] as int,
+      supportedScopes: _stringList(value['supported_scopes']),
+      streaming: value['streaming'] as bool,
+    );
   }
 
   List<String> _stringList(Object? value) {

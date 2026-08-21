@@ -118,6 +118,29 @@ void main() {
     expect(recoverable.single.requestId, turn.assistantMessage.requestId);
   });
 
+  test('outcome unknown can become completed after status recovery', () async {
+    final turn = await repository.createPendingTurn(
+      userContent: '等待服务端结果。',
+      requestId: '56565656-5656-4565-8565-565656565656',
+      promptVersion: 'coach-chat-v1',
+    );
+    await repository.markAssistantOutcomeUnknown(
+      requestId: turn.assistantMessage.requestId!,
+    );
+
+    await repository.completeAssistant(
+      requestId: turn.assistantMessage.requestId!,
+      content: '状态查询已找回回复。',
+      safetyCategory: AiChatSafetyCategory.normal,
+    );
+
+    final recovered = await repository.findAssistantByRequestId(
+      turn.assistantMessage.requestId!,
+    );
+    expect(recovered?.status, AiChatMessageStatus.completed);
+    expect(recovered?.content, '状态查询已找回回复。');
+  });
+
   test('archive hides thread but preserves messages', () async {
     final turn = await repository.createPendingTurn(
       userContent: '归档这个会话。',

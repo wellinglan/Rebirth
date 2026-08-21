@@ -57,6 +57,8 @@ void main() {
       result.contractFor('weekly_report')?.periodKind.contractValue,
       'seven_days',
     );
+    expect(result.chatContract?.promptVersion, 'coach-chat-v1');
+    expect(result.chatContract?.maximumMessages, 12);
     expect(api.lastAccessToken, 'access-token');
     expect(api.lastPath, '/ai/capabilities');
   });
@@ -437,6 +439,23 @@ Map<String, Object?> _capabilities() => {
       ],
     },
   ],
+  'chat_contract': {
+    'request_type': 'coach_chat',
+    'prompt_version': 'coach-chat-v1',
+    'input_schema_version': 1,
+    'output_schema_version': 1,
+    'max_messages': 12,
+    'max_message_characters': 2000,
+    'max_history_characters': 12000,
+    'max_context_characters': 32000,
+    'supported_scopes': [
+      'growth_summary',
+      'today_metrics',
+      'health_metrics',
+      'journal_reflections',
+    ],
+    'streaming': false,
+  },
   'streaming': false,
   'response_storage_requested': false,
   'durable_request_ledger': true,

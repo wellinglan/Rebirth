@@ -211,7 +211,10 @@ final class LocalAiChatRepository implements AiChatRepository {
   }) async {
     final userId = await _activeUserId();
     final existing = await _assistantRow(userId, requestId);
-    if (existing == null || existing.status != 'pending') {
+    final validSource = status == AiChatMessageStatus.outcomeUnknown
+        ? existing?.status == 'pending'
+        : const {'pending', 'outcome_unknown'}.contains(existing?.status);
+    if (existing == null || !validSource) {
       throw const AiChatRepositoryException('message_not_pending');
     }
     final now = dateTimeService.currentSnapshot().utcMilliseconds;
@@ -221,7 +224,11 @@ final class LocalAiChatRepository implements AiChatRepository {
                 (row) =>
                     row.id.equals(existing.id) &
                     row.userId.equals(userId) &
-                    row.status.equals('pending'),
+                    row.status.isIn(
+                      status == AiChatMessageStatus.outcomeUnknown
+                          ? const ['pending']
+                          : const ['pending', 'outcome_unknown'],
+                    ),
               ))
               .write(
                 db.AiChatMessagesCompanion(

@@ -22,6 +22,7 @@ final class AiGenerationCapabilities {
     this.dedupeRetentionDays = 30,
     this.processingLeaseMinutes = 5,
     this.exactlyOnceGuaranteed = false,
+    this.chatContract,
   }) : supportedReportTypes = List.unmodifiable(supportedReportTypes),
        promptVersions = List.unmodifiable(promptVersions),
        reportContracts = List.unmodifiable(reportContracts) {
@@ -58,6 +59,7 @@ final class AiGenerationCapabilities {
   final int dedupeRetentionDays;
   final int processingLeaseMinutes;
   final bool exactlyOnceGuaranteed;
+  final AiChatGenerationContract? chatContract;
 
   AiGenerationReportContract? contractFor(String reportType) {
     for (final contract in reportContracts) {
@@ -65,6 +67,44 @@ final class AiGenerationCapabilities {
     }
     return null;
   }
+}
+
+final class AiChatGenerationContract {
+  AiChatGenerationContract({
+    required this.requestType,
+    required this.promptVersion,
+    required this.inputSchemaVersion,
+    required this.outputSchemaVersion,
+    required this.maximumMessages,
+    required this.maximumMessageCharacters,
+    required this.maximumHistoryCharacters,
+    required this.maximumContextCharacters,
+    required List<String> supportedScopes,
+    required this.streaming,
+  }) : supportedScopes = List.unmodifiable(supportedScopes) {
+    if (requestType != 'coach_chat' ||
+        promptVersion.trim().isEmpty ||
+        inputSchemaVersion <= 0 ||
+        outputSchemaVersion <= 0 ||
+        maximumMessages <= 0 ||
+        maximumMessageCharacters <= 0 ||
+        maximumHistoryCharacters <= 0 ||
+        maximumContextCharacters <= 0 ||
+        supportedScopes.toSet().length != supportedScopes.length) {
+      throw const FormatException('Invalid AI chat capabilities.');
+    }
+  }
+
+  final String requestType;
+  final String promptVersion;
+  final int inputSchemaVersion;
+  final int outputSchemaVersion;
+  final int maximumMessages;
+  final int maximumMessageCharacters;
+  final int maximumHistoryCharacters;
+  final int maximumContextCharacters;
+  final List<String> supportedScopes;
+  final bool streaming;
 }
 
 enum AiRemoteRequestStatus {
