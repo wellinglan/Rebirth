@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.ai.canonical import input_hash
+from app.ai.canonical import input_hash, normalized_payload
 from app.ai.errors import (
     AiGatewayError,
     GatewayDisabledError,
@@ -530,7 +530,7 @@ def _mark_usage_failed(
 
 
 def _provider_payload(request: AiGenerateRequest) -> ProviderPromptPayload:
-    payload = request.payload.model_dump(mode="json", exclude_none=False)
+    payload = normalized_payload(request.payload)
     if isinstance(request, AiChatTurnRequest):
         context = {
             key: item

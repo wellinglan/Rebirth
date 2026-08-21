@@ -186,6 +186,44 @@ def test_daily_fake_success_minimizes_provider_payload_and_replays(
     assert status.json()["structured_output"] == body["structured_output"]
 
 
+def test_daily_accepts_current_ten_point_metric_contract(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    provider = use_fake(client)
+    payload = daily_fixture()
+    payload["data"]["today_metrics"][0].update(
+        mood_score=9,
+        mood_description="平静但任务较多",
+        energy_score=10,
+        energy_description="上午精力充足",
+        wellbeing_score_scale=10,
+    )
+    payload["data"]["health_metrics"][0].update(
+        physical_state_score=8,
+        physical_state_description="身体状态稳定",
+        physical_state_score_scale=10,
+    )
+
+    response = client.post(
+        "/ai/reports/daily/generate",
+        headers=auth_headers,
+        json=daily_request_body(payload),
+    )
+
+    assert response.status_code == 200
+    forwarded = provider.last_payload.to_json_value()
+    today = forwarded["data"]["today_metrics"][0]
+    health = forwarded["data"]["health_metrics"][0]
+    assert today["mood_score"] == 9
+    assert today["energy_score"] == 10
+    assert today["wellbeing_score_scale"] == 10
+    assert today["mood_description"] == "平静但任务较多"
+    assert health["physical_state_score"] == 8
+    assert health["physical_state_score_scale"] == 10
+    assert health["physical_state_description"] == "身体状态稳定"
+
+
 def test_daily_selected_missing_is_not_omitted_and_zero_is_not_missing(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:

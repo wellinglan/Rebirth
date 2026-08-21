@@ -31,6 +31,7 @@ def normalized_payload(payload: AiInputPayload) -> dict[str, Any]:
                     rows, key=lambda item: item[date_key]
                 )
         return value
+    _remove_unset_report_metric_extensions(payload, value)
     value["data"] = {
         key: item for key, item in value["data"].items() if item is not None
     }
@@ -47,6 +48,31 @@ def normalized_payload(payload: AiInputPayload) -> dict[str, Any]:
         if rows is not None:
             value["data"][key] = sorted(rows, key=lambda item: item[date_key])
     return value
+
+
+def _remove_unset_report_metric_extensions(
+    payload: AiInputPayload,
+    value: dict[str, Any],
+) -> None:
+    extension_fields = {
+        "today_metrics": {
+            "mood_description",
+            "energy_description",
+            "wellbeing_score_scale",
+        },
+        "health_metrics": {
+            "physical_state_description",
+            "physical_state_score_scale",
+        },
+    }
+    for data_key, fields in extension_fields.items():
+        parsed_rows = getattr(payload.data, data_key)
+        dumped_rows = value["data"].get(data_key)
+        if parsed_rows is None or dumped_rows is None:
+            continue
+        for parsed, dumped in zip(parsed_rows, dumped_rows, strict=True):
+            for field in fields.difference(parsed.model_fields_set):
+                dumped.pop(field, None)
 
 
 def canonical_json(value: Any) -> str:

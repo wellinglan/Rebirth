@@ -72,20 +72,90 @@ class TodayMetricData(StrictModel):
     record_date: date
     research_minutes: int | None = Field(default=None, ge=0)
     learning_minutes: int | None = Field(default=None, ge=0)
-    mood_score: int | None = Field(default=None, ge=1, le=5)
-    energy_score: int | None = Field(default=None, ge=1, le=5)
+    mood_score: int | None = Field(default=None, ge=1, le=10)
+    mood_description: str | None = Field(default=None, max_length=80)
+    energy_score: int | None = Field(default=None, ge=1, le=10)
+    energy_description: str | None = Field(default=None, max_length=80)
+    wellbeing_score_scale: Literal[5, 10] | None = None
     populated_priority_count: int = Field(ge=0, le=3)
     completed_priority_count: int = Field(ge=0, le=3)
     status: Literal["draft", "completed", "skipped"]
+
+    @field_validator("mood_description", "energy_description")
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("metric descriptions must not be blank")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_wellbeing_contract(self) -> "TodayMetricData":
+        extension_fields = {
+            "mood_description",
+            "energy_description",
+            "wellbeing_score_scale",
+        }
+        present = extension_fields.intersection(self.model_fields_set)
+        if present and present != extension_fields:
+            raise ValueError("Today wellbeing extension fields must be complete")
+        scale = self.wellbeing_score_scale if present else 5
+        if scale is None:
+            raise ValueError("wellbeing_score_scale is required for new payloads")
+        if self.mood_score is not None and self.mood_score > scale:
+            raise ValueError("mood_score exceeds wellbeing_score_scale")
+        if self.energy_score is not None and self.energy_score > scale:
+            raise ValueError("energy_score exceeds wellbeing_score_scale")
+        return self
 
 
 class HealthMetricData(StrictModel):
     record_date: date
     sleep_duration_minutes: int | None = Field(default=None, ge=0)
     exercise_duration_minutes: int | None = Field(default=None, ge=0)
-    physical_state_score: int | None = Field(default=None, ge=1, le=5)
+    physical_state_score: int | None = Field(default=None, ge=1, le=10)
+    physical_state_description: str | None = Field(
+        default=None,
+        max_length=80,
+    )
+    physical_state_score_scale: Literal[5, 10] | None = None
     water_intake_ml: int | None = Field(default=None, ge=0)
     weight_kg: float | int | None = Field(default=None, ge=0)
+
+    @field_validator("physical_state_description")
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("metric descriptions must not be blank")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_physical_state_contract(self) -> "HealthMetricData":
+        extension_fields = {
+            "physical_state_description",
+            "physical_state_score_scale",
+        }
+        present = extension_fields.intersection(self.model_fields_set)
+        if present and present != extension_fields:
+            raise ValueError("Health physical state extension fields must be complete")
+        scale = self.physical_state_score_scale if present else 5
+        if scale is None:
+            raise ValueError(
+                "physical_state_score_scale is required for new payloads"
+            )
+        if (
+            self.physical_state_score is not None
+            and self.physical_state_score > scale
+        ):
+            raise ValueError(
+                "physical_state_score exceeds physical_state_score_scale"
+            )
+        return self
 
 
 class JournalReflectionData(StrictModel):

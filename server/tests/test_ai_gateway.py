@@ -245,6 +245,50 @@ def test_fake_generation_success_and_minimized_payload(
     assert "daily_note" not in json.dumps(forwarded)
 
 
+def test_weekly_accepts_current_ten_point_metric_contract(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    provider = use_fake(client)
+    payload = fixture_payload()
+    for index, row in enumerate(payload["data"]["today_metrics"]):
+        row.update(
+            mood_score=8 + index,
+            mood_description=f"第 {index + 1} 天心情记录",
+            energy_score=9 + index,
+            energy_description=f"第 {index + 1} 天精力记录",
+            wellbeing_score_scale=10,
+        )
+    payload["data"]["health_metrics"][0].update(
+        physical_state_score=8,
+        physical_state_description="本周身体状态稳定",
+        physical_state_score_scale=10,
+    )
+    parsed = AiWeeklyPayload.model_validate(payload)
+    body = {
+        "request_id": "31111111-2222-4333-8444-555555555555",
+        "input_hash": input_hash(parsed),
+        "payload": payload,
+    }
+
+    response = client.post(
+        "/ai/reports/weekly/generate",
+        headers=auth_headers,
+        json=body,
+    )
+
+    assert response.status_code == 200
+    forwarded = provider.last_payload.to_json_value()
+    today = forwarded["data"]["today_metrics"]
+    health = forwarded["data"]["health_metrics"][0]
+    assert [row["mood_score"] for row in today] == [8, 9]
+    assert [row["energy_score"] for row in today] == [9, 10]
+    assert all(row["wellbeing_score_scale"] == 10 for row in today)
+    assert health["physical_state_score"] == 8
+    assert health["physical_state_score_scale"] == 10
+    assert health["physical_state_description"] == "本周身体状态稳定"
+
+
 def test_hash_mismatch_blocks_provider(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
