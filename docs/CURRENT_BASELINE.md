@@ -2,7 +2,7 @@
 
 > Classification: **Active / authoritative**
 > Audited: **2026-08-21**
-> Audited code checkpoint: `2795382b23c4a9b2ccfde94aa9bee2152e46b45d`
+> Audited code checkpoint: `877d359d5fe3eb4848edcffb991e0d221c4bd012`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
@@ -13,8 +13,8 @@
 > Sprint 17B starting HEAD: `3eaf4c11f9b7bfdf8b78d18992fd1aaa9abaa593`
 > Sprint 17B implementation commit: `cab60cf9cf74ee452f6b082ac37dba342894fc28`
 > Sprint 17C-E starting HEAD: `0a3bbcd2005ca30b02693a1d3ee573c36c908fa3`
-> Sprint 17C-E implementation checkpoint: `2795382b23c4a9b2ccfde94aa9bee2152e46b45d`
-> Current working Sprint: **17C-E Core Experience Consolidation implemented; manual Gate OPEN**
+> Sprint 17C-E Candidate HEAD: `877d359d5fe3eb4848edcffb991e0d221c4bd012`
+> Current working Sprint: **17C-E Core Experience Consolidation accepted; manual Gate CLOSED**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -75,11 +75,11 @@ Drift or server implementation classes.
 | Area | Local product behavior | Manual sync | Conflict behavior | Current evidence |
 |---|---|---|---|---|
 | Profile | Account-scoped profile and settings | Yes | OCC and shared conflict framework | Unified Sync Center: 113 PASS / 0 FAIL / 0 NOT EXECUTED |
-| Plan | Hierarchical goals, dates, lifecycle, demand-open filters, and compact actions | Yes | Explicit shared conflict recovery | Sprint 17C-E presentation implemented; current 69-row combined matrix is NOT EXECUTED |
-| Today | Daily priorities, nullable 1-10 Mood/Energy, compact duration editing, nine-metric narrative model, and note | Yes | Explicit Today recovery, null/zero preserved | Sprint 17C-E implementation automated; current manual Gate OPEN |
-| Journal | Current reflection plus separate history page, draft/complete/reopen, and prompt snapshots | Yes | Explicit Journal recovery | Sprint 17C-E history separation implemented; current manual Gate OPEN |
-| Health | Sensitive local health records with compact input, water visualization, and metric narratives | Yes | Explicit shared conflict recovery | Sprint 17C-E implementation automated; current manual Gate OPEN |
-| Growth | Read-only local projections with separate data-source explanation and normalized 1-10 wellbeing charts | No | Not a sync aggregate | Sprint 17C-E presentation implemented; current manual Gate OPEN |
+| Plan | Hierarchical goals, dates, lifecycle, demand-open filters, and compact actions | Yes | Explicit shared conflict recovery | Sprint 17C-E Gate closed at 67 PASS / 0 FAIL / 2 NOT EXECUTED across the combined scope |
+| Today | Daily priorities, nullable 1-10 Mood/Energy, compact duration editing, nine-metric narrative model, and note | Yes | Explicit Today recovery, null/zero preserved | Sprint 17C-E persistence, sync, conflict, and UI rows accepted |
+| Journal | Current reflection plus separate history page, draft/complete/reopen, and prompt snapshots | Yes | Explicit Journal recovery | Sprint 17C-E separate history flow accepted on Windows and Android |
+| Health | Sensitive local health records with compact input, water visualization, and metric narratives | Yes | Explicit shared conflict recovery | Sprint 17C-E persistence, sync, conflict, and UI rows accepted |
+| Growth | Read-only local projections with separate data-source explanation and normalized 1-10 wellbeing charts | No | Not a sync aggregate | Sprint 17C-E hierarchy, navigation, and 1-10 presentation accepted |
 | Personal Data | Local aggregation boundary | No | Not a sync aggregate | 49 PASS / 0 FAIL / 5 safe fault-injection rows NOT EXECUTED |
 | Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |
 | Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
@@ -213,7 +213,7 @@ configured today.
 | 17A | Product experience audit and UI design system foundation | No schema/API/protocol change | 0 PASS / 0 FAIL / 30 NOT EXECUTED | Responsive and theme automation added; final feature visual direction remains open |
 | 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
 | 17B | Home / Today / Health production experience integration | Flutter schema 13; dual-format Server validation; API 1 and Sync Protocol 2 unchanged | 48 PASS / 0 FAIL / 3 NOT EXECUTED | Gate closed; all product-level checks passed, with explicit automated substitutions for A10 and D3-D4 |
-| 17C-E | Plan, Journal, Growth and metric narrative consolidation | Flutter schema 14; three-generation Today/Health validation; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 69 NOT EXECUTED | Implementation checkpoint recorded; candidate CI, API deployment, and complete manual matrix remain pending, so Gate OPEN |
+| 17C-E | Plan, Journal, Growth and metric narrative consolidation | Flutter schema 14; three-generation Today/Health validation; API 1 and Sync Protocol 2 unchanged | 67 PASS / 0 FAIL / 2 NOT EXECUTED | Gate closed with automated substitutions for unsafe failed-save injection and legacy payload fixture only |
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
@@ -263,9 +263,9 @@ tombstones, conflicts, and manual-only synchronization remain unchanged.
 The authoritative contract is
 [Sprint 17C-E Core Experience](58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md).
 The 69-row [manual matrix](manual_tests/63_plan_journal_growth_and_metric_narratives.md)
-is entirely NOT EXECUTED. Local verification, GitHub Quality, GHCR publication,
-candidate API deployment, and Windows/Android acceptance are not interchangeable;
-the Gate remains **OPEN** until all required evidence is recorded.
+records 67 PASS / 0 FAIL / 2 NOT EXECUTED. D11 and G8 retain named automated
+evidence because their failure/legacy fixtures cannot be injected safely at
+product level. The Gate is **CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS**.
 
 ## Full Personal Data Export Baseline
 
@@ -314,9 +314,9 @@ protocol entity registry.
 ## Verification Baseline
 
 GitHub `Quality` run
-[31073858896](https://github.com/wellinglan/Rebirth/actions/runs/31073858896)
-completed successfully for the Sprint 15B implementation commit
-`ab3bc862006ba21924595966190d93f6a661867a`. It passed:
+[32404151284](https://github.com/wellinglan/Rebirth/actions/runs/32404151284)
+completed successfully for Sprint 17C-E Candidate HEAD
+`877d359d5fe3eb4848edcffb991e0d221c4bd012`. It passed:
 
 - Server SQLite;
 - Server PostgreSQL, Alembic, multiprocessing, and multi-worker checks;
@@ -327,9 +327,8 @@ The workflow does not build Windows. CI PASS does not close manual Gates; the
 manual evidence lineage is authoritative in
 [Manual Acceptance Registry](manual_tests/README.md).
 
-Sprint 17C-E has not yet produced a recorded GitHub Quality result at this
-documentation checkpoint. The historical run above must not be used as proof
-for the current schema-14 and Server payload-validation candidate.
+Local Windows startup and release build plus Android split release builds also
+passed. The workflow does not build Windows, so that evidence remains local.
 
 ## Deployment Baseline
 
@@ -359,10 +358,14 @@ verified on Alpha together with `/health`; the user then explicitly suspended
 the remaining product matrix at 3 PASS / 0 FAIL / 36 NOT EXECUTED. This proves
 that recorded deployment only, not Provider readiness or wider release safety.
 
-The Sprint 17C-E API image is not recorded as published or deployed at this
-checkpoint. Cross-device narrative acceptance must wait for the candidate
-full-SHA image, digest verification, API-only recreation, and fresh `/health`
-evidence. PostgreSQL must not be restarted and no Alembic revision is required.
+Publish Alpha Images run
+[32404151075](https://github.com/wellinglan/Rebirth/actions/runs/32404151075)
+published `ghcr.io/wellinglan/rebirth-api:877d359d5fe3eb4848edcffb991e0d221c4bd012`
+with digest `sha256:1c3e3ea3c0f0429aa79b391763efd9dbcb7205cfb2385766b789bc7e93671098`.
+That exact image was deployed by API-only recreation on the Beijing Alpha
+Server. The API became healthy and `/health` reported API Version 1 and Sync
+Protocol 2. PostgreSQL remained the existing healthy container and was not
+restarted; no new Alembic revision exists.
 
 ## Product Decisions Versus Release Debt
 

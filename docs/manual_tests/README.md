@@ -62,7 +62,7 @@ that a separate module-only matrix was rerun.
 | Product Experience Foundation | OPEN | [Product Experience and Design System](60_product_experience_design_system.md) | 0 / 0 / 30 | Foundation is implemented; Windows and Android visual/accessibility acceptance remains NOT EXECUTED |
 | Home / Today / Health Experience Prototype | CLOSED | [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) | 81 / 0 / 0 | Developer-only in-memory prototype including Revision 1 wellbeing ratings accepted on Windows and Android; production integration remains a separate decision |
 | Home / Today / Health Production Integration | CLOSED | [Home / Today / Health Production Integration](62_home_today_health_production_integration.md) | 48 / 0 / 3 | All product-level checks passed; A10 and D3-D4 retain explicit automated substitutions |
-| Sprint 17C-E Core Experience | OPEN | [Plan, Journal, Growth and Metric Narratives](63_plan_journal_growth_and_metric_narratives.md) | 0 / 0 / 69 | Implementation contract exists; candidate CI/image/deployment and the entire Windows/Android matrix remain NOT EXECUTED |
+| Sprint 17C-E Core Experience | CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS | [Plan, Journal, Growth and Metric Narratives](63_plan_journal_growth_and_metric_narratives.md) | 67 / 0 / 2 | Candidate CI, image, API-only Alpha deployment, schema-13 retained migration, Windows/Android product, sync/conflict, privacy, and accessibility rows passed; D11 and G8 retain automated evidence only |
 
 ## Important Succession Rules
 
@@ -85,9 +85,10 @@ that a separate module-only matrix was rerun.
   superseded by matrix 49.
 - Matrix 45 AI Report Sync keeps nine unavailable UI rows. Matrix 52 provides
   the later archive/conflict product evidence instead of rewriting matrix 45.
-- Matrix 62 remains the accepted Sprint 17B evidence. Matrix 63 owns only the
-  later Plan/Journal/Growth presentation and schema-14 metric narrative scope;
-  it starts OPEN and does not rewrite matrix 62's historical PASS rows.
+- Matrix 62 remains the accepted Sprint 17B evidence. Matrix 63 closes the
+  later Plan/Journal/Growth presentation and schema-14 metric narrative scope
+  with two accepted automated substitutions; it does not rewrite matrix 62's
+  historical PASS rows.
 
 ## Current Matrix Index
 
@@ -115,7 +116,7 @@ that a separate module-only matrix was rerun.
 - [Product Experience and Design System](60_product_experience_design_system.md) - Current Gate OPEN at 0 / 0 / 30
 - [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) - Gate CLOSED at 81 / 0 / 0
 - [Home / Today / Health Production Integration](62_home_today_health_production_integration.md) - Gate CLOSED at 48 / 0 / 3; E1-E6 passed after fixed API deployment
-- [Plan, Journal, Growth and Metric Narratives](63_plan_journal_growth_and_metric_narratives.md) - Sprint 17C-E Gate OPEN at 0 / 0 / 69
+- [Plan, Journal, Growth and Metric Narratives](63_plan_journal_growth_and_metric_narratives.md) - Sprint 17C-E Gate CLOSED at 67 / 0 / 2 with accepted automated substitutions
 
 ### Authentication and Identity
 

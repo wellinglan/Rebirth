@@ -25,6 +25,13 @@ Today/Health payload generations. API Version remains 1, Sync Protocol remains
 required for the validation contract. See
 `docs/58_PLAN_JOURNAL_GROWTH_AND_METRIC_NARRATIVES.md`.
 
+Candidate HEAD `877d359d5fe3eb4848edcffb991e0d221c4bd012` passed Quality and image
+publication, and its digest-verified API image was deployed through API-only
+recreation while PostgreSQL remained running. The user reported 67 PASS / 0
+FAIL / 2 NOT EXECUTED across the 69-row Windows/Android matrix. D11 and G8
+retain explicit automated evidence; the Sprint 17C-E Gate is CLOSED WITH
+ACCEPTED AUTOMATED SUBSTITUTIONS.
+
 ## Historical Appendix: Sprint 15B AI Report Generation Pipeline
 
 Sprint 15B does not expand AI capability. It consolidates existing explicit
@@ -856,3 +863,8 @@ Server 仅扩展既有 Sync Protocol 2 JSON 校验，兼容三代完整 payload 
 扩展字段。PostgreSQL、Alembic head `20260812_0008`、API Version 1、Sync
 Protocol 2、SyncCoordinator、cursor、OCC、tombstone 与冲突语义均不改变。由于
 校验代码有变化，跨端验收前仍必须部署 Candidate HEAD 对应的新 API 镜像。
+
+Candidate HEAD `877d359d5fe3eb4848edcffb991e0d221c4bd012` 的 Quality、镜像发布、
+API-only Alpha 部署和 `/health` 均已验证。69 项人工矩阵最终为 67 PASS / 0 FAIL /
+2 NOT EXECUTED；D11 保存失败注入与 G8 旧 payload 产品级 fixture 由自动化证据
+替代且不记作人工 PASS。Sprint 17C-E Gate 已关闭并接受上述两项限制。

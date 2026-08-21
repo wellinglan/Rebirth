@@ -1,8 +1,9 @@
 # Sprint 17C-E Core Experience Consolidation & Metric Narratives
 
-> Classification: **Active implementation contract / manual Gate pending**
+> Classification: **Accepted implementation contract / Gate closed with automated substitutions**
 > Baseline: `0a3bbcd2005ca30b02693a1d3ee573c36c908fa3`
-> Candidate implementation checkpoint: `2795382b23c4a9b2ccfde94aa9bee2152e46b45d`
+> Candidate HEAD: `877d359d5fe3eb4848edcffb991e0d221c4bd012`
+> API image digest: `sha256:1c3e3ea3c0f0429aa79b391763efd9dbcb7205cfb2385766b789bc7e93671098`
 > Flutter schemaVersion: `14`
 > API Version: `1`
 > Sync Protocol: `2`
@@ -10,9 +11,9 @@
 
 Sprint 17C-E consolidates the production experience in Plan, Journal, Growth,
 Today, and Health. It does not add AI capability, automatic synchronization,
-or a second persistence path. The final product Gate remains open until the
-candidate API is published and deployed, matching Windows and Android release
-artifacts are installed, and the manual matrix is reported.
+or a second persistence path. The candidate API was published and deployed,
+matching Windows and Android releases were exercised, and the final product
+Gate closed with two explicitly accepted automated substitutions.
 
 ## Product Changes
 
@@ -202,15 +203,29 @@ Publication is not deployment, and automation is not manual acceptance.
 
 The authoritative manual matrix is
 [Plan, Journal, Growth and Metric Narratives](manual_tests/63_plan_journal_growth_and_metric_narratives.md).
-It starts at `0 PASS / 0 FAIL / 69 NOT EXECUTED` and the **Sprint 17C-E Core
-Experience Gate is OPEN**. The Gate can close only after:
+It records `67 PASS / 0 FAIL / 2 NOT EXECUTED`. D11 retains automated
+failed-save recovery evidence because no safe product-level failure injection
+exists. G8 retains automated legacy/Sprint-17B payload compatibility evidence
+because no safe product-level legacy fixture exists. Neither row is counted as
+manual PASS.
+
+The **Sprint 17C-E Core Experience Gate is CLOSED WITH ACCEPTED AUTOMATED
+SUBSTITUTIONS** after:
 
 1. local verification and release builds pass;
 2. GitHub Quality and image publication pass for the candidate commit;
 3. the candidate full-SHA API image is deployed without changing PostgreSQL;
 4. matching Windows and Android release artifacts complete the applicable
    manual matrix;
-5. results are recorded in one final documentation-only acceptance commit.
+5. results were recorded in one final documentation-only acceptance commit.
+
+Candidate GitHub Quality run
+[32404151284](https://github.com/wellinglan/Rebirth/actions/runs/32404151284)
+and image-publication run
+[32404151075](https://github.com/wellinglan/Rebirth/actions/runs/32404151075)
+passed. The Beijing Alpha Server runs the full-SHA API image with the digest
+above after API-only recreation. PostgreSQL remained healthy and was not
+restarted; `/health` reported API Version `1` and Sync Protocol `2`.
 
 ## Explicit Non-goals
 

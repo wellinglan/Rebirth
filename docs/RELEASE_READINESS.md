@@ -1,7 +1,7 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-21 / Sprint 17C-E implementation checkpoint**
+> Audited: **2026-08-21 / Sprint 17C-E acceptance checkpoint**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
@@ -37,20 +37,19 @@ Sprint 17C-E adds six further structured metric narratives, advances Flutter
 schema to 14, and changes Server validation to recognize three exact payload
 generations. Its Plan, Journal, and Growth work is presentation-only; its
 Today/Health descriptions participate in local persistence, export, manual sync,
-and conflict recovery. The 69-row matrix is currently 0 PASS / 0 FAIL / 69 NOT
-EXECUTED, so the Sprint 17C-E Gate is **OPEN**. The candidate API must be
-published and deployed before cross-device acceptance; no PostgreSQL model or
-Alembic change is involved.
+and conflict recovery. The 69-row matrix records 67 PASS / 0 FAIL / 2 NOT
+EXECUTED, so the Sprint 17C-E Gate is **CLOSED WITH ACCEPTED AUTOMATED
+SUBSTITUTIONS**. D11 and G8 remain automated-only rather than manual PASS.
 
 ## Private Alpha Foundations Present
 
 | Area | Evidence present | Remaining qualification |
 |---|---|---|
-| Quality CI | Sprint 15B Quality [run 31073858896](https://github.com/wellinglan/Rebirth/actions/runs/31073858896) passed Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug | No Windows CI or signed release artifact job exists |
+| Quality CI | Sprint 17C-E Quality [run 32404151284](https://github.com/wellinglan/Rebirth/actions/runs/32404151284) passed Server SQLite, PostgreSQL/Alembic/multi-worker, Flutter analyze/test, and Android Debug | No Windows CI or signed release artifact job exists |
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
-| Private cloud Alpha | Sprint 16B GHCR image, matching live image identity, migration, and health were manually checked | Provider, backup, and broader Production readiness still require separate current evidence |
-| Data migrations | Drift migration tests through schema 14 and deployed Alembic `20260812_0008` | Sprint 17C-E retained-fixture manual migration evidence and Production backup/restore rehearsal are absent |
+| Private cloud Alpha | Sprint 17C-E full-SHA GHCR API image, digest, API-only recreation, health, API 1, and Sync Protocol 2 were checked | Provider, backup, and broader Production readiness still require separate current evidence |
+| Data migrations | Drift migration tests through schema 14, retained schema-13 client evidence, and unchanged Alembic `20260812_0008` | Production backup/restore rehearsal remains absent |
 | Authentication | Public password login, secure sessions, refresh rotation, logout, and account isolation | Recovery, MFA, real WeChat, and some controlled Step-up cases are absent |
 | Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |
@@ -195,5 +194,8 @@ Quality and image-publication success, the exact full-SHA image and digest,
 API-only Alpha recreation, healthy `/health`, and the applicable Windows and
 Android rows in
 [matrix 63](manual_tests/63_plan_journal_growth_and_metric_narratives.md).
-At this checkpoint those runtime and manual facts are not yet established. The
-Gate remains **OPEN** at 0 PASS / 0 FAIL / 69 NOT EXECUTED.
+Those runtime facts were established for Candidate HEAD
+`877d359d5fe3eb4848edcffb991e0d221c4bd012`, and the user reported all safely
+executable Windows/Android rows as PASS. The Gate is **CLOSED WITH ACCEPTED
+AUTOMATED SUBSTITUTIONS** at 67 PASS / 0 FAIL / 2 NOT EXECUTED. This does not
+close the public Production or app-store release blockers above.

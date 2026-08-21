@@ -377,14 +377,14 @@ void main() {
     expect(registry, contains('48 / 0 / 3'));
   });
 
-  test('Sprint 17C-E docs keep the initial manual Gate open and honest', () {
+  test('Sprint 17C-E docs preserve the accepted Gate and limitations', () {
     final baseline = File(baselinePath).readAsStringSync();
     final contract = File(coreExperiencePath).readAsStringSync();
     final matrix = File(coreExperienceMatrixPath).readAsStringSync();
     final registry = File(manualRegistryPath).readAsStringSync();
 
     expect(baseline, contains('17C-E Core Experience Consolidation'));
-    expect(baseline, contains('manual Gate OPEN'));
+    expect(baseline, contains('manual Gate CLOSED'));
     expect(contract, contains('schemaVersion: `14`'));
     expect(contract, contains('API Version: `1`'));
     expect(contract, contains('Sync Protocol: `2`'));
@@ -400,16 +400,27 @@ void main() {
     }
     expect(contract, contains('Three generations are accepted'));
     expect(contract, contains('No PostgreSQL business column'));
-    expect(matrix, contains('0 PASS / 0 FAIL / 69 NOT EXECUTED'));
+    expect(matrix, contains('67 PASS / 0 FAIL / 2 NOT EXECUTED'));
     expect(
       RegExp(r'^\| [A-I]\d+ \|', multiLine: true).allMatches(matrix),
       hasLength(69),
     );
-    expect(matrix, isNot(contains('| PASS |')));
+    expect(
+      RegExp(r'^\| [A-I]\d+ \|.*\| PASS \|', multiLine: true)
+          .allMatches(matrix),
+      hasLength(67),
+    );
+    expect(
+      RegExp(r'^\| [A-I]\d+ \|.*\| NOT EXECUTED \|', multiLine: true)
+          .allMatches(matrix),
+      hasLength(2),
+    );
     expect(matrix, isNot(contains('| FAIL |')));
-    expect(matrix, contains('Gate remains OPEN'));
+    expect(matrix, contains('| D11 |'));
+    expect(matrix, contains('| G8 |'));
+    expect(matrix, contains('Gate is CLOSED WITH ACCEPTED AUTOMATED'));
     expect(registry, contains('Sprint 17C-E Core Experience'));
-    expect(registry, contains('0 / 0 / 69'));
+    expect(registry, contains('67 / 0 / 2'));
   });
 }
 
