@@ -5,6 +5,59 @@ import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import '../models/ai_coach_home_models.dart';
 import '../models/ai_report_presentation_models.dart';
 
+class AiCoachConversationEntry extends StatelessWidget {
+  const AiCoachConversationEntry({
+    required this.onStart,
+    required this.enabled,
+    super.key,
+  });
+
+  final VoidCallback onStart;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const ValueKey('aiCoachConversationEntry'),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.forum_outlined),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '和 AI 教练聊一聊',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      const Text('默认只发送你输入的文字；个人记录需要每次明确选择。'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton.icon(
+              key: const ValueKey('startAiChatButton'),
+              onPressed: enabled ? onStart : null,
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: Text(enabled ? '开始对话' : 'AI 暂不可用'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class AiCoachAvailabilityPanel extends StatelessWidget {
   const AiCoachAvailabilityPanel({
     required this.usage,

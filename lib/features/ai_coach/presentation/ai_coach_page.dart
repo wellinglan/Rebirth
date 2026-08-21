@@ -44,11 +44,11 @@ class AiCoachPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '今天想从哪里开始？',
+                      'AI 教练',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    const Text('从已有记录中选择一次洞察，生成前由你确认本次使用的数据。'),
+                    const Text('可以先聊一聊，也可以从已有记录生成一次洞察。'),
                     const SizedBox(height: AppSpacing.lg),
                     AiCoachAvailabilityPanel(
                       loading: usage.isLoading,
@@ -58,6 +58,20 @@ class AiCoachPage extends ConsumerWidget {
                           .refresh(),
                     ),
                     const SizedBox(height: AppSpacing.lg),
+                    AiCoachConversationEntry(
+                      enabled:
+                          usage.asData?.value.availability !=
+                              AiUsageAvailability.disabled &&
+                          usage.asData?.value.availability !=
+                              AiUsageAvailability.limitReached,
+                      onStart: () => context.push(RoutePaths.aiCoachChat),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      '洞察与回顾',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
                     weekly.when(
                       loading: () => const Center(
                         key: ValueKey('aiCoachTasksLoading'),

@@ -12,6 +12,8 @@ import '../../features/account/presentation/login_page.dart';
 import '../../features/account/presentation/register_page.dart';
 import '../../features/ai_coach/presentation/ai_coach_page.dart';
 import '../../features/ai_coach/presentation/ai_daily_insight_page.dart';
+import '../../features/ai_coach/presentation/ai_chat_page.dart';
+import '../../features/ai_coach/presentation/ai_chat_history_page.dart';
 import '../../features/ai_coach/presentation/ai_weekly_report_page.dart';
 import '../../features/ai_coach/presentation/ai_report_detail_page.dart';
 import '../../features/ai_coach/domain/ai_data_scope.dart';
@@ -104,6 +106,17 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
         path: RoutePaths.aiCoachWeekly,
         name: RouteNames.aiCoachWeekly,
         builder: (context, state) => const AiWeeklyReportPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.aiCoachChatHistory,
+        name: RouteNames.aiCoachChatHistory,
+        builder: (context, state) => const AiChatHistoryPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.aiCoachChat,
+        name: RouteNames.aiCoachChat,
+        builder: (context, state) =>
+            AiChatPage(initialThreadId: state.uri.queryParameters['thread']),
       ),
       GoRoute(
         path: '${RoutePaths.aiCoach}/daily/:targetDate',

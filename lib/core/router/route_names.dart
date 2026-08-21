@@ -31,6 +31,8 @@ abstract final class RouteNames {
   static const aiCoach = 'aiCoach';
   static const aiCoachWeekly = 'aiCoachWeekly';
   static const aiCoachDaily = 'aiCoachDaily';
+  static const aiCoachChat = 'aiCoachChat';
+  static const aiCoachChatHistory = 'aiCoachChatHistory';
   static const aiCoachReport = 'aiCoachReport';
   static const aiReports = 'aiReports';
   static const aiReportsDetail = 'aiReportsDetail';
@@ -68,10 +70,19 @@ abstract final class RoutePaths {
   static const syncConflicts = '/settings/sync-conflicts';
   static const aiCoach = '/ai-coach';
   static const aiCoachWeekly = '/ai-coach/weekly';
+  static const aiCoachChat = '/ai-coach/chat';
+  static const aiCoachChatHistory = '/ai-coach/chat/history';
   static const aiReports = '/ai-reports';
 
   static String aiReportsDetail(String reportId) {
     return '$aiReports/${Uri.encodeComponent(reportId)}';
+  }
+
+  static String aiCoachChatForThread(String threadId) {
+    return Uri(
+      path: aiCoachChat,
+      queryParameters: {'thread': threadId},
+    ).toString();
   }
 
   static String todayHistoryForDate(String date) {
