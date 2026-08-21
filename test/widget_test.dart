@@ -112,6 +112,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('aiCoachPage')), findsOneWidget);
-    expect(find.text('今天想从哪里开始？'), findsOneWidget);
+    expect(find.byKey(const ValueKey('startAiChatButton')), findsOneWidget);
+    expect(find.text('洞察与回顾'), findsOneWidget);
   });
 }
