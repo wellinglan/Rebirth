@@ -891,3 +891,26 @@ Candidate HEAD `877d359d5fe3eb4848edcffb991e0d221c4bd012` 的 Quality、镜像�
 API-only Alpha 部署和 `/health` 均已验证。69 项人工矩阵最终为 67 PASS / 0 FAIL /
 2 NOT EXECUTED；D11 保存失败注入与 G8 旧 payload 产品级 fixture 由自动化证据
 替代且不记作人工 PASS。Sprint 17C-E Gate 已关闭并接受上述两项限制。
+
+# 三十三、Conversation-first AI Coach 与 Token 预算边界
+
+Sprint 18B 将 `/ai-coach` 直接映射到本地 AI 对话，并保留
+`/ai-coach/chat` 兼容跳转。Composer 上方固定提供本次 Chat 参考资料、生成今日
+洞察、生成每周回顾三个操作。Chat Scope 只影响下一条普通对话；Daily/Weekly
+使用各自一次性选择并继续走既有 Report Coordinator、版本、恢复、同步和冲突链路。
+报告只以引用卡片出现在对话页，不复制成 Chat Message，也不自动进入后续上下文。
+
+Chat 改为独立的每日总 Token 预算，Alpha 默认 50000；Report 有独立 Token 预算，
+二者共享全局 Token 和并发上限。Server 在既有 Usage Ledger 上原子预留，按 Provider
+实际 usage 结算，缺少 usage 时保守计费；Timeout/outcome unknown 保留到状态或
+lease 处理。Alembic head 升至 `20260822_0009`，没有第二套 accounting 表。
+V1 次数 API 暂留给旧客户端，V2 仅通过 JWT 返回当前用户 Chat/Report 聚合预算。
+
+Daily/Weekly 当前活动 Prompt 为 v3，用户可见内容要求简体中文。已发布 v1 内容和
+fingerprint 不变；过渡期 Server 显式接受 v1/v3，Capabilities 只声明活动 v3。
+Flutter schemaVersion 保持 15，API 1、Sync Protocol 2 不变。Chat 仍只在本地，
+AI Report 继续跨端同步。详见
+`docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md`。
+
+Sprint 18C 需在部署兼容与客户端采用证据充分后，审计清理 Usage V1、旧次数配置、
+旧概览组件、临时路由和 v1 生成兼容；历史 Prompt 元数据和旧报告不得删除。

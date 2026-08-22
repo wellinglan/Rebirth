@@ -95,3 +95,13 @@ Provider billing may differ. A global or concurrency block is intentionally
 represented without disclosing deployment-wide values. Unknown client state is
 fail-soft for usability, while every generation endpoint remains fail-closed
 and performs the authoritative Server check.
+
+## Sprint 18B Succession
+
+The V1 response above remains available as a temporary Report-count
+compatibility contract. Sprint 18B adds JWT-only `/ai/usage/me/v2`, independent
+Chat and Report total-Token budgets, atomic `reserved_tokens`, settled
+`charged_tokens`, and UTC reset metadata. Chat no longer increments V1 request
+counts. The current client uses V2 and displays aggregate Token usage; it still
+cannot see global budgets or request-level/content details. See
+`docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md`.

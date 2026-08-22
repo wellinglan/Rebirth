@@ -146,7 +146,9 @@ Sprint 15B's statement that it made no Prompt change remains true for that
 Sprint. Sprint 15C later moves Server Prompt governance into one immutable
 Registry and adds non-active v2 candidates plus synthetic quality Gates. The
 15B client coordinator and recovery behavior remain unchanged, and Capabilities
-still exposes only active v1 contracts. See
+exposed only active v1 contracts at that time. Sprint 18B later activates
+immutable Chinese v3 contracts while retaining explicit v1 generation
+compatibility. See
 `docs/52_PROMPT_GOVERNANCE_AND_QUALITY_EVALUATION.md`.
 
 ## Sprint 16A Presentation Succession

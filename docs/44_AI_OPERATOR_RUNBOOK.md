@@ -12,7 +12,7 @@ ledger rows. They print aggregate statistics only and must be executed inside a
 trusted Server environment with database access.
 
 API Version remains `1`, Sync Protocol remains `2`, and Flutter
-`schemaVersion` remains `9`.
+`schemaVersion` remains `15`.
 
 ## 2. Configuration Reference
 
@@ -24,6 +24,10 @@ API Version remains `1`, Sync Protocol remains `2`, and Flutter
 | `REBIRTH_AI_MAX_OUTPUT_TOKENS` | `1600` | Maximum output tokens per request |
 | `REBIRTH_AI_DAILY_USER_LIMIT` | `10` | Per-user UTC-day hard reservation limit |
 | `REBIRTH_AI_DAILY_GLOBAL_LIMIT` | `100` | Deployment UTC-day hard reservation limit |
+| `REBIRTH_AI_CHAT_DAILY_TOKEN_LIMIT` | `50000` | Per-user Chat total-token budget per UTC day |
+| `REBIRTH_AI_REPORT_DAILY_TOKEN_LIMIT` | `50000` | Per-user Daily/Weekly Report total-token budget per UTC day |
+| `REBIRTH_AI_DAILY_GLOBAL_TOKEN_LIMIT` | `250000` | Deployment-wide total-token hard limit per UTC day |
+| `REBIRTH_AI_MAX_REQUEST_TOKENS` | `20000` | Maximum conservative reservation for one request |
 | `REBIRTH_AI_MONTHLY_GLOBAL_LIMIT` | `3000` | UTC-month operational alert threshold, not a request hard limit |
 | `REBIRTH_AI_BUDGET_WARNING_PERCENT` | `80` | Warning percentage for daily/monthly global thresholds |
 | `REBIRTH_AI_FAILURE_RATE_WARNING_PERCENT` | `25` | Provider failure-rate warning threshold |
@@ -86,15 +90,18 @@ credentials fail closed during normal API startup.
 
 1. Record the current values and current audit totals.
 2. Change only the intended environment values.
-3. Remember that daily user/global limits are hard reservation limits.
+3. Legacy daily user/global request limits still apply to Reports during the
+   compatibility window. Chat and Report have separate Token budgets and share
+   the global Token and concurrency ceilings.
 4. Remember that `REBIRTH_AI_MONTHLY_GLOBAL_LIMIT` is an alert threshold only;
    it does not silently introduce a new monthly rejection rule.
 5. Run `config-check` and confirm the safe values.
 6. Recreate only the API service.
 7. Verify `/health` and run `monitor`.
 
-Lowering a hard daily limit never deletes prior usage. Existing reservations
-continue to count until the next UTC day boundary.
+Lowering a hard daily limit never deletes prior usage. `used + reserved`
+continues to count until settlement, lease expiry, or the next UTC day
+boundary. Timeout/outcome-unknown reservations must not be cleared manually.
 
 ## 6. Disable AI
 
@@ -135,19 +142,24 @@ Restoring AI does not retry failed, expired, or `outcome_unknown` requests.
 6. After recovery, restore AI through Section 7. Never automatically replay an
    `outcome_unknown` request because the Provider may already have charged it.
 
-A Provider-confirmed timeout is a terminal `provider_timeout` failure. Its
-generation and usage leases are released and an identical `request_id` replays
-the same failure without another Provider call. This is different from a client
-network interruption after the Server accepted a request: that outcome may stay
-pending until status recovery determines `completed`, `failed`, or
-`outcome_unknown`. Do not turn a Provider timeout into pending recovery, and do
-not resend an `outcome_unknown` request automatically.
+A Provider-confirmed timeout is a terminal `provider_timeout` generation
+failure. The Token reservation remains held because the Provider may have
+consumed resources without returning usage. It is converted to the conservative
+fallback once its usage lease expires; an identical `request_id` replays the
+same failure without another Provider call or reservation. A client network
+interruption after acceptance may instead remain pending until status recovery
+determines `completed`, `failed`, or `outcome_unknown`. Never retry either state
+automatically or clear its reservation by hand.
 
 ## 9. Budget Exhaustion
 
 `AI_USAGE_LIMIT_WARNING` means a configured percentage threshold has been
 reached. `AI_USAGE_LIMIT_EXCEEDED` means the daily hard limit or monthly alert
 threshold has been reached.
+
+Sprint 18B adds per-user Chat/Report Token budgets and a deployment-wide hard
+Token limit. `config-check` exposes only these safe limits, never another
+user's use or request-level details.
 
 1. Run `audit --days 7` and `monitor --window-minutes 1440`.
 2. Compare aggregate request and token counts by Provider, model, and request

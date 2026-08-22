@@ -164,7 +164,17 @@ The UI supports new, archive, delete, safe selectable text, and copying an
 assistant reply. It does not render HTML, remote images, or automatically open
 links. It has honest consent, unavailable, limit-reached, pending, failed,
 unknown, and empty states. Technical IDs, hashes, raw Provider errors, hidden
-Prompt text, and token counts stay out of ordinary pages.
+Prompt text and request-level token details stay out of ordinary pages. Sprint
+18B later adds a compact aggregate Token budget to the conversation page; it
+does not expose Provider billing records or another user's usage.
+
+## Sprint 18B Succession
+
+Sprint 18B makes this conversation the canonical `/ai-coach` surface, adds
+independent Daily/Weekly report actions, and replaces Chat's request-count
+quota with a separate total-Token budget. Chat remains local-only and reports
+continue through their existing persistence and sync pipeline. See
+`docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md`.
 
 The supported acceptance targets are 320, 360, 412, 720, and 1200 logical
 pixels, TextScaler 2.0, Android Back/TalkBack, and Windows Tab, Enter, Space,

@@ -1175,3 +1175,34 @@ for Chat. The optional full-export module removes user, request, Provider,
 credential, and recovery identifiers. Widgets depend on the controller/domain
 models rather than Drift, AppDatabase, or gateway implementations. See
 `docs/59_AI_COACH_CONVERSATIONAL_MVP.md`.
+
+## 33. Conversation-first AI Coach And Token Accounting
+
+Sprint 18B keeps one Provider and one Generation/Usage Ledger:
+
+```text
+authenticated /ai-coach
+  -> AiChatPage (local account-scoped threads)
+      -> ordinary turn -> AiChatCoordinator -> POST /ai/chat/turns
+      -> Daily action -> existing Daily Report preview/coordinator
+      -> Weekly action -> existing Weekly Report preview/coordinator
+
+Server request claim
+  -> AiUsageGuard atomic token reservation
+  -> existing AiProvider
+  -> actual token settlement or conservative fallback
+```
+
+`ai_usage_controls` serializes PostgreSQL workers. `ai_usage_records` stores
+reservation and aggregate charge metadata but no content. Chat and Report use
+separate per-user UTC-day limits and a shared deployment/global ceiling. The
+legacy V1 endpoint counts only Reports; V2 returns account-scoped aggregate
+Token budgets. Idempotency resolves before reservation.
+
+Report actions never use the Chat context selection. They preserve the single
+Report Repository, version history, sync adapter, cursor, OCC, tombstone, and
+conflict path. Report references are presentation projections, not messages.
+Chat remains absent from `SyncEntityType` while AI Report synchronization is
+unchanged. Active report contracts are v3 Chinese prompts; v1 is an explicit
+temporary Server compatibility contract. See
+`docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md`.

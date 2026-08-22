@@ -148,6 +148,7 @@ that a separate module-only matrix was rerun.
 - [AI Coach MVP Product Experience](58_ai_coach_mvp_product_experience.md) - Current Gate closed with accepted limitations at 29 / 0 / 8
 - [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) - Current Gate OPEN / SUSPENDED at 3 / 0 / 36
 - [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) - Sprint 18A Gate OPEN at 0 / 0 / 69; Chat is local-only and non-streaming
+- [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) - Sprint 18B Gate OPEN at 0 / 0 / 54; deployment and manual acceptance pending
 
 Older UI, persistence, cloud, and AI reliability matrices `01` through `24`
 remain in this directory as historical Sprint evidence. They do not override
