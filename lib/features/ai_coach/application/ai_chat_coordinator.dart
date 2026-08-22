@@ -425,7 +425,7 @@ final class AiChatCoordinator {
     }
     final capabilities = await generationGateway.getCapabilities();
     _validateCapabilities(capabilities, scopes);
-    final usage = await generationGateway.getUsage();
+    final usage = await generationGateway.getUsage(scope: AiUsageScope.chat);
     switch (usage.availability) {
       case AiUsageAvailability.available:
         break;

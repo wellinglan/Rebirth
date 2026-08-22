@@ -78,7 +78,7 @@ class AiCoachAvailabilityPanel extends StatelessWidget {
         key: ValueKey('aiCoachUsageLoading'),
         icon: Icons.hourglass_top_outlined,
         title: '正在检查 AI 服务',
-        detail: '稍后会显示今天的可用次数。',
+        detail: '稍后会显示今天的可用额度。',
         showProgress: true,
       );
     }
@@ -93,16 +93,17 @@ class AiCoachAvailabilityPanel extends StatelessWidget {
       );
     }
     final resetLabel = _resetLabel(value.resetsAtUtcMilliseconds);
+    final unitLabel = value.unit == AiUsageUnit.tokens ? ' Token' : ' 次';
     return switch (value.availability) {
       AiUsageAvailability.available => _StatusRow(
         key: const ValueKey('aiCoachUsageAvailable'),
         icon: Icons.check_circle_outline,
         title: 'AI 可用',
         detail: value.remaining == null
-            ? '今天的剩余次数暂时未知。'
+            ? '今天的剩余额度暂时未知。'
             : resetLabel.isEmpty
-            ? '今天剩余 ${value.remaining} 次。'
-            : '今天剩余 ${value.remaining} 次，$resetLabel 恢复。',
+            ? '今天剩余 ${value.remaining}$unitLabel。'
+            : '今天剩余 ${value.remaining}$unitLabel，$resetLabel 恢复。',
       ),
       AiUsageAvailability.disabled => const _StatusRow(
         key: ValueKey('aiCoachUsageDisabled'),
@@ -113,7 +114,7 @@ class AiCoachAvailabilityPanel extends StatelessWidget {
       AiUsageAvailability.limitReached => _StatusRow(
         key: const ValueKey('aiCoachUsageLimitReached'),
         icon: Icons.schedule_outlined,
-        title: '今天的 AI 次数已用完',
+        title: '今天的 AI 额度已用完',
         detail: resetLabel.isEmpty
             ? '已有报告仍可查看。'
             : '将在 $resetLabel 恢复；已有报告仍可查看。',

@@ -37,10 +37,15 @@ class AiRequestPreviewController
 
   final AiInsightRequestContext context;
   int _requestSequence = 0;
+  late String _promptVersion;
 
   @override
   Future<AiRequestPreviewViewState> build() async {
     final authorization = await ref.read(aiConsentRepositoryProvider).read();
+    _promptVersion = AiInputContract.promptVersionFor(context.reportType);
+    if (authorization.enabled) {
+      _promptVersion = await _activePromptVersion();
+    }
     final initial = _initialState(authorization);
     if (!authorization.enabled || initial.selectedScopes.isEmpty) {
       return initial;
@@ -133,7 +138,15 @@ class AiRequestPreviewController
         state = AsyncData(_initialState(authorization));
         return;
       }
-      state = AsyncData(current.copyWith(authorization: authorization));
+      _promptVersion = await _activePromptVersion();
+      state = AsyncData(
+        current.copyWith(
+          authorization: authorization,
+          promptVersion: _promptVersion,
+          clearPreview: true,
+          clearReusableReport: true,
+        ),
+      );
     } catch (error, stackTrace) {
       if (ref.mounted) state = AsyncError(error, stackTrace);
     }
@@ -295,7 +308,7 @@ class AiRequestPreviewController
         ),
         periodStartDate: targetDate,
         periodEndDate: targetDate,
-        promptVersion: AiInputContract.dailyPromptVersion,
+        promptVersion: _promptVersion,
         journalSelectionConfirmed: context.initialScopes.contains(
           AiDataScope.journalReflections,
         ),
@@ -309,10 +322,15 @@ class AiRequestPreviewController
     );
     return AiRequestPreviewViewState(
       authorization: authorization,
-      selectedScopes: const {},
+      selectedScopes: context.initialScopes.intersection(
+        AiInputContract.supportedScopesFor(AiReportType.weeklyReport),
+      ),
       periodStartDate: dates.first,
       periodEndDate: dates.last,
-      promptVersion: AiInputContract.weeklyPromptVersion,
+      promptVersion: _promptVersion,
+      journalSelectionConfirmed: context.initialScopes.contains(
+        AiDataScope.journalReflections,
+      ),
     );
   }
 
@@ -356,9 +374,11 @@ class AiRequestPreviewController
       AiReportType.dailyInsight => assembler.buildDailyInsight(
         targetDate: context.targetDate!,
         selection: selection,
+        promptVersion: _promptVersion,
       ),
       AiReportType.weeklyReport => assembler.buildWeeklyReport(
         selection: selection,
+        promptVersion: _promptVersion,
       ),
       _ => throw const FormatException('Unsupported AI report type.'),
     };
@@ -375,5 +395,17 @@ class AiRequestPreviewController
 
   bool _sameScopes(Set<AiDataScope> left, Set<AiDataScope> right) {
     return left.length == right.length && left.containsAll(right);
+  }
+
+  Future<String> _activePromptVersion() async {
+    final capabilities = await ref
+        .read(aiGenerationGatewayProvider)
+        .getCapabilities();
+    final contract = capabilities.contractFor(context.reportType.databaseValue);
+    final versions = contract?.promptVersions ?? const <String>[];
+    if (versions.length != 1 || versions.single.trim().isEmpty) {
+      throw const FormatException('Missing active AI report Prompt.');
+    }
+    return versions.single;
   }
 }

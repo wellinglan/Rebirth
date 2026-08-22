@@ -79,9 +79,14 @@ abstract final class RoutePaths {
   }
 
   static String aiCoachChatForThread(String threadId) {
+    return Uri(path: aiCoach, queryParameters: {'thread': threadId}).toString();
+  }
+
+  static String aiCoachWeeklyWithScopes(Iterable<String> scopes) {
+    final values = scopes.toSet().toList()..sort();
     return Uri(
-      path: aiCoachChat,
-      queryParameters: {'thread': threadId},
+      path: aiCoachWeekly,
+      queryParameters: values.isEmpty ? null : {'scopes': values.join(',')},
     ).toString();
   }
 

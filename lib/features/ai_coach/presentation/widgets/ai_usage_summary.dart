@@ -29,24 +29,33 @@ class AiUsageSummary extends StatelessWidget {
         key: ValueKey('aiUsageUnknown'),
       );
     }
-    final reset = DateTime.fromMillisecondsSinceEpoch(
-      value.resetsAtUtcMilliseconds!,
-      isUtc: true,
-    ).toLocal();
-    final localTime =
-        '${reset.hour.toString().padLeft(2, '0')}:'
-        '${reset.minute.toString().padLeft(2, '0')}';
+    final resetMilliseconds = value.resetsAtUtcMilliseconds;
+    final reset = resetMilliseconds == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(
+            resetMilliseconds,
+            isUtc: true,
+          ).toLocal();
+    final localTime = reset == null
+        ? null
+        : '${reset.hour.toString().padLeft(2, '0')}:'
+              '${reset.minute.toString().padLeft(2, '0')}';
     final status = switch (value.availability) {
       AiUsageAvailability.available => '可用',
       AiUsageAvailability.disabled => '已关闭',
       AiUsageAvailability.limitReached => '额度暂不可用',
       AiUsageAvailability.unknown => '未知',
     };
+    final unitLabel = value.unit == AiUsageUnit.tokens ? 'Token' : '次';
+    final reservedLabel = value.unit == AiUsageUnit.tokens
+        ? '，处理中预留 ${value.reserved ?? 0} Token'
+        : '';
+    final resetLabel = localTime == null ? '' : '，本地时间$localTime重置';
     return Semantics(
       label:
-          'AI 使用状态$status，今日已使用${value.used}次，'
-          '剩余${value.remaining}次，共${value.dailyLimit}次，'
-          '本地时间$localTime重置',
+          'AI 使用状态$status，今日已使用${value.used}$unitLabel，'
+          '剩余${value.remaining}$unitLabel，共${value.dailyLimit}$unitLabel'
+          '$reservedLabel$resetLabel',
       child: Column(
         key: const ValueKey('aiUsageSummary'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,11 +63,13 @@ class AiUsageSummary extends StatelessWidget {
           Text('AI 使用状态：$status'),
           const SizedBox(height: 4),
           Text(
-            '今日已使用 ${value.used} / ${value.dailyLimit} 次，'
-            '剩余 ${value.remaining} 次',
+            '今日已使用 ${value.used} / ${value.dailyLimit} $unitLabel，'
+            '剩余 ${value.remaining} $unitLabel$reservedLabel',
           ),
-          const SizedBox(height: 4),
-          Text('$localTime（本地时间）重置'),
+          if (localTime != null) ...[
+            const SizedBox(height: 4),
+            Text('$localTime（本地时间）重置'),
+          ],
         ],
       ),
     );

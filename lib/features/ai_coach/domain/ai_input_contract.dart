@@ -3,8 +3,10 @@ import 'ai_report_type.dart';
 
 abstract final class AiInputContract {
   static const schemaVersion = 1;
-  static const dailyPromptVersion = 'daily-insight-v1';
-  static const weeklyPromptVersion = 'weekly-report-v1';
+  static const dailyPromptVersion = 'daily-insight-v3';
+  static const weeklyPromptVersion = 'weekly-report-v3';
+  static const legacyDailyPromptVersion = 'daily-insight-v1';
+  static const legacyWeeklyPromptVersion = 'weekly-report-v1';
   static const weeklyPeriodDays = 7;
 
   static bool isSupportedReportType(AiReportType reportType) =>

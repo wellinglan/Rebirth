@@ -2,12 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 
-final aiUsageControllerProvider =
-    AsyncNotifierProvider.autoDispose<AiUsageController, AiUsageSnapshot>(
+final aiUsageControllerFamily = AsyncNotifierProvider.autoDispose
+    .family<AiUsageController, AiUsageSnapshot, AiUsageScope>(
       AiUsageController.new,
     );
 
+final aiUsageControllerProvider = aiUsageControllerFamily(AiUsageScope.reports);
+final aiChatUsageControllerProvider = aiUsageControllerFamily(
+  AiUsageScope.chat,
+);
+
 class AiUsageController extends AsyncNotifier<AiUsageSnapshot> {
+  AiUsageController(this.scope);
+
+  final AiUsageScope scope;
   Future<AiUsageSnapshot>? _activeRefresh;
 
   @override
@@ -25,7 +33,9 @@ class AiUsageController extends AsyncNotifier<AiUsageSnapshot> {
 
   Future<AiUsageSnapshot> _load() async {
     try {
-      final usage = await ref.read(aiGenerationGatewayProvider).getUsage();
+      final usage = await ref
+          .read(aiGenerationGatewayProvider)
+          .getUsage(scope: scope);
       if (ref.mounted) state = AsyncData(usage);
       return usage;
     } catch (_) {

@@ -7,6 +7,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 
 import 'ai_request_preview_controller.dart';
 import 'ai_request_preview_view_state.dart';
+import 'models/ai_insight_request_context.dart';
 import 'widgets/ai_consent_gate.dart';
 import 'widgets/ai_generation_section.dart';
 import 'widgets/ai_journal_scope_dialog.dart';
@@ -15,11 +16,16 @@ import 'widgets/ai_reusable_report_card.dart';
 import 'widgets/ai_scope_selector.dart';
 
 class AiWeeklyReportPage extends ConsumerWidget {
-  const AiWeeklyReportPage({super.key});
+  const AiWeeklyReportPage({this.initialScopes = const {}, super.key});
+
+  final Set<AiDataScope> initialScopes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final preview = ref.watch(aiRequestPreviewControllerProvider);
+    final requestContext = AiInsightRequestContext.weekly(
+      initialScopes: initialScopes,
+    );
+    final preview = ref.watch(aiRequestPreviewControllerFamily(requestContext));
     return Scaffold(
       key: const ValueKey('aiWeeklyReportPage'),
       appBar: AppBar(title: const Text('每周回顾')),
@@ -33,10 +39,11 @@ class AiWeeklyReportPage extends ConsumerWidget {
           ),
           error: (_, _) => _WeeklyError(
             onRetry: () => ref
-                .read(aiRequestPreviewControllerProvider.notifier)
+                .read(aiRequestPreviewControllerFamily(requestContext).notifier)
                 .reloadAuthorization(),
           ),
-          data: (state) => _WeeklyContent(state: state),
+          data: (state) =>
+              _WeeklyContent(state: state, requestContext: requestContext),
         ),
       ),
     );
@@ -44,9 +51,10 @@ class AiWeeklyReportPage extends ConsumerWidget {
 }
 
 class _WeeklyContent extends ConsumerWidget {
-  const _WeeklyContent({required this.state});
+  const _WeeklyContent({required this.state, required this.requestContext});
 
   final AiRequestPreviewViewState state;
+  final AiInsightRequestContext requestContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,7 +68,10 @@ class _WeeklyContent extends ConsumerWidget {
               maxWidth: AppLayout.wideContentWidth,
             ),
             child: state.authorization.enabled
-                ? _AuthorizedWeekly(state: state)
+                ? _AuthorizedWeekly(
+                    state: state,
+                    requestContext: requestContext,
+                  )
                 : AiConsentGate(
                     onOpenSettings: () => _openConsent(context, ref),
                   ),
@@ -74,19 +85,22 @@ class _WeeklyContent extends ConsumerWidget {
     await context.push(RoutePaths.settingsAiConsent);
     if (!context.mounted) return;
     await ref
-        .read(aiRequestPreviewControllerProvider.notifier)
+        .read(aiRequestPreviewControllerFamily(requestContext).notifier)
         .reloadAuthorization();
   }
 }
 
 class _AuthorizedWeekly extends ConsumerWidget {
-  const _AuthorizedWeekly({required this.state});
+  const _AuthorizedWeekly({required this.state, required this.requestContext});
 
   final AiRequestPreviewViewState state;
+  final AiInsightRequestContext requestContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(aiRequestPreviewControllerProvider.notifier);
+    final notifier = ref.read(
+      aiRequestPreviewControllerFamily(requestContext).notifier,
+    );
     final preview = state.preview;
     final growthSelected = state.selectedScopes.contains(
       AiDataScope.growthSummary,
@@ -157,7 +171,10 @@ class _AuthorizedWeekly extends ConsumerWidget {
               state.bundle != null) ...[
             const SizedBox(height: AppSpacing.md),
             if (hasGeneratableData)
-              AiGenerationSection(bundle: state.bundle!)
+              AiGenerationSection(
+                bundle: state.bundle!,
+                requestContext: requestContext,
+              )
             else
               const _NoWeeklySources(),
           ],

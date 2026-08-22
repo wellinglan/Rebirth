@@ -172,7 +172,7 @@ final class AiGenerationException implements Exception {
 abstract interface class AiGenerationGateway {
   Future<AiGenerationCapabilities> getCapabilities();
 
-  Future<AiUsageSnapshot> getUsage();
+  Future<AiUsageSnapshot> getUsage({AiUsageScope scope = AiUsageScope.reports});
 
   Future<AiRemoteRequestResult> generateWeekly({
     required String requestId,

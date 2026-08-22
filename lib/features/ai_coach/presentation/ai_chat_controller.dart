@@ -119,7 +119,7 @@ class AiChatController extends AsyncNotifier<AiChatViewState> {
             ? AiChatRecoveryStatus.outcomeUnknown
             : null,
       );
-      if (ref.mounted) ref.invalidate(aiUsageControllerProvider);
+      if (ref.mounted) ref.invalidate(aiChatUsageControllerProvider);
       return true;
     } on AiGenerationException catch (error) {
       _showFailure(current, error.code);
@@ -158,7 +158,7 @@ class AiChatController extends AsyncNotifier<AiChatViewState> {
             ? AiChatRecoveryStatus.outcomeUnknown
             : null,
       );
-      if (ref.mounted) ref.invalidate(aiUsageControllerProvider);
+      if (ref.mounted) ref.invalidate(aiChatUsageControllerProvider);
     } on AiGenerationException catch (error) {
       _showFailure(current, error.code);
     } catch (_) {
@@ -192,7 +192,7 @@ class AiChatController extends AsyncNotifier<AiChatViewState> {
     if (ref.mounted &&
         (result.status == AiChatRecoveryStatus.completed ||
             result.status == AiChatRecoveryStatus.failed)) {
-      ref.invalidate(aiUsageControllerProvider);
+      ref.invalidate(aiChatUsageControllerProvider);
     }
   }
 

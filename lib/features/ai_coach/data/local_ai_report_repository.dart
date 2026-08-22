@@ -250,11 +250,10 @@ final class LocalAiReportRepository implements AiReportRepository {
     if (!AiInputContract.isSupportedReportType(input.reportType)) {
       throw UnsupportedAiReportTypeException(input.reportType.databaseValue);
     }
-    final expectedPrompt = AiInputContract.promptVersionFor(input.reportType);
     final isDaily = input.reportType == AiReportType.dailyInsight;
     if (!dateTimeService.isValidLocalDateString(input.periodStartDate) ||
         !dateTimeService.isValidLocalDateString(input.periodEndDate) ||
-        input.promptVersion != expectedPrompt ||
+        input.promptVersion.trim().isEmpty ||
         (isDaily && input.periodStartDate != input.periodEndDate) ||
         (!isDaily &&
             dateTimeService

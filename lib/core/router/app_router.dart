@@ -10,7 +10,6 @@ import '../../features/account/presentation/auth_gate_status_pages.dart';
 import '../../features/account/presentation/developer_login_page.dart';
 import '../../features/account/presentation/login_page.dart';
 import '../../features/account/presentation/register_page.dart';
-import '../../features/ai_coach/presentation/ai_coach_page.dart';
 import '../../features/ai_coach/presentation/ai_daily_insight_page.dart';
 import '../../features/ai_coach/presentation/ai_chat_page.dart';
 import '../../features/ai_coach/presentation/ai_chat_history_page.dart';
@@ -105,7 +104,12 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
       GoRoute(
         path: RoutePaths.aiCoachWeekly,
         name: RouteNames.aiCoachWeekly,
-        builder: (context, state) => const AiWeeklyReportPage(),
+        builder: (context, state) => AiWeeklyReportPage(
+          initialScopes: _reportScopesFrom(
+            state.uri.queryParameters['scopes'],
+            daily: false,
+          ),
+        ),
       ),
       GoRoute(
         path: RoutePaths.aiCoachChatHistory,
@@ -115,8 +119,12 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
       GoRoute(
         path: RoutePaths.aiCoachChat,
         name: RouteNames.aiCoachChat,
-        builder: (context, state) =>
-            AiChatPage(initialThreadId: state.uri.queryParameters['thread']),
+        redirect: (context, state) => Uri(
+          path: RoutePaths.aiCoach,
+          queryParameters: state.uri.queryParameters.isEmpty
+              ? null
+              : state.uri.queryParameters,
+        ).toString(),
       ),
       GoRoute(
         path: '${RoutePaths.aiCoach}/daily/:targetDate',
@@ -211,7 +219,9 @@ GoRouter _createAppRouter(_AuthRouterRefresh refresh, AppConfig config) {
               GoRoute(
                 path: RoutePaths.aiCoach,
                 name: RouteNames.aiCoach,
-                builder: (context, state) => const AiCoachPage(),
+                builder: (context, state) => AiChatPage(
+                  initialThreadId: state.uri.queryParameters['thread'],
+                ),
               ),
             ],
           ),
@@ -378,8 +388,15 @@ final class _AuthRouterRefresh extends ChangeNotifier {
 }
 
 Set<AiDataScope> _dailyScopesFrom(String? value) {
+  return _reportScopesFrom(value, daily: true);
+}
+
+Set<AiDataScope> _reportScopesFrom(String? value, {required bool daily}) {
   if (value == null || value.trim().isEmpty) return const {};
-  final supported = AiDataScope.values.where((scope) => scope.supported);
+  final supported = AiDataScope.values.where(
+    (scope) =>
+        scope.supported && (!daily || scope != AiDataScope.growthSummary),
+  );
   return supported
       .where((scope) => value.split(',').contains(scope.contractValue))
       .toSet();

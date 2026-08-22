@@ -8,10 +8,9 @@ final class AiInsightRequestContext {
     this.initialScopes = const {},
   });
 
-  const AiInsightRequestContext.weekly()
+  const AiInsightRequestContext.weekly({this.initialScopes = const {}})
     : reportType = AiReportType.weeklyReport,
-      targetDate = null,
-      initialScopes = const {};
+      targetDate = null;
 
   const AiInsightRequestContext.daily(
     this.targetDate, {

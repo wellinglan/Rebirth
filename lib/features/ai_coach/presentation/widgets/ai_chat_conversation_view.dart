@@ -7,6 +7,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_chat_view_state.dart';
+import 'package:rebirth/features/ai_coach/presentation/models/ai_report_presentation_models.dart';
 
 class AiChatConversationView extends StatelessWidget {
   const AiChatConversationView({
@@ -17,6 +18,10 @@ class AiChatConversationView extends StatelessWidget {
     required this.scrollController,
     required this.onOpenConsent,
     required this.onChooseContext,
+    required this.onGenerateDaily,
+    required this.onGenerateWeekly,
+    required this.recentReports,
+    required this.onOpenReport,
     required this.onSend,
     required this.onRetry,
     required this.onRecover,
@@ -30,6 +35,10 @@ class AiChatConversationView extends StatelessWidget {
   final ScrollController scrollController;
   final VoidCallback onOpenConsent;
   final VoidCallback onChooseContext;
+  final VoidCallback onGenerateDaily;
+  final VoidCallback onGenerateWeekly;
+  final List<AiReportListItemModel> recentReports;
+  final ValueChanged<String> onOpenReport;
   final VoidCallback onSend;
   final VoidCallback onRetry;
   final VoidCallback onRecover;
@@ -44,6 +53,7 @@ class AiChatConversationView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ConversationHeader(conversation: conversation),
+        _ChatTokenBudget(usage: usage),
         if (!consentEnabled)
           _InlineNotice(
             key: const ValueKey('aiChatConsentRequired'),
@@ -56,7 +66,7 @@ class AiChatConversationView extends StatelessWidget {
           const _InlineNotice(
             key: ValueKey('aiChatUsageLimitReached'),
             icon: Icons.schedule_outlined,
-            message: '今天的 AI 次数已用完，历史会话仍可阅读。',
+            message: '今天的 AI 对话 Token 额度已用完，历史会话仍可阅读。',
           )
         else if (usage?.availability == AiUsageAvailability.disabled)
           const _InlineNotice(
@@ -72,6 +82,11 @@ class AiChatConversationView extends StatelessWidget {
           ),
         if (state.recoveryStatus case final recovery?)
           _RecoveryNotice(status: recovery),
+        if (recentReports.isNotEmpty)
+          _RecentReportStrip(
+            reports: recentReports,
+            onOpenReport: onOpenReport,
+          ),
         Expanded(
           child: _MessageTimeline(
             conversation: conversation,
@@ -83,15 +98,23 @@ class AiChatConversationView extends StatelessWidget {
           ),
         ),
         const Divider(height: 1),
-        AiChatComposer(
-          controller: composerController,
-          selectedScopes: state.selectedScopes,
-          enabled: canSend,
-          sending: state.interaction == AiChatInteraction.sending,
-          archived: conversation?.thread.isArchived ?? false,
-          blockedByUnresolved: state.requiresRecovery || state.requiresRetry,
-          onChooseContext: onChooseContext,
-          onSend: onSend,
+        Flexible(
+          fit: FlexFit.loose,
+          child: SingleChildScrollView(
+            child: AiChatComposer(
+              controller: composerController,
+              selectedScopes: state.selectedScopes,
+              enabled: canSend,
+              sending: state.interaction == AiChatInteraction.sending,
+              archived: conversation?.thread.isArchived ?? false,
+              blockedByUnresolved:
+                  state.requiresRecovery || state.requiresRetry,
+              onChooseContext: onChooseContext,
+              onGenerateDaily: onGenerateDaily,
+              onGenerateWeekly: onGenerateWeekly,
+              onSend: onSend,
+            ),
+          ),
         ),
       ],
     );
@@ -288,6 +311,8 @@ class AiChatComposer extends StatelessWidget {
     required this.archived,
     required this.blockedByUnresolved,
     required this.onChooseContext,
+    required this.onGenerateDaily,
+    required this.onGenerateWeekly,
     required this.onSend,
     super.key,
   });
@@ -299,6 +324,8 @@ class AiChatComposer extends StatelessWidget {
   final bool archived;
   final bool blockedByUnresolved;
   final VoidCallback onChooseContext;
+  final VoidCallback onGenerateDaily;
+  final VoidCallback onGenerateWeekly;
   final VoidCallback onSend;
 
   @override
@@ -326,6 +353,18 @@ class AiChatComposer extends StatelessWidget {
                 onPressed: sending || archived ? null : onChooseContext,
                 icon: const Icon(Icons.dataset_outlined),
                 label: const Text('本次参考资料'),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('aiChatDailyInsightButton'),
+                onPressed: sending ? null : onGenerateDaily,
+                icon: const Icon(Icons.wb_sunny_outlined),
+                label: const Text('生成今日洞察'),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('aiChatWeeklyReportButton'),
+                onPressed: sending ? null : onGenerateWeekly,
+                icon: const Icon(Icons.date_range_outlined),
+                label: const Text('生成每周回顾'),
               ),
               Text(contextLabel, key: const ValueKey('aiChatContextSummary')),
             ],
@@ -437,6 +476,102 @@ class _ConversationHeader extends StatelessWidget {
   }
 }
 
+class _RecentReportStrip extends StatelessWidget {
+  const _RecentReportStrip({required this.reports, required this.onOpenReport});
+
+  final List<AiReportListItemModel> reports;
+  final ValueChanged<String> onOpenReport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
+      child: Wrap(
+        spacing: AppSpacing.xs,
+        runSpacing: AppSpacing.xs,
+        children: [
+          for (final report in reports.take(2))
+            ActionChip(
+              key: ValueKey('aiChatReportCard-${report.id}'),
+              avatar: Icon(
+                report.isDaily
+                    ? Icons.wb_sunny_outlined
+                    : Icons.date_range_outlined,
+                size: 18,
+              ),
+              label: Text('${report.reportTypeLabel} · ${report.periodLabel}'),
+              tooltip: '打开已保存的 AI 报告，不会作为聊天上下文',
+              onPressed: () => onOpenReport(report.id),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatTokenBudget extends StatelessWidget {
+  const _ChatTokenBudget({required this.usage});
+
+  final AiUsageSnapshot? usage;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = usage;
+    if (value == null || value.dailyLimit == null || value.used == null) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          0,
+          AppSpacing.md,
+          AppSpacing.xs,
+        ),
+        child: Text('对话额度暂时无法读取'),
+      );
+    }
+    final reserved = value.reserved ?? 0;
+    final label =
+        '${_compactTokens(value.used!)} / '
+        '${_compactTokens(value.dailyLimit!)} Token';
+    return Semantics(
+      key: const ValueKey('aiChatTokenBudgetSemantics'),
+      label:
+          '今日 AI 对话已使用 ${value.used} Token，'
+          '预留 $reserved Token，额度 ${value.dailyLimit} Token',
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          0,
+          AppSpacing.md,
+          AppSpacing.xs,
+        ),
+        child: Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xxs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Icon(Icons.data_usage_outlined, size: 18),
+            Text(label, key: const ValueKey('aiChatTokenBudgetLabel')),
+            if (reserved > 0) Text('处理中 ${_compactTokens(reserved)}'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _compactTokens(int value) {
+    if (value < 1000) return '$value';
+    final compact = value / 1000;
+    return compact == compact.roundToDouble()
+        ? '${compact.toInt()}k'
+        : '${compact.toStringAsFixed(1)}k';
+  }
+}
+
 class _MessageTimeline extends StatelessWidget {
   const _MessageTimeline({
     required this.conversation,
@@ -458,21 +593,24 @@ class _MessageTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final messages = conversation?.messages ?? const <AiChatMessage>[];
     if (messages.isEmpty) {
-      return const Center(
+      return ListView(
         key: ValueKey('aiChatEmptyState'),
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.chat_bubble_outline, size: 36),
-              SizedBox(height: AppSpacing.sm),
-              Text('从一件你此刻在意的事情开始。'),
-              SizedBox(height: AppSpacing.xs),
-              Text('AI 可能出错，重要决定请由你自己确认。'),
-            ],
+        controller: scrollController,
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        children: const [
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 36),
+                SizedBox(height: AppSpacing.sm),
+                Text('从一件你此刻在意的事情开始。'),
+                SizedBox(height: AppSpacing.xs),
+                Text('AI 可能出错，重要决定请由你自己确认。'),
+              ],
+            ),
           ),
-        ),
+        ],
       );
     }
     return ListView.separated(

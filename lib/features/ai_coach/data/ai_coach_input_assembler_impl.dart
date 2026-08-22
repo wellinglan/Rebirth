@@ -45,6 +45,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
   @override
   Future<AiCoachInputBundle> buildWeeklyReport({
     required AiDataSelection selection,
+    String? promptVersion,
   }) async {
     final snapshot = dateTimeService.currentSnapshot();
     final dates = dateTimeService.recentLocalDateRange(
@@ -56,6 +57,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
       selection: selection,
       startDate: dates.first,
       endDate: dates.last,
+      promptVersion: promptVersion,
     );
   }
 
@@ -63,17 +65,22 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
   Future<AiCoachInputBundle> build({
     required AiReportType reportType,
     required AiDataSelection selection,
+    String? promptVersion,
   }) async {
     if (reportType != AiReportType.weeklyReport) {
       throw UnsupportedAiReportTypeException(reportType.databaseValue);
     }
-    return buildWeeklyReport(selection: selection);
+    return buildWeeklyReport(
+      selection: selection,
+      promptVersion: promptVersion,
+    );
   }
 
   @override
   Future<AiCoachInputBundle> buildDailyInsight({
     required String targetDate,
     required AiDataSelection selection,
+    String? promptVersion,
   }) async {
     if (!dateTimeService.isValidLocalDateString(targetDate)) {
       throw const InvalidAiInputException('Invalid Daily Insight target date.');
@@ -83,6 +90,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
       selection: selection,
       startDate: targetDate,
       endDate: targetDate,
+      promptVersion: promptVersion,
     );
   }
 
@@ -91,6 +99,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     required AiDataSelection selection,
     required String startDate,
     required String endDate,
+    String? promptVersion,
   }) async {
     final authorization = await consentRepository.read();
     if (!authorization.enabled) throw const AiConsentRequiredException();
@@ -220,7 +229,8 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     }
 
     final normalizedSources = _normalizeSources(sources);
-    final promptVersion = AiInputContract.promptVersionFor(reportType);
+    final resolvedPromptVersion =
+        promptVersion ?? AiInputContract.promptVersionFor(reportType);
     final scopes =
         selection.scopes
             .map((scope) => scope.contractValue)
@@ -229,7 +239,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     final payload = <String, Object?>{
       'schema_version': AiInputContract.schemaVersion,
       'report_type': reportType.databaseValue,
-      'prompt_version': promptVersion,
+      'prompt_version': resolvedPromptVersion,
       'period': <String, Object?>{'start_date': startDate, 'end_date': endDate},
       'scopes': scopes,
       'data': data,
@@ -241,7 +251,7 @@ final class AiCoachInputAssemblerImpl implements AiCoachInputAssembler {
     final inputHash = inputHashService.hashCanonicalJson(canonicalJson);
     return AiCoachInputBundle(
       reportType: reportType,
-      promptVersion: promptVersion,
+      promptVersion: resolvedPromptVersion,
       periodStartDate: startDate,
       periodEndDate: endDate,
       selection: selection,

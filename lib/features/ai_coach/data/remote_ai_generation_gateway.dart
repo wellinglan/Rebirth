@@ -37,28 +37,39 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
   }
 
   @override
-  Future<AiUsageSnapshot> getUsage() async {
+  Future<AiUsageSnapshot> getUsage({
+    AiUsageScope scope = AiUsageScope.reports,
+  }) async {
     try {
       final json = await sessionManager.runAuthorized(
-        (token) => apiClient.getJson('/ai/usage/me', accessToken: token),
+        (token) => apiClient.getJson('/ai/usage/me/v2', accessToken: token),
       );
-      final availability = switch (json['status']) {
+      final budgetKey = scope == AiUsageScope.chat ? 'chat' : 'reports';
+      final rawBudget = json[budgetKey];
+      if (rawBudget is! Map) {
+        throw const FormatException('Missing AI token budget.');
+      }
+      final budget = Map<String, Object?>.from(rawBudget);
+      final availability = switch (budget['status']) {
         'available' => AiUsageAvailability.available,
         'disabled' => AiUsageAvailability.disabled,
         'limit_reached' => AiUsageAvailability.limitReached,
         _ => throw const FormatException('Unknown AI usage status.'),
       };
       final enabled = json['enabled'] as bool;
-      final dailyLimit = json['daily_limit'] as int;
-      final used = json['used'] as int;
-      final remaining = json['remaining'] as int;
+      final dailyLimit = budget['limit'] as int;
+      final used = budget['used'] as int;
+      final reserved = budget['reserved'] as int;
+      final remaining = budget['remaining'] as int;
       final resetsAt = json['resets_at'] as int;
       if (dailyLimit <= 0 ||
           used < 0 ||
+          reserved < 0 ||
           remaining < 0 ||
-          remaining != (dailyLimit - used).clamp(0, dailyLimit) ||
+          remaining != (dailyLimit - used - reserved).clamp(0, dailyLimit) ||
           resetsAt <= 0 ||
           json['reset_timezone'] != 'UTC' ||
+          budget['unit'] != 'tokens' ||
           (availability == AiUsageAvailability.disabled) != !enabled) {
         throw const FormatException('Invalid AI usage response.');
       }
@@ -69,6 +80,8 @@ final class RemoteAiGenerationGateway implements AiGenerationGateway {
         used: used,
         remaining: remaining,
         resetsAtUtcMilliseconds: resetsAt,
+        reserved: reserved,
+        unit: AiUsageUnit.tokens,
       );
     } on ApiException catch (error) {
       throw AiGenerationException(_failureCode(error));

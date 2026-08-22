@@ -545,8 +545,7 @@ final class AiReportGenerationCoordinator {
         AiReportFailureCode.unsupportedReportType,
       );
     }
-    if (bundle.promptVersion !=
-        AiInputContract.promptVersionFor(bundle.reportType)) {
+    if (bundle.promptVersion.trim().isEmpty) {
       throw const AiGenerationException(
         AiReportFailureCode.unsupportedPromptVersion,
       );
