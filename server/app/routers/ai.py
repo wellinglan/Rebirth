@@ -11,12 +11,13 @@ from app.ai.schemas import (
     AiChatTurnRequest,
     AiChatTurnResponse,
     AiDailyGenerateRequest,
-    AiDailyGenerateResponse,
+    AiDailyPublicResponse,
     AiErrorResponse,
     AiRequestStatusResponse,
     AiUsageResponse,
+    AiUsageV2Response,
     AiWeeklyGenerateRequest,
-    AiWeeklyGenerateResponse,
+    AiWeeklyPublicResponse,
     AiReportFeedbackDeleteRequest,
     AiReportFeedbackListResponse,
     AiReportFeedbackMutationResponse,
@@ -101,6 +102,18 @@ def current_usage(
     )
 
 
+@router.get("/usage/me/v2", response_model=AiUsageV2Response)
+def current_usage_v2(
+    request: Request,
+    user_id: str = Depends(require_user_id),
+    session: Session = Depends(get_session),
+) -> AiUsageV2Response:
+    return request.app.state.ai_generation_service.current_usage_v2(
+        user_id=user_id,
+        session=session,
+    )
+
+
 @router.post(
     "/chat/turns",
     response_model=AiChatTurnResponse,
@@ -158,7 +171,7 @@ async def generate_chat_turn(
 
 @router.post(
     "/reports/weekly/generate",
-    response_model=AiWeeklyGenerateResponse,
+    response_model=AiWeeklyPublicResponse,
     responses={
         202: {
             "model": AiRequestStatusResponse,
@@ -193,7 +206,7 @@ async def generate_weekly(
     request: Request,
     user_id: str = Depends(require_user_id),
     session: Session = Depends(get_session),
-) -> AiWeeklyGenerateResponse | AiRequestStatusResponse | JSONResponse:
+) -> AiWeeklyPublicResponse | AiRequestStatusResponse | JSONResponse:
     try:
         result = await request.app.state.ai_generation_service.generate_weekly(
             body, user_id=user_id, session=session
@@ -213,7 +226,7 @@ async def generate_weekly(
 
 @router.post(
     "/reports/daily/generate",
-    response_model=AiDailyGenerateResponse,
+    response_model=AiDailyPublicResponse,
     responses={
         202: {
             "model": AiRequestStatusResponse,
@@ -248,7 +261,7 @@ async def generate_daily(
     request: Request,
     user_id: str = Depends(require_user_id),
     session: Session = Depends(get_session),
-) -> AiDailyGenerateResponse | AiRequestStatusResponse | JSONResponse:
+) -> AiDailyPublicResponse | AiRequestStatusResponse | JSONResponse:
     try:
         result = await request.app.state.ai_generation_service.generate_daily(
             body, user_id=user_id, session=session

@@ -440,6 +440,14 @@ class AiUsageRecord(Base):
             "total_tokens IS NULL OR total_tokens >= 0",
             name="ck_ai_usage_record_total_tokens",
         ),
+        CheckConstraint(
+            "reserved_tokens >= 0",
+            name="ck_ai_usage_record_reserved_tokens",
+        ),
+        CheckConstraint(
+            "charged_tokens >= 0",
+            name="ck_ai_usage_record_charged_tokens",
+        ),
         Index("ix_ai_usage_records_created_at", "created_at"),
         Index(
             "ix_ai_usage_records_user_created_at",
@@ -467,6 +475,15 @@ class AiUsageRecord(Base):
     input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
     output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reserved_tokens: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    charged_tokens: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    accounting_source: Mapped[str | None] = mapped_column(
+        String(32), nullable=True
+    )
     status: Mapped[str] = mapped_column(String(24), nullable=False)
     created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)

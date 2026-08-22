@@ -9,9 +9,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.ai.prompt_contracts import (
     DAILY_CANDIDATE_PROMPT_VERSION,
+    DAILY_CHINESE_PROMPT_VERSION,
     DAILY_PROMPT_VERSION,
     CHAT_PROMPT_VERSION,
     WEEKLY_CANDIDATE_PROMPT_VERSION,
+    WEEKLY_CHINESE_PROMPT_VERSION,
     WEEKLY_PROMPT_VERSION,
 )
 
@@ -559,6 +561,25 @@ class AiUsageResponse(StrictModel):
     reset_timezone: Literal["UTC"] = "UTC"
 
 
+class AiTokenBudgetResponse(StrictModel):
+    unit: Literal["tokens"] = "tokens"
+    status: Literal["available", "disabled", "limit_reached"]
+    availability: Literal["available", "disabled", "limit_reached"]
+    limit: int = Field(gt=0)
+    used: int = Field(ge=0)
+    reserved: int = Field(ge=0)
+    remaining: int = Field(ge=0)
+    resets_at: int = Field(gt=0)
+
+
+class AiUsageV2Response(StrictModel):
+    enabled: bool
+    chat: AiTokenBudgetResponse
+    reports: AiTokenBudgetResponse
+    resets_at: int = Field(gt=0)
+    reset_timezone: Literal["UTC"] = "UTC"
+
+
 class AiWeeklyGenerateResponse(StrictModel):
     request_id: UUID
     report_type: Literal["weekly_report"] = "weekly_report"
@@ -616,7 +637,31 @@ class AiDailyCandidateGenerateResponse(AiDailyGenerateResponse):
     )
 
 
-AiGenerateResponse = AiWeeklyGenerateResponse | AiDailyGenerateResponse | AiChatTurnResponse
+class AiWeeklyChineseGenerateResponse(AiWeeklyGenerateResponse):
+    prompt_version: Literal[WEEKLY_CHINESE_PROMPT_VERSION] = (
+        WEEKLY_CHINESE_PROMPT_VERSION
+    )
+
+
+class AiDailyChineseGenerateResponse(AiDailyGenerateResponse):
+    prompt_version: Literal[DAILY_CHINESE_PROMPT_VERSION] = (
+        DAILY_CHINESE_PROMPT_VERSION
+    )
+
+
+AiWeeklyPublicResponse = (
+    AiWeeklyGenerateResponse | AiWeeklyChineseGenerateResponse
+)
+AiDailyPublicResponse = AiDailyGenerateResponse | AiDailyChineseGenerateResponse
+
+
+AiGenerateResponse = (
+    AiWeeklyGenerateResponse
+    | AiWeeklyChineseGenerateResponse
+    | AiDailyGenerateResponse
+    | AiDailyChineseGenerateResponse
+    | AiChatTurnResponse
+)
 
 
 AiRequestStatus = Literal[

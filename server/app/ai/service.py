@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -38,6 +39,8 @@ from app.ai.schemas import (
     AiReportContractResponse,
     AiRequestStatusResponse,
     AiUsageResponse,
+    AiTokenBudgetResponse,
+    AiUsageV2Response,
     AiWeeklyGenerateRequest,
     AiWeeklyGenerateResponse,
 )
@@ -108,6 +111,33 @@ class AiGenerationService:
             daily_limit=snapshot.daily_limit,
             used=snapshot.used,
             remaining=snapshot.remaining,
+            resets_at=snapshot.resets_at,
+        )
+
+    def current_usage_v2(
+        self,
+        *,
+        user_id: str,
+        session: Session,
+    ) -> AiUsageV2Response:
+        snapshot = self.usage.snapshot_v2(
+            session,
+            user_id=user_id,
+            provider_enabled=self.provider.enabled,
+            now=self.clock(),
+        )
+        return AiUsageV2Response(
+            enabled=snapshot.enabled,
+            chat=AiTokenBudgetResponse(
+                **snapshot.chat.__dict__,
+                availability=snapshot.chat.status,
+                resets_at=snapshot.resets_at,
+            ),
+            reports=AiTokenBudgetResponse(
+                **snapshot.reports.__dict__,
+                availability=snapshot.reports.status,
+                resets_at=snapshot.resets_at,
+            ),
             resets_at=snapshot.resets_at,
         )
 
@@ -211,6 +241,12 @@ class AiGenerationService:
             status="processing",
         )
 
+        provider_payload = _provider_payload(request)
+        estimated_tokens = _estimate_token_reservation(
+            provider_payload,
+            prompt_instructions=prompt.developer_instructions,
+            max_output_tokens=self.settings.ai_max_output_tokens,
+        )
         try:
             usage_reservation = self.usage.reserve(
                 session,
@@ -220,6 +256,7 @@ class AiGenerationService:
                 model=self.provider.model or "unconfigured",
                 request_type=request.payload.report_type,
                 now=self.clock(),
+                estimated_tokens=estimated_tokens,
             )
         except AiGatewayError as error:
             log_ai_event(
@@ -243,7 +280,6 @@ class AiGenerationService:
             )
             raise
 
-        provider_payload = _provider_payload(request)
         provider_started = time.perf_counter_ns()
         log_ai_event(
             "ai_provider_started",
@@ -292,6 +328,7 @@ class AiGenerationService:
                 session,
                 usage_reservation,
                 now=self.clock(),
+                hold=error.code in {"provider_timeout", "outcome_unknown"},
             )
             latency_ms = (time.perf_counter_ns() - provider_started) // 1_000_000
             log_ai_event(
@@ -522,9 +559,13 @@ def _mark_usage_failed(
     reservation: AiUsageReservation,
     *,
     now: int,
+    hold: bool = False,
 ) -> None:
     try:
-        usage.mark_failed(session, reservation, now=now)
+        if hold:
+            usage.hold_unknown(session, reservation, now=now)
+        else:
+            usage.mark_failed(session, reservation, now=now)
     except Exception:
         session.rollback()
 
@@ -561,6 +602,26 @@ def _provider_payload(request: AiGenerateRequest) -> ProviderPromptPayload:
         scopes=sorted(payload["scopes"]),
         data=selected_data,
     )
+
+
+def _estimate_token_reservation(
+    payload: ProviderPromptPayload,
+    *,
+    prompt_instructions: str,
+    max_output_tokens: int,
+) -> int:
+    serialized = json.dumps(
+        payload.to_json_value(),
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    input_bytes = len(prompt_instructions.encode("utf-8")) + len(
+        serialized.encode("utf-8")
+    )
+    estimated_input = max(1, (input_bytes + 2) // 3)
+    return estimated_input + max_output_tokens
 
 
 def _build_response(

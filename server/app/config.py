@@ -50,6 +50,10 @@ class Settings:
     ai_processing_lease_minutes: int = 5
     ai_daily_user_limit: int = 10
     ai_daily_global_limit: int = 100
+    ai_chat_daily_token_limit: int = 50_000
+    ai_report_daily_token_limit: int = 50_000
+    ai_daily_global_token_limit: int = 250_000
+    ai_max_request_tokens: int = 20_000
     ai_monthly_global_limit: int = 3000
     ai_max_concurrent_requests: int = 5
     ai_budget_warning_percent: int = 80
@@ -188,6 +192,18 @@ def load_settings(
     )
     daily_user_limit = _positive_int("REBIRTH_AI_DAILY_USER_LIMIT", "10")
     daily_global_limit = _positive_int("REBIRTH_AI_DAILY_GLOBAL_LIMIT", "100")
+    chat_daily_token_limit = _positive_int(
+        "REBIRTH_AI_CHAT_DAILY_TOKEN_LIMIT", "50000"
+    )
+    report_daily_token_limit = _positive_int(
+        "REBIRTH_AI_REPORT_DAILY_TOKEN_LIMIT", "50000"
+    )
+    daily_global_token_limit = _positive_int(
+        "REBIRTH_AI_DAILY_GLOBAL_TOKEN_LIMIT", "250000"
+    )
+    max_request_tokens = _positive_int(
+        "REBIRTH_AI_MAX_REQUEST_TOKENS", "20000"
+    )
     monthly_global_limit = _positive_int(
         "REBIRTH_AI_MONTHLY_GLOBAL_LIMIT", "3000"
     )
@@ -279,6 +295,10 @@ def load_settings(
         ai_processing_lease_minutes=processing_lease_minutes,
         ai_daily_user_limit=daily_user_limit,
         ai_daily_global_limit=daily_global_limit,
+        ai_chat_daily_token_limit=chat_daily_token_limit,
+        ai_report_daily_token_limit=report_daily_token_limit,
+        ai_daily_global_token_limit=daily_global_token_limit,
+        ai_max_request_tokens=max_request_tokens,
         ai_monthly_global_limit=monthly_global_limit,
         ai_max_concurrent_requests=max_concurrent_requests,
         ai_budget_warning_percent=budget_warning_percent,
