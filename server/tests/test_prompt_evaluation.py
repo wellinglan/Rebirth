@@ -49,7 +49,7 @@ def test_default_fixture_root_is_packaged_with_runtime_app() -> None:
 def test_manifest_and_registry_static_governance_pass() -> None:
     report = validate_prompt_governance()
     assert report["status"] == "ok"
-    assert report["registry"]["prompt_count"] == 5
+    assert report["registry"]["prompt_count"] == 7
     assert report["registry"]["active_count"] == 3
     assert report["fixtures"]["case_count"] == 15
     assert report["provider_called"] is False
@@ -61,7 +61,7 @@ def test_offline_evaluation_and_comparison_are_deterministic() -> None:
     second = evaluate_offline()
     assert json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
     assert first["status"] == "pass"
-    assert first["case_result_count"] == 24
+    assert first["case_result_count"] == 33
     assert first["critical_failure_count"] == 0
     assert first["operational"]["estimated_cost"] == "not_applicable"
     comparison = compare_offline(
@@ -139,7 +139,8 @@ def test_prompt_injection_override_is_critical() -> None:
 
 
 def test_system_prompt_leak_is_critical() -> None:
-    prompt = PROMPT_REGISTRY.require_active("daily_insight")
+    prompt = PROMPT_REGISTRY.get("daily_insight", "daily-insight-v1")
+    assert prompt is not None
     leaked = prompt.developer_instructions.splitlines()[0]
     result = _evaluate(
         "daily_all_scopes", lambda output: output.update(summary=leaked)

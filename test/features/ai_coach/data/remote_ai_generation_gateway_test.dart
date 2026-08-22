@@ -51,7 +51,7 @@ void main() {
     expect(result.provider, 'fake');
     expect(result.model, 'deterministic-test-provider');
     expect(result.contractFor('daily_insight')?.promptVersions, [
-      'daily-insight-v1',
+      'daily-insight-v3',
     ]);
     expect(
       result.contractFor('weekly_report')?.periodKind.contractValue,
@@ -66,15 +66,7 @@ void main() {
   test(
     'usage is authenticated and decoded from the safe user endpoint',
     () async {
-      api.getResponse = {
-        'enabled': true,
-        'status': 'available',
-        'daily_limit': 10,
-        'used': 3,
-        'remaining': 7,
-        'resets_at': 1785628800000,
-        'reset_timezone': 'UTC',
-      };
+      api.getResponse = _usageV2();
 
       final usage = await gateway.getUsage();
 
@@ -82,9 +74,11 @@ void main() {
       expect(usage.enabled, isTrue);
       expect(usage.dailyLimit, 10);
       expect(usage.used, 3);
-      expect(usage.remaining, 7);
+      expect(usage.reserved, 1);
+      expect(usage.remaining, 6);
+      expect(usage.unit, AiUsageUnit.tokens);
       expect(usage.resetsAtUtcMilliseconds, 1785628800000);
-      expect(api.lastPath, '/ai/usage/me');
+      expect(api.lastPath, '/ai/usage/me/v2');
       expect(api.lastAccessToken, 'access-token');
     },
   );
@@ -409,13 +403,13 @@ Map<String, Object?> _capabilities() => {
   'provider_label': 'Development Fake',
   'model': 'deterministic-test-provider',
   'supported_report_types': ['daily_insight', 'weekly_report'],
-  'prompt_versions': ['daily-insight-v1', 'weekly-report-v1'],
+  'prompt_versions': ['daily-insight-v3', 'weekly-report-v3'],
   'input_schema_version': 1,
   'output_schema_version': 1,
   'report_contracts': [
     {
       'report_type': 'daily_insight',
-      'prompt_versions': ['daily-insight-v1'],
+      'prompt_versions': ['daily-insight-v3'],
       'input_schema_version': 1,
       'output_schema_version': 1,
       'period_kind': 'single_day',
@@ -427,7 +421,7 @@ Map<String, Object?> _capabilities() => {
     },
     {
       'report_type': 'weekly_report',
-      'prompt_versions': ['weekly-report-v1'],
+      'prompt_versions': ['weekly-report-v3'],
       'input_schema_version': 1,
       'output_schema_version': 1,
       'period_kind': 'seven_days',
@@ -466,13 +460,35 @@ Map<String, Object?> _capabilities() => {
   'exactly_once_guaranteed': false,
 };
 
+Map<String, Object?> _usageV2() => {
+  'enabled': true,
+  'resets_at': 1785628800000,
+  'reset_timezone': 'UTC',
+  'chat': {
+    'status': 'available',
+    'unit': 'tokens',
+    'limit': 50000,
+    'used': 12000,
+    'reserved': 500,
+    'remaining': 37500,
+  },
+  'reports': {
+    'status': 'available',
+    'unit': 'tokens',
+    'limit': 10,
+    'used': 3,
+    'reserved': 1,
+    'remaining': 6,
+  },
+};
+
 Map<String, Object?> _generation(
   AiCoachInputBundle bundle, {
   required String requestId,
 }) => {
   'request_id': requestId,
   'report_type': 'weekly_report',
-  'prompt_version': 'weekly-report-v1',
+  'prompt_version': bundle.promptVersion,
   'input_hash': bundle.inputHash,
   'provider': 'fake',
   'model': 'deterministic-test-provider',

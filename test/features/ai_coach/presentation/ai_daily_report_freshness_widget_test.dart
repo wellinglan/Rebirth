@@ -366,11 +366,11 @@ AiGenerationCapabilities _dailyCapabilities() => AiGenerationCapabilities(
   providerLabel: 'Development Fake',
   model: 'deterministic-test-provider',
   supportedReportTypes: const ['daily_insight'],
-  promptVersions: const ['daily-insight-v1'],
+  promptVersions: const ['daily-insight-v1', 'daily-insight-v3'],
   reportContracts: [
     AiGenerationReportContract(
       reportType: 'daily_insight',
-      promptVersions: ['daily-insight-v1'],
+      promptVersions: ['daily-insight-v3'],
       inputSchemaVersion: 1,
       outputSchemaVersion: 1,
       periodKind: AiReportPeriodKind.singleDay,

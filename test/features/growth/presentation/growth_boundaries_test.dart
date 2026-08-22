@@ -63,11 +63,11 @@ void main() {
       'PlanPage',
       'HealthPage',
       'GrowthPage',
-      'AiCoachPage',
       'SettingsPage',
     ]) {
       expect(router, contains('const $page()'), reason: page);
     }
+    expect(router, contains('AiChatPage('), reason: 'AiChatPage');
     expect(router, contains('JournalPage('), reason: 'JournalPage');
   });
 }

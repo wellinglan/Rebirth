@@ -228,7 +228,7 @@ def test_chat_idempotency_replays_once_and_is_account_scoped(
         ("invalid", 502, "response_invalid"),
     ],
 )
-def test_chat_provider_failures_are_controlled_and_counted_once(
+def test_chat_provider_failures_use_token_accounting_only(
     client: TestClient,
     auth_headers: dict[str, str],
     scenario: str,
@@ -240,7 +240,15 @@ def test_chat_provider_failures_are_controlled_and_counted_once(
     assert response.status_code == status
     assert response.json()["detail"]["code"] == code
     usage = client.get("/ai/usage/me", headers=auth_headers).json()
-    assert usage["used"] == 1
+    assert usage["used"] == 0
+    token_usage = client.get("/ai/usage/me/v2", headers=auth_headers).json()
+    assert token_usage["chat"]["unit"] == "tokens"
+    if code == "provider_timeout":
+        assert token_usage["chat"]["reserved"] > 0
+        assert token_usage["chat"]["used"] == 0
+    else:
+        assert token_usage["chat"]["used"] > 0
+        assert token_usage["chat"]["reserved"] == 0
     assert provider.calls == 1
 
 

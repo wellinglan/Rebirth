@@ -12,6 +12,7 @@ import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dar
 import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_generation_report_contract.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_request_binding.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
@@ -575,7 +576,22 @@ void main() {
         providerLabel: 'Disabled',
         model: null,
         supportedReportTypes: const ['weekly_report'],
-        promptVersions: const ['weekly-report-v1'],
+        promptVersions: const ['weekly-report-v1', 'weekly-report-v3'],
+        reportContracts: [
+          AiGenerationReportContract(
+            reportType: 'weekly_report',
+            promptVersions: ['weekly-report-v3'],
+            inputSchemaVersion: 1,
+            outputSchemaVersion: 1,
+            periodKind: AiReportPeriodKind.sevenDays,
+            supportedScopes: [
+              'growth_summary',
+              'today_metrics',
+              'health_metrics',
+              'journal_reflections',
+            ],
+          ),
+        ],
         inputSchemaVersion: 1,
         outputSchemaVersion: 1,
         streaming: false,
@@ -873,10 +889,17 @@ void main() {
   ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.binding.setSurfaceSize(const Size(320, 800));
-    final gateway = FakeAiGenerationGateway()
-      ..capabilitiesError = const AiGenerationException(
-        AiReportFailureCode.usageLimitReached,
-      );
+    final gateway = FakeAiGenerationGateway(
+      usage: const AiUsageSnapshot(
+        availability: AiUsageAvailability.limitReached,
+        enabled: true,
+        dailyLimit: 50000,
+        used: 50000,
+        remaining: 0,
+        resetsAtUtcMilliseconds: 1785628800000,
+        unit: AiUsageUnit.tokens,
+      ),
+    );
     await _pumpAiCoach(
       tester,
       consent: _enabledConsent(),
@@ -896,7 +919,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('今天的 AI 次数已用完'), findsOneWidget);
+    expect(find.textContaining('额度暂不可用'), findsOneWidget);
     expect(gateway.generationCalls, 0);
     expect(tester.takeException(), isNull);
   });

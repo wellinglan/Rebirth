@@ -8,9 +8,11 @@ from app.ai.prompt_contracts import (
     CHAT_PROMPT_ID,
     CHAT_PROMPT_VERSION,
     DAILY_CANDIDATE_PROMPT_VERSION,
+    DAILY_CHINESE_PROMPT_VERSION,
     DAILY_PROMPT_ID,
     DAILY_PROMPT_VERSION,
     WEEKLY_CANDIDATE_PROMPT_VERSION,
+    WEEKLY_CHINESE_PROMPT_VERSION,
     WEEKLY_PROMPT_ID,
     WEEKLY_PROMPT_VERSION,
 )
@@ -27,9 +29,9 @@ from app.ai.prompts import (
 from app.ai.schemas import (
     AiChatTurnResponse,
     AiDailyCandidateGenerateResponse,
-    AiDailyGenerateResponse,
+    AiDailyChineseGenerateResponse,
     AiWeeklyCandidateGenerateResponse,
-    AiWeeklyGenerateResponse,
+    AiWeeklyChineseGenerateResponse,
 )
 
 
@@ -39,12 +41,14 @@ def test_registry_has_explicit_active_and_candidate_versions() -> None:
         CHAT_PROMPT_VERSION,
         DAILY_PROMPT_VERSION,
         DAILY_CANDIDATE_PROMPT_VERSION,
+        DAILY_CHINESE_PROMPT_VERSION,
         WEEKLY_PROMPT_VERSION,
         WEEKLY_CANDIDATE_PROMPT_VERSION,
+        WEEKLY_CHINESE_PROMPT_VERSION,
     ]
     assert [item.prompt_version for item in report_definitions()] == [
-        DAILY_PROMPT_VERSION,
-        WEEKLY_PROMPT_VERSION,
+        DAILY_CHINESE_PROMPT_VERSION,
+        WEEKLY_CHINESE_PROMPT_VERSION,
     ]
     assert PROMPT_REGISTRY.require_active(DAILY_PROMPT_ID).status is PromptStatus.ACTIVE
     assert PROMPT_REGISTRY.require_active(WEEKLY_PROMPT_ID).status is PromptStatus.ACTIVE
@@ -55,6 +59,14 @@ def test_candidate_never_becomes_generation_prompt_implicitly() -> None:
     assert get_generation_prompt(CHAT_PROMPT_ID, CHAT_PROMPT_VERSION) is not None
     assert get_generation_prompt(DAILY_PROMPT_ID, DAILY_PROMPT_VERSION) is not None
     assert get_generation_prompt(WEEKLY_PROMPT_ID, WEEKLY_PROMPT_VERSION) is not None
+    assert (
+        get_generation_prompt(DAILY_PROMPT_ID, DAILY_CHINESE_PROMPT_VERSION)
+        is not None
+    )
+    assert (
+        get_generation_prompt(WEEKLY_PROMPT_ID, WEEKLY_CHINESE_PROMPT_VERSION)
+        is not None
+    )
     assert get_generation_prompt(DAILY_PROMPT_ID, DAILY_CANDIDATE_PROMPT_VERSION) is None
     assert get_generation_prompt(WEEKLY_PROMPT_ID, WEEKLY_CANDIDATE_PROMPT_VERSION) is None
 
@@ -63,11 +75,11 @@ def test_active_and_candidate_response_models_match_their_versions() -> None:
     assert chat_definition().response_model is AiChatTurnResponse
     assert (
         PROMPT_REGISTRY.require_active(DAILY_PROMPT_ID).response_model
-        is AiDailyGenerateResponse
+        is AiDailyChineseGenerateResponse
     )
     assert (
         PROMPT_REGISTRY.require_active(WEEKLY_PROMPT_ID).response_model
-        is AiWeeklyGenerateResponse
+        is AiWeeklyChineseGenerateResponse
     )
     assert (
         PROMPT_REGISTRY.get(
@@ -96,11 +108,17 @@ def test_published_prompt_fingerprints_are_stable() -> None:
         DAILY_CANDIDATE_PROMPT_VERSION: (
             "baa8c67a137173f8804f8c1177af741bb46e430b1ede1e1decdaf79a3461254f"
         ),
+        DAILY_CHINESE_PROMPT_VERSION: (
+            "dd269f7feec3992526d898f90eb7ec8b9629502cdc31640bb8e7f6a90bccd246"
+        ),
         WEEKLY_PROMPT_VERSION: (
             "3e0690bc065ddfbcf2a352ec16ad44f2479d2b85cfcd8fae84706a1e76769d71"
         ),
         WEEKLY_CANDIDATE_PROMPT_VERSION: (
             "7bcfac77aa6fde2fcff3688afc3ecf70e015675e2d43e9357149c5605e1000d5"
+        ),
+        WEEKLY_CHINESE_PROMPT_VERSION: (
+            "14648a2e8f1c8a36d674416db005d2792adcc38f252d75d544bdb26ca47422d3"
         ),
     }
 

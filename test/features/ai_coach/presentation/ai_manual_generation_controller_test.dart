@@ -92,19 +92,22 @@ void main() {
     expect(bindings.deleteCalls, 1);
   });
 
-  test('growth-only derived summary reaches confirmation without sources', () async {
-    final bundle = await _buildPreview(container);
-    await container.read(aiManualGenerationControllerProvider.future);
+  test(
+    'growth-only derived summary reaches confirmation without sources',
+    () async {
+      final bundle = await _buildPreview(container);
+      await container.read(aiManualGenerationControllerProvider.future);
 
-    final capabilities = await container
-        .read(aiManualGenerationControllerProvider.notifier)
-        .prepareForConfirmation(bundle);
+      final capabilities = await container
+          .read(aiManualGenerationControllerProvider.notifier)
+          .prepareForConfirmation(bundle);
 
-    expect(bundle.sources, isEmpty);
-    expect(capabilities, isNotNull);
-    expect(reports.createPendingCalls, 0);
-    expect(gateway.generationCalls, 0);
-  });
+      expect(bundle.sources, isEmpty);
+      expect(capabilities, isNotNull);
+      expect(reports.createPendingCalls, 0);
+      expect(gateway.generationCalls, 0);
+    },
+  );
 
   test('gateway failure marks only a controlled failure code', () async {
     final bundle = await _buildPreview(container);
@@ -346,7 +349,9 @@ final class DelayedAiGenerationGateway implements AiGenerationGateway {
   }
 
   @override
-  Future<AiUsageSnapshot> getUsage() async {
+  Future<AiUsageSnapshot> getUsage({
+    AiUsageScope scope = AiUsageScope.reports,
+  }) async {
     return FakeAiGenerationGateway().usage;
   }
 

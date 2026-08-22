@@ -58,7 +58,7 @@ void main() {
     );
     expect(
       AiInputContract.promptVersionFor(AiReportType.dailyInsight),
-      'daily-insight-v1',
+      'daily-insight-v3',
     );
     expect(AiInputContract.supportedScopesFor(AiReportType.dailyInsight), {
       AiDataScope.todayMetrics,

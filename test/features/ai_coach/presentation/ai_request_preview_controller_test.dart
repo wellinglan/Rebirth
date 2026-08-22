@@ -30,6 +30,9 @@ void main() {
         aiConsentRepositoryProvider.overrideWithValue(consent),
         aiCoachInputAssemblerProvider.overrideWithValue(assembler),
         aiReportRepositoryProvider.overrideWithValue(reports),
+        aiGenerationGatewayProvider.overrideWithValue(
+          FakeAiGenerationGateway(),
+        ),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 16, 9)),
         ),
@@ -57,7 +60,7 @@ void main() {
       expect(state.canBuild, isFalse);
       expect(state.periodStartDate, '2026-07-10');
       expect(state.periodEndDate, '2026-07-16');
-      expect(state.promptVersion, 'weekly-report-v1');
+      expect(state.promptVersion, 'weekly-report-v3');
     },
   );
 
@@ -126,7 +129,7 @@ void main() {
       expect(state.reusableCompletedReport?.id, 'reusable-report');
       expect(reports.findCalls, 1);
       expect(reports.lastReusableHash, assembler.bundle.inputHash);
-      expect(reports.lastReusablePromptVersion, 'weekly-report-v1');
+      expect(reports.lastReusablePromptVersion, 'weekly-report-v3');
       expect(reports.createPendingCalls, 0);
       expect(reports.markCompletedCalls, 0);
       expect(reports.markFailedCalls, 0);

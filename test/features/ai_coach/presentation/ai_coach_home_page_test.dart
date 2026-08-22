@@ -39,7 +39,7 @@ void main() {
     expect(find.byKey(const ValueKey('startAiChatButton')), findsOneWidget);
     expect(find.text('和 AI 教练聊一聊'), findsOneWidget);
     expect(find.text('AI 可用'), findsOneWidget);
-    expect(find.textContaining('今天剩余 8 次'), findsOneWidget);
+    expect(find.textContaining('今天剩余 8 Token'), findsOneWidget);
     expect(find.text('今日洞察'), findsOneWidget);
     expect(find.text('每周回顾'), findsOneWidget);
     expect(find.text('查看今日洞察'), findsOneWidget);
@@ -124,7 +124,7 @@ void main() {
           remaining: 0,
           resetsAtUtcMilliseconds: 1784246400000,
         ),
-        '今天的 AI 次数已用完',
+        '今天的 AI 额度已用完',
       ),
       (const AiUsageSnapshot.unknown(), '暂时无法确认 AI 使用状态'),
     ]) {

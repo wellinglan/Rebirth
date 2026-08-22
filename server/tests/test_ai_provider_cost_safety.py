@@ -341,9 +341,16 @@ def test_deepseek_incidents_are_terminal_release_leases_and_replay_once(
         assert generation.error_code == code
         assert generation.lease_expires_at is None
         assert usage is not None
-        assert usage.status == "failed"
-        assert usage.lease_expires_at is None
-        assert usage.completed_at is not None
+        if code == "provider_timeout":
+            assert usage.status == "processing"
+            assert usage.lease_expires_at is not None
+            assert usage.completed_at is None
+            assert usage.reserved_tokens > 0
+        else:
+            assert usage.status == "failed"
+            assert usage.lease_expires_at is None
+            assert usage.completed_at is not None
+            assert usage.reserved_tokens == 0
         assert usage.input_tokens is None
         assert usage.output_tokens is None
         assert usage.total_tokens is None
@@ -479,6 +486,32 @@ def test_ai_usage_migration_upgrade_downgrade_and_reupgrade(
             "ai_usage_controls",
             "ai_usage_records",
         }.issubset(inspect(engine).get_table_names())
+        assert {
+            "reserved_tokens",
+            "charged_tokens",
+            "accounting_source",
+        }.issubset(
+            {
+                column["name"]
+                for column in inspect(engine).get_columns("ai_usage_records")
+            }
+        )
+        command.downgrade(config, "20260812_0008")
+        assert not {
+            "reserved_tokens",
+            "charged_tokens",
+            "accounting_source",
+        }.intersection(
+            {
+                column["name"]
+                for column in inspect(engine).get_columns("ai_usage_records")
+            }
+        )
+        command.upgrade(config, "head")
+        assert "charged_tokens" in {
+            column["name"]
+            for column in inspect(engine).get_columns("ai_usage_records")
+        }
         command.downgrade(config, "20260731_0006")
         assert "ai_usage_records" not in inspect(engine).get_table_names()
         command.upgrade(config, "head")

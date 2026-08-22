@@ -14,7 +14,7 @@ void main() {
     expect(preview.reportTypeLabel, '每周回顾');
     expect(preview.periodStartDate, '2026-07-10');
     expect(preview.periodEndDate, '2026-07-16');
-    expect(preview.promptVersion, 'weekly-report-v1');
+    expect(preview.promptVersion, 'weekly-report-v3');
     expect(preview.shortInputHash, '12345678…87654321');
     expect(preview.sourceCount, 1);
     expect(preview.scopes, [

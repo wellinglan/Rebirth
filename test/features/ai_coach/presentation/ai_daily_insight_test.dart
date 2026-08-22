@@ -101,7 +101,7 @@ void main() {
         .requireValue;
     expect(state.periodStartDate, _date);
     expect(state.periodEndDate, _date);
-    expect(state.promptVersion, 'daily-insight-v1');
+    expect(state.promptVersion, 'daily-insight-v3');
   });
 
   test('Daily generation dispatches Daily endpoint and never Weekly', () async {
@@ -289,7 +289,7 @@ void main() {
       findsOneWidget,
     );
     expect(harness.assembler.buildCalls, 0);
-    expect(harness.gateway.capabilitiesCalls, 0);
+    expect(harness.gateway.capabilitiesCalls, 1);
   });
 
   testWidgets(
@@ -319,7 +319,7 @@ void main() {
         find.byKey(const ValueKey('generateDailyInsightButton')),
         findsNothing,
       );
-      expect(harness.gateway.capabilitiesCalls, 0);
+      expect(harness.gateway.capabilitiesCalls, 1);
       expect(harness.reports.createPendingCalls, 0);
     },
   );
@@ -408,11 +408,11 @@ AiGenerationCapabilities _dailyCapabilities({
   providerLabel: 'Development Fake',
   model: 'deterministic-test-provider',
   supportedReportTypes: const ['daily_insight', 'weekly_report'],
-  promptVersions: const ['daily-insight-v1', 'weekly-report-v1'],
+  promptVersions: const ['daily-insight-v3', 'weekly-report-v3'],
   reportContracts: [
     AiGenerationReportContract(
       reportType: 'daily_insight',
-      promptVersions: const ['daily-insight-v1'],
+      promptVersions: const ['daily-insight-v3'],
       inputSchemaVersion: 1,
       outputSchemaVersion: 1,
       periodKind: periodKind,

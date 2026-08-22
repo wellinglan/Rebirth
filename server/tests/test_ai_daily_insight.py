@@ -117,7 +117,7 @@ def test_capabilities_publish_typed_daily_and_weekly_contracts(
     assert set(contracts) == {"daily_insight", "weekly_report"}
     assert contracts["daily_insight"] == {
         "report_type": "daily_insight",
-        "prompt_versions": ["daily-insight-v1"],
+        "prompt_versions": ["daily-insight-v3"],
         "input_schema_version": 1,
         "output_schema_version": 1,
         "period_kind": "single_day",
@@ -178,6 +178,26 @@ def test_daily_fake_success_minimizes_provider_payload_and_replays(
     ):
         assert forbidden not in serialized
     assert _SENSITIVE_MARKER in serialized
+
+
+def test_daily_v3_fake_report_is_simplified_chinese(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    use_fake(client)
+    payload = daily_fixture()
+    payload["prompt_version"] = "daily-insight-v3"
+
+    response = client.post(
+        "/ai/reports/daily/generate",
+        headers=auth_headers,
+        json=daily_request_body(payload),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["prompt_version"] == "daily-insight-v3"
+    assert body["structured_output"]["title"] == "今日洞察开发检查"
+    assert body["report_content"].startswith("# 今日洞察开发检查")
 
     status = client.get(
         f"/ai/requests/{daily_request_body()['request_id']}", headers=auth_headers

@@ -115,13 +115,13 @@ def test_disabled_capabilities_are_safe(
         "provider_label": "Disabled",
         "model": None,
         "supported_report_types": ["daily_insight", "weekly_report"],
-        "prompt_versions": ["daily-insight-v1", "weekly-report-v1"],
+        "prompt_versions": ["daily-insight-v3", "weekly-report-v3"],
         "input_schema_version": 1,
         "output_schema_version": 1,
         "report_contracts": [
             {
                 "report_type": "daily_insight",
-                "prompt_versions": ["daily-insight-v1"],
+                "prompt_versions": ["daily-insight-v3"],
                 "input_schema_version": 1,
                 "output_schema_version": 1,
                 "period_kind": "single_day",
@@ -133,7 +133,7 @@ def test_disabled_capabilities_are_safe(
             },
             {
                 "report_type": "weekly_report",
-                "prompt_versions": ["weekly-report-v1"],
+                "prompt_versions": ["weekly-report-v3"],
                 "input_schema_version": 1,
                 "output_schema_version": 1,
                 "period_kind": "seven_days",
@@ -243,6 +243,32 @@ def test_fake_generation_success_and_minimized_payload(
     assert "input_hash" not in forwarded
     assert "user_id" not in forwarded
     assert "daily_note" not in json.dumps(forwarded)
+
+
+def test_weekly_v3_fake_report_is_simplified_chinese(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    use_fake(client)
+    payload = fixture_payload()
+    payload["prompt_version"] = "weekly-report-v3"
+    parsed = AiWeeklyPayload.model_validate(payload)
+    body = {
+        "request_id": "41111111-2222-4333-8444-555555555555",
+        "input_hash": input_hash(parsed),
+        "payload": payload,
+    }
+
+    response = client.post(
+        "/ai/reports/weekly/generate",
+        headers=auth_headers,
+        json=body,
+    )
+
+    assert response.status_code == 200
+    value = response.json()
+    assert value["prompt_version"] == "weekly-report-v3"
+    assert value["structured_output"]["title"] == "开发测试每周回顾"
+    assert value["report_content"].startswith("# 开发测试每周回顾")
 
 
 def test_weekly_accepts_current_ten_point_metric_contract(

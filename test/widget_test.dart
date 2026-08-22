@@ -111,8 +111,18 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('aiCoachPage')), findsOneWidget);
-    expect(find.byKey(const ValueKey('startAiChatButton')), findsOneWidget);
-    expect(find.text('洞察与回顾'), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiChatPage')), findsOneWidget);
+
+    final aiContext = tester.element(find.byKey(const ValueKey('aiChatPage')));
+    final router = GoRouter.of(aiContext);
+    router.go('${RoutePaths.aiCoachChat}?thread=missing-local-thread');
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, RoutePaths.aiCoach);
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['thread'],
+      'missing-local-thread',
+    );
+    expect(find.byKey(const ValueKey('aiChatPage')), findsOneWidget);
   });
 }

@@ -94,6 +94,10 @@ def test_configuration_summary_reports_readiness_without_secrets(
     )
     assert configured["status"] == "ok"
     assert configured["enabled"] is True
+    assert configured["chat_daily_token_limit"] == 50_000
+    assert configured["report_daily_token_limit"] == 50_000
+    assert configured["daily_global_token_limit"] == 250_000
+    assert configured["max_request_tokens"] == 20_000
     output = json.dumps(configured)
     assert "secret-never-print" not in output
     assert "api_key" not in output.lower()

@@ -142,9 +142,12 @@ def test_generate_openapi_declares_202_and_controlled_errors(
     schema = client.get("/openapi.json").json()
     generate = schema["paths"]["/ai/reports/weekly/generate"]["post"]
     responses = generate["responses"]
-    assert responses["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/AiWeeklyGenerateResponse"
-    )
+    success_schema = responses["200"]["content"]["application/json"]["schema"]
+    success_refs = {item["$ref"] for item in success_schema["anyOf"]}
+    assert success_refs == {
+        "#/components/schemas/AiWeeklyGenerateResponse",
+        "#/components/schemas/AiWeeklyChineseGenerateResponse",
+    }
     assert responses["202"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/AiRequestStatusResponse"
     )

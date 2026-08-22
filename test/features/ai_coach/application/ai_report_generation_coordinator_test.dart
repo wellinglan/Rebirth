@@ -85,7 +85,7 @@ void main() {
       requestId: 'pending-1',
       inputHash: harness.weeklyBundle.inputHash,
       reportType: 'weekly_report',
-      promptVersion: 'weekly-report-v1',
+      promptVersion: harness.weeklyBundle.promptVersion,
     );
 
     final result = await harness.coordinator.generate(harness.weeklyBundle);
@@ -167,7 +167,7 @@ void main() {
         requestId: 'pending-1',
         inputHash: harness.weeklyBundle.inputHash,
         reportType: 'weekly_report',
-        promptVersion: 'weekly-report-v1',
+        promptVersion: harness.weeklyBundle.promptVersion,
         failureCode: AiReportFailureCode.providerTimeout,
       );
 
@@ -217,7 +217,7 @@ void main() {
       cloudUserId: 'cloud-user',
       inputHash: harness.weeklyBundle.inputHash,
       reportType: 'weekly_report',
-      promptVersion: 'weekly-report-v1',
+      promptVersion: harness.weeklyBundle.promptVersion,
       createdAt: 1,
     );
 
@@ -294,11 +294,11 @@ AiGenerationCapabilities _dailyCapabilities() => AiGenerationCapabilities(
   providerLabel: 'Development Fake',
   model: 'deterministic-test-provider',
   supportedReportTypes: const ['daily_insight'],
-  promptVersions: const ['daily-insight-v1'],
+  promptVersions: const ['daily-insight-v3'],
   reportContracts: [
     AiGenerationReportContract(
       reportType: 'daily_insight',
-      promptVersions: const ['daily-insight-v1'],
+      promptVersions: const ['daily-insight-v3'],
       inputSchemaVersion: 1,
       outputSchemaVersion: 1,
       periodKind: AiReportPeriodKind.singleDay,

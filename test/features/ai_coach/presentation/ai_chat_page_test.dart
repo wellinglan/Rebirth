@@ -6,10 +6,15 @@ import 'package:rebirth/features/ai_coach/domain/ai_chat_conversation.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_authorization.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_type.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_chat_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_chat_page.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_chat_view_state.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
+import 'package:rebirth/features/ai_coach/presentation/ai_report_history_view_state.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_usage_controller.dart';
+import 'package:rebirth/features/ai_coach/presentation/models/ai_report_presentation_models.dart';
 import 'package:rebirth/features/ai_coach/presentation/widgets/ai_chat_conversation_view.dart';
 import 'package:rebirth/features/settings/presentation/ai_data_consent_controller.dart';
 
@@ -21,6 +26,9 @@ void main() {
     await _pumpPage(tester, controller: controller, width: 412);
 
     expect(find.byKey(const ValueKey('aiChatEmptyState')), findsOneWidget);
+    expect(find.text('本次参考资料'), findsOneWidget);
+    expect(find.text('生成今日洞察'), findsOneWidget);
+    expect(find.text('生成每周回顾'), findsOneWidget);
     await tester.enterText(
       find.byKey(const ValueKey('aiChatComposerField')),
       '  今天想理清一件事  ',
@@ -36,6 +44,93 @@ void main() {
           ?.text,
       isEmpty,
     );
+  });
+
+  testWidgets('chat shows token usage and processing reservation', (
+    tester,
+  ) async {
+    final controller = _ChatController(_state());
+    await _pumpPage(tester, controller: controller, width: 412);
+
+    expect(find.text('1.2k / 50k Token'), findsOneWidget);
+    expect(find.text('处理中 300'), findsOneWidget);
+    expect(find.textContaining('剩余次数'), findsNothing);
+    final semantics = tester.getSemantics(
+      find.byKey(const ValueKey('aiChatTokenBudgetSemantics')),
+    );
+    expect(semantics.label, contains('已使用 1200 Token'));
+    expect(semantics.label, contains('预留 300 Token'));
+  });
+
+  testWidgets('report scope selection is independent from chat context', (
+    tester,
+  ) async {
+    final controller = _ChatController(_state());
+    await _pumpPage(tester, controller: controller, width: 412);
+
+    await tester.tap(find.byKey(const ValueKey('aiChatContextButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('aiChatScope-health_metrics')));
+    await tester.pump();
+    tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+    await tester.pumpAndSettle();
+    expect(controller.selectedScopes, {AiDataScope.healthMetrics});
+
+    await tester.tap(find.byKey(const ValueKey('aiChatDailyInsightButton')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<CheckboxListTile>(
+            find.byKey(const ValueKey('quickReportScope-health_metrics')),
+          )
+          .value,
+      isFalse,
+    );
+    expect(
+      find.byKey(const ValueKey('quickReportScope-growth_summary')),
+      findsNothing,
+    );
+    tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('aiChatWeeklyReportButton')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<CheckboxListTile>(
+            find.byKey(const ValueKey('quickReportScope-growth_summary')),
+          )
+          .value,
+      isFalse,
+    );
+    tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+    await tester.pumpAndSettle();
+
+    expect(controller.selectedScopes, {AiDataScope.healthMetrics});
+    expect(controller.sent, isEmpty);
+  });
+
+  testWidgets('saved reports are references and never chat messages', (
+    tester,
+  ) async {
+    final controller = _ChatController(
+      _state(conversation: _conversation(AiChatSafetyCategory.normal)),
+    );
+    final reports = _ReportHistoryController();
+    await _pumpPage(
+      tester,
+      controller: controller,
+      reportsController: reports,
+      width: 412,
+    );
+
+    expect(
+      find.byKey(const ValueKey('aiChatReportCard-report-1')),
+      findsOneWidget,
+    );
+    expect(controller.initial.conversation?.messages, hasLength(2));
+    expect(controller.selectedScopes, isEmpty);
+    expect(controller.sent, isEmpty);
   });
 
   testWidgets('rejected send preserves composer content', (tester) async {
@@ -169,6 +264,8 @@ void main() {
             archived: false,
             blockedByUnresolved: false,
             onChooseContext: () {},
+            onGenerateDaily: () {},
+            onGenerateWeekly: () {},
             onSend: () => sends += 1,
           ),
         ),
@@ -223,6 +320,7 @@ Future<void> _pumpPage(
   WidgetTester tester, {
   required _ChatController controller,
   required double width,
+  AiReportHistoryController? reportsController,
   double textScale = 1,
   bool settle = true,
 }) async {
@@ -237,7 +335,12 @@ Future<void> _pumpPage(
         aiDataConsentControllerProvider.overrideWith(
           _EnabledConsentController.new,
         ),
-        aiUsageControllerProvider.overrideWith(_AvailableUsageController.new),
+        aiChatUsageControllerProvider.overrideWith(
+          () => _AvailableUsageController(),
+        ),
+        aiReportHistoryControllerProvider.overrideWith(
+          () => reportsController ?? _EmptyReportHistoryController(),
+        ),
       ],
       child: MaterialApp(
         home: MediaQuery(
@@ -347,13 +450,45 @@ final class _EnabledConsentController extends AiDataConsentController {
 }
 
 final class _AvailableUsageController extends AiUsageController {
+  _AvailableUsageController() : super(AiUsageScope.chat);
+
   @override
   Future<AiUsageSnapshot> build() async => const AiUsageSnapshot(
     availability: AiUsageAvailability.available,
     enabled: true,
-    dailyLimit: 4,
-    used: 0,
-    remaining: 4,
+    dailyLimit: 50000,
+    used: 1200,
+    reserved: 300,
+    remaining: 48500,
     resetsAtUtcMilliseconds: 1,
+    unit: AiUsageUnit.tokens,
+  );
+}
+
+final class _EmptyReportHistoryController extends AiReportHistoryController {
+  @override
+  Future<AiReportHistoryViewState> build() async =>
+      AiReportHistoryViewState(reports: const []);
+}
+
+final class _ReportHistoryController extends AiReportHistoryController {
+  @override
+  Future<AiReportHistoryViewState> build() async => AiReportHistoryViewState(
+    reports: const [
+      AiReportListItemModel(
+        id: 'report-1',
+        reportType: AiReportType.dailyInsight,
+        reportTypeLabel: '今日洞察',
+        title: '今日洞察',
+        periodStartDate: '2026-08-22',
+        periodEndDate: '2026-08-22',
+        status: AiReportStatus.completed,
+        statusLabel: '已完成',
+        createdAtLabel: '2026-08-22',
+        updatedAtLabel: '2026-08-22',
+        currentVersion: 1,
+        syncStatus: '已同步',
+      ),
+    ],
   );
 }

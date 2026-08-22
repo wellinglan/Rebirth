@@ -209,6 +209,46 @@ def _usage_reservation_worker(
         database.engine.dispose()
 
 
+def _chat_token_reservation_worker(
+    database_url: str,
+    user_id: str,
+    request_id: str,
+    barrier: Any,
+    queue: Any,
+) -> None:
+    settings = replace(
+        load_settings(
+            database_url=database_url,
+            environment="test",
+            jwt_secret="postgres-multiprocess-test-secret",
+        ),
+        ai_chat_daily_token_limit=50_000,
+        ai_daily_global_token_limit=1_000_000,
+        ai_max_request_tokens=20_000,
+        ai_max_concurrent_requests=100,
+    )
+    database = Database(database_url)
+    try:
+        barrier.wait(timeout=20)
+        with database.session_factory() as session:
+            try:
+                AiUsageGuard(settings).reserve(
+                    session,
+                    user_id=user_id,
+                    request_id=request_id,
+                    provider="fake",
+                    model="deterministic-test-provider",
+                    request_type="coach_chat",
+                    now=_NOW,
+                    estimated_tokens=15_000,
+                )
+                queue.put("reserved")
+            except UsageLimitReachedError:
+                queue.put("limited")
+    finally:
+        database.engine.dispose()
+
+
 def _operations_read_worker(
     database_url: str,
     barrier: Any,
@@ -293,10 +333,7 @@ def test_postgres_global_concurrency_reservation_is_atomic() -> None:
 
     results = _run_processes(
         _usage_reservation_worker,
-        [
-            (_database_url(), user_id, str(uuid.uuid4()))
-            for _ in range(8)
-        ],
+        [(_database_url(), user_id, str(uuid.uuid4())) for _ in range(8)],
     )
     assert results.count("reserved") == 5
     assert results.count("limited") == 3
@@ -326,6 +363,49 @@ def test_postgres_global_concurrency_reservation_is_atomic() -> None:
     finally:
         database.engine.dispose()
 
+
+def test_postgres_chat_token_reservation_is_atomic_at_50k() -> None:
+    _upgrade()
+    user_id = str(uuid.uuid4())
+    _seed_users(user_id)
+    database = Database(_database_url())
+    try:
+        with database.session_factory() as session:
+            session.query(AiUsageRecord).delete()
+            session.commit()
+    finally:
+        database.engine.dispose()
+
+    results = _run_processes(
+        _chat_token_reservation_worker,
+        [(_database_url(), user_id, str(uuid.uuid4())) for _ in range(4)],
+    )
+    assert results.count("reserved") == 3
+    assert results.count("limited") == 1
+
+    database = Database(_database_url())
+    try:
+        settings = replace(
+            load_settings(
+                database_url=_database_url(),
+                environment="test",
+                jwt_secret="postgres-multiprocess-test-secret",
+            ),
+            ai_chat_daily_token_limit=50_000,
+            ai_max_concurrent_requests=100,
+        )
+        with database.session_factory() as session:
+            snapshot = AiUsageGuard(settings).snapshot_v2(
+                session,
+                user_id=user_id,
+                provider_enabled=True,
+                now=_NOW,
+            )
+            assert snapshot.chat.used == 0
+            assert snapshot.chat.reserved == 45_000
+            assert snapshot.chat.remaining == 5_000
+    finally:
+        database.engine.dispose()
 
 def test_daily_four_processes_have_exactly_one_claim_owner() -> None:
     _upgrade()

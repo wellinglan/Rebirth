@@ -102,7 +102,7 @@ void main() {
       );
 
       expect(bundle.reportType, AiReportType.dailyInsight);
-      expect(bundle.promptVersion, 'daily-insight-v1');
+      expect(bundle.promptVersion, 'daily-insight-v3');
       expect(bundle.periodStartDate, '2026-07-20');
       expect(bundle.periodEndDate, '2026-07-20');
       final data = bundle.canonicalPayload['data']! as Map<String, Object?>;
@@ -232,7 +232,7 @@ void main() {
 
       expect(bundle.periodStartDate, '2026-07-10');
       expect(bundle.periodEndDate, '2026-07-16');
-      expect(bundle.promptVersion, 'weekly-report-v1');
+      expect(bundle.promptVersion, 'weekly-report-v3');
       expect(
         bundle.canonicalPayload.keys,
         containsAll([

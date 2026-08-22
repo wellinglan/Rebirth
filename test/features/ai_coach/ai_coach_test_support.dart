@@ -73,6 +73,7 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
   Future<AiCoachInputBundle> build({
     required AiReportType reportType,
     required AiDataSelection selection,
+    String? promptVersion,
   }) {
     return buildWeeklyReport(selection: selection);
   }
@@ -80,6 +81,7 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
   @override
   Future<AiCoachInputBundle> buildWeeklyReport({
     required AiDataSelection selection,
+    String? promptVersion,
   }) async {
     buildCalls += 1;
     weeklyBuildCalls += 1;
@@ -95,6 +97,7 @@ final class FakeAiCoachInputAssembler implements AiCoachInputAssembler {
   Future<AiCoachInputBundle> buildDailyInsight({
     required String targetDate,
     required AiDataSelection selection,
+    String? promptVersion,
   }) async {
     buildCalls += 1;
     dailyBuildCalls += 1;
@@ -401,12 +404,24 @@ class FakeAiGenerationGateway implements AiGenerationGateway {
              provider: 'fake',
              providerLabel: 'Development Fake',
              model: 'deterministic-test-provider',
-             supportedReportTypes: const ['weekly_report'],
-             promptVersions: const ['weekly-report-v1'],
+             supportedReportTypes: const ['daily_insight', 'weekly_report'],
+             promptVersions: const ['daily-insight-v3', 'weekly-report-v3'],
              reportContracts: [
                AiGenerationReportContract(
+                 reportType: 'daily_insight',
+                 promptVersions: const ['daily-insight-v3'],
+                 inputSchemaVersion: 1,
+                 outputSchemaVersion: 1,
+                 periodKind: AiReportPeriodKind.singleDay,
+                 supportedScopes: const [
+                   'today_metrics',
+                   'health_metrics',
+                   'journal_reflections',
+                 ],
+               ),
+               AiGenerationReportContract(
                  reportType: 'weekly_report',
-                 promptVersions: const ['weekly-report-v1'],
+                 promptVersions: const ['weekly-report-v3'],
                  inputSchemaVersion: 1,
                  outputSchemaVersion: 1,
                  periodKind: AiReportPeriodKind.sevenDays,
@@ -432,6 +447,7 @@ class FakeAiGenerationGateway implements AiGenerationGateway {
              used: 2,
              remaining: 8,
              resetsAtUtcMilliseconds: 1784246400000,
+             unit: AiUsageUnit.tokens,
            );
 
   AiGenerationCapabilities capabilities;
@@ -460,7 +476,9 @@ class FakeAiGenerationGateway implements AiGenerationGateway {
   }
 
   @override
-  Future<AiUsageSnapshot> getUsage() async {
+  Future<AiUsageSnapshot> getUsage({
+    AiUsageScope scope = AiUsageScope.reports,
+  }) async {
     usageCalls += 1;
     if (usageError case final error?) throw error;
     return usage;

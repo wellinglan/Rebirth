@@ -347,7 +347,9 @@ final class _GenerationGateway extends Fake implements AiGenerationGateway {
   }
 
   @override
-  Future<AiUsageSnapshot> getUsage() async => usage;
+  Future<AiUsageSnapshot> getUsage({
+    AiUsageScope scope = AiUsageScope.reports,
+  }) async => usage;
 }
 
 final class _ConsentRepository extends Fake implements AiConsentRepository {
