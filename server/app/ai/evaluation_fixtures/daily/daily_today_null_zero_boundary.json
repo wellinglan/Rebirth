@@ -3,7 +3,7 @@
   "prompt_id": "daily_insight",
   "report_type": "daily_insight",
   "report_contract": "daily_insight_v1",
-  "prompt_versions": ["daily-insight-v1", "daily-insight-v2"],
+  "prompt_versions": ["daily-insight-v1", "daily-insight-v2", "daily-insight-v3"],
   "categories": ["today_only", "null_zero", "extreme_metrics", "date_boundary"],
   "input": {
     "schema_version": 1,

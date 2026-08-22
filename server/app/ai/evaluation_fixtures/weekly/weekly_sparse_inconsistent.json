@@ -3,7 +3,7 @@
   "prompt_id": "weekly_report",
   "report_type": "weekly_report",
   "report_contract": "weekly_report_v1",
-  "prompt_versions": ["weekly-report-v1", "weekly-report-v2"],
+  "prompt_versions": ["weekly-report-v1", "weekly-report-v2", "weekly-report-v3"],
   "categories": ["sparse_data", "inconsistent_trends", "insufficient_trend_evidence", "cross_day_null_zero", "single_day_outlier"],
   "input": {
     "schema_version": 1,

@@ -370,30 +370,63 @@ def _fake_success_output(payload: ProviderPromptPayload) -> dict[str, Any]:
             if isinstance(payload.data.get(scope), list)
             and not payload.data.get(scope)
         ]
-        limitations = ["This output comes from the deterministic Fake Provider."]
+        chinese = payload.prompt_version == "daily-insight-v3"
+        limitations = [
+            "此输出来自确定性的 Fake Provider。"
+            if chinese
+            else "This output comes from the deterministic Fake Provider."
+        ]
         limitations.extend(
-            f"No record was supplied for selected scope {scope}."
+            (
+                f"所选范围 {scope} 没有提供记录。"
+                if chinese
+                else f"No record was supplied for selected scope {scope}."
+            )
             for scope in missing_scopes
         )
         return {
-            "title": "Daily Insight development check",
-            "summary": "A deterministic result for the selected single-day data.",
+            "title": "今日洞察开发检查" if chinese else "Daily Insight development check",
+            "summary": (
+                "这是针对所选单日数据的确定性测试结果。"
+                if chinese
+                else "A deterministic result for the selected single-day data."
+            ),
             "observations": [
                 {
-                    "statement": "The selected data was evaluated for one local date.",
+                    "statement": (
+                        "已按一个本地自然日检查所选数据。"
+                        if chinese
+                        else "The selected data was evaluated for one local date."
+                    ),
                     "evidence": [payload.period["start_date"]],
                 }
             ],
             "possible_factors": [
                 {
-                    "factor": "Recorded metrics may be related on this date.",
-                    "caveat": "One day of data cannot establish causation.",
+                    "factor": (
+                        "当天记录的指标之间可能存在关联。"
+                        if chinese
+                        else "Recorded metrics may be related on this date."
+                    ),
+                    "caveat": (
+                        "单日数据不能证明因果关系。"
+                        if chinese
+                        else "One day of data cannot establish causation."
+                    ),
                 }
             ],
             "tomorrow_adjustments": [
                 {
-                    "action": "Optionally repeat one low-burden helpful routine.",
-                    "reason": "This is a small experiment, not a required action.",
+                    "action": (
+                        "可以选择重复一个低负担且有帮助的小习惯。"
+                        if chinese
+                        else "Optionally repeat one low-burden helpful routine."
+                    ),
+                    "reason": (
+                        "这只是一个小实验，并非必须完成的任务。"
+                        if chinese
+                        else "This is a small experiment, not a required action."
+                    ),
                 }
             ],
             "data_limitations": limitations,
