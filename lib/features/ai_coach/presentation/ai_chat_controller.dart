@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/ai_coach/application/ai_chat_coordinator.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_chat_conversation.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_chat_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 
 import 'ai_chat_view_state.dart';
@@ -96,8 +98,18 @@ class AiChatController extends AsyncNotifier<AiChatViewState> {
   Future<bool> send(String content) async {
     final current = state.value;
     if (current == null || !current.canCompose) return false;
+    final normalized = content.trim();
+    if (normalized.isEmpty ||
+        normalized.length > AiChatInputContract.maximumMessageCharacters) {
+      return false;
+    }
+    final optimistic = _optimisticConversation(current, normalized);
     state = AsyncData(
       current.copyWith(
+        threads: current.conversation == null
+            ? [optimistic.thread, ...current.threads]
+            : current.threads,
+        conversation: optimistic,
         interaction: AiChatInteraction.sending,
         clearFailure: true,
         clearRecovery: true,
@@ -274,5 +286,67 @@ class AiChatController extends AsyncNotifier<AiChatViewState> {
         clearRecovery: true,
       ),
     );
+  }
+
+  AiChatConversation _optimisticConversation(
+    AiChatViewState current,
+    String content,
+  ) {
+    final existing = current.conversation;
+    final threadId = existing?.thread.id ?? '__optimistic_thread__';
+    final nextSequence = existing?.messages.isEmpty ?? true
+        ? 0
+        : existing!.messages.last.sequence + 1;
+    final timestamp = existing?.thread.updatedAt ?? 0;
+    final thread =
+        existing?.thread ??
+        AiChatThread(
+          id: threadId,
+          title: _optimisticTitle(content),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          archivedAt: null,
+        );
+    return AiChatConversation(
+      thread: thread,
+      messages: [
+        ...?existing?.messages,
+        AiChatMessage(
+          id: '__optimistic_user__',
+          threadId: threadId,
+          role: AiChatRole.user,
+          sequence: nextSequence,
+          content: content,
+          requestId: null,
+          status: AiChatMessageStatus.completed,
+          promptVersion: null,
+          safetyCategory: null,
+          errorCode: null,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        ),
+        AiChatMessage(
+          id: '__optimistic_assistant__',
+          threadId: threadId,
+          role: AiChatRole.assistant,
+          sequence: nextSequence + 1,
+          content: '',
+          requestId: null,
+          status: AiChatMessageStatus.pending,
+          promptVersion: AiChatInputContract.promptVersion,
+          safetyCategory: null,
+          errorCode: null,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        ),
+      ],
+    );
+  }
+
+  String _optimisticTitle(String content) {
+    final singleLine = content.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return singleLine.length <= 36
+        ? singleLine
+        : '${singleLine.substring(0, 36)}...';
   }
 }

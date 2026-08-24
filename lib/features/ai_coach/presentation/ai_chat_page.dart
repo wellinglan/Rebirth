@@ -169,11 +169,28 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   }
 
   Future<void> _send() async {
-    final accepted = await ref
-        .read(aiChatControllerProvider.notifier)
-        .send(_composerController.text);
-    if (!mounted || !accepted) return;
-    _composerController.clear();
+    final content = _composerController.text;
+    final operation = ref.read(aiChatControllerProvider.notifier).send(content);
+    var clearedOptimistically = false;
+    if (ref.read(aiChatControllerProvider).value?.interaction ==
+        AiChatInteraction.sending) {
+      _composerController.clear();
+      clearedOptimistically = true;
+      _scrollToBottom();
+    }
+    final accepted = await operation;
+    if (!mounted) return;
+    if (!accepted) {
+      if (clearedOptimistically && _composerController.text.isEmpty) {
+        _composerController.text = content;
+      }
+      return;
+    }
+    if (!clearedOptimistically) _composerController.clear();
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       _scrollController.animateTo(

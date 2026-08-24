@@ -811,12 +811,9 @@ class _MessageItem extends StatelessWidget {
             dimension: 18,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          const Text('正在等待完整回复…'),
-          if (isLatestAssistant)
-            TextButton(
-              onPressed: busy ? null : onRecover,
-              child: const Text('检查结果'),
-            ),
+          Text(busy ? '正在思考…' : '正在等待完整回复…'),
+          if (isLatestAssistant && !busy)
+            TextButton(onPressed: onRecover, child: const Text('检查结果')),
         ],
       ),
       AiChatMessageStatus.outcomeUnknown => Column(

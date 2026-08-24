@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,6 +46,37 @@ void main() {
           ?.text,
       isEmpty,
     );
+  });
+
+  testWidgets('sent message and thinking state appear before reply completes', (
+    tester,
+  ) async {
+    final controller = _ChatController(_state())..deferSend = true;
+    await _pumpPage(tester, controller: controller, width: 412);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('aiChatComposerField')),
+      '先显示我的消息',
+    );
+    await tester.tap(find.byKey(const ValueKey('sendAiChatButton')));
+    await tester.pump();
+
+    expect(find.text('先显示我的消息'), findsOneWidget);
+    expect(find.text('正在思考…'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('aiChatComposerField')))
+          .controller
+          ?.text,
+      isEmpty,
+    );
+    expect(controller.sendCompleter?.isCompleted, isFalse);
+
+    controller.completeDeferredSend();
+    await tester.pumpAndSettle();
+
+    expect(find.text('这是完整回复。'), findsOneWidget);
+    expect(find.text('正在思考…'), findsNothing);
   });
 
   testWidgets('chat shows token usage and processing reservation', (
@@ -531,6 +564,8 @@ final class _ChatController extends AiChatController {
   final AiChatViewState initial;
   final List<String> sent = [];
   bool acceptSend = true;
+  bool deferSend = false;
+  Completer<bool>? sendCompleter;
 
   Set<AiDataScope> get selectedScopes => state.requireValue.selectedScopes;
 
@@ -540,7 +575,29 @@ final class _ChatController extends AiChatController {
   @override
   Future<bool> send(String content) async {
     sent.add(content);
+    if (deferSend) {
+      final current = state.requireValue;
+      sendCompleter = Completer<bool>();
+      state = AsyncData(
+        current.copyWith(
+          conversation: _optimisticTestConversation(content.trim()),
+          interaction: AiChatInteraction.sending,
+        ),
+      );
+      return sendCompleter!.future;
+    }
     return acceptSend;
+  }
+
+  void completeDeferredSend() {
+    final current = state.requireValue;
+    state = AsyncData(
+      current.copyWith(
+        conversation: _conversation(AiChatSafetyCategory.normal),
+        interaction: AiChatInteraction.ready,
+      ),
+    );
+    sendCompleter!.complete(true);
   }
 
   @override
@@ -550,6 +607,49 @@ final class _ChatController extends AiChatController {
     selected ? scopes.add(scope) : scopes.remove(scope);
     state = AsyncData(current.copyWith(selectedScopes: scopes));
   }
+}
+
+AiChatConversation _optimisticTestConversation(String content) {
+  const thread = AiChatThread(
+    id: 'optimistic-thread',
+    title: '新对话',
+    createdAt: 0,
+    updatedAt: 0,
+    archivedAt: null,
+  );
+  return AiChatConversation(
+    thread: thread,
+    messages: [
+      AiChatMessage(
+        id: 'optimistic-user',
+        threadId: thread.id,
+        role: AiChatRole.user,
+        sequence: 0,
+        content: content,
+        requestId: null,
+        status: AiChatMessageStatus.completed,
+        promptVersion: null,
+        safetyCategory: null,
+        errorCode: null,
+        createdAt: 0,
+        updatedAt: 0,
+      ),
+      const AiChatMessage(
+        id: 'optimistic-assistant',
+        threadId: 'optimistic-thread',
+        role: AiChatRole.assistant,
+        sequence: 1,
+        content: '',
+        requestId: null,
+        status: AiChatMessageStatus.pending,
+        promptVersion: 'coach-chat-v1',
+        safetyCategory: null,
+        errorCode: null,
+        createdAt: 0,
+        updatedAt: 0,
+      ),
+    ],
+  );
 }
 
 final class _EnabledConsentController extends AiDataConsentController {

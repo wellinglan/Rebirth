@@ -21,7 +21,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import 'package:uuid/uuid.dart';
 
-final aiChatCoordinatorProvider = Provider<AiChatCoordinator>((ref) {
+final aiChatCoordinatorProvider = Provider<AiChatOperations>((ref) {
   return AiChatCoordinator(
     gateway: ref.watch(aiChatGatewayProvider),
     generationGateway: ref.watch(aiGenerationGatewayProvider),
@@ -72,7 +72,22 @@ final class AiChatRecoveryResult {
   final AiReportFailureCode? failureCode;
 }
 
-final class AiChatCoordinator {
+abstract interface class AiChatOperations {
+  Future<AiChatOperationResult> send({
+    String? threadId,
+    required String userContent,
+    required Set<AiDataScope> scopes,
+  });
+
+  Future<AiChatOperationResult> retry({
+    required String threadId,
+    required Set<AiDataScope> scopes,
+  });
+
+  Future<AiChatRecoveryResult> recover(AiChatMessage message);
+}
+
+final class AiChatCoordinator implements AiChatOperations {
   AiChatCoordinator({
     required this.gateway,
     required this.generationGateway,
@@ -101,6 +116,7 @@ final class AiChatCoordinator {
   final Map<String, Future<AiChatOperationResult>> _singleFlight = {};
   final Set<String> _recovering = {};
 
+  @override
   Future<AiChatOperationResult> send({
     String? threadId,
     required String userContent,
@@ -124,6 +140,7 @@ final class AiChatCoordinator {
     return operation;
   }
 
+  @override
   Future<AiChatOperationResult> retry({
     required String threadId,
     required Set<AiDataScope> scopes,
@@ -332,6 +349,7 @@ final class AiChatCoordinator {
     }
   }
 
+  @override
   Future<AiChatRecoveryResult> recover(AiChatMessage message) async {
     final requestId = message.requestId;
     if (message.role != AiChatRole.assistant ||
