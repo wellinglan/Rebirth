@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_chat_conversation.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/settings/presentation/ai_data_consent_controller.dart';
@@ -80,80 +81,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
             )
             .toList(growable: false) ??
         const [];
-    final conversation = chat.value?.conversation;
     return Scaffold(
       key: const ValueKey('aiChatPage'),
-      appBar: AppBar(
-        title: const Text('AI 教练'),
-        actions: [
-          Tooltip(
-            message: 'AI 报告库',
-            child: IconButton(
-              key: const ValueKey('openAiReportLibraryButton'),
-              onPressed: () => context.push(RoutePaths.aiReports),
-              icon: const Icon(Icons.library_books_outlined),
-            ),
-          ),
-          Tooltip(
-            message: 'AI 数据授权',
-            child: IconButton(
-              key: const ValueKey('openAiConsentButton'),
-              onPressed: _openConsent,
-              icon: const Icon(Icons.privacy_tip_outlined),
-            ),
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = MediaQuery.sizeOf(context).width < 900;
-              return compact
-                  ? Tooltip(
-                      message: '本地会话历史',
-                      child: IconButton(
-                        key: const ValueKey('openAiChatHistoryButton'),
-                        onPressed: () =>
-                            context.push(RoutePaths.aiCoachChatHistory),
-                        icon: const Icon(Icons.history),
-                      ),
-                    )
-                  : const SizedBox.shrink();
-            },
-          ),
-          Tooltip(
-            message: '新建会话',
-            child: IconButton(
-              key: const ValueKey('newAiChatButton'),
-              onPressed: chat.value?.isBusy == true ? null : _startNew,
-              icon: const Icon(Icons.add_comment_outlined),
-            ),
-          ),
-          if (conversation != null)
-            PopupMenuButton<_ThreadAction>(
-              key: const ValueKey('aiChatThreadMenu'),
-              tooltip: '会话操作',
-              enabled: chat.value?.isBusy != true,
-              onSelected: _handleThreadAction,
-              itemBuilder: (context) => [
-                if (!conversation.thread.isArchived)
-                  const PopupMenuItem(
-                    value: _ThreadAction.archive,
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.archive_outlined),
-                      title: Text('归档会话'),
-                    ),
-                  ),
-                const PopupMenuItem(
-                  value: _ThreadAction.delete,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.delete_outline),
-                    title: Text('删除本地会话'),
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
       body: SafeArea(
         child: chat.when(
           loading: () => const Center(
@@ -164,6 +93,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
           ),
           data: (state) => LayoutBuilder(
             builder: (context, constraints) {
+              final compactToolbar =
+                  constraints.maxWidth < 600 || constraints.maxHeight < 600;
+              final useThreadPane =
+                  constraints.maxWidth >= 900 && constraints.maxHeight >= 600;
               final conversationView = AiChatConversationView(
                 state: state,
                 consentEnabled:
@@ -184,20 +117,38 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 onRecover: () =>
                     ref.read(aiChatControllerProvider.notifier).recover(),
               );
-              if (constraints.maxWidth < 900) return conversationView;
-              return Row(
+              final content = useThreadPane
+                  ? Row(
+                      children: [
+                        SizedBox(
+                          width: 300,
+                          child: AiChatThreadListPane(
+                            threads: state.threads,
+                            selectedThreadId: state.conversation?.thread.id,
+                            onSelect: _openThread,
+                            onNewThread: _startNew,
+                          ),
+                        ),
+                        const VerticalDivider(width: 1),
+                        Expanded(child: conversationView),
+                      ],
+                    )
+                  : conversationView;
+              return Column(
                 children: [
-                  SizedBox(
-                    width: 300,
-                    child: AiChatThreadListPane(
-                      threads: state.threads,
-                      selectedThreadId: state.conversation?.thread.id,
-                      onSelect: _openThread,
-                      onNewThread: _startNew,
-                    ),
+                  _AiChatToolbar(
+                    compact: compactToolbar,
+                    conversation: state.conversation,
+                    busy: state.isBusy,
+                    onOpenReports: () => context.push(RoutePaths.aiReports),
+                    onOpenConsent: _openConsent,
+                    onOpenHistory: () =>
+                        context.push(RoutePaths.aiCoachChatHistory),
+                    onNew: _startNew,
+                    onThreadAction: _handleThreadAction,
                   ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: conversationView),
+                  const Divider(height: 1),
+                  Expanded(child: content),
                 ],
               );
             },
@@ -350,6 +301,212 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 }
 
 enum _ThreadAction { archive, delete }
+
+class _AiChatToolbar extends StatelessWidget {
+  const _AiChatToolbar({
+    required this.compact,
+    required this.conversation,
+    required this.busy,
+    required this.onOpenReports,
+    required this.onOpenConsent,
+    required this.onOpenHistory,
+    required this.onNew,
+    required this.onThreadAction,
+  });
+
+  final bool compact;
+  final AiChatConversation? conversation;
+  final bool busy;
+  final VoidCallback onOpenReports;
+  final VoidCallback onOpenConsent;
+  final VoidCallback onOpenHistory;
+  final VoidCallback onNew;
+  final ValueChanged<_ThreadAction> onThreadAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      key: const ValueKey('aiChatToolbar'),
+      height: 52,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                compact ? '对话' : 'AI 对话',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            if (!compact) ...[
+              _ToolbarButton(
+                key: const ValueKey('openAiReportLibraryButton'),
+                tooltip: 'AI 报告库',
+                icon: Icons.library_books_outlined,
+                onPressed: onOpenReports,
+              ),
+              _ToolbarButton(
+                key: const ValueKey('openAiConsentButton'),
+                tooltip: 'AI 数据授权',
+                icon: Icons.privacy_tip_outlined,
+                onPressed: onOpenConsent,
+              ),
+              _ToolbarButton(
+                key: const ValueKey('openAiChatHistoryButton'),
+                tooltip: '本地会话历史',
+                icon: Icons.history,
+                onPressed: onOpenHistory,
+              ),
+            ],
+            _ToolbarButton(
+              key: const ValueKey('newAiChatButton'),
+              tooltip: '新建会话',
+              icon: Icons.add_comment_outlined,
+              onPressed: busy ? null : onNew,
+            ),
+            if (compact)
+              PopupMenuButton<_AiChatToolbarAction>(
+                key: const ValueKey('aiChatCompactMenu'),
+                tooltip: '更多 AI 对话操作',
+                onSelected: _handleCompactAction,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: _AiChatToolbarAction.reports,
+                    child: _ToolbarMenuItem(
+                      key: ValueKey('compactAiReportsAction'),
+                      icon: Icons.library_books_outlined,
+                      label: 'AI 报告库',
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: _AiChatToolbarAction.consent,
+                    child: _ToolbarMenuItem(
+                      key: ValueKey('compactAiConsentAction'),
+                      icon: Icons.privacy_tip_outlined,
+                      label: 'AI 数据授权',
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: _AiChatToolbarAction.history,
+                    child: _ToolbarMenuItem(
+                      key: ValueKey('compactAiHistoryAction'),
+                      icon: Icons.history,
+                      label: '本地会话历史',
+                    ),
+                  ),
+                  if (conversation != null && !conversation!.thread.isArchived)
+                    PopupMenuItem(
+                      value: _AiChatToolbarAction.archive,
+                      enabled: !busy,
+                      child: const _ToolbarMenuItem(
+                        icon: Icons.archive_outlined,
+                        label: '归档会话',
+                      ),
+                    ),
+                  if (conversation != null)
+                    PopupMenuItem(
+                      value: _AiChatToolbarAction.delete,
+                      enabled: !busy,
+                      child: const _ToolbarMenuItem(
+                        icon: Icons.delete_outline,
+                        label: '删除本地会话',
+                      ),
+                    ),
+                ],
+              )
+            else if (conversation != null)
+              PopupMenuButton<_ThreadAction>(
+                key: const ValueKey('aiChatThreadMenu'),
+                tooltip: '会话操作',
+                enabled: !busy,
+                onSelected: onThreadAction,
+                itemBuilder: (context) => [
+                  if (!conversation!.thread.isArchived)
+                    const PopupMenuItem(
+                      value: _ThreadAction.archive,
+                      child: _ToolbarMenuItem(
+                        icon: Icons.archive_outlined,
+                        label: '归档会话',
+                      ),
+                    ),
+                  const PopupMenuItem(
+                    value: _ThreadAction.delete,
+                    child: _ToolbarMenuItem(
+                      icon: Icons.delete_outline,
+                      label: '删除本地会话',
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleCompactAction(_AiChatToolbarAction action) {
+    switch (action) {
+      case _AiChatToolbarAction.reports:
+        onOpenReports();
+        return;
+      case _AiChatToolbarAction.consent:
+        onOpenConsent();
+        return;
+      case _AiChatToolbarAction.history:
+        onOpenHistory();
+        return;
+      case _AiChatToolbarAction.archive:
+        onThreadAction(_ThreadAction.archive);
+        return;
+      case _AiChatToolbarAction.delete:
+        onThreadAction(_ThreadAction.delete);
+        return;
+    }
+  }
+}
+
+enum _AiChatToolbarAction { reports, consent, history, archive, delete }
+
+class _ToolbarButton extends StatelessWidget {
+  const _ToolbarButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+    super.key,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(onPressed: onPressed, icon: Icon(icon)),
+    );
+  }
+}
+
+class _ToolbarMenuItem extends StatelessWidget {
+  const _ToolbarMenuItem({required this.icon, required this.label, super.key});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon),
+        const SizedBox(width: AppSpacing.sm),
+        Text(label),
+      ],
+    );
+  }
+}
 
 class _QuickReportScopePicker extends StatefulWidget {
   const _QuickReportScopePicker({required this.daily});

@@ -48,12 +48,18 @@ class AiChatConversationView extends StatelessWidget {
     final conversation = state.conversation;
     final usageBlocked = usage?.preventsGeneration ?? false;
     final canSend = state.canCompose && consentEnabled && !usageBlocked;
+    final size = MediaQuery.sizeOf(context);
+    final compactHeight = size.height < 600;
+    final compactWidth = size.width < 600;
     return Column(
       key: const ValueKey('aiChatConversationView'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ConversationHeader(conversation: conversation),
-        _ChatTokenBudget(usage: usage),
+        _ConversationHeader(
+          conversation: conversation,
+          compact: compactHeight || compactWidth,
+        ),
+        _ChatTokenBudget(usage: usage, compact: compactHeight || compactWidth),
         if (!consentEnabled)
           _InlineNotice(
             key: const ValueKey('aiChatConsentRequired'),
@@ -82,7 +88,7 @@ class AiChatConversationView extends StatelessWidget {
           ),
         if (state.recoveryStatus case final recovery?)
           _RecoveryNotice(status: recovery),
-        if (recentReports.isNotEmpty)
+        if (recentReports.isNotEmpty && !compactHeight)
           _RecentReportStrip(
             reports: recentReports,
             onOpenReport: onOpenReport,
@@ -330,6 +336,10 @@ class AiChatComposer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final compactHeight = mediaQuery.size.height < 600;
+    final compactWidth = mediaQuery.size.width < 600;
+    final keyboardVisible = View.of(context).viewInsets.bottom > 0;
     final contextLabel = selectedScopes.isEmpty
         ? '本次仅发送你输入的文字'
         : '本次参考：${_scopeLabels(selectedScopes).join('、')}';
@@ -343,32 +353,48 @@ class AiChatComposer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xxs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              OutlinedButton.icon(
-                key: const ValueKey('aiChatContextButton'),
-                onPressed: sending || archived ? null : onChooseContext,
-                icon: const Icon(Icons.dataset_outlined),
-                label: const Text('本次参考资料'),
+          if (!keyboardVisible) ...[
+            SingleChildScrollView(
+              key: const ValueKey('aiChatQuickActions'),
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _ComposerActionButton(
+                    key: const ValueKey('aiChatContextButton'),
+                    tooltip: '选择本次参考资料',
+                    onPressed: sending || archived ? null : onChooseContext,
+                    icon: Icons.dataset_outlined,
+                    label: compactWidth || compactHeight ? '参考资料' : '本次参考资料',
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  _ComposerActionButton(
+                    key: const ValueKey('aiChatDailyInsightButton'),
+                    tooltip: '生成今日洞察',
+                    onPressed: sending ? null : onGenerateDaily,
+                    icon: Icons.wb_sunny_outlined,
+                    label: compactWidth || compactHeight ? '今日洞察' : '生成今日洞察',
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  _ComposerActionButton(
+                    key: const ValueKey('aiChatWeeklyReportButton'),
+                    tooltip: '生成每周回顾',
+                    onPressed: sending ? null : onGenerateWeekly,
+                    icon: Icons.date_range_outlined,
+                    label: compactWidth || compactHeight ? '每周回顾' : '生成每周回顾',
+                  ),
+                ],
               ),
-              OutlinedButton.icon(
-                key: const ValueKey('aiChatDailyInsightButton'),
-                onPressed: sending ? null : onGenerateDaily,
-                icon: const Icon(Icons.wb_sunny_outlined),
-                label: const Text('生成今日洞察'),
+            ),
+            if (!compactHeight) ...[
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                contextLabel,
+                key: const ValueKey('aiChatContextSummary'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              OutlinedButton.icon(
-                key: const ValueKey('aiChatWeeklyReportButton'),
-                onPressed: sending ? null : onGenerateWeekly,
-                icon: const Icon(Icons.date_range_outlined),
-                label: const Text('生成每周回顾'),
-              ),
-              Text(contextLabel, key: const ValueKey('aiChatContextSummary')),
             ],
-          ),
+          ],
           if (disabledHint != null) ...[
             const SizedBox(height: AppSpacing.xxs),
             Text(disabledHint),
@@ -397,12 +423,13 @@ class AiChatComposer extends StatelessWidget {
                       controller: controller,
                       enabled: !sending && !archived && !blockedByUnresolved,
                       minLines: 1,
-                      maxLines: 5,
+                      maxLines: compactHeight ? 1 : 3,
                       maxLength: 2000,
                       textInputAction: TextInputAction.newline,
                       decoration: const InputDecoration(
                         labelText: '输入消息',
                         hintText: '写下你想讨论的事情',
+                        counterText: '',
                       ),
                     ),
                   ),
@@ -441,10 +468,46 @@ class AiChatComposer extends StatelessWidget {
   }
 }
 
+class _ComposerActionButton extends StatelessWidget {
+  const _ComposerActionButton({
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    super.key,
+  });
+
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, AppLayout.minimumTouchTarget),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: Icon(icon, size: 20),
+        label: Text(label),
+      ),
+    );
+  }
+}
+
 class _ConversationHeader extends StatelessWidget {
-  const _ConversationHeader({required this.conversation});
+  const _ConversationHeader({
+    required this.conversation,
+    required this.compact,
+  });
 
   final AiChatConversation? conversation;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -455,23 +518,48 @@ class _ConversationHeader extends StatelessWidget {
         AppSpacing.md,
         AppSpacing.xs,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            conversation?.thread.title ?? '新对话',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: AppSpacing.xxs),
-          Text(
-            conversation?.thread.isArchived == true
-                ? '已归档 · 本地保存 · 不跨设备同步'
-                : '本地保存 · 不跨设备同步',
-          ),
-        ],
-      ),
+      child: compact
+          ? Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    conversation?.thread.title ?? '新对话',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Tooltip(
+                  message: conversation?.thread.isArchived == true
+                      ? '已归档，仅保存在本机，不跨设备同步'
+                      : '仅保存在本机，不跨设备同步',
+                  child: Text(
+                    conversation?.thread.isArchived == true
+                        ? '已归档 · 仅本机'
+                        : '仅本机',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  conversation?.thread.title ?? '新对话',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  conversation?.thread.isArchived == true
+                      ? '已归档 · 本地保存 · 不跨设备同步'
+                      : '本地保存 · 不跨设备同步',
+                ),
+              ],
+            ),
     );
   }
 }
@@ -491,33 +579,40 @@ class _RecentReportStrip extends StatelessWidget {
         AppSpacing.md,
         AppSpacing.xs,
       ),
-      child: Wrap(
-        spacing: AppSpacing.xs,
-        runSpacing: AppSpacing.xs,
-        children: [
-          for (final report in reports.take(2))
-            ActionChip(
-              key: ValueKey('aiChatReportCard-${report.id}'),
-              avatar: Icon(
-                report.isDaily
-                    ? Icons.wb_sunny_outlined
-                    : Icons.date_range_outlined,
-                size: 18,
+      child: SingleChildScrollView(
+        key: const ValueKey('aiChatRecentReports'),
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final (index, report) in reports.take(2).indexed) ...[
+              if (index > 0) const SizedBox(width: AppSpacing.xs),
+              ActionChip(
+                key: ValueKey('aiChatReportCard-${report.id}'),
+                avatar: Icon(
+                  report.isDaily
+                      ? Icons.wb_sunny_outlined
+                      : Icons.date_range_outlined,
+                  size: 18,
+                ),
+                label: Text(
+                  '${report.reportTypeLabel} · ${report.periodLabel}',
+                ),
+                tooltip: '打开已保存的 AI 报告，不会作为聊天上下文',
+                onPressed: () => onOpenReport(report.id),
               ),
-              label: Text('${report.reportTypeLabel} · ${report.periodLabel}'),
-              tooltip: '打开已保存的 AI 报告，不会作为聊天上下文',
-              onPressed: () => onOpenReport(report.id),
-            ),
-        ],
+            ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _ChatTokenBudget extends StatelessWidget {
-  const _ChatTokenBudget({required this.usage});
+  const _ChatTokenBudget({required this.usage, required this.compact});
 
   final AiUsageSnapshot? usage;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -554,7 +649,7 @@ class _ChatTokenBudget extends StatelessWidget {
           runSpacing: AppSpacing.xxs,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            const Icon(Icons.data_usage_outlined, size: 18),
+            Icon(Icons.data_usage_outlined, size: compact ? 16 : 18),
             Text(label, key: const ValueKey('aiChatTokenBudgetLabel')),
             if (reserved > 0) Text('处理中 ${_compactTokens(reserved)}'),
           ],

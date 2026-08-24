@@ -26,9 +26,9 @@ void main() {
     await _pumpPage(tester, controller: controller, width: 412);
 
     expect(find.byKey(const ValueKey('aiChatEmptyState')), findsOneWidget);
-    expect(find.text('本次参考资料'), findsOneWidget);
-    expect(find.text('生成今日洞察'), findsOneWidget);
-    expect(find.text('生成每周回顾'), findsOneWidget);
+    expect(find.text('参考资料'), findsOneWidget);
+    expect(find.text('今日洞察'), findsOneWidget);
+    expect(find.text('每周回顾'), findsOneWidget);
     await tester.enterText(
       find.byKey(const ValueKey('aiChatComposerField')),
       '  今天想理清一件事  ',
@@ -314,17 +314,127 @@ void main() {
       }
     });
   }
+
+  testWidgets('compact toolbar keeps secondary destinations reachable', (
+    tester,
+  ) async {
+    final controller = _ChatController(
+      _state(conversation: _conversation(AiChatSafetyCategory.normal)),
+    );
+    await _pumpPage(tester, controller: controller, width: 412);
+
+    expect(find.byKey(const ValueKey('aiChatToolbar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('newAiChatButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiChatCompactMenu')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('openAiReportLibraryButton')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('aiChatCompactMenu')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI 报告库'), findsOneWidget);
+    expect(find.text('AI 数据授权'), findsOneWidget);
+    expect(find.text('本地会话历史'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('phone landscape keeps timeline composer and send available', (
+    tester,
+  ) async {
+    final controller = _ChatController(
+      _state(conversation: _conversation(AiChatSafetyCategory.normal)),
+    );
+    await _pumpPage(
+      tester,
+      controller: controller,
+      reportsController: _ReportHistoryController(),
+      width: 915,
+      height: 412,
+    );
+
+    expect(find.byKey(const ValueKey('aiChatThreadListPane')), findsNothing);
+    expect(find.byKey(const ValueKey('aiChatMessageTimeline')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiChatComposerField')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sendAiChatButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('aiChatRecentReports')), findsNothing);
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('aiChatMessageTimeline')))
+          .height,
+      greaterThan(40),
+    );
+    expect(
+      tester.getRect(find.byKey(const ValueKey('sendAiChatButton'))).bottom,
+      lessThanOrEqualTo(412),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keyboard hides quick actions without losing composer text', (
+    tester,
+  ) async {
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    addTearDown(tester.view.resetViewInsets);
+    final textController = TextEditingController(text: '键盘打开时保留草稿');
+    addTearDown(textController.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(412, 720)),
+          child: Scaffold(
+            body: AiChatComposer(
+              controller: textController,
+              selectedScopes: const {},
+              enabled: true,
+              sending: false,
+              archived: false,
+              blockedByUnresolved: false,
+              onChooseContext: () {},
+              onGenerateDaily: () {},
+              onGenerateWeekly: () {},
+              onSend: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('aiChatQuickActions')), findsNothing);
+    expect(find.text('键盘打开时保留草稿'), findsOneWidget);
+    expect(find.byKey(const ValueKey('sendAiChatButton')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('landscape at large text scale has no overflow', (tester) async {
+    final controller = _ChatController(
+      _state(conversation: _conversation(AiChatSafetyCategory.caution)),
+    );
+    await _pumpPage(
+      tester,
+      controller: controller,
+      width: 720,
+      height: 360,
+      textScale: 2,
+    );
+
+    expect(find.byKey(const ValueKey('aiChatComposerField')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sendAiChatButton')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _pumpPage(
   WidgetTester tester, {
   required _ChatController controller,
   required double width,
+  double height = 900,
   AiReportHistoryController? reportsController,
   double textScale = 1,
   bool settle = true,
 }) async {
-  tester.view.physicalSize = Size(width, 900);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -345,7 +455,7 @@ Future<void> _pumpPage(
       child: MaterialApp(
         home: MediaQuery(
           data: MediaQueryData(
-            size: Size(width, 900),
+            size: Size(width, height),
             textScaler: TextScaler.linear(textScale),
           ),
           child: const AiChatPage(),
