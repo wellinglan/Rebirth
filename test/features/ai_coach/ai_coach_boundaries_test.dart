@@ -29,7 +29,7 @@ void main() {
     final presentation = [
       ..._dartSources('lib/features/ai_coach/presentation/widgets'),
       File(
-        'lib/features/ai_coach/presentation/ai_coach_page.dart',
+        'lib/features/ai_coach/presentation/ai_chat_page.dart',
       ).readAsStringSync(),
       File(
         'lib/features/ai_coach/presentation/ai_report_detail_page.dart',
@@ -69,9 +69,9 @@ void main() {
     }
   });
 
-  test('AI Coach home hides engineering identity and account state is reset', () {
-    final home = File(
-      'lib/features/ai_coach/presentation/ai_coach_page.dart',
+  test('AI Coach chat hides engineering identity and account state is reset', () {
+    final chat = File(
+      'lib/features/ai_coach/presentation/ai_chat_page.dart',
     ).readAsStringSync();
     for (final term in [
       'Prompt Version',
@@ -79,7 +79,7 @@ void main() {
       'Request Binding',
       'Generation Gateway',
     ]) {
-      expect(home, isNot(contains(term)));
+      expect(chat, isNot(contains(term)));
     }
 
     final invalidator = File(
@@ -142,7 +142,7 @@ void main() {
     expect(feedbackCard, contains('AiReportFeedbackReason.values'));
 
     for (final path in [
-      'lib/features/ai_coach/presentation/ai_coach_page.dart',
+      'lib/features/ai_coach/presentation/ai_chat_page.dart',
       'lib/features/ai_reports/presentation/ai_report_library_page.dart',
       'lib/features/settings/presentation/settings_page.dart',
     ]) {
