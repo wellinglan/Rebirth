@@ -1,8 +1,8 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-08-21**
-> Audited code checkpoint: `f29df4bd87c5ec650d139bfbdee225e964852ef0`
+> Audited: **2026-09-04**
+> Audited code checkpoint: `be16fdd4caa2d2af980dfddb902da5bb299fea2d`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
@@ -15,7 +15,9 @@
 > Sprint 17C-E starting HEAD: `0a3bbcd2005ca30b02693a1d3ee573c36c908fa3`
 > Sprint 17C-E Candidate HEAD: `877d359d5fe3eb4848edcffb991e0d221c4bd012`
 > Sprint 18A starting HEAD: `1ea0500bb6a670b69a6f4f65b00e110f0709af78`
-> Current working Sprint: **18A AI Coach Conversational MVP implemented; manual Gate OPEN**
+> Sprint 18B Server baseline: `a3325939c45a9b138b8f717448e394fb4ecd7930`
+> Sprint 18B accepted client HEAD: `be16fdd4caa2d2af980dfddb902da5bb299fea2d`
+> Current accepted Sprint: **18B Conversation-first AI Coach; Gate closed with accepted automated substitutions**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -47,7 +49,7 @@ is not proof that a live Provider is configured.
 | Python | `3.12` contract | CI and `python:3.12-slim`; patch version is not pinned |
 | PostgreSQL | `17` | CI service and `postgres:17-alpine`; digest is not pinned |
 | Flutter schemaVersion | `15` | `lib/core/database/app_database.dart` |
-| Server Alembic head | `20260812_0008` | `server/alembic/versions/` |
+| Server Alembic head | `20260822_0009` | `server/alembic/versions/` |
 | API Version | `1` | `/health` schema |
 | Sync Protocol Version | `2` | `/health` schema and sync contracts |
 | Flutter package version | `1.0.0+1` | `pubspec.yaml`; stale release metadata |
@@ -217,7 +219,8 @@ configured today.
 | 17A.1 Revision 1 | Developer-only Home / Today / Health experience prototype | No schema/API/protocol change | 81 PASS / 0 FAIL / 0 NOT EXECUTED | Gate closed on 2026-08-20; the accepted in-memory prototype adds nullable 1-10 wellbeing sliders, one-line descriptions, and restrained field icons while production 1-5 fields and routes remain unchanged |
 | 17B | Home / Today / Health production experience integration | Flutter schema 13; dual-format Server validation; API 1 and Sync Protocol 2 unchanged | 48 PASS / 0 FAIL / 3 NOT EXECUTED | Gate closed; all product-level checks passed, with explicit automated substitutions for A10 and D3-D4 |
 | 17C-E | Plan, Journal, Growth and metric narrative consolidation | Flutter schema 14; three-generation Today/Health validation; API 1 and Sync Protocol 2 unchanged | 67 PASS / 0 FAIL / 2 NOT EXECUTED | Gate closed with automated substitutions for unsafe failed-save injection and legacy payload fixture only |
-| 18A | AI Coach non-streaming conversational MVP | Flutter schema 15; no Server migration; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 69 NOT EXECUTED | Implementation and focused automation exist; final CI, image deployment, platform builds, and manual Gate remain open |
+| 18A | AI Coach non-streaming conversational MVP | Flutter schema 15; no Server migration; API 1 and Sync Protocol 2 unchanged | 0 PASS / 0 FAIL / 69 NOT EXECUTED | Historical implementation matrix, superseded for current product acceptance by Sprint 18B |
+| 18B | Conversation-first AI Coach, Token Budget, and Chinese Reports | Flutter schema 15; Alembic `20260822_0009`; API 1 and Sync Protocol 2 unchanged | 46 PASS / 0 FAIL / 8 NOT EXECUTED | Gate closed with accepted automated substitutions; unsafe or unavailable runtime fixtures retain named automated evidence |
 
 Sprint 18A adds one authenticated `POST /ai/chat/turns` path using the existing
 AiProvider, consent, quota, Prompt Registry, Generation Ledger, request lease,
@@ -232,8 +235,11 @@ request ID; uncertain results permit only an explicit status check. Chat is
 non-streaming, text-only, user-triggered, and deliberately excluded from Sync
 Protocol 2. Explicit optional context supports Growth, Today, Health, and
 Journal; Active Goals and the Sprint 17C-E metric narratives remain excluded.
-The [Sprint 18A matrix](manual_tests/64_ai_coach_conversational_mvp.md) remains
-0 PASS / 0 FAIL / 69 NOT EXECUTED, so the Gate is OPEN.
+The historical [Sprint 18A matrix](manual_tests/64_ai_coach_conversational_mvp.md)
+remains 0 PASS / 0 FAIL / 69 NOT EXECUTED. The current
+[Sprint 18B matrix](manual_tests/65_ai_coach_conversation_first.md) records 46
+PASS / 0 FAIL / 8 NOT EXECUTED and closes the private-Alpha Conversation-first
+AI Coach Gate with accepted automated substitutions.
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach

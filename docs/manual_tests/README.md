@@ -63,7 +63,8 @@ that a separate module-only matrix was rerun.
 | Home / Today / Health Experience Prototype | CLOSED | [Home / Today / Health Experience Prototype](61_home_today_health_experience_prototype.md) | 81 / 0 / 0 | Developer-only in-memory prototype including Revision 1 wellbeing ratings accepted on Windows and Android; production integration remains a separate decision |
 | Home / Today / Health Production Integration | CLOSED | [Home / Today / Health Production Integration](62_home_today_health_production_integration.md) | 48 / 0 / 3 | All product-level checks passed; A10 and D3-D4 retain explicit automated substitutions |
 | Sprint 17C-E Core Experience | CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS | [Plan, Journal, Growth and Metric Narratives](63_plan_journal_growth_and_metric_narratives.md) | 67 / 0 / 2 | Candidate CI, image, API-only Alpha deployment, schema-13 retained migration, Windows/Android product, sync/conflict, privacy, and accessibility rows passed; D11 and G8 retain automated evidence only |
-| AI Coach Conversational Experience | OPEN | [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) | 0 / 0 / 69 | Source implementation and focused automation exist locally; final CI, image, API-only Alpha deployment, platform builds, and every manual row remain unexecuted |
+| AI Coach Conversational MVP | HISTORICAL / SUPERSEDED | [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) | 0 / 0 / 69 | Original Sprint 18A matrix remains historical; current product acceptance is recorded by Sprint 18B |
+| Conversation-first AI Coach and Token Budget | CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS | [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) | 46 / 0 / 8 | Alpha deployment and executable Windows/Android flows passed; eight controlled or unavailable rows remain `NOT EXECUTED` with named automated evidence |
 
 ## Important Succession Rules
 
@@ -90,9 +91,11 @@ that a separate module-only matrix was rerun.
   later Plan/Journal/Growth presentation and schema-14 metric narrative scope
   with two accepted automated substitutions; it does not rewrite matrix 62's
   historical PASS rows.
-- Matrix 64 adds local-only AI Chat and does not supersede Daily/Weekly, AI
-  Report, feedback, consent, or operations Gates. Its manual Gate remains OPEN
-  until final Candidate deployment and product execution are recorded.
+- Matrix 64 records the original local-only AI Chat MVP. Matrix 65 is the
+  current acceptance authority for the conversation-first surface, Token budget,
+  Chinese report entry points, and their private-Alpha product behavior. Neither
+  matrix supersedes Daily/Weekly, AI Report, feedback, consent, or operations
+  Gates outside its stated scope.
 
 ## Current Matrix Index
 
@@ -147,8 +150,8 @@ that a separate module-only matrix was rerun.
 - [Prompt Governance and Quality Evaluation](57_prompt_governance_and_quality_evaluation.md) - Current Gate closed with accepted automation and cost limitations; real Provider evaluation not authorized
 - [AI Coach MVP Product Experience](58_ai_coach_mvp_product_experience.md) - Current Gate closed with accepted limitations at 29 / 0 / 8
 - [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) - Current Gate OPEN / SUSPENDED at 3 / 0 / 36
-- [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) - Sprint 18A Gate OPEN at 0 / 0 / 69; Chat is local-only and non-streaming
-- [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) - Sprint 18B Gate OPEN at 0 / 0 / 54; deployment and manual acceptance pending
+- [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) - Historical Sprint 18A design and initial matrix; Chat is local-only and non-streaming
+- [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) - Current Gate CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS at 46 / 0 / 8
 
 Older UI, persistence, cloud, and AI reliability matrices `01` through `24`
 remain in this directory as historical Sprint evidence. They do not override

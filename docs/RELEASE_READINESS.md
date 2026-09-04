@@ -1,7 +1,7 @@
 # Rebirth Release Readiness
 
 > Classification: **Active**
-> Audited: **2026-08-21 / Sprint 18A implementation checkpoint**
+> Audited: **2026-09-04 / Sprint 18B acceptance reconciliation**
 > Sprint 15A source baseline: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B source baseline: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 
@@ -41,13 +41,14 @@ and conflict recovery. The 69-row matrix records 67 PASS / 0 FAIL / 2 NOT
 EXECUTED, so the Sprint 17C-E Gate is **CLOSED WITH ACCEPTED AUTOMATED
 SUBSTITUTIONS**. D11 and G8 remain automated-only rather than manual PASS.
 
-Sprint 18A adds governed non-streaming AI Coach Chat and advances Flutter
-schema to 15 for account-scoped local threads/messages. It reuses the existing
-Provider, consent, usage, Prompt, Generation Ledger, and request-status path;
-there is no Server migration, Chat sync entity, AI Report creation, Agent,
-tool, search, or automatic generation. The 69-row manual matrix is entirely
-NOT EXECUTED, and final CI, image publication/deployment, and platform release
-builds have not yet been recorded. The Sprint 18A Gate is therefore **OPEN**.
+Sprint 18B makes governed non-streaming AI Coach Chat the canonical surface,
+keeps Flutter schema 15 for account-scoped local threads/messages, and adds
+independent Token accounting through Alembic `20260822_0009`. It reuses the
+existing Provider, consent, Prompt, Generation Ledger, and request-status path;
+there is still no Chat sync entity, AI Report creation, Agent, tool, search, or
+automatic generation. The current 54-row matrix records 46 PASS / 0 FAIL / 8
+NOT EXECUTED, and the Sprint 18B private-Alpha Gate is **CLOSED WITH ACCEPTED
+AUTOMATED SUBSTITUTIONS**. The eight rows remain limitations, not manual PASS.
 
 ## Private Alpha Foundations Present
 
@@ -57,7 +58,7 @@ builds have not yet been recorded. The Sprint 18A Gate is therefore **OPEN**.
 | Windows client | Repeated local release builds and manual matrices exist | No installer, signing, update, or distribution pipeline |
 | Android client | Release-mode APK and physical-device acceptance history exist | Example application ID and Debug signing make it non-distributable |
 | Private cloud Alpha | Sprint 17C-E full-SHA GHCR API image, digest, API-only recreation, health, API 1, and Sync Protocol 2 were checked | Provider, backup, and broader Production readiness still require separate current evidence |
-| Data migrations | Drift migration tests through schema 15, retained older-schema evidence, and unchanged Alembic `20260812_0008` | Production backup/restore rehearsal remains absent |
+| Data migrations | Drift migration tests through schema 15, retained older-schema evidence, and Alembic `20260822_0009` | Production backup/restore rehearsal remains absent |
 | Authentication | Public password login, secure sessions, refresh rotation, logout, and account isolation | Recovery, MFA, real WeChat, and some controlled Step-up cases are absent |
 | Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |
@@ -65,7 +66,7 @@ builds have not yet been recorded. The Sprint 18A Gate is therefore **OPEN**.
 | Personal data portability | Versioned, deterministic, integrity-checked local JSON export | Plaintext; no import/restore, encryption, scheduling, or cloud backup |
 | AI Report generation pipeline | Daily and Weekly generation share one coordinator; all applicable Windows/Android matrix rows passed | Seven controlled fault/state injection rows remain automated-only accepted limitations |
 | AI Report feedback | Version-bound, structured, local-first feedback with dedicated API/OCC and privacy-safe audit exists in Sprint 16B | Deployment checks passed at 3 PASS; remaining 36 product rows are suspended and the Gate remains open |
-| AI Coach Chat | Governed non-streaming endpoint, local account-scoped history, explicit context, and status-only uncertain recovery are implemented | Final Quality/image/deployment/release-build evidence and 69 manual rows remain open; Chat is not synced |
+| AI Coach Chat | Conversation-first non-streaming endpoint, local account-scoped history, explicit context, independent Chat/Report Token budgets, and status-only uncertain recovery | Sprint 18B private-Alpha Gate is closed at 46 / 0 / 8; Chat is not synced and controlled fault/log scenarios remain automated-only |
 
 ## Production and Store Blockers
 

@@ -1,7 +1,8 @@
 # AI Coach Conversation-first And Token Budget
 
 > Sprint: **18B**
-> Baseline: `a3325939c45a9b138b8f717448e394fb4ecd7930`
+> Starting Server baseline: `a3325939c45a9b138b8f717448e394fb4ecd7930`
+> Accepted client baseline: `be16fdd4caa2d2af980dfddb902da5bb299fea2d`
 > Flutter schemaVersion: `15` (unchanged)
 > API Version: `1` (unchanged)
 > Sync Protocol: `2` (unchanged)
@@ -100,9 +101,9 @@ implementation, or a Provider directly. Logs exclude Prompt text, Chat and
 Report content, Journal/Health bodies, Authorization, API keys, secrets, and
 full user identity.
 
-Streaming, Chat Sync, agents, tools, search, attachments, voice, automatic
-generation, background work, automatic retry, and business-record writes
-remain out of scope.
+Chat remains deliberately non-streaming. Streaming, Chat Sync, agents, tools,
+search, attachments, voice, automatic generation, background work, automatic
+retry, and business-record writes remain out of scope.
 
 ## Deployment
 
@@ -132,9 +133,15 @@ Sprint 18C must not delete old report content or rewrite ledger history.
 
 ## Release Gate
 
-The **Conversation-first AI Coach, Token Budget And Chinese Report Gate** stays
-**OPEN** until final Quality and image publication pass, the Candidate is
-deployed with migration `20260822_0009`, Windows and Android releases are
-tested, authorized real-Provider Chinese output is reviewed, and
-`docs/manual_tests/65_ai_coach_conversation_first.md` is executed. Automated
-evidence never becomes manual PASS.
+The **Conversation-first AI Coach, Token Budget And Chinese Report Gate** is
+**CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS**. The user confirmed the Alpha
+deployment/migration/health/configuration checks, Windows and Android product
+flows, authorized real-Provider Chinese Daily and Weekly output, account and
+sync boundaries, responsive layouts, accessibility, and regression smoke.
+
+Matrix 65 records **46 PASS / 0 FAIL / 8 NOT EXECUTED**. Exact 50k-boundary and
+UTC-reset runs, an unavailable v1-report fixture, controlled Provider/rejection/
+timeout injection, and a controlled log review remain explicitly unexecuted.
+The named Server and Flutter tests prove those invariants without recasting them
+as manual PASS. This closes the private-Alpha feature Gate only; it does not
+certify public-production readiness.

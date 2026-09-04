@@ -37,6 +37,10 @@ void main() {
   const aiChatContractPath = 'docs/59_AI_COACH_CONVERSATIONAL_MVP.md';
   const aiChatMatrixPath =
       'docs/manual_tests/64_ai_coach_conversational_mvp.md';
+  const conversationFirstContractPath =
+      'docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md';
+  const conversationFirstMatrixPath =
+      'docs/manual_tests/65_ai_coach_conversation_first.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -63,6 +67,8 @@ void main() {
         coreExperienceMatrixPath,
         aiChatContractPath,
         aiChatMatrixPath,
+        conversationFirstContractPath,
+        conversationFirstMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -432,35 +438,50 @@ void main() {
     expect(registry, contains('67 / 0 / 2'));
   });
 
-  test('Sprint 18A docs keep conversational AI boundaries and Gate honest', () {
+  test('Sprint 18B docs keep conversational AI boundaries and Gate honest', () {
     final baseline = File(baselinePath).readAsStringSync();
-    final contract = File(aiChatContractPath).readAsStringSync();
-    final matrix = File(aiChatMatrixPath).readAsStringSync();
+    final legacyContract = File(aiChatContractPath).readAsStringSync();
+    final legacyMatrix = File(aiChatMatrixPath).readAsStringSync();
+    final contract = File(conversationFirstContractPath).readAsStringSync();
+    final matrix = File(conversationFirstMatrixPath).readAsStringSync();
     final registry = File(manualRegistryPath).readAsStringSync();
 
-    expect(baseline, contains('Sprint 18A'));
+    expect(baseline, contains('Sprint 18B'));
     expect(baseline, contains('Flutter schema 15'));
-    expect(contract, contains('coach-chat-v1'));
-    expect(contract, contains('non-streaming'));
-    expect(contract, contains('local-device only'));
+    expect(baseline, contains('20260822_0009'));
+    expect(legacyContract, contains('coach-chat-v1'));
+    expect(legacyContract, contains('non-streaming'));
+    expect(legacyContract, contains('local-device only'));
+    expect(legacyMatrix, contains('0 PASS / 0 FAIL / 69 NOT EXECUTED'));
+    expect(legacyMatrix, contains('Gate: **OPEN**'));
+    expect(contract, contains('Chat no longer consumes'));
+    expect(contract, contains('50,000'));
+    expect(contract, contains('Chat remains deliberately non-streaming'));
     expect(contract, contains('API Version: `1`'));
     expect(contract, contains('Sync Protocol: `2`'));
-    expect(matrix, contains('0 PASS / 0 FAIL / 69 NOT EXECUTED'));
+    expect(matrix, contains('46 PASS / 0 FAIL / 8 NOT EXECUTED'));
     expect(
-      RegExp(r'^\| [A-H]\d+ \|', multiLine: true).allMatches(matrix),
-      hasLength(69),
+      RegExp(r'^\| [A-G]\d+ \|', multiLine: true).allMatches(matrix),
+      hasLength(54),
     );
     expect(
       RegExp(
-        r'^\| [A-H]\d+ \|.*\| NOT EXECUTED \|',
+        r'^\| [A-G]\d+ \|.*\| PASS \|',
         multiLine: true,
       ).allMatches(matrix),
-      hasLength(69),
+      hasLength(46),
     );
-    expect(matrix, isNot(contains('| PASS |')));
-    expect(matrix, contains('Gate: **OPEN**'));
-    expect(registry, contains('AI Coach Conversational Experience'));
-    expect(registry, contains('0 / 0 / 69'));
+    expect(
+      RegExp(
+        r'^\| [A-G]\d+ \|.*\| NOT EXECUTED \|',
+        multiLine: true,
+      ).allMatches(matrix),
+      hasLength(8),
+    );
+    expect(matrix, isNot(contains('| FAIL |')));
+    expect(matrix, contains('Gate: **CLOSED WITH ACCEPTED AUTOMATED'));
+    expect(registry, contains('Conversation-first AI Coach and Token Budget'));
+    expect(registry, contains('46 / 0 / 8'));
   });
 }
 

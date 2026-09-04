@@ -2,14 +2,14 @@
 
 > Version: 1.0
 > Status: Partially current / active mission with append-only Sprint history
-> Last Updated: 2026-08
+> Last Updated: 2026-09
 
-## Current Appendix: Sprint 18A AI Coach Conversational MVP
+## Current Appendix: Sprint 18B Conversation-first AI Coach
 
-Sprint 18A adds explicit, non-streaming multi-turn Chat to AI Coach while
-reusing the existing authenticated AiProvider, consent, quota, Prompt
-governance, Generation Ledger, idempotency, leases, and status recovery. The
-only new generation route is `POST /ai/chat/turns`; identity comes from JWT and
+Sprint 18B makes explicit, non-streaming multi-turn Chat the canonical AI Coach
+surface. It reuses the authenticated AiProvider, consent, Prompt governance,
+Generation Ledger, idempotency, leases, and status recovery. The only Chat
+generation route remains `POST /ai/chat/turns`; identity comes from JWT and
 `coach-chat-v1` is inserted by the Server. Chat does not create AI Reports,
 modify business records, use tools/search/attachments, or run automatically.
 
@@ -19,13 +19,16 @@ Text-only is the default; Growth, Today, Health, and Journal context can be
 attached only through an explicit per-thread selection that resets for a new
 thread or account. Active Goals and Sprint 17C-E metric descriptions remain
 excluded. Known failures require explicit retry; uncertain outcomes allow only
-an explicit status check. See `docs/59_AI_COACH_CONVERSATIONAL_MVP.md` and
-`docs/manual_tests/64_ai_coach_conversational_mvp.md`.
+an explicit status check. See
+`docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md` and
+`docs/manual_tests/65_ai_coach_conversation_first.md`.
 
-The implementation and focused automation exist, but final CI, Candidate image
-publication/deployment, platform release builds, and all 69 manual rows remain
-unexecuted. The Sprint 18A Gate is OPEN. API Version remains 1, Sync Protocol
-remains 2, and Server Alembic head remains `20260812_0008`.
+Chat and Report use independent daily Token budgets while sharing global Token
+and concurrency protections. Server Alembic head is `20260822_0009`; Flutter
+schemaVersion remains 15; API Version remains 1 and Sync Protocol remains 2.
+Sprint 18B acceptance records 46 PASS / 0 FAIL / 8 explicitly automated-only
+or unavailable rows, so the private-Alpha feature Gate is closed with accepted
+automated substitutions. Chat history remains local-device only.
 
 ## Historical Appendix: Sprint 17C-E Core Experience Consolidation
 
@@ -914,3 +917,9 @@ AI Report 继续跨端同步。详见
 
 Sprint 18C 需在部署兼容与客户端采用证据充分后，审计清理 Usage V1、旧次数配置、
 旧概览组件、临时路由和 v1 生成兼容；历史 Prompt 元数据和旧报告不得删除。
+
+Sprint 18B 的部署、Windows/Android 产品流程、授权真实 Provider 中文 Daily/Weekly
+输出、额度隔离、同步边界、响应式和辅助功能均已完成验收。矩阵最终为 46 PASS /
+0 FAIL / 8 NOT EXECUTED；50k 边界、UTC 重置、历史 v1 报告 fixture、受控 Provider/
+拒绝/超时故障和受控日志审查仍由具名自动化覆盖，不能记作人工 PASS。当前
+Conversation-first AI Coach Gate 以接受上述限制的方式关闭；这不等同于公开生产发布。

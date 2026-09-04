@@ -88,7 +88,8 @@ deferred, or unsupported now.
 - [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) - Active foundation; feature-level visual direction remains open
 - [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) - Accepted developer-only historical comparison
 - [Home / Today / Health Production Integration](57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md) - Active implementation; manual Gate open
-- [AI Coach Conversational Experience](59_AI_COACH_CONVERSATIONAL_MVP.md) - Sprint 18A implemented non-streaming local Chat; manual Gate open
+- [AI Coach Conversational Experience](59_AI_COACH_CONVERSATIONAL_MVP.md) - Sprint 18A historical Chat foundation; Sprint 18B is the accepted conversation-first product surface
+- [AI Coach Conversation-first and Token Budget](60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md) - Sprint 18B Gate closed with accepted automated substitutions
 
 ## Historical Sprint Records
 
