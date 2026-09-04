@@ -334,8 +334,6 @@ void main() {
     const paths = <String>[
       'lib/features/today/presentation/today_page.dart',
       'lib/features/today/presentation/widgets/today_form.dart',
-      'lib/shared/widgets/duration_input_field.dart',
-      'lib/shared/widgets/duration_step_input.dart',
       'lib/shared/widgets/compact_duration_editor.dart',
       'lib/shared/widgets/compact_quantity_editor.dart',
       'lib/shared/widgets/metric_description_field.dart',
