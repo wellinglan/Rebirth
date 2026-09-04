@@ -8,9 +8,9 @@ import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_layout.dart';
 import '../../../core/utils/date_time_service.dart';
 import '../../../core/utils/date_time_service_provider.dart';
-import 'widgets/quick_increment_control.dart';
-import 'widgets/water_cup_indicator.dart';
-import 'widgets/wellbeing_rating_field.dart';
+import 'package:rebirth/shared/widgets/quick_increment_control.dart';
+import 'package:rebirth/shared/widgets/water_cup_indicator.dart';
+import 'package:rebirth/shared/widgets/wellbeing_rating_field.dart';
 
 enum ExperiencePreviewView { home, today, health }
 
@@ -319,8 +319,8 @@ class _HomePreview extends StatelessWidget {
               children: [
                 Image.asset(
                   isNight
-                      ? 'assets/images/experience_preview/home_night.webp'
-                      : 'assets/images/experience_preview/home_day.webp',
+                      ? 'assets/images/home/home_night.webp'
+                      : 'assets/images/home/home_day.webp',
                   key: ValueKey(isNight ? 'homeNightAsset' : 'homeDayAsset'),
                   fit: BoxFit.cover,
                   alignment: isNight

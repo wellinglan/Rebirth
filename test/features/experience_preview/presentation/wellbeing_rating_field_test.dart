@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rebirth/features/experience_preview/presentation/widgets/wellbeing_rating_field.dart';
+import 'package:rebirth/shared/widgets/wellbeing_rating_field.dart';
 
 void main() {
   test(

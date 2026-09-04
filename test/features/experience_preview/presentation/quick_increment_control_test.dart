@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/experience_preview/presentation/experience_preview_page.dart';
-import 'package:rebirth/features/experience_preview/presentation/widgets/quick_increment_control.dart';
+import 'package:rebirth/shared/widgets/quick_increment_control.dart';
 
 void main() {
   tearDown(() {

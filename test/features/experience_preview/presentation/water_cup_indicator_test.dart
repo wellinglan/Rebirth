@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rebirth/features/experience_preview/presentation/widgets/water_cup_indicator.dart';
+import 'package:rebirth/shared/widgets/water_cup_indicator.dart';
 
 void main() {
   test('water level fraction clamps without changing the exact value', () {

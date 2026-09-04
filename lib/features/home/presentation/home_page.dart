@@ -131,8 +131,8 @@ class _HomeHero extends StatelessWidget {
           children: [
             Image.asset(
               night
-                  ? 'assets/images/experience_preview/home_night.webp'
-                  : 'assets/images/experience_preview/home_day.webp',
+                  ? 'assets/images/home/home_night.webp'
+                  : 'assets/images/home/home_day.webp',
               fit: BoxFit.cover,
             ),
             const ColoredBox(color: Color(0x66000000)),
