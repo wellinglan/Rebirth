@@ -56,7 +56,7 @@ class JournalTodayController extends AsyncNotifier<JournalEntry?> {
     final previous = state;
     try {
       final saved = await ref
-          .read(journalRepositoryImplProvider)
+          .read(journalRepositoryProvider)
           .applyLatestPrompts(entry.id);
       if (ref.mounted) {
         state = AsyncData(saved);

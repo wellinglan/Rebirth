@@ -147,6 +147,7 @@ final class JournalRepositoryImpl implements JournalRepository {
     return (await _mapEntries([updated])).single;
   }
 
+  @override
   Future<JournalEntry> applyLatestPrompts(String id) async {
     final snapshot = dateTimeService.currentSnapshot();
     final bootstrap = await _database.bootstrapDao.bootstrap();

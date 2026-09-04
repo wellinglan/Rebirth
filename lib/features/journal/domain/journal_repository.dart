@@ -41,6 +41,8 @@ abstract interface class JournalRepository {
 
   Future<JournalEntry> reopen(String id);
 
+  Future<JournalEntry> applyLatestPrompts(String id);
+
   Future<JournalEntry?> getById(String id);
 
   Future<List<JournalEntry>> listRecent({int limit = 20});

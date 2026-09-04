@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -133,4 +135,31 @@ void main() {
       expect(reopened.learning, '完成时内容');
     },
   );
+
+  test('apply latest prompts is available through the domain repository', () async {
+    final repository = container.read(journalRepositoryProvider);
+    final entry = await repository.saveDraft(
+      const JournalSaveData(learning: '保留已有回答'),
+    );
+    await container.read(journalTodayControllerProvider.future);
+
+    final updated = await container
+        .read(journalTodayControllerProvider.notifier)
+        .applyLatestPrompts();
+
+    expect(updated.id, entry.id);
+    expect(
+      container.read(journalTodayControllerProvider).requireValue?.id,
+      entry.id,
+    );
+  });
+
+  test('today controller does not depend on the concrete repository provider', () {
+    final source = File(
+      'lib/features/journal/presentation/journal_today_controller.dart',
+    ).readAsStringSync();
+
+    expect(source, isNot(contains('journalRepositoryImplProvider')));
+    expect(source, contains('journalRepositoryProvider'));
+  });
 }
