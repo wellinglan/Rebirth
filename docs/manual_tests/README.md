@@ -1,7 +1,7 @@
 # Rebirth Manual Acceptance Registry
 
 > Classification: **Active / authoritative Gate registry**
-> Consolidated: **2026-08-21 / Sprint 18A initial Gate definition**
+> Consolidated: **2026-09-04 / Sprint 18B acceptance and Sprint 18C maintenance initialization**
 
 Manual matrices record only real product execution. Automated tests never
 become manual PASS. `NOT EXECUTED` is an honest capability or fixture limit,
@@ -65,6 +65,7 @@ that a separate module-only matrix was rerun.
 | Sprint 17C-E Core Experience | CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS | [Plan, Journal, Growth and Metric Narratives](63_plan_journal_growth_and_metric_narratives.md) | 67 / 0 / 2 | Candidate CI, image, API-only Alpha deployment, schema-13 retained migration, Windows/Android product, sync/conflict, privacy, and accessibility rows passed; D11 and G8 retain automated evidence only |
 | AI Coach Conversational MVP | HISTORICAL / SUPERSEDED | [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) | 0 / 0 / 69 | Original Sprint 18A matrix remains historical; current product acceptance is recorded by Sprint 18B |
 | Conversation-first AI Coach and Token Budget | CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS | [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) | 46 / 0 / 8 | Alpha deployment and executable Windows/Android flows passed; eight controlled or unavailable rows remain `NOT EXECUTED` with named automated evidence |
+| Repository Consolidation & Legacy Surface Cleanup | OPEN | [Repository Consolidation & Legacy Surface Cleanup](66_repository_consolidation_and_legacy_cleanup.md) | 0 / 0 / 8 | Maintenance regression matrix; no product capability, data contract, or deployment change is claimed before user execution |
 
 ## Important Succession Rules
 
@@ -96,6 +97,8 @@ that a separate module-only matrix was rerun.
   Chinese report entry points, and their private-Alpha product behavior. Neither
   matrix supersedes Daily/Weekly, AI Report, feedback, consent, or operations
   Gates outside its stated scope.
+- Matrix 66 verifies only the visible regressions of Sprint 18C source cleanup.
+  It does not reopen or replace the accepted Sprint 18B AI Coach Gate.
 
 ## Current Matrix Index
 
@@ -152,6 +155,7 @@ that a separate module-only matrix was rerun.
 - [AI Coach Feedback and Quality Signal](59_ai_coach_feedback_and_quality_signal.md) - Current Gate OPEN / SUSPENDED at 3 / 0 / 36
 - [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) - Historical Sprint 18A design and initial matrix; Chat is local-only and non-streaming
 - [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) - Current Gate CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS at 46 / 0 / 8
+- [Repository Consolidation & Legacy Surface Cleanup](66_repository_consolidation_and_legacy_cleanup.md) - Maintenance regression matrix, awaiting user execution
 
 Older UI, persistence, cloud, and AI reliability matrices `01` through `24`
 remain in this directory as historical Sprint evidence. They do not override

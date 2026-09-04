@@ -16,7 +16,7 @@ release blockers are tracked in
 | Layer | Current implementation |
 |---|---|
 | Client | Flutter 3.44.4, Dart 3.12.2, Material 3, Riverpod, GoRouter |
-| Local data | Drift and SQLite, account-scoped, Flutter `schemaVersion` 12 |
+| Local data | Drift and SQLite, account-scoped, Flutter `schemaVersion` 15 |
 | Network | Dio, authenticated API Version 1 |
 | Server | FastAPI, SQLAlchemy, Alembic, Python 3.12 |
 | Cloud data | PostgreSQL 17 and generic Sync Protocol 2 records |
@@ -41,12 +41,11 @@ records, call AI, or trigger synchronization.
 - **Growth**: read-only local projections over approved personal-data sources.
 - **Profile and Settings**: public username/password sessions, account
   boundaries, consent, device state, and a unified manual Sync Center.
-- **AI Coach**: a stable first-level, task-oriented entry for Daily and Weekly
-  insight, account-scoped consent, simple availability/usage state, recent
-  reports, and natural navigation into the one consolidated generation
-  coordinator and canonical report library. Server-owned immutable Prompt
-  versions and synthetic offline quality Gates govern active and candidate
-  Prompts.
+- **AI Coach**: a canonical, explicit, non-streaming multi-turn conversation
+  with account-scoped local history, optional selected context, separate Chat
+  and Report Token budgets, and Chinese Daily/Weekly report entry points.
+  Chat history stays local-device only; Server-owned Prompt versions and
+  synthetic offline quality Gates govern active and candidate Prompts.
 - **AI Reports**: local persistence, immutable versions, manual cross-device
   sync, conflict recovery, archive lifecycle, one report library, and explicit
   Markdown/JSON export. Completed versions also support local-first structured

@@ -1,26 +1,22 @@
 # 01_PRD.md
 
-## Current Appendix: AI Report Generation Pipeline
+## Current Appendix: Sprint 18B Conversation-first AI Coach
 
-The product promise for AI generation is still explicit and user-triggered:
-the user reviews local preview data, grants consent, confirms the request, and
-then receives a local AI Report. Sprint 15B improves the reliability boundary by
-making Daily and Weekly generation share one coordinator rather than separate
-controller decisions.
+The canonical AI Coach surface is explicit, non-streaming multi-turn Chat.
+Conversation history is account-scoped local data and deliberately remains
+outside Sync Protocol 2. The user may select context for a single turn; the
+selection never silently carries to another account or new thread.
 
-The user-visible behavior should remain conservative:
+Daily Insight and Weekly Review remain explicit report-generation flows. They
+use separate Report Token budgets, local preview/consent/confirmation, and the
+existing report coordinator. Chat and reports do not create business records,
+run automatically, use tools, or change Provider configuration.
 
-- duplicate taps must not create duplicate Provider calls;
-- uncertain network outcomes remain pending and recoverable;
-- recovery checks status only and does not regenerate;
-- account, endpoint, and consent changes never silently write content into the
-  wrong local space;
-- completed local reports may be reused only when the report identity and
-  endpoint identity match.
-
-This is not AI Chat, automatic coaching, report editing, Provider selection, or
-background generation. The manual product Gate remains open until
-`docs/manual_tests/56_ai_report_generation_pipeline.md` is executed.
+The current private-Alpha product evidence is
+`docs/manual_tests/65_ai_coach_conversation_first.md`: 46 PASS / 0 FAIL / 8
+explicitly automated-only or unavailable rows. Its Gate is closed with accepted
+automated substitutions. Current implementation and release facts remain
+authoritative in `docs/CURRENT_BASELINE.md`.
 
 > Classification: **Partially current product foundation**
 > The Sprint 0 / v0.1.0 metadata below is historical. Product mission and

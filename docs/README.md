@@ -1,7 +1,7 @@
 # Rebirth Documentation Index
 
 > Classification: **Active**
-> Last consolidated: **2026-08-20 / Sprint 17A.1 Prototype Revision 1 acceptance**
+> Last consolidated: **2026-09-04 / Sprint 18B Conversation-first AI Coach acceptance**
 
 Start with [Current Baseline](CURRENT_BASELINE.md). It is the only authoritative
 snapshot of what is implemented, verified, manually accepted, deployed,
@@ -23,6 +23,8 @@ deferred, or unsupported now.
 | [Current Baseline](CURRENT_BASELINE.md) | Active / authoritative | Current versions, modules, boundaries, evidence, and deployment certainty |
 | [Release Readiness](RELEASE_READINESS.md) | Active | Private Alpha evidence and Production/store blockers |
 | [Manual Acceptance Registry](manual_tests/README.md) | Active | Current Gate conclusions and historical inheritance |
+| [Document Registry](DOCUMENT_REGISTRY.md) | Active | Stable paths and duplicate-number disambiguation |
+| [Maintenance Backlog](MAINTENANCE_BACKLOG.md) | Active | Compatibility retirement criteria and deferred cleanup |
 | [Root README](../README.md) | Active | Developer and project entry point |
 
 ## Product and Architecture
@@ -32,7 +34,7 @@ deferred, or unsupported now.
 | [AI Context](00_AI_CONTEXT.md) | Partially current | Mission and append-only Sprint boundaries; older technology/sync snapshots are historical |
 | [Product Requirements](01_PRD.md) | Partially current | Long-term product baseline; Sprint 0 metadata is historical |
 | [Architecture](02_ARCHITECTURE.md) | Partially current | Architecture principles plus append-only evolution; early future-server text is historical |
-| [Database](03_DATABASE.md) | Partially current | Original schema design plus migration history through Flutter schema 12 |
+| [Database](03_DATABASE.md) | Partially current | Original schema design plus migration history through Flutter schema 15 |
 | [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) | Active | UX audit, visual principles, tokens, responsive Shell, and deferred page priorities |
 | [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) | Active prototype | Developer-only Home composition, demand-revealed presets, water model, incremental inputs, and nullable wellbeing rating experiment |
 | [Authentication and Sync](04_AUTH_SYNC.md) | Partially current | Current auth principles plus historical staged rollout; use Current Baseline for current module count |
@@ -87,7 +89,7 @@ deferred, or unsupported now.
 - [AI Coach Feedback and Quality Signal](54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md) - Active implementation; manual Gate open
 - [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) - Active foundation; feature-level visual direction remains open
 - [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) - Accepted developer-only historical comparison
-- [Home / Today / Health Production Integration](57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md) - Active implementation; manual Gate open
+- [Home / Today / Health Production Integration](57_HOME_TODAY_HEALTH_PRODUCTION_INTEGRATION.md) - Active implementation; Gate closed with accepted automated substitutions
 - [AI Coach Conversational Experience](59_AI_COACH_CONVERSATIONAL_MVP.md) - Sprint 18A historical Chat foundation; Sprint 18B is the accepted conversation-first product surface
 - [AI Coach Conversation-first and Token Budget](60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md) - Sprint 18B Gate closed with accepted automated substitutions
 

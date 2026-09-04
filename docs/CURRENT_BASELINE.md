@@ -87,7 +87,7 @@ Drift or server implementation classes.
 | Full Personal Data Export | Explicit current-account plaintext JSON backup foundation | No | Not a sync operation | Manual Gate closed with accepted limitations at 49 PASS / 0 FAIL / 5 NOT EXECUTED |
 | Journal Prompt | Versioned prompt configuration and entry snapshots | Yes, inside Journal | Shared conflict framework | 93 PASS / 0 FAIL / 0 NOT EXECUTED |
 | AI Report | Persistent immutable versions, archive, library, export, and version-bound structured feedback | Yes, with dedicated feedback API after report sync | Explicit report and feedback OCC recovery | Sprint 14B-16B evidence summarized below |
-| AI Coach Chat | Explicit non-streaming multi-turn conversation with optional selected context and account-scoped local history | No; deliberately local-device only | Status-only recovery for uncertain requests; explicit retry for known failure | Sprint 18A source and automation implemented; 69-row manual Gate remains OPEN |
+| AI Coach Chat | Explicit non-streaming multi-turn conversation with optional selected context and account-scoped local history | No; deliberately local-device only | Status-only recovery for uncertain requests; explicit retry for known failure | Sprint 18B is the current product authority: 46 PASS / 0 FAIL / 8 NOT EXECUTED; Gate closed with accepted automated substitutions. Sprint 18A is historical implementation evidence only. |
 
 The Sync Center registers exactly six user-facing modules in this order:
 
