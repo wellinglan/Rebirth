@@ -736,6 +736,15 @@ final class _FakeJournalRepository implements JournalRepository {
   }
 
   @override
+  Future<JournalEntry> applyLatestPrompts(String id) {
+    final current = entry;
+    if (current == null || current.id != id) {
+      throw JournalEntryNotFoundException(id);
+    }
+    return Future.value(current);
+  }
+
+  @override
   Future<JournalEntry> createEntry(JournalSaveData data) =>
       saveTodayEntry(data);
 
