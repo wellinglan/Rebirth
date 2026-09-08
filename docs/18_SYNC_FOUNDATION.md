@@ -695,3 +695,11 @@ revoked or expired database session.
 This transport update does not alter Sync Protocol 2, entity ordering, payload
 schemas, OCC, cursor advancement, conflict recovery, account scope, or the
 manual-only policy.
+
+## Current Reconciliation Authority
+
+This file remains historical foundation evidence. Sprint 19B adds no new
+transport or protocol. Its conservative client-side three-way coordination,
+durable hashed baseline, bounded retry, and manual-conflict boundary are defined
+by `docs/62_DETERMINISTIC_SYNC_RECONCILIATION.md`. API Version 1 and Sync
+Protocol 2 remain unchanged.

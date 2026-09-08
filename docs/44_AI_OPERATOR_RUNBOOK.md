@@ -11,8 +11,9 @@ The operator commands are read-only. They never repair, delete, or rewrite AI
 ledger rows. They print aggregate statistics only and must be executed inside a
 trusted Server environment with database access.
 
-API Version remains `1`, Sync Protocol remains `2`, and Flutter
-`schemaVersion` remains `15`.
+API Version remains `1`, Sync Protocol remains `2`, and the current Flutter
+`schemaVersion` is `16`. The client-only Sprint 19B migration does not change
+any AI operation described by this runbook.
 
 ## 2. Configuration Reference
 

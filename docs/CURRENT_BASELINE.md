@@ -1,8 +1,8 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-09-08**
-> Audited code checkpoint: `be16fdd4caa2d2af980dfddb902da5bb299fea2d`
+> Audited: **2026-09-09**
+> Audited code checkpoint: `c8c417c79c6d5b6e5cb270a005a127fe47d09505`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
 > Sprint 16A starting HEAD: `72eb4ac2b5161aeefad3f101ad08ea6eac05e10b`
@@ -19,8 +19,9 @@
 > Sprint 18B accepted client HEAD: `be16fdd4caa2d2af980dfddb902da5bb299fea2d`
 > Sprint 19A starting HEAD: `17e9e9faea0f9be6cea268b8c55734e80ecbcc61`
 > Sprint 19A implementation commit: `9a78c0dc117dbd0be87d107ea9b3da69d854ec96`
+> Sprint 19B starting HEAD: `c8c417c79c6d5b6e5cb270a005a127fe47d09505`
 > Current accepted maintenance Sprint: **18C Repository Consolidation; Gate closed**
-> Current implementation candidate: **19A Foreground Automatic Sync; Gate OPEN pending manual acceptance**
+> Current implementation candidate: **19B Deterministic Conflict Reconciliation; Gate OPEN pending manual acceptance**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -51,7 +52,7 @@ is not proof that a live Provider is configured.
 | Dart | `3.12.2` | Flutter toolchain and `pubspec.yaml` SDK constraint |
 | Python | `3.12` contract | CI and `python:3.12-slim`; patch version is not pinned |
 | PostgreSQL | `17` | CI service and `postgres:17-alpine`; digest is not pinned |
-| Flutter schemaVersion | `15` | `lib/core/database/app_database.dart` |
+| Flutter schemaVersion | `16` | `lib/core/database/app_database.dart` |
 | Server Alembic head | `20260822_0009` | `server/alembic/versions/` |
 | API Version | `1` | `/health` schema |
 | Sync Protocol Version | `2` | `/health` schema and sync contracts |
@@ -259,16 +260,46 @@ six-module registry and synchronization adapters. Manual synchronization remains
 available and shares one application-level execution gate with automatic work.
 
 The scheduler emits no business content in its mutation signals, never invokes
-AI, excludes AI Chat, does not run after process termination, and never resolves
-conflicts automatically. Old-scope results are invalidated on logout/account or
-endpoint change, while `SyncCoordinator` rechecks scope before local apply,
-acknowledgement, and cursor writes. Flutter schemaVersion remains 15, API
-Version remains 1, Sync Protocol remains 2, and the Server/Alembic baseline is
-unchanged. No API image deployment is required.
+AI, excludes AI Chat, and does not run after process termination. Sprint 19B
+adds a separate conservative reconciliation layer around the same coordinator;
+the original Sprint 19A implementation remains the scheduling foundation.
+Old-scope results are invalidated on logout/account or endpoint change, while
+`SyncCoordinator` rechecks scope before local apply, acknowledgement, and cursor
+writes. API Version remains 1, Sync Protocol remains 2, and the Server/Alembic
+baseline is unchanged. No API image deployment is required.
 
 This is an implemented candidate, not accepted runtime evidence. The
 [Foreground Automatic Sync matrix](manual_tests/67_foreground_automatic_sync.md)
-is 0 PASS / 0 FAIL / 58 NOT EXECUTED and its Safety Gate remains **OPEN**.
+is explicitly SUSPENDED at 0 PASS / 0 FAIL / 58 NOT EXECUTED and its Safety
+Gate remains **OPEN**.
+
+## Sprint 19B Deterministic Reconciliation Candidate
+
+Flutter schemaVersion 16 adds only the account-scoped local technical table
+`sync_record_baselines`. It stores existence/tombstone/version metadata and
+canonical field-group SHA-256 hashes, never user bodies. Successful push
+acknowledgement and remote apply update the corresponding baseline inside the
+same Drift transaction as sync metadata.
+
+`ConflictReconciliationService` uses the durable common baseline plus current
+local and remote states. Exact equality, a provably one-sided change, or
+disjoint policy groups may converge automatically. Same-group disagreement,
+missing trustworthy baseline, delete versus modification, archive versus
+delete, Journal body ambiguity, Prompt Configuration concurrency, and AI Report
+body/version ambiguity remain manual conflicts. No winner is selected by time,
+arrival order, or device.
+
+One retry may use the latest remote OCC version; a second race remains manual.
+Account/session/endpoint/device scope is revalidated around critical writes.
+AI Chat remains local-only, App termination has no worker, and other modules can
+continue while one module needs attention. Sync Center exposes only aggregate
+automatic/manual-attention counts.
+
+The [active contract](62_DETERMINISTIC_SYNC_RECONCILIATION.md) and
+[matrix 68](manual_tests/68_deterministic_conflict_reconciliation.md) are the
+19B authorities. Matrix 68 begins at 0 PASS / 0 FAIL / 68 NOT EXECUTED and the
+**Deterministic Conflict Reconciliation Safety Gate is OPEN**. API Version 1,
+Sync Protocol 2, Server code, Alembic, and deployed API image are unchanged.
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach
@@ -427,14 +458,17 @@ restarted; no new Alembic revision exists.
 
 Current intentional product boundaries:
 
-- local-first records with explicit, manual synchronization;
-- no automatic sync or automatic AI generation;
+- local-first records with explicit manual sync plus an opt-in foreground
+  automatic-sync candidate whose Sprint 19A acceptance remains suspended;
+- no OS background sync, real-time push, or automatic AI generation;
+- no automatic winner for ambiguous conflicts; only Sprint 19B's
+  baseline-proven one-sided/equal/disjoint cases may reconcile automatically;
 - explicit AI consent and selected source scopes;
 - explicit, local-device-only AI Chat with no automatic send or sync;
 - account-scoped data, conflicts, usage, and reports;
 - immutable AI Report versions;
 - mutable structured feedback bound to an immutable report version, with no
-  free text and explicit manual cross-device convergence;
+  free text and the attached AI Report synchronization path;
 - export without import/restore in Sprint 14F;
 - explicit full personal data export without import/restore in Sprint 15A;
 - no AI agents, tool calling, streaming Chat, or web search.

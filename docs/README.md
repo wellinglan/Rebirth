@@ -1,7 +1,7 @@
 # Rebirth Documentation Index
 
 > Classification: **Active**
-> Last consolidated: **2026-09-04 / Sprint 18B Conversation-first AI Coach acceptance**
+> Last consolidated: **2026-09-09 / Sprint 19B reconciliation candidate**
 
 Start with [Current Baseline](CURRENT_BASELINE.md). It is the only authoritative
 snapshot of what is implemented, verified, manually accepted, deployed,
@@ -34,7 +34,7 @@ deferred, or unsupported now.
 | [AI Context](00_AI_CONTEXT.md) | Partially current | Mission and append-only Sprint boundaries; older technology/sync snapshots are historical |
 | [Product Requirements](01_PRD.md) | Partially current | Long-term product baseline; Sprint 0 metadata is historical |
 | [Architecture](02_ARCHITECTURE.md) | Partially current | Architecture principles plus append-only evolution; early future-server text is historical |
-| [Database](03_DATABASE.md) | Partially current | Original schema design plus migration history through Flutter schema 15 |
+| [Database](03_DATABASE.md) | Partially current | Original schema design plus migration history through Flutter schema 16 |
 | [Product Experience and Design System](55_PRODUCT_EXPERIENCE_AND_DESIGN_SYSTEM.md) | Active | UX audit, visual principles, tokens, responsive Shell, and deferred page priorities |
 | [Home / Today / Health Experience Prototype](56_HOME_TODAY_HEALTH_EXPERIENCE_PROTOTYPE.md) | Active prototype | Developer-only Home composition, demand-revealed presets, water model, incremental inputs, and nullable wellbeing rating experiment |
 | [Authentication and Sync](04_AUTH_SYNC.md) | Partially current | Current auth principles plus historical staged rollout; use Current Baseline for current module count |
@@ -63,6 +63,10 @@ deferred, or unsupported now.
 - [Today Conflict Recovery](32_TODAY_CONFLICT_RECOVERY.md) - Active
 - [Journal Cross-device Sync](33_JOURNAL_CROSS_DEVICE_SYNC.md) - Active
 - [Health Cross-device Sync](33_HEALTH_CROSS_DEVICE_SYNC.md) - Active
+- [Foreground Automatic Sync](61_FOREGROUND_AUTOMATIC_SYNC.md) - Active
+  scheduling foundation; matrix 67 is OPEN / SUSPENDED
+- [Deterministic Sync Reconciliation](62_DETERMINISTIC_SYNC_RECONCILIATION.md) -
+  Active Sprint 19B candidate; Safety Gate OPEN pending matrix 68
 
 ### Authentication and Identity
 

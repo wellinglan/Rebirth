@@ -341,3 +341,12 @@ summary hides private fields and identifiers. Filtering never starts sync or
 changes a conflict row. Resolution refreshes the Sync Center count. No
 automatic winner, field merge, conflict deletion, or last-write-wins behavior
 was added.
+
+## Sprint 19B Reconciliation Boundary
+
+The manual Keep Local and Adopt Remote flows above remain authoritative for
+genuine conflicts. Sprint 19B may remove an item from the manual center only
+when a durable common baseline proves exact equality, a one-sided change, or a
+policy-defined disjoint merge. Missing evidence, same-group disagreement,
+delete-versus-update, archive-versus-delete, and protected body ambiguity remain
+manual. See `docs/62_DETERMINISTIC_SYNC_RECONCILIATION.md` and matrix 68.

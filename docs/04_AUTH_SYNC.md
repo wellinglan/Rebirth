@@ -502,3 +502,22 @@ and is independent of both one-shot manual synchronization and AI data consent.
 AI Chat remains local-device only. API Version `1`, Sync Protocol `2`, Flutter
 schemaVersion `15`, Server models, and Alembic remain unchanged. See
 `docs/61_FOREGROUND_AUTOMATIC_SYNC.md` and manual matrix 67.
+
+## Sprint 19B Deterministic Reconciliation
+
+Sprint 19B keeps the same authenticated Sync Protocol 2 transport and shared
+manual/automatic execution gate. When OCC exposes current remote state, the
+client compares it with current local state and an account-scoped durable common
+baseline. Only exact equality, a provably one-sided edit, or disjoint module
+policy groups can converge without user input.
+
+The authenticated account, session endpoint, sync eligibility, and registered
+device are revalidated before critical local writes. Logout, account switch,
+endpoint switch, rejected session, or unregistered device invalidates stale
+asynchronous results. Ambiguous states remain in the existing Conflict Center;
+there is no timestamp winner or automatic Adopt Remote/Keep Local shortcut.
+
+Flutter schemaVersion is `16` solely for the local hashed-baseline table. API
+Version `1`, Sync Protocol `2`, JWT ownership, Server/Alembic models, and AI Chat
+local-only behavior are unchanged. See
+`docs/62_DETERMINISTIC_SYNC_RECONCILIATION.md` and manual matrix 68.

@@ -17,10 +17,15 @@
 
 ## Current Active Feature Contracts
 
+- [Deterministic Sync Reconciliation](62_DETERMINISTIC_SYNC_RECONCILIATION.md) -
+  Sprint 19B implementation contract; Safety Gate remains open pending matrix 68.
+- [Deterministic Reconciliation Manual Matrix](manual_tests/68_deterministic_conflict_reconciliation.md) -
+  current acceptance evidence owner for safe automatic conflict coordination.
 - [Foreground Automatic Sync](61_FOREGROUND_AUTOMATIC_SYNC.md) - Sprint 19A
-  implementation contract; Safety Gate remains open pending manual matrix 67.
+  scheduling contract; Safety Gate remains open and its manual execution is
+  suspended.
 - [Foreground Automatic Sync Manual Matrix](manual_tests/67_foreground_automatic_sync.md) -
-  current acceptance evidence owner for foreground scheduling and reconciliation.
+  suspended acceptance owner for foreground scheduling; no row is PASS.
 
 ## Duplicate Historical Numbers
 

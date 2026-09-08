@@ -2,6 +2,7 @@
 
 > Matrix status: **OPEN / NOT EXECUTED**
 > Initial result: **0 PASS / 0 FAIL / 58 NOT EXECUTED**
+> Product-owner decision: **SUSPENDED for Sprint 19B; no row is PASS**
 > Starting baseline: `17e9e9faea0f9be6cea268b8c55734e80ecbcc61`
 > Implementation commit: `9a78c0dc117dbd0be87d107ea9b3da69d854ec96`
 > Scope: user-authorized foreground automatic synchronization using the six
@@ -12,6 +13,10 @@ manual PASS. Record the exact Windows/APK source commit and endpoint before
 execution. Use two registered devices and two accounts where the row requires
 them. Do not reset cloud or local data unless the test plan explicitly allows
 it.
+
+Execution was suspended before Sprint 19B. The original 58 row states and Gate
+remain unchanged. Matrix 68 evaluates deterministic reconciliation separately
+and does not silently complete this foreground-scheduling matrix.
 
 ## A. Authorization And Scope
 

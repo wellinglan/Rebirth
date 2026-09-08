@@ -4,6 +4,21 @@
 > Status: Partially current / active mission with append-only Sprint history
 > Last Updated: 2026-09
 
+## Current Appendix: Sprint 19B Deterministic Sync Reconciliation
+
+Sprint 19B adds an account-scoped local common-baseline table and a conservative
+three-way reconciliation service around the existing Sync Protocol 2 stack.
+Flutter schemaVersion is 16. API Version 1, Sync Protocol 2, FastAPI, Alembic,
+AI Provider behavior, and Server deployment are unchanged.
+
+Only exact equality, a provably one-sided change, or policy-defined disjoint
+field groups can reconcile automatically. Ambiguous bodies, same-field edits,
+delete-versus-update, archive-versus-delete, and states without a trustworthy
+baseline remain in the Conflict Center. AI Chat remains local-device only, and
+no work runs after App termination. The active contract is
+`docs/62_DETERMINISTIC_SYNC_RECONCILIATION.md`; both Sprint 19A and 19B Safety
+Gates remain OPEN pending their separate manual evidence.
+
 ## Current Appendix: Sprint 18B Conversation-first AI Coach
 
 Sprint 18B makes explicit, non-streaming multi-turn Chat the canonical AI Coach

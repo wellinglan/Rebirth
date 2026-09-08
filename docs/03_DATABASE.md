@@ -2,7 +2,7 @@
 
 > Classification: **Partially current design plus migration history**
 > The Sprint 1.5 design-only metadata below is historical. Appendices record
-> later migrations through Flutter `schemaVersion = 15`; current versions and
+> later migrations through Flutter `schemaVersion = 16`; current versions and
 > Server Alembic state are authoritative in `docs/CURRENT_BASELINE.md`.
 
 > 文档版本：v1.0  
@@ -1131,3 +1131,19 @@ Alembic migration is added. Full Personal Data Export may include sanitized
 thread/message content, but excludes account IDs, request IDs, Provider data,
 credentials, and internal recovery metadata. Alembic head remains
 `20260812_0008`, API Version remains `1`, and Sync Protocol remains `2`.
+
+## Sprint 19B Durable Reconciliation Baselines
+
+Flutter Drift advances from `schemaVersion = 15` to `16`. The additive local
+technical table `sync_record_baselines` is keyed by local account, entity type,
+and record ID. It stores common-state existence, Server version, tombstone,
+capture time, and stable canonical field-group SHA-256 hashes.
+
+It deliberately stores no Profile, Journal, Health, AI Report, Prompt, or
+feedback body. Rows are account-scoped with cascade deletion, are never synced
+or exported, and are updated transactionally with successful push
+acknowledgement or remote apply metadata. Migration tests cover v1-v15 upgrade,
+database reopen, account isolation, deletion, empty baselines, and rollback.
+
+Server PostgreSQL, SQLAlchemy, Alembic head `20260822_0009`, API Version `1`,
+and Sync Protocol `2` remain unchanged.

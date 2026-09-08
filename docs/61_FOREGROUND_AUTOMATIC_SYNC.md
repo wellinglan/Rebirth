@@ -177,3 +177,18 @@ Automated tests establish source-level behavior. Manual acceptance remains
 separate in [matrix 67](manual_tests/67_foreground_automatic_sync.md), and the
 Foreground Automatic Sync Safety Gate remains **OPEN** until that matrix and
 the required artifact/CI evidence are complete.
+
+## Sprint 19B Evolution
+
+The statements above describe the Sprint 19A implementation checkpoint. Sprint
+19B preserves its scheduler, foreground-only boundary, and shared execution
+gate, but adds conservative deterministic reconciliation after an OCC conflict.
+The newer layer uses a durable common baseline and module field-group policies;
+it does not use timestamps or select an ambiguous winner. See
+[Deterministic Sync Reconciliation](62_DETERMINISTIC_SYNC_RECONCILIATION.md).
+
+Sprint 19B advances Flutter schemaVersion to 16 for the local hashed-baseline
+table. API Version 1, Sync Protocol 2, Server code, and deployment remain
+unchanged. Matrix 67 is SUSPENDED at 0 / 0 / 58 and its Gate stays OPEN;
+[matrix 68](manual_tests/68_deterministic_conflict_reconciliation.md) separately
+owns the new reconciliation acceptance and also begins OPEN.

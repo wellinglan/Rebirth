@@ -206,7 +206,27 @@ lifecycle, offline, conflict, account, privacy, and accessibility acceptance.
 The [Sprint 19A matrix](manual_tests/67_foreground_automatic_sync.md) begins at
 0 PASS / 0 FAIL / 58 NOT EXECUTED, and the **Foreground Automatic Sync Safety
 Gate is OPEN** until matching final-commit CI/artifact and manual evidence are
-recorded.
+recorded. Product-owner execution is currently SUSPENDED; no row is PASS.
+
+## Sprint 19B Boundary
+
+Sprint 19B is a Flutter-only deterministic reconciliation candidate. It adds
+the local account-scoped `sync_record_baselines` technical table and advances
+Flutter schemaVersion from 15 to 16. Baselines contain canonical field-group
+hashes and synchronization metadata, not user content, and are neither synced
+nor exported.
+
+Only exact equality, provably one-sided changes, and policy-proven disjoint
+field groups can reconcile automatically. Ambiguous body edits, same-group
+differences, delete-versus-update, archive-versus-delete, and states without a
+trustworthy baseline remain in the existing Conflict Center. There is one
+bounded OCC recalculation and no last-write-wins or timestamp winner.
+
+API Version 1, Sync Protocol 2, Server code, SQLAlchemy, Alembic, AI ledgers,
+and the deployed API image are unchanged; no Server image or Beijing deployment
+is required. Matrix 68 begins at 0 PASS / 0 FAIL / 68 NOT EXECUTED, so the
+**Deterministic Conflict Reconciliation Safety Gate is OPEN**. This does not
+close the separately open and suspended Sprint 19A Gate.
 
 ## Sprint 17C-E Boundary
 

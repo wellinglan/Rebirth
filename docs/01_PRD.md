@@ -881,3 +881,14 @@ Gateway。已有报告优先查看和复用；复用不能增加调用、额度�
 Agent 或 Tool Calling。普通 UI 不展示 Prompt/Provider/Model、内部 ID、Server
 版本或报告正文之外的技术元数据。完整要求见
 `docs/54_AI_COACH_FEEDBACK_AND_QUALITY_SIGNAL.md`。
+
+## 28. Deterministic Conflict Reconciliation
+
+跨端同步只可自动处理能够由共同基线证明没有语义歧义的状态：双方完全相同、仅一端
+修改，或双方修改了策略明确互不重叠的字段组。不得使用更新时间、设备时间、到达顺序
+或默认设备决定胜方，也不得自动拼接 Journal 正文或 AI Report 正文。
+
+同一字段组不同修改、删除与修改、归档与删除、缺少可信基线等情况必须保留本地数据并
+进入现有冲突中心。自动协调结果只展示聚合数量，不展示正文、内部 ID、游标、服务端
+版本或哈希。AI Chat 继续仅保存在本地设备，App 关闭后不宣称仍在同步。完整要求见
+`docs/62_DETERMINISTIC_SYNC_RECONCILIATION.md`。

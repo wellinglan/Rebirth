@@ -1206,3 +1206,32 @@ Chat remains absent from `SyncEntityType` while AI Report synchronization is
 unchanged. Active report contracts are v3 Chinese prompts; v1 is an explicit
 temporary Server compatibility contract. See
 `docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md`.
+
+## 34. Deterministic Sync Reconciliation
+
+Sprint 19B keeps one synchronization architecture and inserts a neutral
+three-way decision layer after existing OCC conflict hydration:
+
+```text
+SyncCoordinator OCC result
+  -> current local snapshot
+  -> current remote snapshot
+  -> account-scoped durable baseline hashes
+  -> module SyncMergePolicy
+  -> safe action or existing manual Conflict Center
+```
+
+The baseline is local technical state, not a duplicate business snapshot. It
+stores only existence/tombstone/version metadata and canonical field-group
+SHA-256 hashes. A successful acknowledgement or remote apply updates baseline
+and sync metadata in one Drift transaction.
+
+The decision layer has five results: no change, adopt remote, retry local,
+merge-and-retry, and manual conflict. It never uses `updatedAt`, device time, or
+arrival order as a winner. It retries at most once after refreshing OCC state.
+Account/session/endpoint/device scope is revalidated around critical writes,
+and one manual conflict does not block unrelated modules.
+
+Flutter schemaVersion is 16. The Server, API Version 1, Sync Protocol 2,
+Alembic, and AI ledgers are unchanged. AI Chat remains outside synchronization.
+See `docs/62_DETERMINISTIC_SYNC_RECONCILIATION.md`.
