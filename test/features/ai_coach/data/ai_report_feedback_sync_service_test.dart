@@ -4,6 +4,9 @@ import 'package:rebirth/features/ai_coach/data/ai_report_feedback_sync_service_i
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_remote_data_source.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_repository.dart';
+import 'package:rebirth/features/sync/domain/conflict_reconciliation_service.dart';
+import 'package:rebirth/features/sync/domain/sync_record_baseline.dart';
+import 'package:rebirth/features/sync/domain/sync_record_baseline_repository.dart';
 
 void main() {
   test(
@@ -112,9 +115,180 @@ void main() {
       expect(repository.syncedVersions, [3]);
     },
   );
+
+  test('exact equality auto-converges without a durable baseline', () async {
+    final local = _feedback(
+      syncStatus: AiReportFeedbackSyncStatus.pendingPush,
+      serverVersion: 2,
+    );
+    final repository = _FakeRepository(pending: [local]);
+    final result = await AiReportFeedbackSyncServiceImpl(
+      repository: repository,
+      remoteDataSource: _FakeRemote(
+        mutation: AiReportFeedbackMutationResult(
+          outcome: AiReportFeedbackMutationOutcome.conflict,
+          remote: _remote(serverVersion: 3),
+        ),
+        listed: const [],
+      ),
+    ).synchronize();
+
+    expect(result.automaticallyReconciled, 1);
+    expect(result.conflicts, 0);
+    expect(repository.syncedVersions, [3]);
+  });
+
+  test(
+    'remote-only feedback change is adopted from a trusted baseline',
+    () async {
+      final local = _feedback(
+        syncStatus: AiReportFeedbackSyncStatus.pendingPush,
+        serverVersion: 2,
+      );
+      final repository = _FakeRepository(pending: [local]);
+      final baselines = _FakeBaselines(
+        _baseline(local, helpfulness: AiReportHelpfulness.helpful),
+      );
+      final result = await AiReportFeedbackSyncServiceImpl(
+        repository: repository,
+        remoteDataSource: _FakeRemote(
+          mutation: AiReportFeedbackMutationResult(
+            outcome: AiReportFeedbackMutationOutcome.conflict,
+            remote: _remote(
+              serverVersion: 3,
+              helpfulness: AiReportHelpfulness.notHelpful,
+              reasons: const [AiReportFeedbackReason.tooGeneric],
+            ),
+          ),
+          listed: const [],
+        ),
+        baselines: baselines,
+      ).synchronize();
+
+      expect(result.automaticallyReconciled, 1);
+      expect(result.pulled, 1);
+      expect(result.conflicts, 0);
+      expect(repository.current?.helpfulness, AiReportHelpfulness.notHelpful);
+    },
+  );
+
+  test('local-only feedback change retries once with remote version', () async {
+    final local = _feedback(
+      helpfulness: AiReportHelpfulness.notHelpful,
+      reasons: const [AiReportFeedbackReason.tooGeneric],
+      syncStatus: AiReportFeedbackSyncStatus.pendingPush,
+      serverVersion: 2,
+    );
+    final repository = _FakeRepository(pending: [local]);
+    final remoteBase = _remote(serverVersion: 3);
+    final remote = _FakeRemote(
+      mutations: [
+        AiReportFeedbackMutationResult(
+          outcome: AiReportFeedbackMutationOutcome.conflict,
+          remote: remoteBase,
+        ),
+        AiReportFeedbackMutationResult(
+          outcome: AiReportFeedbackMutationOutcome.applied,
+          remote: _remote(
+            serverVersion: 4,
+            helpfulness: AiReportHelpfulness.notHelpful,
+            reasons: const [AiReportFeedbackReason.tooGeneric],
+          ),
+        ),
+      ],
+      listed: const [],
+    );
+
+    final result = await AiReportFeedbackSyncServiceImpl(
+      repository: repository,
+      remoteDataSource: remote,
+      baselines: _FakeBaselines(
+        _baseline(local, helpfulness: AiReportHelpfulness.helpful),
+      ),
+    ).synchronize();
+
+    expect(remote.upsertCalls, 2);
+    expect(result.pushed, 1);
+    expect(result.automaticallyReconciled, 1);
+    expect(result.conflicts, 0);
+    expect(repository.syncedVersions, [4]);
+  });
+
+  test('a second OCC is bounded and remains a manual conflict', () async {
+    final local = _feedback(
+      helpfulness: AiReportHelpfulness.notHelpful,
+      reasons: const [AiReportFeedbackReason.tooGeneric],
+      syncStatus: AiReportFeedbackSyncStatus.pendingPush,
+      serverVersion: 2,
+    );
+    final repository = _FakeRepository(pending: [local]);
+    final remote = _FakeRemote(
+      mutations: [
+        AiReportFeedbackMutationResult(
+          outcome: AiReportFeedbackMutationOutcome.conflict,
+          remote: _remote(serverVersion: 3),
+        ),
+        AiReportFeedbackMutationResult(
+          outcome: AiReportFeedbackMutationOutcome.conflict,
+          remote: _remote(
+            serverVersion: 4,
+            helpfulness: AiReportHelpfulness.notHelpful,
+            reasons: const [AiReportFeedbackReason.repetitive],
+          ),
+        ),
+      ],
+      listed: const [],
+    );
+
+    final result = await AiReportFeedbackSyncServiceImpl(
+      repository: repository,
+      remoteDataSource: remote,
+      baselines: _FakeBaselines(
+        _baseline(local, helpfulness: AiReportHelpfulness.helpful),
+      ),
+    ).synchronize();
+
+    expect(remote.upsertCalls, 2);
+    expect(result.automaticallyReconciled, 0);
+    expect(result.conflicts, 1);
+  });
+
+  test('a baseline belonging to another account is never used', () async {
+    final local = _feedback(
+      helpfulness: AiReportHelpfulness.notHelpful,
+      reasons: const [AiReportFeedbackReason.tooGeneric],
+      syncStatus: AiReportFeedbackSyncStatus.pendingPush,
+      serverVersion: 2,
+    );
+    final repository = _FakeRepository(pending: [local]);
+    final foreign = _baseline(
+      local,
+      helpfulness: AiReportHelpfulness.helpful,
+      localUserId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    );
+    final remote = _FakeRemote(
+      mutation: AiReportFeedbackMutationResult(
+        outcome: AiReportFeedbackMutationOutcome.conflict,
+        remote: _remote(serverVersion: 3),
+      ),
+      listed: const [],
+    );
+
+    final result = await AiReportFeedbackSyncServiceImpl(
+      repository: repository,
+      remoteDataSource: remote,
+      baselines: _FakeBaselines(foreign),
+    ).synchronize();
+
+    expect(remote.upsertCalls, 1);
+    expect(result.automaticallyReconciled, 0);
+    expect(result.conflicts, 1);
+  });
 }
 
 AiReportFeedback _feedback({
+  AiReportHelpfulness helpfulness = AiReportHelpfulness.helpful,
+  Iterable<AiReportFeedbackReason> reasons = const [],
   AiReportFeedbackSyncStatus syncStatus =
       AiReportFeedbackSyncStatus.pendingPush,
   int? serverVersion,
@@ -127,8 +301,8 @@ AiReportFeedback _feedback({
   reportId: '33333333-3333-4333-8333-333333333333',
   reportVersion: 1,
   reportType: 'weekly_report',
-  helpfulness: AiReportHelpfulness.helpful,
-  reasons: const [],
+  helpfulness: helpfulness,
+  reasons: reasons,
   promptId: 'weekly_report',
   promptVersion: 'weekly-report-v1',
   syncStatus: syncStatus,
@@ -161,13 +335,22 @@ AiReportFeedbackRemoteRecord _remote({
 );
 
 final class _FakeRemote implements AiReportFeedbackRemoteDataSource {
-  _FakeRemote({this.mutation, this.error, required this.listed});
+  _FakeRemote({
+    this.mutation,
+    this.mutations = const [],
+    this.error,
+    required this.listed,
+  });
 
   final AiReportFeedbackMutationResult? mutation;
+  final List<AiReportFeedbackMutationResult> mutations;
   final ApiException? error;
   final List<AiReportFeedbackRemoteRecord> listed;
   int deleteCalls = 0;
   int upsertCalls = 0;
+
+  AiReportFeedbackMutationResult _result(int call) =>
+      mutations.isEmpty ? mutation! : mutations[call - 1];
 
   @override
   Future<AiReportFeedbackMutationResult> delete(
@@ -175,7 +358,7 @@ final class _FakeRemote implements AiReportFeedbackRemoteDataSource {
   ) async {
     deleteCalls += 1;
     if (error case final value?) throw value;
-    return mutation!;
+    return _result(deleteCalls);
   }
 
   @override
@@ -187,7 +370,7 @@ final class _FakeRemote implements AiReportFeedbackRemoteDataSource {
   ) async {
     upsertCalls += 1;
     if (error case final value?) throw value;
-    return mutation!;
+    return _result(upsertCalls);
   }
 }
 
@@ -212,8 +395,13 @@ final class _FakeRepository implements AiReportFeedbackRepository {
     required AiReportFeedbackRemoteSnapshot remote,
   }) async {
     conflicts.add(remote);
+    final source = current ?? pending.first;
     current = _feedback(
+      helpfulness: source.helpfulness,
+      reasons: source.reasons,
       syncStatus: AiReportFeedbackSyncStatus.conflict,
+      serverVersion: source.serverVersion,
+      deletedAt: source.deletedAt,
       remoteSnapshot: remote,
     );
   }
@@ -225,10 +413,14 @@ final class _FakeRepository implements AiReportFeedbackRepository {
     required int serverUpdatedAt,
   }) async {
     syncedVersions.add(serverVersion);
+    final source = current ?? pending.first;
     current = _feedback(
+      helpfulness: source.helpfulness,
+      reasons: source.reasons,
       syncStatus: AiReportFeedbackSyncStatus.synced,
       serverVersion: serverVersion,
       lastSyncedAt: serverUpdatedAt,
+      deletedAt: source.deletedAt,
     );
   }
 
@@ -242,17 +434,42 @@ final class _FakeRepository implements AiReportFeedbackRepository {
   Future<List<AiReportFeedback>> listPending() async => pending;
 
   @override
-  Future<List<AiReportFeedback>> listAllForActiveAccount() async => pending;
+  Future<List<AiReportFeedback>> listAllForActiveAccount() async =>
+      current == null ? pending : [current!];
 
   @override
-  Future<void> adoptRemote(String id) => throw UnimplementedError();
+  Future<void> adoptRemote(String id) async {
+    final remote = current?.remoteSnapshot;
+    if (remote == null) throw StateError('missing remote');
+    current = _feedback(
+      helpfulness: remote.helpfulness,
+      reasons: remote.reasons,
+      syncStatus: AiReportFeedbackSyncStatus.synced,
+      serverVersion: remote.serverVersion,
+      lastSyncedAt: remote.updatedAt,
+      deletedAt: remote.deletedAt,
+    );
+  }
 
   @override
   Future<void> clear({required String reportId, required int reportVersion}) =>
       throw UnimplementedError();
 
   @override
-  Future<void> keepLocal(String id) => throw UnimplementedError();
+  Future<void> keepLocal(String id) async {
+    final source = current;
+    final remote = source?.remoteSnapshot;
+    if (source == null || remote == null) throw StateError('missing conflict');
+    current = _feedback(
+      helpfulness: source.helpfulness,
+      reasons: source.reasons,
+      syncStatus: source.deletedAt == null
+          ? AiReportFeedbackSyncStatus.pendingPush
+          : AiReportFeedbackSyncStatus.pendingDelete,
+      serverVersion: remote.serverVersion,
+      deletedAt: source.deletedAt,
+    );
+  }
 
   @override
   Future<AiReportFeedback> save({
@@ -281,3 +498,63 @@ AiReportFeedback _feedbackFromRemote(AiReportFeedbackRemoteRecord remote) =>
       updatedAt: remote.updatedAt,
       deletedAt: remote.deletedAt,
     );
+
+SyncRecordBaseline _baseline(
+  AiReportFeedback feedback, {
+  required AiReportHelpfulness helpfulness,
+  Iterable<AiReportFeedbackReason> reasons = const [],
+  String? localUserId,
+}) {
+  const service = ConflictReconciliationService();
+  final codes = reasons.map((reason) => reason.code).toList()..sort();
+  return SyncRecordBaseline(
+    localUserId: localUserId ?? feedback.userId,
+    entityType: SyncRecordBaselineEntity.aiReportFeedback,
+    recordId: feedback.id,
+    baseExists: true,
+    baseServerVersion: feedback.serverVersion ?? 0,
+    baseTombstone: false,
+    groupHashes: {
+      'feedback': service.hashCanonicalValue({
+        'helpfulness': helpfulness.databaseValue,
+        'reason_codes': codes,
+      }),
+    },
+    capturedAt: 1,
+  );
+}
+
+final class _FakeBaselines implements SyncRecordBaselineRepository {
+  _FakeBaselines(this.value);
+
+  SyncRecordBaseline? value;
+
+  @override
+  Future<SyncRecordBaseline?> read({
+    required String localUserId,
+    required String entityType,
+    required String recordId,
+  }) async {
+    final candidate = value;
+    return candidate != null &&
+            candidate.localUserId == localUserId &&
+            candidate.entityType == entityType &&
+            candidate.recordId == recordId
+        ? candidate
+        : null;
+  }
+
+  @override
+  Future<void> write(SyncRecordBaseline baseline) async {
+    value = baseline;
+  }
+
+  @override
+  Future<void> delete({
+    required String localUserId,
+    required String entityType,
+    required String recordId,
+  }) async {
+    value = null;
+  }
+}

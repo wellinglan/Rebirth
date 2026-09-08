@@ -17,40 +17,44 @@ void main() {
     await database.close();
   });
 
-  test('creates schema version 15 with local AI chat storage', () async {
-    final rows = await database
-        .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
-        .get();
-    final tableNames = rows.map((row) => row.read<String>('name')).toSet();
+  test(
+    'creates schema version 16 with sync reconciliation baselines',
+    () async {
+      final rows = await database
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+          .get();
+      final tableNames = rows.map((row) => row.read<String>('name')).toSet();
 
-    expect(
-      tableNames,
-      containsAll(<String>{
-        'user_profiles',
-        'app_settings',
-        'today_records',
-        'journal_entries',
-        'goals',
-        'health_records',
-        'ai_reports',
-        'ai_report_versions',
-        'ai_report_feedback',
-        'ai_chat_threads',
-        'ai_chat_messages',
-        'sync_conflicts',
-        'installation_info',
-        'cloud_account_bindings',
-        'journal_prompt_configurations',
-        'journal_prompt_definitions',
-        'journal_entry_prompt_items',
-      }),
-    );
+      expect(
+        tableNames,
+        containsAll(<String>{
+          'user_profiles',
+          'app_settings',
+          'today_records',
+          'journal_entries',
+          'goals',
+          'health_records',
+          'ai_reports',
+          'ai_report_versions',
+          'ai_report_feedback',
+          'ai_chat_threads',
+          'ai_chat_messages',
+          'sync_conflicts',
+          'sync_record_baselines',
+          'installation_info',
+          'cloud_account_bindings',
+          'journal_prompt_configurations',
+          'journal_prompt_definitions',
+          'journal_entry_prompt_items',
+        }),
+      );
 
-    final versionRow = await database
-        .customSelect('PRAGMA user_version')
-        .getSingle();
-    expect(versionRow.read<int>('user_version'), 15);
-  });
+      final versionRow = await database
+          .customSelect('PRAGMA user_version')
+          .getSingle();
+      expect(versionRow.read<int>('user_version'), 16);
+    },
+  );
 
   test(
     'active sync conflict is unique while resolved history remains',

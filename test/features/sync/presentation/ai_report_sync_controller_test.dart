@@ -67,37 +67,43 @@ void main() {
     );
   });
 
-  test('successful feedback convergence exposes module counts', () async {
-    final container = ProviderContainer(
-      overrides: [
-        syncConflictScopeProvider.overrideWith((ref) async => null),
-        aiReportSyncRunnerProvider.overrideWithValue(
-          () async => _result(SyncEntityStatus.succeeded),
-        ),
-        aiReportFeedbackSyncServiceProvider.overrideWithValue(
-          _FeedbackSync(
-            summary: const AiReportFeedbackSyncSummary(
-              pushed: 1,
-              pulled: 2,
-              conflicts: 1,
-              deferred: 3,
+  test(
+    'feedback conflict is explicit while module counts remain visible',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          syncConflictScopeProvider.overrideWith((ref) async => null),
+          aiReportSyncRunnerProvider.overrideWithValue(
+            () async => _result(SyncEntityStatus.succeeded),
+          ),
+          aiReportFeedbackSyncServiceProvider.overrideWithValue(
+            _FeedbackSync(
+              summary: const AiReportFeedbackSyncSummary(
+                pushed: 1,
+                pulled: 2,
+                conflicts: 1,
+                deferred: 3,
+                automaticallyReconciled: 2,
+              ),
             ),
           ),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
+        ],
+      );
+      addTearDown(container.dispose);
 
-    await container
-        .read(aiReportSyncControllerProvider.notifier)
-        .syncAiReports();
-    final state = container.read(aiReportSyncControllerProvider);
-    expect(state.status, AiReportSyncStatus.succeeded);
-    expect(state.feedbackPushedCount, 1);
-    expect(state.feedbackPulledCount, 2);
-    expect(state.feedbackConflictCount, 1);
-    expect(state.feedbackDeferredCount, 3);
-  });
+      final result = await container
+          .read(aiReportSyncControllerProvider.notifier)
+          .syncAiReports();
+      final state = container.read(aiReportSyncControllerProvider);
+      expect(state.status, AiReportSyncStatus.partial);
+      expect(state.feedbackPushedCount, 1);
+      expect(state.feedbackPulledCount, 2);
+      expect(state.feedbackConflictCount, 1);
+      expect(state.feedbackDeferredCount, 3);
+      expect(result.resultFor(SyncEntityType.aiReport)?.conflictCount, 1);
+      expect(result.automaticallyReconciledCount, 2);
+    },
+  );
 }
 
 SyncRunResult _result(SyncEntityStatus status) => SyncRunResult(

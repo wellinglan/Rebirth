@@ -41,6 +41,13 @@ void main() {
       'docs/60_AI_COACH_CONVERSATION_FIRST_AND_TOKEN_BUDGET.md';
   const conversationFirstMatrixPath =
       'docs/manual_tests/65_ai_coach_conversation_first.md';
+  const automaticSyncContractPath = 'docs/61_FOREGROUND_AUTOMATIC_SYNC.md';
+  const automaticSyncMatrixPath =
+      'docs/manual_tests/67_foreground_automatic_sync.md';
+  const reconciliationContractPath =
+      'docs/62_DETERMINISTIC_SYNC_RECONCILIATION.md';
+  const reconciliationMatrixPath =
+      'docs/manual_tests/68_deterministic_conflict_reconciliation.md';
 
   test(
     'project documentation entry points exist and README is not template',
@@ -69,6 +76,10 @@ void main() {
         aiChatMatrixPath,
         conversationFirstContractPath,
         conversationFirstMatrixPath,
+        automaticSyncContractPath,
+        automaticSyncMatrixPath,
+        reconciliationContractPath,
+        reconciliationMatrixPath,
       ];
 
       for (final path in requiredFiles) {
@@ -104,13 +115,13 @@ void main() {
     expect(schemaMatch, isNotNull);
     expect(apiMatch, isNotNull);
     expect(protocolMatch, isNotNull);
-    expect(schemaMatch!.group(1), '15');
+    expect(schemaMatch!.group(1), '16');
     expect(apiMatch!.group(1), '1');
     expect(apiMatch.group(2), '1');
     expect(protocolMatch!.group(1), '2');
     expect(protocolMatch.group(2), '2');
 
-    expect(baseline, contains('| Flutter schemaVersion | `15` |'));
+    expect(baseline, contains('| Flutter schemaVersion | `16` |'));
     expect(baseline, contains('| API Version | `1` |'));
     expect(baseline, contains('| Sync Protocol Version | `2` |'));
   });
@@ -482,6 +493,51 @@ void main() {
     expect(matrix, contains('Gate: **CLOSED WITH ACCEPTED AUTOMATED'));
     expect(registry, contains('Conversation-first AI Coach and Token Budget'));
     expect(registry, contains('46 / 0 / 8'));
+  });
+
+  test('Sprint 19B docs preserve conservative reconciliation Gates', () {
+    final baseline = File(baselinePath).readAsStringSync();
+    final releaseReadiness = File(releaseReadinessPath).readAsStringSync();
+    final automaticContract = File(
+      automaticSyncContractPath,
+    ).readAsStringSync();
+    final automaticMatrix = File(automaticSyncMatrixPath).readAsStringSync();
+    final contract = File(reconciliationContractPath).readAsStringSync();
+    final matrix = File(reconciliationMatrixPath).readAsStringSync();
+    final registry = File(manualRegistryPath).readAsStringSync();
+
+    expect(baseline, contains('Sprint 19B Deterministic Reconciliation'));
+    expect(baseline, contains('Flutter schemaVersion | `16`'));
+    expect(automaticContract, contains('Matrix 67 is SUSPENDED'));
+    expect(automaticMatrix, contains('SUSPENDED for Sprint 19B'));
+    expect(automaticMatrix, contains('0 PASS / 0 FAIL / 58 NOT EXECUTED'));
+    expect(
+      RegExp(
+        r'^\| [A-I]\d+ \|.*\| NOT EXECUTED \|',
+        multiLine: true,
+      ).allMatches(automaticMatrix),
+      hasLength(58),
+    );
+    expect(contract, contains('`sync_record_baselines`'));
+    expect(contract, contains('no trusted baseline'));
+    expect(contract, contains('API Version: **1**, unchanged'));
+    expect(contract, contains('Sync Protocol: **2**, unchanged'));
+    expect(contract, contains('No API image should be published'));
+    expect(matrix, contains('0 PASS / 0 FAIL / 68 NOT EXECUTED'));
+    expect(
+      RegExp(
+        r'^\| [A-H]\d+ \|.*\| NOT EXECUTED \|',
+        multiLine: true,
+      ).allMatches(matrix),
+      hasLength(68),
+    );
+    expect(matrix, isNot(contains('| PASS |')));
+    expect(matrix, isNot(contains('| FAIL |')));
+    expect(matrix, contains('AUTOMATED EVIDENCE SUBSTITUTION'));
+    expect(matrix, contains('Safety Gate is OPEN'));
+    expect(releaseReadiness, contains('Sprint 19B Boundary'));
+    expect(registry, contains('Deterministic Conflict Reconciliation Safety'));
+    expect(registry, contains('0 / 0 / 68'));
   });
 }
 

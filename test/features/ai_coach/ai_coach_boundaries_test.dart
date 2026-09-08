@@ -21,11 +21,11 @@ void main() {
     }
   });
 
-  test('schema version 15 keeps AI presentation boundaries', () {
+  test('schema version 16 keeps AI presentation boundaries', () {
     final database = File(
       'lib/core/database/app_database.dart',
     ).readAsStringSync();
-    expect(database, contains('int get schemaVersion => 15;'));
+    expect(database, contains('int get schemaVersion => 16;'));
     final presentation = [
       ..._dartSources('lib/features/ai_coach/presentation/widgets'),
       File(

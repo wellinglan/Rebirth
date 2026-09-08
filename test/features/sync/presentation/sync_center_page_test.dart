@@ -137,6 +137,31 @@ void main() {
     );
   });
 
+  testWidgets('automatic reconciliation summary is readable and private', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await _pump(
+      tester,
+      _state(),
+      automaticState: _automaticState(
+        status: ForegroundAutoSyncStatus.needsAttention,
+        enabled: true,
+        conflictCount: 2,
+        automaticallyReconciledCount: 3,
+      ),
+      width: 320,
+      textScale: 2,
+    );
+
+    expect(find.text('已自动协调 3 条 · 仍有 2 条需要处理'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('本次启动已自动协调 3 条')), findsOneWidget);
+    expect(find.textContaining('serverVersion'), findsNothing);
+    expect(find.textContaining('cursor'), findsNothing);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('automatic sync switch and status expose readable semantics', (
     tester,
   ) async {
@@ -242,6 +267,7 @@ ForegroundAutoSyncState _automaticState({
   ForegroundAutoSyncStatus status = ForegroundAutoSyncStatus.disabled,
   bool enabled = false,
   int conflictCount = 0,
+  int automaticallyReconciledCount = 0,
   SyncModuleId? currentModule,
   String? message,
 }) {
@@ -250,6 +276,7 @@ ForegroundAutoSyncState _automaticState({
     enabled: enabled,
     isForeground: true,
     conflictCount: conflictCount,
+    automaticallyReconciledCount: automaticallyReconciledCount,
     currentModule: currentModule,
     message: message,
   );

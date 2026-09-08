@@ -213,6 +213,23 @@ void main() {
     expect(harness.calls, hasLength(1));
   });
 
+  test('automatic reconciliation count accumulates for this scope', () async {
+    final harness = await _Harness.create(
+      enabled: true,
+      onRun: (modules, _) => Future.value(_success(modules, automatic: 2)),
+    );
+    addTearDown(harness.dispose);
+
+    await harness.activate();
+    expect(harness.state.automaticallyReconciledCount, 2);
+
+    harness.controller.recordManualCompletion(
+      conflictCount: 0,
+      automaticallyReconciledCount: 1,
+    );
+    expect(harness.state.automaticallyReconciledCount, 3);
+  });
+
   test('an unresolved conflict blocks only its module', () async {
     final harness = await _Harness.create(
       enabled: true,
@@ -481,16 +498,29 @@ AuthSession _session(String cloudUserId, {bool registered = true}) {
   );
 }
 
-SyncAllExecutionResult _success(Iterable<SyncModuleId> modules) {
+SyncAllExecutionResult _success(
+  Iterable<SyncModuleId> modules, {
+  int automatic = 0,
+}) {
+  final selected = modules.toList(growable: false);
   return SyncAllExecutionResult(
     moduleResults: [
-      for (final module in modules)
+      for (final module in selected)
         SyncModuleExecutionResult(
           moduleId: module,
           status: SyncModuleExecutionStatus.succeeded,
           startedAt: 1,
           completedAt: 2,
-          entityResults: const [],
+          entityResults: automatic == 0 || module != selected.first
+              ? const []
+              : [
+                  SyncEntityResult(
+                    entityType: _entityFor(module),
+                    status: SyncEntityStatus.succeeded,
+                    message: '已自动协调',
+                    automaticallyReconciledCount: automatic,
+                  ),
+                ],
           userFacingMessage: '同步完成',
         ),
     ],
@@ -498,6 +528,15 @@ SyncAllExecutionResult _success(Iterable<SyncModuleId> modules) {
     completedAt: 2,
   );
 }
+
+SyncEntityType _entityFor(SyncModuleId module) => switch (module) {
+  SyncModuleId.profile => SyncEntityType.profile,
+  SyncModuleId.plan => SyncEntityType.plan,
+  SyncModuleId.today => SyncEntityType.today,
+  SyncModuleId.journal => SyncEntityType.journal,
+  SyncModuleId.health => SyncEntityType.health,
+  SyncModuleId.aiReport => SyncEntityType.aiReport,
+};
 
 SyncAllExecutionResult _failure(
   Iterable<SyncModuleId> modules,

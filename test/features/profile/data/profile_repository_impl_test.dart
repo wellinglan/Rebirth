@@ -117,6 +117,6 @@ void main() {
   });
 
   test('schemaVersion includes AI report persistence', () {
-    expect(database.schemaVersion, 15);
+    expect(database.schemaVersion, 16);
   });
 }
