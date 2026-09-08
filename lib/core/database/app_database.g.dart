@@ -15525,6 +15525,560 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflictRow> {
   }
 }
 
+class $SyncRecordBaselinesTable extends SyncRecordBaselines
+    with TableInfo<$SyncRecordBaselinesTable, SyncRecordBaselineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncRecordBaselinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _localUserIdMeta = const VerificationMeta(
+    'localUserId',
+  );
+  @override
+  late final GeneratedColumn<String> localUserId = GeneratedColumn<String>(
+    'local_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES user_profiles (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordIdMeta = const VerificationMeta(
+    'recordId',
+  );
+  @override
+  late final GeneratedColumn<String> recordId = GeneratedColumn<String>(
+    'record_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _baseExistsMeta = const VerificationMeta(
+    'baseExists',
+  );
+  @override
+  late final GeneratedColumn<bool> baseExists = GeneratedColumn<bool>(
+    'base_exists',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("base_exists" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _baseServerVersionMeta = const VerificationMeta(
+    'baseServerVersion',
+  );
+  @override
+  late final GeneratedColumn<int> baseServerVersion = GeneratedColumn<int>(
+    'base_server_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _baseTombstoneMeta = const VerificationMeta(
+    'baseTombstone',
+  );
+  @override
+  late final GeneratedColumn<bool> baseTombstone = GeneratedColumn<bool>(
+    'base_tombstone',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("base_tombstone" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _groupHashesJsonMeta = const VerificationMeta(
+    'groupHashesJson',
+  );
+  @override
+  late final GeneratedColumn<String> groupHashesJson = GeneratedColumn<String>(
+    'group_hashes_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _capturedAtMeta = const VerificationMeta(
+    'capturedAt',
+  );
+  @override
+  late final GeneratedColumn<int> capturedAt = GeneratedColumn<int>(
+    'captured_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    localUserId,
+    entityType,
+    recordId,
+    baseExists,
+    baseServerVersion,
+    baseTombstone,
+    groupHashesJson,
+    capturedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_record_baselines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncRecordBaselineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('local_user_id')) {
+      context.handle(
+        _localUserIdMeta,
+        localUserId.isAcceptableOrUnknown(
+          data['local_user_id']!,
+          _localUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localUserIdMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('record_id')) {
+      context.handle(
+        _recordIdMeta,
+        recordId.isAcceptableOrUnknown(data['record_id']!, _recordIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordIdMeta);
+    }
+    if (data.containsKey('base_exists')) {
+      context.handle(
+        _baseExistsMeta,
+        baseExists.isAcceptableOrUnknown(data['base_exists']!, _baseExistsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_baseExistsMeta);
+    }
+    if (data.containsKey('base_server_version')) {
+      context.handle(
+        _baseServerVersionMeta,
+        baseServerVersion.isAcceptableOrUnknown(
+          data['base_server_version']!,
+          _baseServerVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_baseServerVersionMeta);
+    }
+    if (data.containsKey('base_tombstone')) {
+      context.handle(
+        _baseTombstoneMeta,
+        baseTombstone.isAcceptableOrUnknown(
+          data['base_tombstone']!,
+          _baseTombstoneMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_baseTombstoneMeta);
+    }
+    if (data.containsKey('group_hashes_json')) {
+      context.handle(
+        _groupHashesJsonMeta,
+        groupHashesJson.isAcceptableOrUnknown(
+          data['group_hashes_json']!,
+          _groupHashesJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_groupHashesJsonMeta);
+    }
+    if (data.containsKey('captured_at')) {
+      context.handle(
+        _capturedAtMeta,
+        capturedAt.isAcceptableOrUnknown(data['captured_at']!, _capturedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_capturedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {localUserId, entityType, recordId};
+  @override
+  SyncRecordBaselineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncRecordBaselineRow(
+      localUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_user_id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      recordId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}record_id'],
+      )!,
+      baseExists: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}base_exists'],
+      )!,
+      baseServerVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_server_version'],
+      )!,
+      baseTombstone: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}base_tombstone'],
+      )!,
+      groupHashesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_hashes_json'],
+      )!,
+      capturedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}captured_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncRecordBaselinesTable createAlias(String alias) {
+    return $SyncRecordBaselinesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncRecordBaselineRow extends DataClass
+    implements Insertable<SyncRecordBaselineRow> {
+  final String localUserId;
+  final String entityType;
+  final String recordId;
+  final bool baseExists;
+  final int baseServerVersion;
+  final bool baseTombstone;
+  final String groupHashesJson;
+  final int capturedAt;
+  const SyncRecordBaselineRow({
+    required this.localUserId,
+    required this.entityType,
+    required this.recordId,
+    required this.baseExists,
+    required this.baseServerVersion,
+    required this.baseTombstone,
+    required this.groupHashesJson,
+    required this.capturedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['local_user_id'] = Variable<String>(localUserId);
+    map['entity_type'] = Variable<String>(entityType);
+    map['record_id'] = Variable<String>(recordId);
+    map['base_exists'] = Variable<bool>(baseExists);
+    map['base_server_version'] = Variable<int>(baseServerVersion);
+    map['base_tombstone'] = Variable<bool>(baseTombstone);
+    map['group_hashes_json'] = Variable<String>(groupHashesJson);
+    map['captured_at'] = Variable<int>(capturedAt);
+    return map;
+  }
+
+  SyncRecordBaselinesCompanion toCompanion(bool nullToAbsent) {
+    return SyncRecordBaselinesCompanion(
+      localUserId: Value(localUserId),
+      entityType: Value(entityType),
+      recordId: Value(recordId),
+      baseExists: Value(baseExists),
+      baseServerVersion: Value(baseServerVersion),
+      baseTombstone: Value(baseTombstone),
+      groupHashesJson: Value(groupHashesJson),
+      capturedAt: Value(capturedAt),
+    );
+  }
+
+  factory SyncRecordBaselineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncRecordBaselineRow(
+      localUserId: serializer.fromJson<String>(json['localUserId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      recordId: serializer.fromJson<String>(json['recordId']),
+      baseExists: serializer.fromJson<bool>(json['baseExists']),
+      baseServerVersion: serializer.fromJson<int>(json['baseServerVersion']),
+      baseTombstone: serializer.fromJson<bool>(json['baseTombstone']),
+      groupHashesJson: serializer.fromJson<String>(json['groupHashesJson']),
+      capturedAt: serializer.fromJson<int>(json['capturedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'localUserId': serializer.toJson<String>(localUserId),
+      'entityType': serializer.toJson<String>(entityType),
+      'recordId': serializer.toJson<String>(recordId),
+      'baseExists': serializer.toJson<bool>(baseExists),
+      'baseServerVersion': serializer.toJson<int>(baseServerVersion),
+      'baseTombstone': serializer.toJson<bool>(baseTombstone),
+      'groupHashesJson': serializer.toJson<String>(groupHashesJson),
+      'capturedAt': serializer.toJson<int>(capturedAt),
+    };
+  }
+
+  SyncRecordBaselineRow copyWith({
+    String? localUserId,
+    String? entityType,
+    String? recordId,
+    bool? baseExists,
+    int? baseServerVersion,
+    bool? baseTombstone,
+    String? groupHashesJson,
+    int? capturedAt,
+  }) => SyncRecordBaselineRow(
+    localUserId: localUserId ?? this.localUserId,
+    entityType: entityType ?? this.entityType,
+    recordId: recordId ?? this.recordId,
+    baseExists: baseExists ?? this.baseExists,
+    baseServerVersion: baseServerVersion ?? this.baseServerVersion,
+    baseTombstone: baseTombstone ?? this.baseTombstone,
+    groupHashesJson: groupHashesJson ?? this.groupHashesJson,
+    capturedAt: capturedAt ?? this.capturedAt,
+  );
+  SyncRecordBaselineRow copyWithCompanion(SyncRecordBaselinesCompanion data) {
+    return SyncRecordBaselineRow(
+      localUserId: data.localUserId.present
+          ? data.localUserId.value
+          : this.localUserId,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      recordId: data.recordId.present ? data.recordId.value : this.recordId,
+      baseExists: data.baseExists.present
+          ? data.baseExists.value
+          : this.baseExists,
+      baseServerVersion: data.baseServerVersion.present
+          ? data.baseServerVersion.value
+          : this.baseServerVersion,
+      baseTombstone: data.baseTombstone.present
+          ? data.baseTombstone.value
+          : this.baseTombstone,
+      groupHashesJson: data.groupHashesJson.present
+          ? data.groupHashesJson.value
+          : this.groupHashesJson,
+      capturedAt: data.capturedAt.present
+          ? data.capturedAt.value
+          : this.capturedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncRecordBaselineRow(')
+          ..write('localUserId: $localUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('recordId: $recordId, ')
+          ..write('baseExists: $baseExists, ')
+          ..write('baseServerVersion: $baseServerVersion, ')
+          ..write('baseTombstone: $baseTombstone, ')
+          ..write('groupHashesJson: $groupHashesJson, ')
+          ..write('capturedAt: $capturedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    localUserId,
+    entityType,
+    recordId,
+    baseExists,
+    baseServerVersion,
+    baseTombstone,
+    groupHashesJson,
+    capturedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncRecordBaselineRow &&
+          other.localUserId == this.localUserId &&
+          other.entityType == this.entityType &&
+          other.recordId == this.recordId &&
+          other.baseExists == this.baseExists &&
+          other.baseServerVersion == this.baseServerVersion &&
+          other.baseTombstone == this.baseTombstone &&
+          other.groupHashesJson == this.groupHashesJson &&
+          other.capturedAt == this.capturedAt);
+}
+
+class SyncRecordBaselinesCompanion
+    extends UpdateCompanion<SyncRecordBaselineRow> {
+  final Value<String> localUserId;
+  final Value<String> entityType;
+  final Value<String> recordId;
+  final Value<bool> baseExists;
+  final Value<int> baseServerVersion;
+  final Value<bool> baseTombstone;
+  final Value<String> groupHashesJson;
+  final Value<int> capturedAt;
+  final Value<int> rowid;
+  const SyncRecordBaselinesCompanion({
+    this.localUserId = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.recordId = const Value.absent(),
+    this.baseExists = const Value.absent(),
+    this.baseServerVersion = const Value.absent(),
+    this.baseTombstone = const Value.absent(),
+    this.groupHashesJson = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncRecordBaselinesCompanion.insert({
+    required String localUserId,
+    required String entityType,
+    required String recordId,
+    required bool baseExists,
+    required int baseServerVersion,
+    required bool baseTombstone,
+    required String groupHashesJson,
+    required int capturedAt,
+    this.rowid = const Value.absent(),
+  }) : localUserId = Value(localUserId),
+       entityType = Value(entityType),
+       recordId = Value(recordId),
+       baseExists = Value(baseExists),
+       baseServerVersion = Value(baseServerVersion),
+       baseTombstone = Value(baseTombstone),
+       groupHashesJson = Value(groupHashesJson),
+       capturedAt = Value(capturedAt);
+  static Insertable<SyncRecordBaselineRow> custom({
+    Expression<String>? localUserId,
+    Expression<String>? entityType,
+    Expression<String>? recordId,
+    Expression<bool>? baseExists,
+    Expression<int>? baseServerVersion,
+    Expression<bool>? baseTombstone,
+    Expression<String>? groupHashesJson,
+    Expression<int>? capturedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (localUserId != null) 'local_user_id': localUserId,
+      if (entityType != null) 'entity_type': entityType,
+      if (recordId != null) 'record_id': recordId,
+      if (baseExists != null) 'base_exists': baseExists,
+      if (baseServerVersion != null) 'base_server_version': baseServerVersion,
+      if (baseTombstone != null) 'base_tombstone': baseTombstone,
+      if (groupHashesJson != null) 'group_hashes_json': groupHashesJson,
+      if (capturedAt != null) 'captured_at': capturedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncRecordBaselinesCompanion copyWith({
+    Value<String>? localUserId,
+    Value<String>? entityType,
+    Value<String>? recordId,
+    Value<bool>? baseExists,
+    Value<int>? baseServerVersion,
+    Value<bool>? baseTombstone,
+    Value<String>? groupHashesJson,
+    Value<int>? capturedAt,
+    Value<int>? rowid,
+  }) {
+    return SyncRecordBaselinesCompanion(
+      localUserId: localUserId ?? this.localUserId,
+      entityType: entityType ?? this.entityType,
+      recordId: recordId ?? this.recordId,
+      baseExists: baseExists ?? this.baseExists,
+      baseServerVersion: baseServerVersion ?? this.baseServerVersion,
+      baseTombstone: baseTombstone ?? this.baseTombstone,
+      groupHashesJson: groupHashesJson ?? this.groupHashesJson,
+      capturedAt: capturedAt ?? this.capturedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (localUserId.present) {
+      map['local_user_id'] = Variable<String>(localUserId.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (recordId.present) {
+      map['record_id'] = Variable<String>(recordId.value);
+    }
+    if (baseExists.present) {
+      map['base_exists'] = Variable<bool>(baseExists.value);
+    }
+    if (baseServerVersion.present) {
+      map['base_server_version'] = Variable<int>(baseServerVersion.value);
+    }
+    if (baseTombstone.present) {
+      map['base_tombstone'] = Variable<bool>(baseTombstone.value);
+    }
+    if (groupHashesJson.present) {
+      map['group_hashes_json'] = Variable<String>(groupHashesJson.value);
+    }
+    if (capturedAt.present) {
+      map['captured_at'] = Variable<int>(capturedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncRecordBaselinesCompanion(')
+          ..write('localUserId: $localUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('recordId: $recordId, ')
+          ..write('baseExists: $baseExists, ')
+          ..write('baseServerVersion: $baseServerVersion, ')
+          ..write('baseTombstone: $baseTombstone, ')
+          ..write('groupHashesJson: $groupHashesJson, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $InstallationInfoTable extends InstallationInfo
     with TableInfo<$InstallationInfoTable, InstallationInfoRow> {
   @override
@@ -16758,6 +17312,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AiChatThreadsTable aiChatThreads = $AiChatThreadsTable(this);
   late final $AiChatMessagesTable aiChatMessages = $AiChatMessagesTable(this);
   late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
+  late final $SyncRecordBaselinesTable syncRecordBaselines =
+      $SyncRecordBaselinesTable(this);
   late final $InstallationInfoTable installationInfo = $InstallationInfoTable(
     this,
   );
@@ -16784,6 +17340,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     aiChatThreads,
     aiChatMessages,
     syncConflicts,
+    syncRecordBaselines,
     installationInfo,
     cloudAccountBindings,
   ];
@@ -16846,6 +17403,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('ai_chat_messages', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'user_profiles',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('sync_record_baselines', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -17090,6 +17654,30 @@ final class $$UserProfilesTableReferences
     ).filter((f) => f.localUserId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_syncConflictsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $SyncRecordBaselinesTable,
+    List<SyncRecordBaselineRow>
+  >
+  _syncRecordBaselinesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.syncRecordBaselines,
+        aliasName: 'user_profiles__id__sync_record_baselines__local_user_id',
+      );
+
+  $$SyncRecordBaselinesTableProcessedTableManager get syncRecordBaselinesRefs {
+    final manager = $$SyncRecordBaselinesTableTableManager(
+      $_db,
+      $_db.syncRecordBaselines,
+    ).filter((f) => f.localUserId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _syncRecordBaselinesRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -17460,6 +18048,31 @@ class $$UserProfilesTableFilterComposer
           }) => $$SyncConflictsTableFilterComposer(
             $db: $db,
             $table: $db.syncConflicts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> syncRecordBaselinesRefs(
+    Expression<bool> Function($$SyncRecordBaselinesTableFilterComposer f) f,
+  ) {
+    final $$SyncRecordBaselinesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.syncRecordBaselines,
+      getReferencedColumn: (t) => t.localUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SyncRecordBaselinesTableFilterComposer(
+            $db: $db,
+            $table: $db.syncRecordBaselines,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -17903,6 +18516,32 @@ class $$UserProfilesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> syncRecordBaselinesRefs<T extends Object>(
+    Expression<T> Function($$SyncRecordBaselinesTableAnnotationComposer a) f,
+  ) {
+    final $$SyncRecordBaselinesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.syncRecordBaselines,
+          getReferencedColumn: (t) => t.localUserId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SyncRecordBaselinesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.syncRecordBaselines,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> cloudAccountBindingsRefs<T extends Object>(
     Expression<T> Function($$CloudAccountBindingsTableAnnotationComposer a) f,
   ) {
@@ -17955,6 +18594,7 @@ class $$UserProfilesTableTableManager
             bool aiChatThreadsRefs,
             bool aiChatMessagesRefs,
             bool syncConflictsRefs,
+            bool syncRecordBaselinesRefs,
             bool cloudAccountBindingsRefs,
           })
         > {
@@ -18050,6 +18690,7 @@ class $$UserProfilesTableTableManager
                 aiChatThreadsRefs = false,
                 aiChatMessagesRefs = false,
                 syncConflictsRefs = false,
+                syncRecordBaselinesRefs = false,
                 cloudAccountBindingsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -18067,6 +18708,7 @@ class $$UserProfilesTableTableManager
                     if (aiChatThreadsRefs) db.aiChatThreads,
                     if (aiChatMessagesRefs) db.aiChatMessages,
                     if (syncConflictsRefs) db.syncConflicts,
+                    if (syncRecordBaselinesRefs) db.syncRecordBaselines,
                     if (cloudAccountBindingsRefs) db.cloudAccountBindings,
                   ],
                   addJoins: null,
@@ -18303,6 +18945,27 @@ class $$UserProfilesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (syncRecordBaselinesRefs)
+                        await $_getPrefetchedData<
+                          UserProfile,
+                          $UserProfilesTable,
+                          SyncRecordBaselineRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UserProfilesTableReferences
+                              ._syncRecordBaselinesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UserProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).syncRecordBaselinesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.localUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (cloudAccountBindingsRefs)
                         await $_getPrefetchedData<
                           UserProfile,
@@ -18356,6 +19019,7 @@ typedef $$UserProfilesTableProcessedTableManager =
         bool aiChatThreadsRefs,
         bool aiChatMessagesRefs,
         bool syncConflictsRefs,
+        bool syncRecordBaselinesRefs,
         bool cloudAccountBindingsRefs,
       })
     >;
@@ -28330,6 +28994,412 @@ typedef $$SyncConflictsTableProcessedTableManager =
       SyncConflictRow,
       PrefetchHooks Function({bool localUserId})
     >;
+typedef $$SyncRecordBaselinesTableCreateCompanionBuilder =
+    SyncRecordBaselinesCompanion Function({
+      required String localUserId,
+      required String entityType,
+      required String recordId,
+      required bool baseExists,
+      required int baseServerVersion,
+      required bool baseTombstone,
+      required String groupHashesJson,
+      required int capturedAt,
+      Value<int> rowid,
+    });
+typedef $$SyncRecordBaselinesTableUpdateCompanionBuilder =
+    SyncRecordBaselinesCompanion Function({
+      Value<String> localUserId,
+      Value<String> entityType,
+      Value<String> recordId,
+      Value<bool> baseExists,
+      Value<int> baseServerVersion,
+      Value<bool> baseTombstone,
+      Value<String> groupHashesJson,
+      Value<int> capturedAt,
+      Value<int> rowid,
+    });
+
+final class $$SyncRecordBaselinesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SyncRecordBaselinesTable,
+          SyncRecordBaselineRow
+        > {
+  $$SyncRecordBaselinesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UserProfilesTable _localUserIdTable(_$AppDatabase db) => db
+      .userProfiles
+      .createAlias('sync_record_baselines__local_user_id__user_profiles__id');
+
+  $$UserProfilesTableProcessedTableManager get localUserId {
+    final $_column = $_itemColumn<String>('local_user_id')!;
+
+    final manager = $$UserProfilesTableTableManager(
+      $_db,
+      $_db.userProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_localUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SyncRecordBaselinesTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncRecordBaselinesTable> {
+  $$SyncRecordBaselinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get baseExists => $composableBuilder(
+    column: $table.baseExists,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get baseServerVersion => $composableBuilder(
+    column: $table.baseServerVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get baseTombstone => $composableBuilder(
+    column: $table.baseTombstone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupHashesJson => $composableBuilder(
+    column: $table.groupHashesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UserProfilesTableFilterComposer get localUserId {
+    final $$UserProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncRecordBaselinesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncRecordBaselinesTable> {
+  $$SyncRecordBaselinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get baseExists => $composableBuilder(
+    column: $table.baseExists,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get baseServerVersion => $composableBuilder(
+    column: $table.baseServerVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get baseTombstone => $composableBuilder(
+    column: $table.baseTombstone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupHashesJson => $composableBuilder(
+    column: $table.groupHashesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UserProfilesTableOrderingComposer get localUserId {
+    final $$UserProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncRecordBaselinesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncRecordBaselinesTable> {
+  $$SyncRecordBaselinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recordId =>
+      $composableBuilder(column: $table.recordId, builder: (column) => column);
+
+  GeneratedColumn<bool> get baseExists => $composableBuilder(
+    column: $table.baseExists,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get baseServerVersion => $composableBuilder(
+    column: $table.baseServerVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get baseTombstone => $composableBuilder(
+    column: $table.baseTombstone,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get groupHashesJson => $composableBuilder(
+    column: $table.groupHashesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => column,
+  );
+
+  $$UserProfilesTableAnnotationComposer get localUserId {
+    final $$UserProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localUserId,
+      referencedTable: $db.userProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UserProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.userProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncRecordBaselinesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncRecordBaselinesTable,
+          SyncRecordBaselineRow,
+          $$SyncRecordBaselinesTableFilterComposer,
+          $$SyncRecordBaselinesTableOrderingComposer,
+          $$SyncRecordBaselinesTableAnnotationComposer,
+          $$SyncRecordBaselinesTableCreateCompanionBuilder,
+          $$SyncRecordBaselinesTableUpdateCompanionBuilder,
+          (SyncRecordBaselineRow, $$SyncRecordBaselinesTableReferences),
+          SyncRecordBaselineRow,
+          PrefetchHooks Function({bool localUserId})
+        > {
+  $$SyncRecordBaselinesTableTableManager(
+    _$AppDatabase db,
+    $SyncRecordBaselinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncRecordBaselinesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncRecordBaselinesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SyncRecordBaselinesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> localUserId = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<String> recordId = const Value.absent(),
+                Value<bool> baseExists = const Value.absent(),
+                Value<int> baseServerVersion = const Value.absent(),
+                Value<bool> baseTombstone = const Value.absent(),
+                Value<String> groupHashesJson = const Value.absent(),
+                Value<int> capturedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncRecordBaselinesCompanion(
+                localUserId: localUserId,
+                entityType: entityType,
+                recordId: recordId,
+                baseExists: baseExists,
+                baseServerVersion: baseServerVersion,
+                baseTombstone: baseTombstone,
+                groupHashesJson: groupHashesJson,
+                capturedAt: capturedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String localUserId,
+                required String entityType,
+                required String recordId,
+                required bool baseExists,
+                required int baseServerVersion,
+                required bool baseTombstone,
+                required String groupHashesJson,
+                required int capturedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncRecordBaselinesCompanion.insert(
+                localUserId: localUserId,
+                entityType: entityType,
+                recordId: recordId,
+                baseExists: baseExists,
+                baseServerVersion: baseServerVersion,
+                baseTombstone: baseTombstone,
+                groupHashesJson: groupHashesJson,
+                capturedAt: capturedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SyncRecordBaselinesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({localUserId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (localUserId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.localUserId,
+                                referencedTable:
+                                    $$SyncRecordBaselinesTableReferences
+                                        ._localUserIdTable(db),
+                                referencedColumn:
+                                    $$SyncRecordBaselinesTableReferences
+                                        ._localUserIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SyncRecordBaselinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncRecordBaselinesTable,
+      SyncRecordBaselineRow,
+      $$SyncRecordBaselinesTableFilterComposer,
+      $$SyncRecordBaselinesTableOrderingComposer,
+      $$SyncRecordBaselinesTableAnnotationComposer,
+      $$SyncRecordBaselinesTableCreateCompanionBuilder,
+      $$SyncRecordBaselinesTableUpdateCompanionBuilder,
+      (SyncRecordBaselineRow, $$SyncRecordBaselinesTableReferences),
+      SyncRecordBaselineRow,
+      PrefetchHooks Function({bool localUserId})
+    >;
 typedef $$InstallationInfoTableCreateCompanionBuilder =
     InstallationInfoCompanion Function({
       Value<int> singletonId,
@@ -29091,6 +30161,8 @@ class $AppDatabaseManager {
       $$AiChatMessagesTableTableManager(_db, _db.aiChatMessages);
   $$SyncConflictsTableTableManager get syncConflicts =>
       $$SyncConflictsTableTableManager(_db, _db.syncConflicts);
+  $$SyncRecordBaselinesTableTableManager get syncRecordBaselines =>
+      $$SyncRecordBaselinesTableTableManager(_db, _db.syncRecordBaselines);
   $$InstallationInfoTableTableManager get installationInfo =>
       $$InstallationInfoTableTableManager(_db, _db.installationInfo);
   $$CloudAccountBindingsTableTableManager get cloudAccountBindings =>

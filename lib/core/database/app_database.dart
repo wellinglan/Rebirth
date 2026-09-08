@@ -20,6 +20,7 @@ import 'tables/journal_entry_prompt_items_table.dart';
 import 'tables/journal_prompt_configurations_table.dart';
 import 'tables/journal_prompt_definitions_table.dart';
 import 'tables/sync_conflicts_table.dart';
+import 'tables/sync_record_baselines_table.dart';
 import 'tables/today_records_table.dart';
 import 'tables/user_profiles_table.dart';
 
@@ -42,6 +43,7 @@ part 'app_database.g.dart';
     AiChatThreads,
     AiChatMessages,
     SyncConflicts,
+    SyncRecordBaselines,
     InstallationInfo,
     CloudAccountBindings,
   ],
@@ -58,7 +60,7 @@ class AppDatabase extends _$AppDatabase {
   final bool allowUnboundProfileBootstrapForTesting;
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +68,7 @@ class AppDatabase extends _$AppDatabase {
       await migrator.createAll();
       await _createVersionOneIndexes();
       await _createSyncConflictIndexes();
+      await _createSyncRecordBaselineIndexes();
       await _createAccountBoundaryIndexes();
       await _createJournalPromptIndexes();
       await _createAiReportVersionIndexesAndGuards();
@@ -261,6 +264,12 @@ class AppDatabase extends _$AppDatabase {
         }
         await _createAiChatIndexes();
       }
+      if (from < 16) {
+        if (!await _tableExists('sync_record_baselines')) {
+          await migrator.createTable(syncRecordBaselines);
+        }
+        await _createSyncRecordBaselineIndexes();
+      }
     },
     beforeOpen: (details) async {
       if (details.versionBefore case final previous?
@@ -298,6 +307,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _createSyncConflictIndexes() async {
     for (final statement in _syncConflictIndexes) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createSyncRecordBaselineIndexes() async {
+    for (final statement in _syncRecordBaselineIndexes) {
       await customStatement(statement);
     }
   }
@@ -630,6 +645,12 @@ const _syncConflictIndexes = <String>[
       'ON sync_conflicts '
       '(endpoint_key, cloud_user_id, entity_type, record_id) '
       'WHERE resolved_at IS NULL',
+];
+
+const _syncRecordBaselineIndexes = <String>[
+  'CREATE INDEX IF NOT EXISTS sync_record_baselines_user_entity_captured '
+      'ON sync_record_baselines '
+      '(local_user_id, entity_type, captured_at DESC)',
 ];
 
 const _accountBoundaryIndexes = <String>[
