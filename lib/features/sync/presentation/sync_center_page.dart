@@ -66,7 +66,7 @@ class _SyncCenterContent extends ConsumerWidget {
     return ListView(
       padding: AppLayout.pagePadding,
       children: [
-        const Text('自动同步仅在你授权且 App 位于前台时运行；手动同步始终可用。'),
+        const Text('自动同步仅在你授权且 App 位于前台时运行；无歧义的单边或非重叠变化可能自动协调，真实冲突仍由你决定。'),
         const SizedBox(height: AppSpacing.md),
         _AutomaticSyncCard(state: automaticState, modules: state.modules),
         const SizedBox(height: AppSpacing.sm),
@@ -89,7 +89,7 @@ class _SyncCenterContent extends ConsumerWidget {
         ],
         const SizedBox(height: AppSpacing.sm),
         Text(
-          '同步失败不会删除本地数据。冲突需要你明确选择保留本地或采用云端。',
+          '同步失败不会删除本地数据。只有可证明无歧义的变化会自动协调；其他冲突需要你明确选择保留本地或采用云端。',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -166,6 +166,19 @@ class _AutomaticSyncCard extends ConsumerWidget {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
+                const SizedBox(height: AppSpacing.xs),
+                Semantics(
+                  liveRegion: true,
+                  label:
+                      '本次启动已自动协调 ${state.automaticallyReconciledCount} 条，'
+                      '仍有 ${state.conflictCount} 条需要处理',
+                  child: Text(
+                    '已自动协调 ${state.automaticallyReconciledCount} 条 · '
+                    '仍有 ${state.conflictCount} 条需要处理',
+                    key: const ValueKey('automaticReconciliationSummary'),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
                 if (state.conflictCount > 0 ||
                     state.status ==
                         ForegroundAutoSyncStatus.needsAttention) ...[
@@ -202,7 +215,7 @@ class _AutomaticSyncCard extends ConsumerWidget {
           content: const SingleChildScrollView(
             child: Text(
               '开启后，Rebirth 会在 App 前台同步 Profile、Plan、Today、Journal、Health 和 AI 报告。\n\n'
-              'Journal、Health 和 AI 报告可能包含敏感内容。本设置仅对当前设备和当前账号生效；冲突仍需你处理。AI Chat 不会同步，云同步授权也不等于 AI 数据授权。',
+              'Journal、Health 和 AI 报告可能包含敏感内容。本设置仅对当前设备和当前账号生效；无歧义的单边或非重叠变化可能自动协调，真实冲突仍需你处理。AI Chat 不会同步，云同步授权也不等于 AI 数据授权。',
             ),
           ),
           actions: [

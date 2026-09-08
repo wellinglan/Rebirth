@@ -105,7 +105,7 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
       );
       final results = {..._requireState().results, moduleId: result};
       await _refreshConflicts();
-      _recordManualCompletion();
+      _recordManualCompletion(result.automaticallyReconciledCount);
       _publish(
         _requireState().copyWith(
           results: results,
@@ -175,7 +175,7 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
                 .run(onProgress: _onAllProgress),
           );
       await _refreshConflicts();
-      _recordManualCompletion();
+      _recordManualCompletion(result.automaticallyReconciledCount);
       _publish(
         _requireState().copyWith(
           results: {
@@ -276,11 +276,12 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
     if (ref.mounted) state = AsyncData(value);
   }
 
-  void _recordManualCompletion() {
+  void _recordManualCompletion(int automaticallyReconciledCount) {
     ref
         .read(foregroundAutoSyncControllerProvider.notifier)
         .recordManualCompletion(
           conflictCount: _requireState().totalConflictCount,
+          automaticallyReconciledCount: automaticallyReconciledCount,
         );
   }
 

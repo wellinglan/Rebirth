@@ -152,6 +152,10 @@ final class SyncModuleExecutionResult {
       entityResults.fold(0, (total, item) => total + item.ignoredCount);
   int get conflictCount =>
       entityResults.fold(0, (total, item) => total + item.conflictCount);
+  int get automaticallyReconciledCount => entityResults.fold(
+    0,
+    (total, item) => total + item.automaticallyReconciledCount,
+  );
   int get failedEntityCount => entityResults
       .where((item) => item.status == SyncEntityStatus.failed)
       .length;
@@ -207,6 +211,10 @@ final class SyncAllExecutionResult {
       moduleResults.fold(0, (total, item) => total + item.deletedCount);
   int get conflictCount =>
       moduleResults.fold(0, (total, item) => total + item.conflictCount);
+  int get automaticallyReconciledCount => moduleResults.fold(
+    0,
+    (total, item) => total + item.automaticallyReconciledCount,
+  );
   int get failedEntityCount =>
       moduleResults.fold(0, (total, item) => total + item.failedEntityCount);
 

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
+import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_remote_data_source.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_feedback_controller.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
 import 'package:rebirth/features/sync/data/sync_providers.dart';
@@ -120,6 +121,7 @@ class AiReportSyncController extends Notifier<AiReportSyncViewState> {
             feedbackConflictCount: feedback.conflicts,
             feedbackDeferredCount: feedback.deferred,
           );
+          result = _includeFeedbackSummary(result, feedback);
           ref.invalidate(aiReportFeedbackControllerFamily);
         } catch (_) {
           const message =
@@ -151,6 +153,45 @@ class AiReportSyncController extends Notifier<AiReportSyncViewState> {
       );
       rethrow;
     }
+  }
+
+  SyncRunResult _includeFeedbackSummary(
+    SyncRunResult result,
+    AiReportFeedbackSyncSummary feedback,
+  ) {
+    final entities = <SyncEntityResult>[];
+    for (final entity in result.entityResults) {
+      if (entity.entityType != SyncEntityType.aiReport) {
+        entities.add(entity);
+        continue;
+      }
+      entities.add(
+        SyncEntityResult(
+          entityType: entity.entityType,
+          status: feedback.conflicts > 0
+              ? SyncEntityStatus.conflict
+              : entity.status,
+          message: feedback.conflicts > 0 ? '部分 AI 报告反馈需要人工处理' : entity.message,
+          pushedCount: entity.pushedCount + feedback.pushed,
+          pulledCount: entity.pulledCount + feedback.pulled,
+          deletedCount: entity.deletedCount,
+          ignoredCount: entity.ignoredCount + feedback.deferred,
+          conflictCount: entity.conflictCount + feedback.conflicts,
+          automaticallyReconciledCount:
+              entity.automaticallyReconciledCount +
+              feedback.automaticallyReconciled,
+          serverVersion: entity.serverVersion,
+        ),
+      );
+    }
+    return SyncRunResult(
+      direction: result.direction,
+      phases: result.phases,
+      entityResults: entities,
+      startedAt: result.startedAt,
+      completedAt: result.completedAt,
+      failure: result.failure,
+    );
   }
 
   Future<SyncRunResult> _resolve(

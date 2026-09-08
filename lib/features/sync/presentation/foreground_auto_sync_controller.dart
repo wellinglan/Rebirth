@@ -8,6 +8,7 @@ import 'package:rebirth/features/account/data/account_repository_provider.dart';
 import 'package:rebirth/features/account/domain/app_auth_state.dart';
 import 'package:rebirth/features/sync/data/cloud_sync_preference_provider.dart';
 import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
+import 'package:rebirth/features/sync/data/sync_providers.dart';
 
 import '../application/foreground_auto_sync_state.dart';
 import '../application/local_sync_mutation_signal.dart';
@@ -57,6 +58,7 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
   int _retryAttempt = 0;
   int? _lastStartedAt;
   int? _automaticPauseUntil;
+  int _sessionAutomaticallyReconciledCount = 0;
   ForegroundAutoSyncTrigger _pendingTrigger =
       ForegroundAutoSyncTrigger.sessionReady;
   final Set<SyncModuleId> _pendingModules = {};
@@ -260,10 +262,15 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
     }
   }
 
-  void recordManualCompletion({required int conflictCount}) {
+  void recordManualCompletion({
+    required int conflictCount,
+    int automaticallyReconciledCount = 0,
+  }) {
     if (!_enabled || _scopeKey == null || _isRunning) return;
+    _sessionAutomaticallyReconciledCount += automaticallyReconciledCount;
     state = state.copyWith(
       conflictCount: conflictCount,
+      automaticallyReconciledCount: _sessionAutomaticallyReconciledCount,
       status: conflictCount > 0
           ? ForegroundAutoSyncStatus.needsAttention
           : ForegroundAutoSyncStatus.idle,
@@ -369,7 +376,8 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
     final generation = _scopeGeneration;
     final scopeKey = _scopeKey;
     try {
-      final blockedModules = await _readConflictModules();
+      final conflictPreflight = await _readConflictPreflight();
+      final blockedModules = conflictPreflight.blockedModules;
       if (!ref.mounted ||
           generation != _scopeGeneration ||
           scopeKey != _scopeKey) {
@@ -390,7 +398,8 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
               ? ForegroundAutoSyncStatus.idle
               : ForegroundAutoSyncStatus.needsAttention,
           pendingModuleCount: 0,
-          conflictCount: blockedModules.length,
+          conflictCount: conflictPreflight.manualConflictCount,
+          automaticallyReconciledCount: _sessionAutomaticallyReconciledCount,
           message: blockedModules.isEmpty ? null : '部分数据需要你在待处理问题中选择版本',
           clearMessage: blockedModules.isEmpty,
         );
@@ -434,7 +443,7 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
         _handleResult(
           result,
           selected,
-          existingConflictCount: blockedModules.length,
+          existingConflictCount: conflictPreflight.manualConflictCount,
         );
       } catch (_) {
         if (!ref.mounted ||
@@ -471,6 +480,7 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
       existingConflictCount,
       (total, module) => total + module.conflictCount,
     );
+    _sessionAutomaticallyReconciledCount += result.automaticallyReconciledCount;
     final queued = result.moduleResults
         .where(
           (module) => module.failureReason == SyncFailureReason.syncInProgress,
@@ -510,6 +520,7 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
           : ForegroundAutoSyncStatus.idle,
       pendingModuleCount: _pendingModules.length,
       conflictCount: conflictCount,
+      automaticallyReconciledCount: _sessionAutomaticallyReconciledCount,
       lastSuccessAt: !hasFailure && conflictCount == 0 ? now : null,
       clearCurrentModule: true,
       message: conflictCount > 0
@@ -577,16 +588,47 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
     };
   }
 
-  Future<Set<SyncModuleId>> _readConflictModules() async {
+  Future<_ConflictPreflight> _readConflictPreflight() async {
     try {
+      final scope = await ref.read(syncConflictScopeProvider.future);
       final conflicts = await ref.read(activeSyncConflictListProvider.future);
       final registry = ref.read(syncModuleRegistryProvider);
-      return conflicts
-          .map((conflict) => registry.moduleForEntity(conflict.entityType))
-          .whereType<SyncModuleId>()
-          .toSet();
+      if (scope == null) {
+        return _ConflictPreflight(
+          blockedModules: conflicts
+              .map((item) => registry.moduleForEntity(item.entityType))
+              .whereType<SyncModuleId>()
+              .toSet(),
+          manualConflictCount: conflicts.length,
+        );
+      }
+      final blocked = <SyncModuleId>{};
+      var manualCount = 0;
+      final reconciler = ref.read(syncConflictReconciliationRunnerProvider);
+      for (final conflict in conflicts) {
+        final canAttempt = await reconciler.canAttemptAutomatically(
+          scope,
+          conflict,
+        );
+        if (canAttempt) continue;
+        manualCount += 1;
+        final module = registry.moduleForEntity(conflict.entityType);
+        if (module != null) blocked.add(module);
+      }
+      return _ConflictPreflight(
+        blockedModules: blocked,
+        manualConflictCount: manualCount,
+      );
     } catch (_) {
-      return const <SyncModuleId>{};
+      final conflicts = await ref.read(activeSyncConflictListProvider.future);
+      final registry = ref.read(syncModuleRegistryProvider);
+      return _ConflictPreflight(
+        blockedModules: conflicts
+            .map((item) => registry.moduleForEntity(item.entityType))
+            .whereType<SyncModuleId>()
+            .toSet(),
+        manualConflictCount: conflicts.length,
+      );
     }
   }
 
@@ -659,6 +701,7 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
     _enabled = false;
     _retryAttempt = 0;
     _automaticPauseUntil = null;
+    _sessionAutomaticallyReconciledCount = 0;
     state = ForegroundAutoSyncState(
       status: ForegroundAutoSyncStatus.unavailable,
       isForeground: _isForeground,
@@ -703,4 +746,14 @@ class ForegroundAutoSyncController extends Notifier<ForegroundAutoSyncState> {
       _ => '请先登录后使用自动同步',
     };
   }
+}
+
+final class _ConflictPreflight {
+  const _ConflictPreflight({
+    required this.blockedModules,
+    required this.manualConflictCount,
+  });
+
+  final Set<SyncModuleId> blockedModules;
+  final int manualConflictCount;
 }

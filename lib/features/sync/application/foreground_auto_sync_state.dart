@@ -48,6 +48,7 @@ final class ForegroundAutoSyncState {
     this.isSavingPreference = false,
     this.pendingModuleCount = 0,
     this.conflictCount = 0,
+    this.automaticallyReconciledCount = 0,
     this.currentModule,
     this.lastTrigger,
     this.lastAttemptAt,
@@ -62,6 +63,7 @@ final class ForegroundAutoSyncState {
   final bool isSavingPreference;
   final int pendingModuleCount;
   final int conflictCount;
+  final int automaticallyReconciledCount;
   final SyncModuleId? currentModule;
   final ForegroundAutoSyncTrigger? lastTrigger;
   final int? lastAttemptAt;
@@ -82,6 +84,7 @@ final class ForegroundAutoSyncState {
     bool? isSavingPreference,
     int? pendingModuleCount,
     int? conflictCount,
+    int? automaticallyReconciledCount,
     SyncModuleId? currentModule,
     bool clearCurrentModule = false,
     ForegroundAutoSyncTrigger? lastTrigger,
@@ -99,6 +102,8 @@ final class ForegroundAutoSyncState {
       isSavingPreference: isSavingPreference ?? this.isSavingPreference,
       pendingModuleCount: pendingModuleCount ?? this.pendingModuleCount,
       conflictCount: conflictCount ?? this.conflictCount,
+      automaticallyReconciledCount:
+          automaticallyReconciledCount ?? this.automaticallyReconciledCount,
       currentModule: clearCurrentModule
           ? null
           : currentModule ?? this.currentModule,
