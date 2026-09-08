@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth/core/router/route_names.dart';
 import 'package:rebirth/core/theme/app_layout.dart';
 
+import '../application/foreground_auto_sync_state.dart';
 import '../domain/sync_module.dart';
+import 'foreground_auto_sync_controller.dart';
 import 'sync_center_controller.dart';
 import 'sync_center_view_state.dart';
 
@@ -14,6 +16,7 @@ class SyncCenterPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(syncCenterControllerProvider);
+    final automaticState = ref.watch(foregroundAutoSyncControllerProvider);
     return Scaffold(
       key: const ValueKey('syncCenterPage'),
       appBar: AppBar(
@@ -22,7 +25,8 @@ class SyncCenterPage extends ConsumerWidget {
           IconButton(
             key: const ValueKey('refreshSyncCenterButton'),
             tooltip: '刷新本地同步状态',
-            onPressed: state.value?.isRunning == true
+            onPressed:
+                state.value?.isRunning == true || automaticState.isSyncing
                 ? null
                 : () =>
                       ref.read(syncCenterControllerProvider.notifier).refresh(),
@@ -43,7 +47,8 @@ class SyncCenterPage extends ConsumerWidget {
               label: const Text('重新加载'),
             ),
           ),
-          data: (value) => _SyncCenterContent(state: value),
+          data: (value) =>
+              _SyncCenterContent(state: value, automaticState: automaticState),
         ),
       ),
     );
@@ -51,18 +56,21 @@ class SyncCenterPage extends ConsumerWidget {
 }
 
 class _SyncCenterContent extends ConsumerWidget {
-  const _SyncCenterContent({required this.state});
+  const _SyncCenterContent({required this.state, required this.automaticState});
 
   final SyncCenterViewState state;
+  final ForegroundAutoSyncState automaticState;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: AppLayout.pagePadding,
       children: [
-        const Text('Rebirth 仅在你主动操作时同步。本版本尚未启用自动同步。'),
+        const Text('自动同步仅在你授权且 App 位于前台时运行；手动同步始终可用。'),
         const SizedBox(height: AppSpacing.md),
-        _OverallSyncCard(state: state),
+        _AutomaticSyncCard(state: automaticState, modules: state.modules),
+        const SizedBox(height: AppSpacing.sm),
+        _OverallSyncCard(state: state, automaticState: automaticState),
         const SizedBox(height: AppLayout.sectionGap),
         Text('数据模块', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.sm),
@@ -71,7 +79,7 @@ class _SyncCenterContent extends ConsumerWidget {
             descriptor: descriptor,
             result: state.results[descriptor.moduleId],
             conflictCount: state.conflictCounts[descriptor.moduleId] ?? 0,
-            actionsEnabled: !state.isRunning,
+            actionsEnabled: !state.isRunning && !automaticState.isSyncing,
             onSync: () => _syncModule(context, ref, descriptor.moduleId),
             onOpenConflicts: () => context.push(
               RoutePaths.syncConflictsForModule(descriptor.moduleId.stableId),
@@ -110,10 +118,172 @@ class _SyncCenterContent extends ConsumerWidget {
   }
 }
 
+class _AutomaticSyncCard extends ConsumerWidget {
+  const _AutomaticSyncCard({required this.state, required this.modules});
+
+  final ForegroundAutoSyncState state;
+  final List<SyncModuleDescriptor> modules;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final canChange = state.hasAccountPreference && !state.isSavingPreference;
+    return Card(
+      key: const ValueKey('automaticSyncCard'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            label: '在此设备自动同步，当前${state.enabled ? '已开启' : '未开启'}',
+            child: SwitchListTile.adaptive(
+              key: const ValueKey('automaticSyncSwitch'),
+              value: state.enabled,
+              onChanged: canChange
+                  ? (enabled) => _changePreference(context, ref, enabled)
+                  : null,
+              secondary: state.isSavingPreference
+                  ? const SizedBox.square(
+                      dimension: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync_lock_outlined),
+              title: const Text('在此设备自动同步'),
+              subtitle: const Text('仅前台运行；每个账号、每台设备分别设置'),
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Semantics(
+                  liveRegion: true,
+                  label: '自动同步状态，${_statusLabel(state, modules)}',
+                  child: Text(
+                    _statusLabel(state, modules),
+                    key: const ValueKey('automaticSyncStatus'),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                if (state.conflictCount > 0 ||
+                    state.status ==
+                        ForegroundAutoSyncStatus.needsAttention) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('automaticSyncConflictButton'),
+                      onPressed: () => context.push(RoutePaths.syncConflicts),
+                      icon: const Icon(Icons.rule_folder_outlined),
+                      label: const Text('处理同步问题'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _changePreference(
+    BuildContext context,
+    WidgetRef ref,
+    bool enabled,
+  ) async {
+    if (enabled) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          key: const ValueKey('automaticSyncConsentDialog'),
+          title: const Text('开启此设备自动同步？'),
+          content: const SingleChildScrollView(
+            child: Text(
+              '开启后，Rebirth 会在 App 前台同步 Profile、Plan、Today、Journal、Health 和 AI 报告。\n\n'
+              'Journal、Health 和 AI 报告可能包含敏感内容。本设置仅对当前设备和当前账号生效；冲突仍需你处理。AI Chat 不会同步，云同步授权也不等于 AI 数据授权。',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              key: const ValueKey('confirmAutomaticSyncButton'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('确认开启'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
+
+    final saved = await ref
+        .read(foregroundAutoSyncControllerProvider.notifier)
+        .setEnabled(enabled);
+    if (!saved && context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(enabled ? '开启自动同步失败，请重试' : '关闭自动同步失败，请重试')),
+        );
+    }
+  }
+
+  String _statusLabel(
+    ForegroundAutoSyncState state,
+    List<SyncModuleDescriptor> modules,
+  ) {
+    final moduleName = _moduleNameFor(state.currentModule, modules);
+    return switch (state.status) {
+      ForegroundAutoSyncStatus.unavailable => state.message ?? '会话不可用，自动同步未运行',
+      ForegroundAutoSyncStatus.loadingPreference => '正在读取此设备的自动同步设置',
+      ForegroundAutoSyncStatus.disabled => '未开启',
+      ForegroundAutoSyncStatus.waitingForAccount =>
+        state.message ?? '等待账号和设备准备完成',
+      ForegroundAutoSyncStatus.pending =>
+        '等待同步${state.pendingModuleCount > 0 ? ' · ${state.pendingModuleCount} 个模块' : ''}',
+      ForegroundAutoSyncStatus.syncing =>
+        '正在自动同步${moduleName == null ? '' : ' · $moduleName'}',
+      ForegroundAutoSyncStatus.retryScheduled =>
+        state.message ?? '网络暂不可用，稍后在前台重试',
+      ForegroundAutoSyncStatus.needsAttention => state.message ?? '需要处理同步冲突',
+      ForegroundAutoSyncStatus.failed => state.message ?? '自动同步未完成，本地数据已保留',
+      ForegroundAutoSyncStatus.idle when state.lastSuccessAt != null =>
+        '本次启动最近同步完成 · ${_clockLabel(state.lastSuccessAt!)}',
+      ForegroundAutoSyncStatus.idle => '空闲，等待本地修改或其他设备更新',
+    };
+  }
+
+  String _clockLabel(int milliseconds) {
+    final local = DateTime.fromMillisecondsSinceEpoch(
+      milliseconds,
+      isUtc: true,
+    ).toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  String? _moduleNameFor(
+    SyncModuleId? moduleId,
+    List<SyncModuleDescriptor> modules,
+  ) {
+    if (moduleId == null) return null;
+    for (final module in modules) {
+      if (module.moduleId == moduleId) return module.displayName;
+    }
+    return null;
+  }
+}
+
 class _OverallSyncCard extends ConsumerWidget {
-  const _OverallSyncCard({required this.state});
+  const _OverallSyncCard({required this.state, required this.automaticState});
 
   final SyncCenterViewState state;
+  final ForegroundAutoSyncState automaticState;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -171,7 +341,7 @@ class _OverallSyncCard extends ConsumerWidget {
               children: [
                 FilledButton.icon(
                   key: const ValueKey('syncAllButton'),
-                  onPressed: state.isRunning
+                  onPressed: state.isRunning || automaticState.isSyncing
                       ? null
                       : () => _syncAll(context, ref),
                   icon: state.isSyncingAll
@@ -269,12 +439,11 @@ class _SyncModuleCard extends StatelessWidget {
             ),
             if (descriptor.sensitivity == SyncModuleSensitivity.sensitive) ...[
               const SizedBox(height: AppSpacing.xs),
-              Text(
-                descriptor.moduleId == SyncModuleId.health
-                    ? 'Health 包含敏感个人数据，仅在你主动操作时同步。'
-                    : 'Journal 内容仅在你主动操作时同步。',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(switch (descriptor.moduleId) {
+                SyncModuleId.health => 'Health 包含敏感个人数据，请确认当前设备的同步授权。',
+                SyncModuleId.aiReport => 'AI 报告可能包含敏感内容，请确认当前设备的同步授权。',
+                _ => 'Journal 内容可能包含敏感信息，请确认当前设备的同步授权。',
+              }, style: Theme.of(context).textTheme.bodySmall),
             ],
             const SizedBox(height: AppSpacing.md),
             Wrap(

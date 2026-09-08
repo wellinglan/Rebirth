@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rebirth/features/sync/application/foreground_auto_sync_state.dart';
 import 'package:rebirth/features/sync/application/sync_module_registry.dart';
 import 'package:rebirth/features/sync/domain/sync_entity_type.dart';
 import 'package:rebirth/features/sync/domain/sync_models.dart';
 import 'package:rebirth/features/sync/domain/sync_module.dart';
+import 'package:rebirth/features/sync/presentation/foreground_auto_sync_controller.dart';
 import 'package:rebirth/features/sync/presentation/sync_center_controller.dart';
 import 'package:rebirth/features/sync/presentation/sync_center_page.dart';
 import 'package:rebirth/features/sync/presentation/sync_center_view_state.dart';
@@ -16,7 +18,8 @@ void main() {
     await _pump(tester, _state(), height: 2400);
 
     expect(find.text('同步中心'), findsOneWidget);
-    expect(find.textContaining('尚未启用自动同步'), findsOneWidget);
+    expect(find.text('在此设备自动同步'), findsOneWidget);
+    expect(find.text('未开启'), findsOneWidget);
     expect(find.byKey(const ValueKey('syncAllButton')), findsOneWidget);
     for (final module in const [
       'Profile',
@@ -42,6 +45,108 @@ void main() {
     ]) {
       expect(find.textContaining(forbidden), findsNothing);
     }
+  });
+
+  testWidgets('automatic sync requires explicit consent before enabling', (
+    tester,
+  ) async {
+    final automatic = await _pump(tester, _state(), height: 2400);
+
+    await tester.tap(find.byKey(const ValueKey('automaticSyncSwitch')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('automaticSyncConsentDialog')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('当前设备和当前账号'), findsOneWidget);
+    expect(find.textContaining('AI Chat 不会同步'), findsOneWidget);
+
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(automatic.preferenceChanges, isEmpty);
+
+    await tester.tap(find.byKey(const ValueKey('automaticSyncSwitch')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirmAutomaticSyncButton')));
+    await tester.pumpAndSettle();
+
+    expect(automatic.preferenceChanges, [true]);
+    expect(
+      tester
+          .widget<SwitchListTile>(
+            find.byKey(const ValueKey('automaticSyncSwitch')),
+          )
+          .value,
+      isTrue,
+    );
+  });
+
+  testWidgets('automatic activity disables all manual sync actions', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _state(),
+      automaticState: _automaticState(
+        status: ForegroundAutoSyncStatus.syncing,
+        enabled: true,
+        currentModule: SyncModuleId.today,
+      ),
+      height: 2400,
+    );
+
+    expect(find.textContaining('正在自动同步'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const ValueKey('syncAllButton')))
+          .onPressed,
+      isNull,
+    );
+    for (final id in SyncModuleId.values) {
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(ValueKey('syncModuleButton-${id.stableId}')),
+            )
+            .onPressed,
+        isNull,
+      );
+    }
+  });
+
+  testWidgets('automatic conflict state exposes the conflict center', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _state(),
+      automaticState: _automaticState(
+        status: ForegroundAutoSyncStatus.needsAttention,
+        enabled: true,
+        conflictCount: 1,
+        message: '部分数据需要你在待处理问题中选择版本',
+      ),
+      height: 2400,
+    );
+
+    expect(find.text('部分数据需要你在待处理问题中选择版本'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('automaticSyncConflictButton')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('automatic sync switch and status expose readable semantics', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _pump(tester, _state(), width: 320, textScale: 2);
+
+    expect(find.bySemanticsLabel(RegExp('在此设备自动同步')), findsWidgets);
+    expect(find.bySemanticsLabel(RegExp('自动同步状态.*未开启')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    handle.dispose();
   });
 
   testWidgets(
@@ -94,23 +199,28 @@ void main() {
   });
 }
 
-Future<void> _pump(
+Future<_FakeForegroundAutoSyncController> _pump(
   WidgetTester tester,
   SyncCenterViewState value, {
   double width = 900,
   double height = 900,
   double textScale = 1,
+  ForegroundAutoSyncState? automaticState,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+  final automatic = _FakeForegroundAutoSyncController(
+    automaticState ?? _automaticState(),
+  );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         syncCenterControllerProvider.overrideWith(
           () => _FakeSyncCenterController(value),
         ),
+        foregroundAutoSyncControllerProvider.overrideWith(() => automatic),
       ],
       child: MaterialApp(
         home: MediaQuery(
@@ -125,6 +235,24 @@ Future<void> _pump(
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
+  return automatic;
+}
+
+ForegroundAutoSyncState _automaticState({
+  ForegroundAutoSyncStatus status = ForegroundAutoSyncStatus.disabled,
+  bool enabled = false,
+  int conflictCount = 0,
+  SyncModuleId? currentModule,
+  String? message,
+}) {
+  return ForegroundAutoSyncState(
+    status: status,
+    enabled: enabled,
+    isForeground: true,
+    conflictCount: conflictCount,
+    currentModule: currentModule,
+    message: message,
+  );
 }
 
 SyncCenterViewState _state({
@@ -177,4 +305,28 @@ final class _FakeSyncCenterController extends SyncCenterController {
 
   @override
   Future<SyncCenterViewState> build() async => value;
+}
+
+final class _FakeForegroundAutoSyncController
+    extends ForegroundAutoSyncController {
+  _FakeForegroundAutoSyncController(this.value);
+
+  final ForegroundAutoSyncState value;
+  final List<bool> preferenceChanges = [];
+
+  @override
+  ForegroundAutoSyncState build() => value;
+
+  @override
+  Future<bool> setEnabled(bool enabled) async {
+    preferenceChanges.add(enabled);
+    state = state.copyWith(
+      enabled: enabled,
+      status: enabled
+          ? ForegroundAutoSyncStatus.idle
+          : ForegroundAutoSyncStatus.disabled,
+      clearMessage: true,
+    );
+    return true;
+  }
 }
