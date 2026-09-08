@@ -2,10 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 
 import '../application/sync_module_runner.dart';
+import '../application/sync_execution_gate.dart';
+import '../application/sync_execution_providers.dart';
 import '../data/sync_conflict_providers.dart';
 import '../domain/sync_conflict_record.dart';
 import '../domain/sync_exception.dart';
 import '../domain/sync_module.dart';
+import 'foreground_auto_sync_controller.dart';
 import 'sync_center_view_state.dart';
 import 'sync_module_providers.dart';
 
@@ -80,6 +83,9 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
 
   Future<SyncModuleExecutionResult> _runModule(SyncModuleId moduleId) async {
     final current = _requireState();
+    ref
+        .read(foregroundAutoSyncControllerProvider.notifier)
+        .prepareForManualSync([moduleId]);
     _publish(
       current.copyWith(
         isRunning: true,
@@ -90,13 +96,16 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
     );
     final runner = _runnerFor(moduleId);
     try {
-      final run = await runner.runManualSync();
+      final run = await ref
+          .read(syncExecutionGateProvider)
+          .run(origin: SyncExecutionOrigin.manual, operation: runner.runSync);
       final result = SyncModuleExecutionResult.fromRun(
         descriptor: runner.descriptor,
         run: run,
       );
       final results = {..._requireState().results, moduleId: result};
       await _refreshConflicts();
+      _recordManualCompletion();
       _publish(
         _requireState().copyWith(
           results: results,
@@ -132,6 +141,9 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
 
   Future<SyncAllExecutionResult> _runAll() async {
     final current = _requireState();
+    ref
+        .read(foregroundAutoSyncControllerProvider.notifier)
+        .prepareForManualSync(current.modules.map((module) => module.moduleId));
     final queued = <SyncModuleId, SyncModuleExecutionResult>{
       for (final module in current.modules)
         module.moduleId: SyncModuleExecutionResult(
@@ -153,21 +165,40 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
       ),
     );
 
-    final result = await ref
-        .read(syncAllOrchestratorProvider)
-        .run(onProgress: _onAllProgress);
-    await _refreshConflicts();
-    _publish(
-      _requireState().copyWith(
-        results: {for (final item in result.moduleResults) item.moduleId: item},
-        isRunning: false,
-        isSyncingAll: false,
-        clearCurrentModule: true,
-        completedModules: result.moduleResults.length,
-        lastAllResult: result,
-      ),
-    );
-    return result;
+    try {
+      final result = await ref
+          .read(syncExecutionGateProvider)
+          .run(
+            origin: SyncExecutionOrigin.manual,
+            operation: () => ref
+                .read(syncAllOrchestratorProvider)
+                .run(onProgress: _onAllProgress),
+          );
+      await _refreshConflicts();
+      _recordManualCompletion();
+      _publish(
+        _requireState().copyWith(
+          results: {
+            for (final item in result.moduleResults) item.moduleId: item,
+          },
+          isRunning: false,
+          isSyncingAll: false,
+          clearCurrentModule: true,
+          completedModules: result.moduleResults.length,
+          lastAllResult: result,
+        ),
+      );
+      return result;
+    } catch (_) {
+      _publish(
+        _requireState().copyWith(
+          isRunning: false,
+          isSyncingAll: false,
+          clearCurrentModule: true,
+        ),
+      );
+      rethrow;
+    }
   }
 
   void _onAllProgress(
@@ -243,6 +274,14 @@ class SyncCenterController extends AsyncNotifier<SyncCenterViewState> {
 
   void _publish(SyncCenterViewState value) {
     if (ref.mounted) state = AsyncData(value);
+  }
+
+  void _recordManualCompletion() {
+    ref
+        .read(foregroundAutoSyncControllerProvider.notifier)
+        .recordManualCompletion(
+          conflictCount: _requireState().totalConflictCount,
+        );
   }
 
   void _clearModule(Future<SyncModuleExecutionResult> completed) {

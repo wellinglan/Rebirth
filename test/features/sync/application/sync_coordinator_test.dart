@@ -30,6 +30,7 @@ void main() {
   late SyncCoordinator coordinator;
   late bool endpointAvailable;
   late Object? accountScopeError;
+  late int? accountScopeFailureAt;
   late int accountScopeChecks;
 
   setUp(() {
@@ -39,6 +40,7 @@ void main() {
     sessionStore = _MemorySessionStore(_registeredSession);
     endpointAvailable = true;
     accountScopeError = null;
+    accountScopeFailureAt = null;
     accountScopeChecks = 0;
     coordinator = SyncCoordinator(
       endpoint: _endpoint,
@@ -56,7 +58,12 @@ void main() {
       ),
       accountScopeGuard: ({required endpoint, required cloudUserId}) async {
         accountScopeChecks += 1;
-        if (accountScopeError case final error?) throw error;
+        if (accountScopeError case final error?) {
+          if (accountScopeFailureAt == null ||
+              accountScopeChecks == accountScopeFailureAt) {
+            throw error;
+          }
+        }
       },
     );
   });
@@ -147,6 +154,79 @@ void main() {
       expect(result.failure?.reason, SyncFailureReason.unsupportedEntity);
       expect(remote.pullCalls, 0);
       expect(remote.pushCalls, 0);
+    },
+  );
+
+  test(
+    'account change before push acknowledgement blocks local write',
+    () async {
+      adapter.pending = [_pushItem()];
+      remote.pushCompleter = Completer<SyncPushResponseDto>();
+      accountScopeError = const AccountScopeMismatchException('scope changed');
+      accountScopeFailureAt = 2;
+
+      final operation = coordinator.run(direction: SyncRunDirection.push);
+      await _waitUntil(() => remote.pushCalls == 1);
+      remote.pushCompleter!.complete(
+        SyncPushResponseDto(
+          accepted: const [
+            SyncedRecord(
+              tableName: 'user_profiles',
+              recordId: 'profile',
+              serverVersion: 1,
+            ),
+          ],
+          conflicts: const [],
+        ),
+      );
+
+      final result = await operation;
+      expect(result.failure?.reason, SyncFailureReason.accountScopeMismatch);
+      expect(result.failure?.phase, SyncRunPhase.acknowledgePush);
+      expect(adapter.acknowledgeCalls, 0);
+    },
+  );
+
+  test(
+    'account change before remote apply blocks local data and cursor',
+    () async {
+      remote.pullCompleter = Completer<SyncPullResponseDto>();
+      accountScopeError = const AccountScopeMismatchException('scope changed');
+      accountScopeFailureAt = 2;
+
+      final operation = coordinator.run(direction: SyncRunDirection.pull);
+      await _waitUntil(() => remote.pullCalls == 1);
+      remote.pullCompleter!.complete(
+        SyncPullResponseDto(
+          serverVersion: 1,
+          items: [_pulledItem(serverVersion: 1)],
+        ),
+      );
+
+      final result = await operation;
+      expect(result.failure?.reason, SyncFailureReason.accountScopeMismatch);
+      expect(result.failure?.phase, SyncRunPhase.apply);
+      expect(adapter.applyCalls, 0);
+      expect(cursorStore.writeCalls, 0);
+    },
+  );
+
+  test(
+    'account change before cursor advance leaves cursor unchanged',
+    () async {
+      accountScopeError = const AccountScopeMismatchException('scope changed');
+      accountScopeFailureAt = 3;
+      remote.pullResponse = SyncPullResponseDto(
+        serverVersion: 1,
+        items: [_pulledItem(serverVersion: 1)],
+      );
+
+      final result = await coordinator.run(direction: SyncRunDirection.pull);
+
+      expect(result.failure?.reason, SyncFailureReason.accountScopeMismatch);
+      expect(result.failure?.phase, SyncRunPhase.cursorAdvance);
+      expect(adapter.applyCalls, 1);
+      expect(cursorStore.writeCalls, 0);
     },
   );
 
@@ -291,7 +371,7 @@ void main() {
       );
 
       expect(result.isSuccessful, isTrue);
-      expect(accountScopeChecks, 1);
+      expect(accountScopeChecks, 4);
       expect(remote.lastPushRequest?.items.single.tableName, 'today_records');
       expect(remote.lastPullRequest?.tables, ['today_records']);
       expect(todayAdapter.acknowledgeCalls, 1);

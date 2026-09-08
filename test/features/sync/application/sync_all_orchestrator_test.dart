@@ -116,6 +116,34 @@ void main() {
       );
     },
   );
+
+  test('selected modules keep registry order and omit other modules', () async {
+    final registry = createDefaultSyncModuleRegistry();
+    final calls = <SyncModuleId>[];
+    final runners = [
+      for (final descriptor in registry.orderedModules)
+        CallbackSyncModuleRunner(
+          descriptor: descriptor,
+          onRun: () async {
+            calls.add(descriptor.moduleId);
+            return _success(descriptor);
+          },
+          onRefresh: () async {},
+        ),
+    ];
+
+    final result = await SyncAllOrchestrator(
+      registry: registry,
+      runners: runners,
+      nowMilliseconds: _clock(),
+    ).run(moduleIds: const [SyncModuleId.health, SyncModuleId.plan]);
+
+    expect(calls, const [SyncModuleId.plan, SyncModuleId.health]);
+    expect(result.moduleResults.map((item) => item.moduleId), const [
+      SyncModuleId.plan,
+      SyncModuleId.health,
+    ]);
+  });
 }
 
 int Function() _clock() {

@@ -23,13 +23,20 @@ final class SyncAllOrchestrator {
   final int Function() nowMilliseconds;
 
   Future<SyncAllExecutionResult> run({
+    Iterable<SyncModuleId>? moduleIds,
     SyncModuleProgressCallback? onProgress,
   }) async {
     final startedAt = nowMilliseconds();
     final results = <SyncModuleExecutionResult>[];
     var stopForGlobalFailure = false;
+    final selectedModuleIds = moduleIds?.toSet();
+    final modules = selectedModuleIds == null
+        ? registry.orderedModules
+        : registry.orderedModules
+              .where((module) => selectedModuleIds.contains(module.moduleId))
+              .toList(growable: false);
 
-    for (final descriptor in registry.orderedModules) {
+    for (final descriptor in modules) {
       if (stopForGlobalFailure) {
         results.add(
           SyncModuleExecutionResult.skipped(
@@ -61,7 +68,7 @@ final class SyncAllOrchestrator {
         continue;
       }
       try {
-        final runResult = await runner.runManualSync();
+        final runResult = await runner.runSync();
         final moduleResult = SyncModuleExecutionResult.fromRun(
           descriptor: descriptor,
           run: runResult,

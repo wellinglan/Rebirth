@@ -381,6 +381,7 @@ final class SyncCoordinator {
               remoteDataSource.push(request, accessToken: accessToken),
         );
         phases.add(SyncRunPhase.acknowledgePush);
+        await _requireCurrentAccountScope(session);
         final acknowledged = await adapter.acknowledgePush(
           submitted: pending,
           accepted: response.accepted
@@ -466,6 +467,7 @@ final class SyncCoordinator {
       );
 
       phases.add(SyncRunPhase.apply);
+      await _requireCurrentAccountScope(session);
       final applied = await adapter.applyRemoteChanges(
         changes: page.changes,
         syncedAt: dateTimeService.currentSnapshot().utcMilliseconds,
@@ -476,6 +478,7 @@ final class SyncCoordinator {
       if (!applied.isSuccessful) return aggregate;
 
       phases.add(SyncRunPhase.cursorAdvance);
+      await _requireCurrentAccountScope(session);
       await cursorStore.write(
         endpoint: cursor.endpoint,
         cloudUserId: cursor.cloudUserId,
@@ -487,6 +490,19 @@ final class SyncCoordinator {
     }
 
     return aggregate;
+  }
+
+  Future<void> _requireCurrentAccountScope(AuthSession expectedSession) async {
+    final currentSession = sessionManager.state.session;
+    if (currentSession == null ||
+        currentSession.user.id != expectedSession.user.id ||
+        !_sessionMatchesEndpoint(currentSession)) {
+      throw const AccountScopeMismatchException('同步期间登录账号发生变化，已停止写入。');
+    }
+    await accountScopeGuard(
+      endpoint: endpoint,
+      cloudUserId: expectedSession.user.id,
+    );
   }
 
   bool _sessionMatchesEndpoint(AuthSession session) {
@@ -547,6 +563,10 @@ final class SyncCoordinator {
 
   static String _messageFor(Object error, SyncRunPhase phase) {
     if (error is SyncException) return error.message;
+    if (error is AccountScopeMismatchException ||
+        error is AccountSyncReviewRequiredException) {
+      return error.toString();
+    }
     if (error is SyncUnsupportedEntityException) {
       return '未注册 ${error.entityType} 同步适配器。';
     }

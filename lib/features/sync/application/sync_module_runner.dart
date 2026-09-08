@@ -4,7 +4,7 @@ import '../domain/sync_models.dart';
 abstract interface class SyncModuleRunner {
   SyncModuleDescriptor get descriptor;
 
-  Future<SyncRunResult> runManualSync();
+  Future<SyncRunResult> runSync();
 
   Future<void> refreshStatus();
 }
@@ -23,7 +23,7 @@ final class CallbackSyncModuleRunner implements SyncModuleRunner {
   final Future<void> Function() onRefresh;
 
   @override
-  Future<SyncRunResult> runManualSync() => onRun();
+  Future<SyncRunResult> runSync() => onRun();
 
   @override
   Future<void> refreshStatus() => onRefresh();
