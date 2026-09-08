@@ -1,7 +1,7 @@
 # Rebirth Current Baseline
 
 > Classification: **Active / authoritative**
-> Audited: **2026-09-04**
+> Audited: **2026-09-08**
 > Audited code checkpoint: `be16fdd4caa2d2af980dfddb902da5bb299fea2d`
 > Sprint 15A starting HEAD: `c835a24c74c2ba3a92894ce6ba05d47fff1ab810`
 > Sprint 15B starting HEAD: `3a65cf13ec468b7688b3472f5d156d51021cf25e`
@@ -17,7 +17,10 @@
 > Sprint 18A starting HEAD: `1ea0500bb6a670b69a6f4f65b00e110f0709af78`
 > Sprint 18B Server baseline: `a3325939c45a9b138b8f717448e394fb4ecd7930`
 > Sprint 18B accepted client HEAD: `be16fdd4caa2d2af980dfddb902da5bb299fea2d`
-> Current accepted Sprint: **18B Conversation-first AI Coach; Gate closed with accepted automated substitutions**
+> Sprint 19A starting HEAD: `17e9e9faea0f9be6cea268b8c55734e80ecbcc61`
+> Sprint 19A implementation commit: `9a78c0dc117dbd0be87d107ea9b3da69d854ec96`
+> Current accepted maintenance Sprint: **18C Repository Consolidation; Gate closed**
+> Current implementation candidate: **19A Foreground Automatic Sync; Gate OPEN pending manual acceptance**
 > Branch: `main`
 
 This document is the single entry point for the current product and technical
@@ -99,7 +102,12 @@ The Sync Center registers exactly six user-facing modules in this order:
 6. AI Report
 
 Journal prompt configuration runs before Journal entries. Synchronization is
-manual only. There is no startup, scheduled, background, or automatic sync.
+available through the existing manual controls and, from Sprint 19A, an
+explicitly enabled foreground-only automatic scheduler. The scheduler can run
+after session restore, local saves, foreground resume, and a low-frequency
+foreground timer. There is no process-level or operating-system background
+sync, real-time push, or automatic conflict resolution. Sprint 19A manual
+acceptance remains open.
 
 The responsive HomeShell exposes the same six first-level destinations through
 bottom navigation below 840px, a compact NavigationRail from 840px, and an
@@ -240,6 +248,27 @@ remains 0 PASS / 0 FAIL / 69 NOT EXECUTED. The current
 [Sprint 18B matrix](manual_tests/65_ai_coach_conversation_first.md) records 46
 PASS / 0 FAIL / 8 NOT EXECUTED and closes the private-Alpha Conversation-first
 AI Coach Gate with accepted automated substitutions.
+
+## Sprint 19A Foreground Automatic Sync Candidate
+
+The Flutter client now has one account-scoped, per-installation automatic-sync
+preference backed by the existing `app_settings.cloud_sync_enabled` column. It
+defaults to off. After explicit confirmation, foreground lifecycle/session,
+local mutation, resume, periodic, and bounded retry triggers reuse the existing
+six-module registry and synchronization adapters. Manual synchronization remains
+available and shares one application-level execution gate with automatic work.
+
+The scheduler emits no business content in its mutation signals, never invokes
+AI, excludes AI Chat, does not run after process termination, and never resolves
+conflicts automatically. Old-scope results are invalidated on logout/account or
+endpoint change, while `SyncCoordinator` rechecks scope before local apply,
+acknowledgement, and cursor writes. Flutter schemaVersion remains 15, API
+Version remains 1, Sync Protocol remains 2, and the Server/Alembic baseline is
+unchanged. No API image deployment is required.
+
+This is an implemented candidate, not accepted runtime evidence. The
+[Foreground Automatic Sync matrix](manual_tests/67_foreground_automatic_sync.md)
+is 0 PASS / 0 FAIL / 58 NOT EXECUTED and its Safety Gate remains **OPEN**.
 
 Sprint 16A does not add a report type or change report persistence. It exposes
 the existing Daily/Weekly and report lifecycle through one first-level Coach

@@ -194,7 +194,7 @@ Flutter schema 6 将本地所有权和云同步资格拆成两个持久状态：
 网络操作前返回 `accountSyncReviewRequired`；Settings 同时禁用 Profile 和
 Plan 手动同步。旧 `server_version`、`last_synced_at`、`sync_status`、cursor、
 conflict 和 AI pending 均保留。`fresh_space` 与干净首次登录的同步资格为
-`ready`，但仍然只允许用户主动使用既有手动同步，不增加自动同步。
+`ready`。这段 Sprint 10B.2-A 的历史实现当时仍然只允许用户主动使用既有手动同步；从 Sprint 19A 起，满足完整账号、会话、设备和授权条件时，还可以使用用户主动开启的前台自动同步。
 
 ## Sprint 10B.3 Legacy Cloud Ownership Verification
 
@@ -475,3 +475,30 @@ column or Alembic revision. API Version remains `1`, Sync Protocol remains `2`,
 and Alembic head remains `20260812_0008`. A new Server image is required only
 because request validation changed; publishing that image is not proof that it
 has been deployed.
+
+## Sprint 19A Foreground Automatic Sync
+
+Sprint 19A adds scheduling around the existing six-module synchronization
+stack; it does not add a transport, entity, cursor, or conflict system. Manual
+and automatic requests share one application execution gate and continue
+through `SyncModuleRegistry`, `SyncAllOrchestrator`, `SyncModuleRunner`, and
+`SyncCoordinator`.
+
+Automatic execution requires all existing cloud-safety conditions plus the
+active local user's persisted `cloud_sync_enabled` preference and a foreground
+App lifecycle. Login/session restore, explicit enablement, foreground resume,
+successful local mutations, a 60-second foreground reconciliation timer, and
+bounded transient retry can queue work. Background/inactive/detached states
+stop new scheduling, and process termination provides no background service.
+
+Logout, endpoint/account switch, binding review, ownership review, rejected or
+unknown sessions, and missing device registration invalidate queued work. The
+coordinator revalidates the same account scope before push acknowledgement,
+remote apply, and cursor advance. Existing conflicts block their module without
+automatic resolution; other modules retain partial progress semantics.
+
+`cloud_sync_enabled` is per local account and installation, defaults to false,
+and is independent of both one-shot manual synchronization and AI data consent.
+AI Chat remains local-device only. API Version `1`, Sync Protocol `2`, Flutter
+schemaVersion `15`, Server models, and Alembic remain unchanged. See
+`docs/61_FOREGROUND_AUTOMATIC_SYNC.md` and manual matrix 67.

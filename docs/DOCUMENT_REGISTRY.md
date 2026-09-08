@@ -15,6 +15,13 @@
    blockers.
 4. The feature or Sprint document for design rationale and historical scope.
 
+## Current Active Feature Contracts
+
+- [Foreground Automatic Sync](61_FOREGROUND_AUTOMATIC_SYNC.md) - Sprint 19A
+  implementation contract; Safety Gate remains open pending manual matrix 67.
+- [Foreground Automatic Sync Manual Matrix](manual_tests/67_foreground_automatic_sync.md) -
+  current acceptance evidence owner for foreground scheduling and reconciliation.
+
 ## Duplicate Historical Numbers
 
 Historical filenames are retained to preserve links, Git history, and audit

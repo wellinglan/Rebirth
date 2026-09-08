@@ -620,6 +620,14 @@ Server validation is additive under API 1 and Sync Protocol 2. PostgreSQL and
 Alembic remain unchanged. Health remains disabled. See
 `docs/33_JOURNAL_CROSS_DEVICE_SYNC.md`.
 
+## Sprint 19A Succession Note
+
+The statement above records the manual-only product at this document's original
+checkpoint. Sprint 19A later adds an explicitly enabled, foreground-only
+automatic scheduler around the same module registry, adapters, cursors, OCC,
+tombstones, conflicts, and account guard. It does not alter Sync Protocol 2 or
+add OS background synchronization. See `docs/61_FOREGROUND_AUTOMATIC_SYNC.md`.
+
 ## Sprint 11C Health Adapter Boundary
 
 Health registers an independent `HealthSyncAdapter` and uses its local UUID as

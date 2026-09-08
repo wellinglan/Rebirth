@@ -109,7 +109,9 @@ AI Coach 发起远程分析前必须满足：
 
 ### 3.3 云同步授权
 
-未来云同步默认关闭。只有用户主动开启 `cloud_sync_enabled` 后，数据层才能创建同步任务。AI 数据共享与云同步是两个独立授权，不能互相代替。
+`cloud_sync_enabled` 默认关闭，并从 Sprint 19A 起表示当前本地用户数据空间、当前设备上的持久化前台自动同步授权。只有用户主动确认开启后，App 才能在前台创建自动同步任务；它不会在 App 关闭后运行，也不会自动继承到另一个账号或设备。关闭此字段只停止新的自动调度，不删除本地数据、cursor、冲突或同步元数据。
+
+手动同步是用户当次明确触发的操作，关闭 `cloud_sync_enabled` 后仍然可用，且不等同于持久化的自动同步授权。AI 数据共享与云同步是两个独立授权，不能互相代替；开启云同步不会授权 AI 使用数据，开启 AI 数据共享也不会开启云同步。
 
 ### 3.4 本地加密边界
 
@@ -673,7 +675,7 @@ PostgreSQL 与 Alembic 不变。
 | `onboarding_completed` | `INTEGER` | 是 | `0` | 是否完成初始设置，取值 `0/1` |
 | `ai_data_sharing_enabled` | `INTEGER` | 是 | `0` | 是否明确允许 App 在用户主动操作时准备所选 AI 输入；不等于自动发送 |
 | `ai_data_sharing_consent_at` | `INTEGER` | 否 | `NULL` | 最近一次开启 AI 数据共享的时间 |
-| `cloud_sync_enabled` | `INTEGER` | 是 | `0` | 未来云同步开关，v1.0 保持关闭 |
+| `cloud_sync_enabled` | `INTEGER` | 是 | `0` | 当前本地用户与当前设备的前台自动同步授权；默认关闭，不影响用户主动执行手动同步，且不等同于 AI 数据授权 |
 | `created_at` | `INTEGER` | 是 | 应用写入当前 UTC 时间 | 创建时间 |
 | `updated_at` | `INTEGER` | 是 | 应用写入当前 UTC 时间 | 最后更新时间 |
 | `sync_status` | `TEXT` | 是 | `local_only` | 设置自身的同步状态 |

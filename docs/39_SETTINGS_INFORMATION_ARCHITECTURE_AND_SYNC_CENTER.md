@@ -260,6 +260,16 @@ Manual Windows keyboard and Android release behavior remains a product gate.
 - no Server, PostgreSQL, or Alembic change
 - no Beijing Alpha deployment
 
+## Sprint 19A Succession Note
+
+The manual-only statements in this accepted Sprint 12A document remain
+historically correct. Sprint 19A later places a per-account/per-device opt-in
+foreground automatic-sync control in the same Sync Center while retaining all
+manual actions. There is still no synchronization after process termination,
+real-time push, or automatic conflict resolution. See
+`docs/61_FOREGROUND_AUTOMATIC_SYNC.md`; its manual Gate is tracked separately in
+matrix 67.
+
 Sprint 13A.1 provides the underlying session-backed authentication protocol and
 secure client credential storage. Sprint 13A.2 adds the public registration/login
 experience while preserving this Settings and unified manual sync architecture.

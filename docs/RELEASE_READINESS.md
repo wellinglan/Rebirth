@@ -60,7 +60,7 @@ AUTOMATED SUBSTITUTIONS**. The eight rows remain limitations, not manual PASS.
 | Private cloud Alpha | Sprint 17C-E full-SHA GHCR API image, digest, API-only recreation, health, API 1, and Sync Protocol 2 were checked | Provider, backup, and broader Production readiness still require separate current evidence |
 | Data migrations | Drift migration tests through schema 15, retained older-schema evidence, and Alembic `20260822_0009` | Production backup/restore rehearsal remains absent |
 | Authentication | Public password login, secure sessions, refresh rotation, logout, and account isolation | Recovery, MFA, real WeChat, and some controlled Step-up cases are absent |
-| Manual sync | Profile, Plan, Today, Journal, Health, and AI Report are registered | User-triggered only; no background sync by design |
+| Synchronization | Profile, Plan, Today, Journal, Health, and AI Report are registered; manual controls remain and Sprint 19A implements explicit foreground automatic scheduling | No OS/process background sync or real-time push; Sprint 19A manual Gate remains open |
 | AI cost safety | Quotas, concurrency, usage ledger, kill switch, and audit tooling | Live Provider/config state must be checked per deployment |
 | Manual acceptance | Unified Gate Registry and retained matrices | NOT EXECUTED rows remain limitations, not PASS |
 | Personal data portability | Versioned, deterministic, integrity-checked local JSON export | Plaintext; no import/restore, encryption, scheduling, or cloud backup |
@@ -189,6 +189,24 @@ and exact Alpha artifact/migration checks require manual execution. Concurrency,
 database-failure, timeout, account-timing, and migration fault rows may retain
 automated evidence when no safe product-level injection exists. Image
 publication, if later authorized, must be recorded separately from deployment.
+
+## Sprint 19A Boundary
+
+Sprint 19A is a Flutter-only foreground automatic-sync candidate. It reuses the
+existing six-module Sync Center, Sync Protocol 2 transport, cursors, OCC,
+tombstones, conflicts, account guard, and explicit manual controls. It does not
+add background services, real-time push, AI Chat sync, AI generation, automatic
+conflict resolution, or a second synchronization architecture.
+
+The implementation reuses `app_settings.cloud_sync_enabled`, so Flutter
+schemaVersion remains 15. API Version 1, Sync Protocol 2, Server code, Alembic,
+and the published API image are unchanged; Beijing Server redeployment is not
+required. Source automation and release builds do not replace cross-device,
+lifecycle, offline, conflict, account, privacy, and accessibility acceptance.
+The [Sprint 19A matrix](manual_tests/67_foreground_automatic_sync.md) begins at
+0 PASS / 0 FAIL / 58 NOT EXECUTED, and the **Foreground Automatic Sync Safety
+Gate is OPEN** until matching final-commit CI/artifact and manual evidence are
+recorded.
 
 ## Sprint 17C-E Boundary
 

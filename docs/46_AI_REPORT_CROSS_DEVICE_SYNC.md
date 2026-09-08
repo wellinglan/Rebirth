@@ -38,6 +38,12 @@ manual, account-bound synchronization capability, not an AI generation feature.
   conflict rows and indexes; report tables and immutable version guards are
   reused.
 
+> Sprint 19A succession: the automatic/background statement above records the
+> Sprint 14C checkpoint. AI Report aggregates and attached structured Feedback
+> can now participate in the user-enabled foreground scheduler through the
+> existing AI Report module. AI Chat remains local-device only, and no OS
+> background sync was added. See `docs/61_FOREGROUND_AUTOMATIC_SYNC.md`.
+
 ## Conflict And Delete Behavior
 
 The app keeps the local aggregate on an OCC conflict and writes a scoped

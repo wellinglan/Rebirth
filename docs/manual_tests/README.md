@@ -1,7 +1,7 @@
 # Rebirth Manual Acceptance Registry
 
 > Classification: **Active / authoritative Gate registry**
-> Consolidated: **2026-09-08 / Sprint 18B acceptance and Sprint 18C maintenance closure**
+> Consolidated: **2026-09-08 / Sprint 19A foreground automatic-sync candidate**
 
 Manual matrices record only real product execution. Automated tests never
 become manual PASS. `NOT EXECUTED` is an honest capability or fixture limit,
@@ -66,6 +66,7 @@ that a separate module-only matrix was rerun.
 | AI Coach Conversational MVP | HISTORICAL / SUPERSEDED | [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) | 0 / 0 / 69 | Original Sprint 18A matrix remains historical; current product acceptance is recorded by Sprint 18B |
 | Conversation-first AI Coach and Token Budget | CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS | [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) | 46 / 0 / 8 | Alpha deployment and executable Windows/Android flows passed; eight controlled or unavailable rows remain `NOT EXECUTED` with named automated evidence |
 | Repository Consolidation & Legacy Surface Cleanup | CLOSED | [Repository Consolidation & Legacy Surface Cleanup](66_repository_consolidation_and_legacy_cleanup.md) | 8 / 0 / 0 | User-executed Windows/Android maintenance regression passed; no product capability, data contract, or deployment change |
+| Foreground Automatic Sync Safety | OPEN | [Foreground Automatic Sync](67_foreground_automatic_sync.md) | 0 / 0 / 58 | Flutter-only candidate reuses the six existing modules; manual cross-device, lifecycle, offline, conflict, account, privacy, and accessibility evidence is pending |
 
 ## Important Succession Rules
 
@@ -99,6 +100,10 @@ that a separate module-only matrix was rerun.
   Gates outside its stated scope.
 - Matrix 66 verifies only the visible regressions of Sprint 18C source cleanup.
   It does not reopen or replace the accepted Sprint 18B AI Coach Gate.
+- Matrix 67 is the first authority for user-enabled foreground automatic sync.
+  Earlier manual-only statements remain true for their historical checkpoints;
+  matrix 67 does not claim OS background sync, real-time push, AI Chat sync, or
+  automatic conflict resolution.
 
 ## Current Matrix Index
 
@@ -156,6 +161,7 @@ that a separate module-only matrix was rerun.
 - [AI Coach Conversational MVP](64_ai_coach_conversational_mvp.md) - Historical Sprint 18A design and initial matrix; Chat is local-only and non-streaming
 - [Conversation-first AI Coach and Token Budget](65_ai_coach_conversation_first.md) - Current Gate CLOSED WITH ACCEPTED AUTOMATED SUBSTITUTIONS at 46 / 0 / 8
 - [Repository Consolidation & Legacy Surface Cleanup](66_repository_consolidation_and_legacy_cleanup.md) - Closed Sprint 18C maintenance regression matrix at 8 / 0 / 0
+- [Foreground Automatic Sync](67_foreground_automatic_sync.md) - Sprint 19A Safety Gate OPEN at 0 / 0 / 58 pending user execution
 
 Older UI, persistence, cloud, and AI reliability matrices `01` through `24`
 remain in this directory as historical Sprint evidence. They do not override
