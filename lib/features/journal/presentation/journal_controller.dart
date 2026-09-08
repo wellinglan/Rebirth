@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/journal/data/journal_repository_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 final journalControllerProvider =
     AsyncNotifierProvider<JournalController, List<JournalEntry>>(
@@ -81,12 +83,18 @@ class JournalController extends AsyncNotifier<List<JournalEntry>> {
   }
 
   Future<void> _mutate(Future<List<JournalEntry>> Function() operation) {
-    return _setFrom(operation);
+    return _setFrom(operation, signalMutation: true);
   }
 
-  Future<void> _setFrom(Future<List<JournalEntry>> Function() operation) async {
+  Future<void> _setFrom(
+    Future<List<JournalEntry>> Function() operation, {
+    bool signalMutation = false,
+  }) async {
     try {
       state = AsyncData(await operation());
+      if (signalMutation) {
+        ref.read(localSyncMutationSignalProvider)(SyncModuleId.journal);
+      }
     } catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
       rethrow;

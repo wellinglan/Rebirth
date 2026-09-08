@@ -4,6 +4,8 @@ import 'package:rebirth/features/plan/data/plan_repository_provider.dart';
 import 'package:rebirth/features/plan/domain/plan_goal.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_lifecycle.dart';
 import 'package:rebirth/features/plan/domain/plan_goal_save_data.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 import 'plan_filter_state.dart';
 import 'plan_view_state.dart';
@@ -144,6 +146,7 @@ class PlanController extends AsyncNotifier<PlanViewState> {
     await operation();
     await _readCurrentGoals();
     state = AsyncData(_buildView());
+    ref.read(localSyncMutationSignalProvider)(SyncModuleId.plan);
   }
 
   Future<void> _readCurrentGoals() async {

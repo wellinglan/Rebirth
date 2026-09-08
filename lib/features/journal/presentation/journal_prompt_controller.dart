@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/journal/data/journal_prompt_repository_provider.dart';
 import 'package:rebirth/features/journal/domain/journal_prompt.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 final journalPromptControllerProvider =
     AsyncNotifierProvider<JournalPromptController, JournalPromptConfiguration>(
@@ -77,7 +79,10 @@ class JournalPromptController
     final previous = state;
     try {
       final next = await operation();
-      if (ref.mounted) state = AsyncData(next);
+      if (ref.mounted) {
+        state = AsyncData(next);
+        ref.read(localSyncMutationSignalProvider)(SyncModuleId.journal);
+      }
     } catch (_) {
       if (ref.mounted) state = previous;
       rethrow;

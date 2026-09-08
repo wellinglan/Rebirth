@@ -9,19 +9,24 @@ import 'package:rebirth/features/health/domain/health_save_data.dart';
 import 'package:rebirth/features/health/domain/health_summary.dart';
 import 'package:rebirth/features/health/presentation/health_controller.dart';
 import 'package:rebirth/features/health/presentation/health_view_state.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   late _FakeHealthRepository repository;
   late ProviderContainer container;
+  late List<SyncModuleId> signals;
 
   setUp(() {
     repository = _FakeHealthRepository();
+    signals = [];
     container = ProviderContainer(
       overrides: [
         healthRepositoryProvider.overrideWithValue(repository),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 14, 9)),
         ),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
   });
@@ -56,6 +61,7 @@ void main() {
     expect(state.recentEntries.single.recordDate, '2026-07-13');
     expect(state.summary.averageWaterIntakeMl, 2000);
     expect(state.isSaving, isFalse);
+    expect(signals, [SyncModuleId.health]);
   });
 
   test('failed save keeps existing state and rethrows', () async {
@@ -75,6 +81,7 @@ void main() {
     expect(state.today.id, initial.today.id);
     expect(state.today.waterIntakeMl, initial.today.waterIntakeMl);
     expect(state.isSaving, isFalse);
+    expect(signals, isEmpty);
   });
 
   test('reload failure enters AsyncError', () async {

@@ -10,6 +10,8 @@ import 'package:rebirth/features/profile/domain/profile_repository.dart';
 import 'package:rebirth/features/profile/domain/profile_save_data.dart';
 import 'package:rebirth/features/profile/domain/user_profile.dart';
 import 'package:rebirth/features/profile/presentation/profile_page.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   testWidgets('ProfilePage shows loading state', (tester) async {
@@ -54,7 +56,8 @@ void main() {
 
   testWidgets('editing the profile saves trimmed local values', (tester) async {
     final repository = _FakeProfileRepository();
-    await _pumpProfile(tester, repository);
+    final signals = <SyncModuleId>[];
+    await _pumpProfile(tester, repository, signals: signals);
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -69,12 +72,14 @@ void main() {
 
     expect(repository.lastSaved?.displayName, 'New name');
     expect(repository.lastSaved?.growthFocus, '深度工作');
+    expect(signals, [SyncModuleId.profile]);
     expect(find.text('资料已保存'), findsOneWidget);
   });
 
   testWidgets('failed save keeps input and can be retried', (tester) async {
     final repository = _FakeProfileRepository(failuresBeforeSuccess: 1);
-    await _pumpProfile(tester, repository);
+    final signals = <SyncModuleId>[];
+    await _pumpProfile(tester, repository, signals: signals);
     await tester.pumpAndSettle();
     final field = find.byKey(const ValueKey('profileDisplayNameField'));
     await tester.enterText(field, '失败后保留');
@@ -84,10 +89,12 @@ void main() {
     expect(find.text('保存失败，请重试'), findsOneWidget);
     expect(_fieldText(tester, 'profileDisplayNameField'), '失败后保留');
     expect(repository.saveAttempts, 1);
+    expect(signals, isEmpty);
 
     await _tapSave(tester);
     expect(repository.saveAttempts, 2);
     expect(repository.lastSaved?.displayName, '失败后保留');
+    expect(signals, [SyncModuleId.profile]);
     expect(find.text('资料已保存'), findsOneWidget);
   });
 
@@ -158,13 +165,19 @@ void main() {
 
 Future<void> _pumpProfile(
   WidgetTester tester,
-  ProfileRepository repository,
-) async {
+  ProfileRepository repository, {
+  List<SyncModuleId>? signals,
+}) async {
   await tester.binding.setSurfaceSize(const Size(800, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [profileRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        profileRepositoryProvider.overrideWithValue(repository),
+        localSyncMutationSignalProvider.overrideWithValue(
+          (moduleId) => signals?.add(moduleId),
+        ),
+      ],
       child: const MaterialApp(home: ProfilePage()),
     ),
   );

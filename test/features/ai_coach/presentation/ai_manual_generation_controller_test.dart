@@ -18,6 +18,8 @@ import 'package:rebirth/features/ai_coach/domain/ai_usage_snapshot.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_manual_generation_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_manual_generation_view_state.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_request_preview_controller.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 import '../ai_coach_test_support.dart';
 
@@ -29,6 +31,7 @@ void main() {
   late FakeSessionStore sessions;
   late FakeAiCoachInputAssembler assembler;
   late FakeAiGenerationRequestBindingStore bindings;
+  late List<SyncModuleId> signals;
 
   setUp(() {
     consent = FakeAiConsentRepository(
@@ -44,6 +47,7 @@ void main() {
       ),
     );
     bindings = FakeAiGenerationRequestBindingStore();
+    signals = [];
     container = ProviderContainer(
       overrides: [
         aiConsentRepositoryProvider.overrideWithValue(consent),
@@ -55,6 +59,7 @@ void main() {
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 16, 9)),
         ),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
     addTearDown(container.dispose);
@@ -90,6 +95,7 @@ void main() {
     expect(reports.markFailedCalls, 0);
     expect(bindings.saveCalls, 1);
     expect(bindings.deleteCalls, 1);
+    expect(signals, [SyncModuleId.aiReport]);
   });
 
   test(
@@ -130,6 +136,7 @@ void main() {
       container.read(aiManualGenerationControllerProvider).requireValue.phase,
       AiManualGenerationPhase.failure,
     );
+    expect(signals, [SyncModuleId.aiReport]);
   });
 
   test('terminal provider failure allows an explicit retry', () async {
@@ -215,6 +222,7 @@ void main() {
       expect(reports.reports.single.status, AiReportStatus.pending);
       expect(bindings.values, contains('pending-1'));
       expect(gateway.generationCalls, 1);
+      expect(signals, isEmpty);
     },
   );
 
@@ -285,6 +293,7 @@ void main() {
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 16, 9)),
         ),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
     final bundle = await _buildPreview(container);

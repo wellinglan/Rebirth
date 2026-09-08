@@ -4,6 +4,8 @@ import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/domain/today_repository.dart';
 import 'package:rebirth/features/today/domain/today_save_data.dart';
 import 'package:rebirth/features/today/presentation/today_history_controller.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 import 'package:rebirth/shared/state/health_record_revision_provider.dart';
 
 final todayControllerProvider =
@@ -25,6 +27,9 @@ class TodayController extends AsyncNotifier<TodayEntry> {
   Future<void> saveToday(TodaySaveData data) async {
     await _mutate(() => ref.read(todayRepositoryProvider).saveToday(data));
     ref.read(healthRecordRevisionProvider.notifier).bump();
+    if (data.health != null) {
+      ref.read(localSyncMutationSignalProvider)(SyncModuleId.health);
+    }
   }
 
   Future<void> updatePriorities(List<TodayPriority> priorities) {
@@ -101,6 +106,7 @@ class TodayController extends AsyncNotifier<TodayEntry> {
 
   Future<void> _deleteAndReload(String recordDate) async {
     await ref.read(todayRepositoryProvider).deleteTodayByDate(recordDate);
+    ref.read(localSyncMutationSignalProvider)(SyncModuleId.today);
     ref.invalidate(todayHistoryControllerProvider);
     await reload();
   }
@@ -125,5 +131,6 @@ class TodayController extends AsyncNotifier<TodayEntry> {
   Future<void> _mutate(Future<TodayEntry> Function() operation) async {
     final updated = await operation();
     state = AsyncData(updated);
+    ref.read(localSyncMutationSignalProvider)(SyncModuleId.today);
   }
 }

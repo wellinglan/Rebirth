@@ -12,19 +12,24 @@ import 'package:rebirth/features/plan/domain/plan_repository.dart';
 import 'package:rebirth/features/plan/presentation/plan_controller.dart';
 import 'package:rebirth/features/plan/presentation/plan_filter_state.dart';
 import 'package:rebirth/features/plan/presentation/plan_view_state.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   late AppDatabase database;
   late ProviderContainer container;
+  late List<SyncModuleId> signals;
 
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
+    signals = [];
     container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 14, 10)),
         ),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
   });
@@ -59,6 +64,7 @@ void main() {
     expect(view.goals, hasLength(1));
     expect(view.goals.single.title, '年度研究方向');
     expect(view.goals.single.parentGoalId, isNull);
+    expect(signals, [SyncModuleId.plan]);
   });
 
   test('openChildren and createGoal attach the current parent', () async {
@@ -392,8 +398,12 @@ void main() {
   test('mutation failure is rethrown without clearing existing view', () async {
     final existing = _sampleGoal();
     final repository = _FailingPlanRepository(goals: [existing]);
+    final errorSignals = <SyncModuleId>[];
     final errorContainer = ProviderContainer(
-      overrides: [planRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        planRepositoryProvider.overrideWithValue(repository),
+        localSyncMutationSignalProvider.overrideWithValue(errorSignals.add),
+      ],
     );
     addTearDown(errorContainer.dispose);
     final initialView = await errorContainer.read(
@@ -417,6 +427,7 @@ void main() {
       errorContainer.read(planControllerProvider).requireValue,
       initialView,
     );
+    expect(errorSignals, isEmpty);
   });
 
   test('reload failure enters AsyncError', () async {

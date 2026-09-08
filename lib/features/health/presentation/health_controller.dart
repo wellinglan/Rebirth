@@ -4,6 +4,8 @@ import 'package:rebirth/features/health/data/health_repository_provider.dart';
 import 'package:rebirth/features/health/domain/health_entry.dart';
 import 'package:rebirth/features/health/domain/health_save_data.dart';
 import 'package:rebirth/features/health/domain/health_summary.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 import 'package:rebirth/shared/state/health_record_revision_provider.dart';
 
 import 'health_view_state.dart';
@@ -64,6 +66,7 @@ class HealthController extends AsyncNotifier<HealthViewState> {
       await ref.read(healthRepositoryProvider).saveForDate(data);
       state = AsyncData(await _loadState());
       ref.read(healthRecordRevisionProvider.notifier).bump();
+      ref.read(localSyncMutationSignalProvider)(SyncModuleId.health);
     } catch (error, stackTrace) {
       state = AsyncData(current.copyWith(isSaving: false));
       Error.throwWithStackTrace(error, stackTrace);
@@ -78,6 +81,7 @@ class HealthController extends AsyncNotifier<HealthViewState> {
       await ref.read(healthRepositoryProvider).softDelete(id);
       state = AsyncData(await _loadState());
       ref.read(healthRecordRevisionProvider.notifier).bump();
+      ref.read(localSyncMutationSignalProvider)(SyncModuleId.health);
     } catch (error, stackTrace) {
       state = AsyncData(current.copyWith(isSaving: false));
       Error.throwWithStackTrace(error, stackTrace);

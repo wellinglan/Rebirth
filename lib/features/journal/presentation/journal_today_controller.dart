@@ -5,6 +5,8 @@ import 'package:rebirth/features/journal/domain/journal_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'package:rebirth/features/growth/presentation/growth_controller.dart';
 import 'package:rebirth/features/personal_data/application/personal_data_aggregation_controller.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 final journalTodayControllerProvider =
     AsyncNotifierProvider<JournalTodayController, JournalEntry?>(
@@ -63,6 +65,7 @@ class JournalTodayController extends AsyncNotifier<JournalEntry?> {
         ref
           ..invalidate(personalDataAggregationControllerProvider)
           ..invalidate(growthControllerProvider);
+        ref.read(localSyncMutationSignalProvider)(SyncModuleId.journal);
       }
       return saved;
     } catch (_) {
@@ -84,6 +87,7 @@ class JournalTodayController extends AsyncNotifier<JournalEntry?> {
       ref
         ..invalidate(personalDataAggregationControllerProvider)
         ..invalidate(growthControllerProvider);
+      ref.read(localSyncMutationSignalProvider)(SyncModuleId.journal);
     } catch (_) {
       if (ref.mounted) state = previous;
       rethrow;

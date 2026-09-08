@@ -8,13 +8,16 @@ import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dar
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_repository.dart';
 import 'package:rebirth/features/ai_coach/presentation/widgets/ai_report_feedback_card.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   testWidgets(
     'helpful feedback saves without free text and shows privacy note',
     (tester) async {
       final repository = _FakeFeedbackRepository();
-      await _pump(tester, repository);
+      final signals = <SyncModuleId>[];
+      await _pump(tester, repository, signals: signals);
 
       expect(find.byType(TextField), findsNothing);
       expect(
@@ -31,6 +34,7 @@ void main() {
       expect(repository.saveCount, 1);
       expect(repository.current?.helpfulness, AiReportHelpfulness.helpful);
       expect(repository.current?.reasons, isEmpty);
+      expect(signals, [SyncModuleId.aiReport]);
       expect(find.text('反馈已保存'), findsOneWidget);
     },
   );
@@ -57,7 +61,8 @@ void main() {
 
   testWidgets('existing feedback can be modified and cleared', (tester) async {
     final repository = _FakeFeedbackRepository(current: _feedback());
-    await _pump(tester, repository);
+    final signals = <SyncModuleId>[];
+    await _pump(tester, repository, signals: signals);
     await tester.tap(find.text('没帮助'));
     await tester.pump();
     await tester.tap(find.text('建议不够可执行'));
@@ -70,6 +75,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('clearAiReportFeedbackButton')));
     await tester.pumpAndSettle();
     expect(repository.current, isNull);
+    expect(signals, [SyncModuleId.aiReport, SyncModuleId.aiReport]);
     expect(find.text('反馈已清除'), findsOneWidget);
   });
 
@@ -77,7 +83,8 @@ void main() {
     'not-helpful requires a fixed reason and failure preserves retry',
     (tester) async {
       final repository = _FakeFeedbackRepository(failNextSave: true);
-      await _pump(tester, repository);
+      final signals = <SyncModuleId>[];
+      await _pump(tester, repository, signals: signals);
 
       await tester.tap(find.text('没帮助'));
       await tester.pump();
@@ -95,12 +102,14 @@ void main() {
         tester.widget<FilterChip>(find.byType(FilterChip).at(3)).selected,
         isTrue,
       );
+      expect(signals, isEmpty);
 
       await tester.tap(save);
       await tester.pumpAndSettle();
       expect(repository.saveCount, 2);
       expect(repository.current?.helpfulness, AiReportHelpfulness.notHelpful);
       expect(repository.current?.reasons, [AiReportFeedbackReason.tooGeneric]);
+      expect(signals, [SyncModuleId.aiReport]);
     },
   );
 
@@ -179,11 +188,15 @@ Future<void> _pump(
   WidgetTester tester,
   _FakeFeedbackRepository repository, {
   TextScaler textScaler = TextScaler.noScaling,
+  List<SyncModuleId>? signals,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         aiReportFeedbackRepositoryProvider.overrideWithValue(repository),
+        localSyncMutationSignalProvider.overrideWithValue(
+          (moduleId) => signals?.add(moduleId),
+        ),
       ],
       child: MaterialApp(
         home: MediaQuery(

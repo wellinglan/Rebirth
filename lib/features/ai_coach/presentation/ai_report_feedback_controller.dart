@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 typedef AiReportFeedbackTarget = ({String reportId, int reportVersion});
 
@@ -40,6 +42,7 @@ final class AiReportFeedbackController {
           helpfulness: helpfulness,
           reasons: reasons,
         );
+    ref.read(localSyncMutationSignalProvider)(SyncModuleId.aiReport);
     ref.invalidate(aiReportFeedbackProvider(target));
   }
 
@@ -47,6 +50,7 @@ final class AiReportFeedbackController {
     await ref
         .read(aiReportFeedbackRepositoryProvider)
         .clear(reportId: target.reportId, reportVersion: target.reportVersion);
+    ref.read(localSyncMutationSignalProvider)(SyncModuleId.aiReport);
     ref.invalidate(aiReportFeedbackProvider(target));
   }
 

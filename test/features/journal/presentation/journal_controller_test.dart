@@ -10,19 +10,24 @@ import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'package:rebirth/features/journal/presentation/journal_controller.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   late AppDatabase database;
   late ProviderContainer container;
+  late List<SyncModuleId> signals;
 
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
+    signals = [];
     container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 10, 21)),
         ),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
   });
@@ -60,6 +65,11 @@ void main() {
 
     await controller.deleteEntry(created.id);
     expect(container.read(journalControllerProvider).requireValue, isEmpty);
+    expect(signals, [
+      SyncModuleId.journal,
+      SyncModuleId.journal,
+      SyncModuleId.journal,
+    ]);
   });
 
   test('exposes repository failures as AsyncError', () async {
@@ -75,6 +85,7 @@ void main() {
       container.read(journalControllerProvider),
       isA<AsyncError<List<JournalEntry>>>(),
     );
+    expect(signals, isEmpty);
   });
 
   test('reload reads newly saved recent entries', () async {

@@ -9,6 +9,8 @@ import 'package:rebirth/features/journal/domain/journal_prompt_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'package:rebirth/features/journal/presentation/journal_prompt_management_page.dart';
 import 'package:rebirth/features/journal/presentation/widgets/journal_form.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   testWidgets('dynamic custom prompt renders and saves by item identity', (
@@ -31,10 +33,7 @@ void main() {
       ),
     );
 
-    final field = find.widgetWithText(
-      TextFormField,
-      '今天还有什么值得记录？',
-    );
+    final field = find.widgetWithText(TextFormField, '今天还有什么值得记录？');
     expect(field, findsOneWidget);
     expect(find.text('今天还有什么值得记录？'), findsOneWidget);
     await tester.enterText(field, '  一段自定义回答  ');
@@ -130,6 +129,7 @@ void main() {
   testWidgets('add prompt dialog validates and creates through controller', (
     tester,
   ) async {
+    final signals = <SyncModuleId>[];
     final repository = _MemoryPromptRepository(
       JournalPromptConfiguration(
         id: 'b0000000-0000-4000-8000-000000000001',
@@ -150,6 +150,7 @@ void main() {
       ProviderScope(
         overrides: [
           journalPromptRepositoryProvider.overrideWithValue(repository),
+          localSyncMutationSignalProvider.overrideWithValue(signals.add),
         ],
         child: const MaterialApp(home: JournalPromptManagementPage()),
       ),
@@ -165,6 +166,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.created?.questionText, '一个新增问题');
+    expect(signals, [SyncModuleId.journal]);
     expect(
       find.byKey(const ValueKey('journalPromptEditorDialog')),
       findsNothing,

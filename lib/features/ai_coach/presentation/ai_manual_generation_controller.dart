@@ -5,6 +5,8 @@ import 'package:rebirth/features/ai_coach/domain/ai_coach_input_bundle.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_data_scope.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 import 'ai_manual_generation_view_state.dart';
 import 'ai_report_history_controller.dart';
@@ -142,6 +144,10 @@ class AiManualGenerationController
           .read(aiReportGenerationCoordinatorProvider)
           .generate(bundle);
       if (ref.mounted) ref.invalidate(aiReportHistoryControllerProvider);
+      if (result.status == AiReportGenerationResultStatus.completed ||
+          result.status == AiReportGenerationResultStatus.failed) {
+        ref.read(localSyncMutationSignalProvider)(SyncModuleId.aiReport);
+      }
       final stillCurrent = ref.mounted && _isCurrentBundle(bundle);
       if (result.awaitingRecovery) {
         _setIfMounted(

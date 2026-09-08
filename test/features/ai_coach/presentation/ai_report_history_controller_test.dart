@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rebirth/features/ai_coach/data/ai_coach_repository_providers.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_report_history_controller.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 import '../ai_coach_test_support.dart';
 
@@ -11,13 +13,16 @@ void main() {
   late ProviderContainer container;
   late ProviderSubscription subscription;
   late FakeAiGenerationRequestBindingStore bindings;
+  late List<SyncModuleId> signals;
 
   void createContainer() {
     bindings = FakeAiGenerationRequestBindingStore();
+    signals = [];
     container = ProviderContainer(
       overrides: [
         aiReportRepositoryProvider.overrideWithValue(repository),
         aiGenerationRequestBindingStoreProvider.overrideWithValue(bindings),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
     subscription = container.listen(
@@ -160,6 +165,7 @@ void main() {
       );
       expect(repository.createPendingCalls, 0);
       expect(repository.markCompletedCalls, 0);
+      expect(signals, [SyncModuleId.aiReport]);
     },
   );
 
@@ -184,6 +190,7 @@ void main() {
     state = container.read(aiReportHistoryControllerProvider).requireValue;
     expect(state.reports, isEmpty);
     expect(repository.deleteCalls, 2);
+    expect(signals, [SyncModuleId.aiReport]);
   });
 
   test('archive changes only the selected completed report status', () async {
@@ -208,6 +215,7 @@ void main() {
     expect(repository.reports.first.reportContent, isNotNull);
     expect(repository.reports.last, same(untouched));
     expect(repository.deleteCalls, 0);
+    expect(signals, [SyncModuleId.aiReport]);
   });
 
   test('archive failure preserves the report and permits a retry', () async {
@@ -232,6 +240,7 @@ void main() {
     state = container.read(aiReportHistoryControllerProvider).requireValue;
     expect(state.reports.single.status, AiReportStatus.archived);
     expect(repository.archiveCalls, 2);
+    expect(signals, [SyncModuleId.aiReport]);
   });
 
   test('invalid detail id returns null without a repository lookup', () async {

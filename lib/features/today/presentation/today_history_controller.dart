@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
 import 'package:rebirth/features/today/data/today_repository_provider.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 final todayHistoryControllerProvider =
     AsyncNotifierProvider<TodayHistoryController, List<TodayEntry>>(
@@ -66,6 +68,7 @@ class TodayHistoryController extends AsyncNotifier<List<TodayEntry>> {
 
   Future<void> _deleteAndReload(String recordDate) async {
     await ref.read(todayRepositoryProvider).deleteTodayByDate(recordDate);
+    ref.read(localSyncMutationSignalProvider)(SyncModuleId.today);
     ref.invalidate(todayHistoryEntryForDateProvider(recordDate));
     await reload();
   }

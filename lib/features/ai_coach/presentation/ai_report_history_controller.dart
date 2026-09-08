@@ -6,6 +6,8 @@ import 'ai_report_presentation_mapper.dart';
 import 'models/ai_report_presentation_models.dart';
 import 'ai_pending_recovery_controller.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 final aiReportPresentationMapperProvider = Provider<AiReportPresentationMapper>(
   (ref) => const AiReportPresentationMapper(),
@@ -81,6 +83,7 @@ class AiReportHistoryController
     );
     try {
       await ref.read(aiReportRepositoryProvider).softDelete(reportId);
+      _signalMutation();
       try {
         await ref
             .read(aiGenerationRequestBindingStoreProvider)
@@ -126,6 +129,7 @@ class AiReportHistoryController
     );
     try {
       await ref.read(aiReportRepositoryProvider).archive(reportId);
+      _signalMutation();
       final reports = await _loadReports();
       if (!ref.mounted) return false;
       state = AsyncData(AiReportHistoryViewState(reports: reports));
@@ -165,6 +169,7 @@ class AiReportHistoryController
     final result = await ref
         .read(aiPendingRecoveryControllerProvider)
         .check(report);
+    if (_isTerminalRecovery(result)) _signalMutation();
     if (!ref.mounted) return;
     final reports = await _loadReports();
     final latest = state.asData?.value ?? current;
@@ -194,6 +199,7 @@ class AiReportHistoryController
       await ref
           .read(aiPendingRecoveryControllerProvider)
           .confirmServerNotFound(report);
+      _signalMutation();
       if (!ref.mounted) return false;
       final reports = await _loadReports();
       state = AsyncData(AiReportHistoryViewState(reports: reports));
@@ -215,5 +221,17 @@ class AiReportHistoryController
     );
     final mapper = ref.read(aiReportPresentationMapperProvider);
     return reports.map(mapper.toListItem).toList(growable: false);
+  }
+
+  bool _isTerminalRecovery(AiPendingRecoveryState result) => switch (result) {
+    AiPendingRecoveryState.completed ||
+    AiPendingRecoveryState.failed ||
+    AiPendingRecoveryState.outcomeUnknown ||
+    AiPendingRecoveryState.resultExpired => true,
+    _ => false,
+  };
+
+  void _signalMutation() {
+    ref.read(localSyncMutationSignalProvider)(SyncModuleId.aiReport);
   }
 }

@@ -12,19 +12,24 @@ import 'package:rebirth/features/journal/domain/journal_entry.dart';
 import 'package:rebirth/features/journal/domain/journal_repository.dart';
 import 'package:rebirth/features/journal/domain/journal_save_data.dart';
 import 'package:rebirth/features/journal/presentation/journal_today_controller.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   late AppDatabase database;
   late ProviderContainer container;
+  late List<SyncModuleId> signals;
 
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
+    signals = [];
     container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 13, 21)),
         ),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
   });
@@ -64,6 +69,7 @@ void main() {
       container.read(journalTodayControllerProvider).requireValue?.learning,
       'Controller 保存',
     );
+    expect(signals, [SyncModuleId.journal]);
   });
 
   test('failed save preserves the existing state', () async {
@@ -89,6 +95,7 @@ void main() {
       container.read(journalTodayControllerProvider).requireValue?.learning,
       '原有内容',
     );
+    expect(signals, isEmpty);
   });
 
   test('reload reads changes made outside the controller', () async {
@@ -136,30 +143,36 @@ void main() {
     },
   );
 
-  test('apply latest prompts is available through the domain repository', () async {
-    final repository = container.read(journalRepositoryProvider);
-    final entry = await repository.saveDraft(
-      const JournalSaveData(learning: '保留已有回答'),
-    );
-    await container.read(journalTodayControllerProvider.future);
+  test(
+    'apply latest prompts is available through the domain repository',
+    () async {
+      final repository = container.read(journalRepositoryProvider);
+      final entry = await repository.saveDraft(
+        const JournalSaveData(learning: '保留已有回答'),
+      );
+      await container.read(journalTodayControllerProvider.future);
 
-    final updated = await container
-        .read(journalTodayControllerProvider.notifier)
-        .applyLatestPrompts();
+      final updated = await container
+          .read(journalTodayControllerProvider.notifier)
+          .applyLatestPrompts();
 
-    expect(updated.id, entry.id);
-    expect(
-      container.read(journalTodayControllerProvider).requireValue?.id,
-      entry.id,
-    );
-  });
+      expect(updated.id, entry.id);
+      expect(
+        container.read(journalTodayControllerProvider).requireValue?.id,
+        entry.id,
+      );
+    },
+  );
 
-  test('today controller does not depend on the concrete repository provider', () {
-    final source = File(
-      'lib/features/journal/presentation/journal_today_controller.dart',
-    ).readAsStringSync();
+  test(
+    'today controller does not depend on the concrete repository provider',
+    () {
+      final source = File(
+        'lib/features/journal/presentation/journal_today_controller.dart',
+      ).readAsStringSync();
 
-    expect(source, isNot(contains('journalRepositoryImplProvider')));
-    expect(source, contains('journalRepositoryProvider'));
-  });
+      expect(source, isNot(contains('journalRepositoryImplProvider')));
+      expect(source, contains('journalRepositoryProvider'));
+    },
+  );
 }

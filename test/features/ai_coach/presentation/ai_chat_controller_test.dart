@@ -11,6 +11,8 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_status.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_chat_controller.dart';
 import 'package:rebirth/features/ai_coach/presentation/ai_chat_view_state.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 
 void main() {
   test(
@@ -18,10 +20,12 @@ void main() {
     () async {
       final repository = _ChatRepository();
       final operations = _ChatOperations();
+      final signals = <SyncModuleId>[];
       final container = ProviderContainer(
         overrides: [
           aiChatRepositoryProvider.overrideWithValue(repository),
           aiChatCoordinatorProvider.overrideWithValue(operations),
+          localSyncMutationSignalProvider.overrideWithValue(signals.add),
         ],
       );
       addTearDown(container.dispose);
@@ -65,6 +69,7 @@ void main() {
         completed.conversation?.messages.last.status,
         AiChatMessageStatus.completed,
       );
+      expect(signals, isEmpty);
     },
   );
 

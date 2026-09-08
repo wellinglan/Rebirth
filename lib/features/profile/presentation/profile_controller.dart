@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rebirth/features/profile/data/profile_repository_provider.dart';
 import 'package:rebirth/features/profile/domain/profile_save_data.dart';
 import 'package:rebirth/features/profile/domain/user_profile.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 import 'package:rebirth/shared/state/profile_revision_provider.dart';
 
 final profileControllerProvider =
@@ -34,6 +36,7 @@ class ProfileController extends AsyncNotifier<UserProfile> {
       final saved = await ref.read(profileRepositoryProvider).saveProfile(data);
       state = AsyncData(saved);
       ref.read(profileRevisionProvider.notifier).bump();
+      ref.read(localSyncMutationSignalProvider)(SyncModuleId.profile);
     } finally {
       _isSaving = false;
     }

@@ -5,21 +5,26 @@ import 'package:rebirth/core/database/app_database.dart';
 import 'package:rebirth/core/database/database_provider.dart';
 import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/date_time_service_provider.dart';
+import 'package:rebirth/features/sync/application/local_sync_mutation_signal.dart';
+import 'package:rebirth/features/sync/domain/sync_module.dart';
 import 'package:rebirth/features/today/domain/today_entry.dart';
 import 'package:rebirth/features/today/presentation/today_controller.dart';
 
 void main() {
   late AppDatabase database;
   late ProviderContainer container;
+  late List<SyncModuleId> signals;
 
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
+    signals = [];
     container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         dateTimeServiceProvider.overrideWithValue(
           DateTimeService(now: () => DateTime(2026, 7, 10, 9)),
         ),
+        localSyncMutationSignalProvider.overrideWithValue(signals.add),
       ],
     );
   });
@@ -45,6 +50,7 @@ void main() {
       container.read(todayControllerProvider).requireValue.dailyNote,
       'Controller 保存成功',
     );
+    expect(signals, [SyncModuleId.today]);
 
     await expectLater(
       container
@@ -56,5 +62,6 @@ void main() {
       container.read(todayControllerProvider).requireValue.dailyNote,
       'Controller 保存成功',
     );
+    expect(signals, [SyncModuleId.today]);
   });
 }
