@@ -19,6 +19,7 @@ import 'package:rebirth/features/ai_coach/domain/ai_generation_gateway.dart';
 import 'package:rebirth/features/growth/data/growth_repository_provider.dart';
 import 'package:rebirth/features/health/data/health_repository_provider.dart';
 import 'package:rebirth/features/journal/data/journal_repository_provider.dart';
+import 'package:rebirth/features/sync/data/sync_record_baseline_repository_impl.dart';
 import 'package:rebirth/features/today/data/today_repository_provider.dart';
 
 import 'ai_coach_input_assembler_impl.dart';
@@ -123,9 +124,11 @@ final aiReportRepositoryProvider = Provider<AiReportRepository>((ref) {
 
 final aiReportFeedbackRepositoryProvider = Provider<AiReportFeedbackRepository>(
   (ref) {
+    final database = ref.watch(appDatabaseProvider);
     return LocalAiReportFeedbackRepository(
-      database: ref.watch(appDatabaseProvider),
+      database: database,
       dateTimeService: ref.watch(dateTimeServiceProvider),
+      baselines: SyncRecordBaselineRepositoryImpl(database),
     );
   },
 );
@@ -140,8 +143,10 @@ final aiReportFeedbackRemoteDataSourceProvider =
 
 final aiReportFeedbackSyncServiceProvider =
     Provider<AiReportFeedbackSyncService>((ref) {
+      final database = ref.watch(appDatabaseProvider);
       return AiReportFeedbackSyncServiceImpl(
         repository: ref.watch(aiReportFeedbackRepositoryProvider),
         remoteDataSource: ref.watch(aiReportFeedbackRemoteDataSourceProvider),
+        baselines: SyncRecordBaselineRepositoryImpl(database),
       );
     });

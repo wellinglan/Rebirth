@@ -27,12 +27,14 @@ final class AiReportFeedbackSyncSummary {
     this.pulled = 0,
     this.conflicts = 0,
     this.deferred = 0,
+    this.automaticallyReconciled = 0,
   });
 
   final int pushed;
   final int pulled;
   final int conflicts;
   final int deferred;
+  final int automaticallyReconciled;
 }
 
 abstract interface class AiReportFeedbackSyncService {

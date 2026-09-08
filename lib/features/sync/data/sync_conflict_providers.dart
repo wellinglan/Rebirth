@@ -125,10 +125,11 @@ final syncConflictDetailsProvider =
           .watch(syncConflictRepositoryProvider)
           .getConflict(scope, id);
       final database = ref.watch(appDatabaseProvider);
-      final current = await _loadCurrentSnapshot(
+      final current = await loadCurrentSyncSnapshot(
         database,
-        record,
+        record.entityType,
         scope.localUserId,
+        record.recordId,
       );
       return SyncConflictDetails(
         record: record,
@@ -136,7 +137,7 @@ final syncConflictDetailsProvider =
         localSnapshotChanged:
             current == null ||
             current.updatedAt != record.localSnapshot.updatedAt ||
-            !_samePayload(current.payload, record.localSnapshot.payload),
+            !sameSyncPayload(current.payload, record.localSnapshot.payload),
       );
     });
 
@@ -198,47 +199,36 @@ final aiReportConflictResolutionServiceProvider =
       );
     });
 
-Future<SyncConflictSnapshot?> _loadCurrentSnapshot(
+Future<SyncConflictSnapshot?> loadCurrentSyncSnapshot(
   AppDatabase database,
-  SyncConflictRecord record,
+  SyncEntityType entityType,
   String localUserId,
+  String recordId,
 ) async {
-  return switch (record.entityType) {
+  return switch (entityType) {
     SyncEntityType.profile => _loadProfileSnapshot(
       database,
       localUserId,
-      record.recordId,
+      recordId,
     ),
-    SyncEntityType.plan => _loadPlanSnapshot(
-      database,
-      localUserId,
-      record.recordId,
-    ),
-    SyncEntityType.today => _loadTodaySnapshot(
-      database,
-      localUserId,
-      record.recordId,
-    ),
+    SyncEntityType.plan => _loadPlanSnapshot(database, localUserId, recordId),
+    SyncEntityType.today => _loadTodaySnapshot(database, localUserId, recordId),
     SyncEntityType.journal => _loadJournalSnapshot(
       database,
       localUserId,
-      record.recordId,
+      recordId,
     ),
     SyncEntityType.journalPromptConfiguration =>
-      _loadJournalPromptConfigurationSnapshot(
-        database,
-        localUserId,
-        record.recordId,
-      ),
+      _loadJournalPromptConfigurationSnapshot(database, localUserId, recordId),
     SyncEntityType.health => _loadHealthSnapshot(
       database,
       localUserId,
-      record.recordId,
+      recordId,
     ),
     SyncEntityType.aiReport => _loadAiReportSnapshot(
       database,
       localUserId,
-      record.recordId,
+      recordId,
     ),
   };
 }
@@ -406,11 +396,17 @@ Future<SyncConflictSnapshot?> _loadHealthSnapshot(
             recordDate: health.recordDate,
             timezoneOffsetMinutes: health.timezoneOffsetMinutes,
             sleepDurationMinutes: health.sleepDurationMinutes,
+            sleepDescription: health.sleepDescription,
             weightKg: health.weightKg,
+            weightDescription: health.weightDescription,
             waterIntakeMl: health.waterIntakeMl,
+            waterDescription: health.waterDescription,
             exerciseType: health.exerciseType,
             exerciseDurationMinutes: health.exerciseDurationMinutes,
+            exerciseDescription: health.exerciseDescription,
             physicalStateScore: health.physicalStateScore,
+            physicalStateScoreScale: health.physicalStateScoreScale ?? 5,
+            physicalStateDescription: health.physicalStateDescription,
             note: health.note,
             dataSource: health.dataSource,
             sourceRecordId: health.sourceRecordId,
@@ -549,9 +545,14 @@ Future<SyncConflictSnapshot?> _loadTodaySnapshot(
             priority3Completed: today.priority3Completed,
             priority3GoalId: today.priority3GoalId,
             moodScore: today.moodScore,
+            wellbeingScoreScale: today.wellbeingScoreScale ?? 5,
+            moodDescription: today.moodDescription,
             energyScore: today.energyScore,
+            energyDescription: today.energyDescription,
             researchMinutes: today.researchMinutes,
+            researchDescription: today.researchDescription,
             learningMinutes: today.learningMinutes,
+            learningDescription: today.learningDescription,
             dailyNote: today.dailyNote,
             status: switch (today.recordStatus) {
               'draft' => TodayRecordStatus.draft,
@@ -568,7 +569,7 @@ Future<SyncConflictSnapshot?> _loadTodaySnapshot(
   );
 }
 
-bool _samePayload(Object? left, Object? right) {
+bool sameSyncPayload(Object? left, Object? right) {
   if (left is ProfileSyncPayload && right is ProfileSyncPayload) {
     return left.displayName == right.displayName &&
         left.growthFocus == right.growthFocus &&

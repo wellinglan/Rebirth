@@ -6,6 +6,9 @@ import 'package:rebirth/core/utils/date_time_service.dart';
 import 'package:rebirth/core/utils/deterministic_uuid.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback.dart';
 import 'package:rebirth/features/ai_coach/domain/ai_report_feedback_repository.dart';
+import 'package:rebirth/features/sync/domain/conflict_reconciliation_service.dart';
+import 'package:rebirth/features/sync/domain/sync_record_baseline.dart';
+import 'package:rebirth/features/sync/domain/sync_record_baseline_repository.dart';
 
 final class LocalAiReportFeedbackRepository
     implements AiReportFeedbackRepository {
@@ -13,11 +16,15 @@ final class LocalAiReportFeedbackRepository
     required this.database,
     required this.dateTimeService,
     this.reasonCodec = const AiReportFeedbackReasonCodec(),
+    this.baselines,
+    this.reconciliationService = const ConflictReconciliationService(),
   });
 
   final db.AppDatabase database;
   final DateTimeService dateTimeService;
   final AiReportFeedbackReasonCodec reasonCodec;
+  final SyncRecordBaselineRepository? baselines;
+  final ConflictReconciliationService reconciliationService;
 
   @override
   Future<AiReportFeedback?> getForVersion({
@@ -102,10 +109,17 @@ final class LocalAiReportFeedbackRepository
     final existing = await _row(userId, reportId, reportVersion);
     if (existing == null || existing.deletedAt != null) return;
     if (existing.serverVersion == null) {
-      await (database.delete(database.aiReportFeedback)..where(
-            (row) => row.id.equals(existing.id) & row.userId.equals(userId),
-          ))
-          .go();
+      await database.transaction(() async {
+        await (database.delete(database.aiReportFeedback)..where(
+              (row) => row.id.equals(existing.id) & row.userId.equals(userId),
+            ))
+            .go();
+        await baselines?.delete(
+          localUserId: userId,
+          entityType: SyncRecordBaselineEntity.aiReportFeedback,
+          recordId: existing.id,
+        );
+      });
       return;
     }
     final now = dateTimeService.currentSnapshot().utcMilliseconds;
@@ -156,49 +170,56 @@ final class LocalAiReportFeedbackRepository
   }
 
   @override
-  Future<void> applyRemote(AiReportFeedbackRemoteRecord remote) async {
-    final userId = (await database.bootstrapDao.bootstrap()).activeUserId;
-    final report = await _findOwnedReport(userId, remote.reportId);
-    if (report == null ||
-        !await _versionExists(remote.reportId, remote.reportVersion)) {
-      return;
-    }
-    final existing = await _row(userId, remote.reportId, remote.reportVersion);
-    if (existing == null) {
-      await database
-          .into(database.aiReportFeedback)
-          .insert(
-            db.AiReportFeedbackCompanion.insert(
-              id: Value(remote.id),
-              userId: userId,
-              reportId: remote.reportId,
-              reportVersion: remote.reportVersion,
-              reportType: remote.reportType,
-              helpfulness: remote.helpfulness.databaseValue,
-              reasonCodesJson: Value(reasonCodec.encode(remote.reasons)),
-              promptId: remote.promptId,
-              promptVersion: remote.promptVersion,
-              syncStatus: const Value('synced'),
-              serverVersion: Value(remote.serverVersion),
-              lastSyncedAt: Value(remote.updatedAt),
-              deletedAt: Value(remote.deletedAt),
-              remoteSnapshotJson: const Value(null),
-              createdAt: Value(remote.createdAt),
-              updatedAt: Value(remote.updatedAt),
-            ),
-          );
-      return;
-    }
-    if (existing.syncStatus == 'conflict') return;
-    if (existing.syncStatus == 'pending_push' ||
-        existing.syncStatus == 'pending_delete' ||
-        existing.syncStatus == 'local_only') {
-      if (existing.serverVersion == remote.serverVersion) return;
-      await markConflict(id: existing.id, remote: remote.snapshot);
-      return;
-    }
-    if ((existing.serverVersion ?? 0) >= remote.serverVersion) return;
-    await _writeRemote(existing.id, remote.snapshot);
+  Future<void> applyRemote(AiReportFeedbackRemoteRecord remote) {
+    return database.transaction(() async {
+      final userId = (await database.bootstrapDao.bootstrap()).activeUserId;
+      final report = await _findOwnedReport(userId, remote.reportId);
+      if (report == null ||
+          !await _versionExists(remote.reportId, remote.reportVersion)) {
+        return;
+      }
+      final existing = await _row(
+        userId,
+        remote.reportId,
+        remote.reportVersion,
+      );
+      if (existing == null) {
+        await database
+            .into(database.aiReportFeedback)
+            .insert(
+              db.AiReportFeedbackCompanion.insert(
+                id: Value(remote.id),
+                userId: userId,
+                reportId: remote.reportId,
+                reportVersion: remote.reportVersion,
+                reportType: remote.reportType,
+                helpfulness: remote.helpfulness.databaseValue,
+                reasonCodesJson: Value(reasonCodec.encode(remote.reasons)),
+                promptId: remote.promptId,
+                promptVersion: remote.promptVersion,
+                syncStatus: const Value('synced'),
+                serverVersion: Value(remote.serverVersion),
+                lastSyncedAt: Value(remote.updatedAt),
+                deletedAt: Value(remote.deletedAt),
+                remoteSnapshotJson: const Value(null),
+                createdAt: Value(remote.createdAt),
+                updatedAt: Value(remote.updatedAt),
+              ),
+            );
+        await _captureRemoteBaseline(userId, remote.snapshot);
+        return;
+      }
+      if (existing.syncStatus == 'conflict') return;
+      if (existing.syncStatus == 'pending_push' ||
+          existing.syncStatus == 'pending_delete' ||
+          existing.syncStatus == 'local_only') {
+        if (existing.serverVersion == remote.serverVersion) return;
+        await markConflict(id: existing.id, remote: remote.snapshot);
+        return;
+      }
+      if ((existing.serverVersion ?? 0) >= remote.serverVersion) return;
+      await _writeRemote(existing.id, remote.snapshot);
+    });
   }
 
   @override
@@ -206,18 +227,28 @@ final class LocalAiReportFeedbackRepository
     required String id,
     required int serverVersion,
     required int serverUpdatedAt,
-  }) async {
-    final userId = (await database.bootstrapDao.bootstrap()).activeUserId;
-    await (database.update(
-      database.aiReportFeedback,
-    )..where((row) => row.id.equals(id) & row.userId.equals(userId))).write(
-      db.AiReportFeedbackCompanion(
-        syncStatus: const Value('synced'),
-        serverVersion: Value(serverVersion),
-        lastSyncedAt: Value(serverUpdatedAt),
-        remoteSnapshotJson: const Value(null),
-      ),
-    );
+  }) {
+    return database.transaction(() async {
+      final userId = (await database.bootstrapDao.bootstrap()).activeUserId;
+      await (database.update(
+        database.aiReportFeedback,
+      )..where((row) => row.id.equals(id) & row.userId.equals(userId))).write(
+        db.AiReportFeedbackCompanion(
+          syncStatus: const Value('synced'),
+          serverVersion: Value(serverVersion),
+          lastSyncedAt: Value(serverUpdatedAt),
+          remoteSnapshotJson: const Value(null),
+        ),
+      );
+      final row = await _rowById(userId, id);
+      if (row != null) {
+        await _captureLocalBaseline(
+          row,
+          serverVersion: serverVersion,
+          capturedAt: serverUpdatedAt,
+        );
+      }
+    });
   }
 
   @override
@@ -237,14 +268,18 @@ final class LocalAiReportFeedbackRepository
   }
 
   @override
-  Future<void> adoptRemote(String id) async {
-    final userId = (await database.bootstrapDao.bootstrap()).activeUserId;
-    final row = await _rowById(userId, id);
-    final remote = row == null ? null : _decodeSnapshot(row.remoteSnapshotJson);
-    if (row == null || remote == null || row.syncStatus != 'conflict') {
-      throw const AiReportFeedbackNotAllowedException();
-    }
-    await _writeRemote(id, remote);
+  Future<void> adoptRemote(String id) {
+    return database.transaction(() async {
+      final userId = (await database.bootstrapDao.bootstrap()).activeUserId;
+      final row = await _rowById(userId, id);
+      final remote = row == null
+          ? null
+          : _decodeSnapshot(row.remoteSnapshotJson);
+      if (row == null || remote == null || row.syncStatus != 'conflict') {
+        throw const AiReportFeedbackNotAllowedException();
+      }
+      await _writeRemote(id, remote);
+    });
   }
 
   @override
@@ -288,6 +323,64 @@ final class LocalAiReportFeedbackRepository
         remoteSnapshotJson: const Value(null),
       ),
     );
+    await _captureRemoteBaseline(userId, remote);
+  }
+
+  Future<void> _captureLocalBaseline(
+    db.AiReportFeedbackRow row, {
+    required int serverVersion,
+    required int capturedAt,
+  }) async {
+    final repository = baselines;
+    if (repository == null) return;
+    await repository.write(
+      SyncRecordBaseline(
+        localUserId: row.userId,
+        entityType: SyncRecordBaselineEntity.aiReportFeedback,
+        recordId: row.id,
+        baseExists: true,
+        baseServerVersion: serverVersion,
+        baseTombstone: row.deletedAt != null,
+        groupHashes: {
+          'feedback': _feedbackHash(row.helpfulness, row.reasonCodesJson),
+        },
+        capturedAt: capturedAt,
+      ),
+    );
+  }
+
+  Future<void> _captureRemoteBaseline(
+    String localUserId,
+    AiReportFeedbackRemoteSnapshot remote,
+  ) async {
+    final repository = baselines;
+    if (repository == null) return;
+    final reasonCodes = remote.reasons.map((item) => item.code).toList()
+      ..sort();
+    await repository.write(
+      SyncRecordBaseline(
+        localUserId: localUserId,
+        entityType: SyncRecordBaselineEntity.aiReportFeedback,
+        recordId: remote.id,
+        baseExists: true,
+        baseServerVersion: remote.serverVersion,
+        baseTombstone: remote.deletedAt != null,
+        groupHashes: {
+          'feedback': reconciliationService.hashCanonicalValue({
+            'helpfulness': remote.helpfulness.databaseValue,
+            'reason_codes': reasonCodes,
+          }),
+        },
+        capturedAt: remote.updatedAt,
+      ),
+    );
+  }
+
+  String _feedbackHash(String helpfulness, String reasonCodesJson) {
+    return reconciliationService.hashCanonicalValue({
+      'helpfulness': helpfulness,
+      'reason_codes': jsonDecode(reasonCodesJson),
+    });
   }
 
   Future<db.AiReport> _eligibleVersion(

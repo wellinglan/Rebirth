@@ -122,6 +122,7 @@ final class SyncEntityResult {
     this.deletedCount = 0,
     this.ignoredCount = 0,
     this.conflictCount = 0,
+    this.automaticallyReconciledCount = 0,
     this.serverVersion,
   });
 
@@ -133,6 +134,7 @@ final class SyncEntityResult {
   final int deletedCount;
   final int ignoredCount;
   final int conflictCount;
+  final int automaticallyReconciledCount;
   final int? serverVersion;
 
   bool get isSuccessful =>
@@ -161,6 +163,8 @@ final class SyncEntityResult {
       deletedCount: deletedCount + other.deletedCount,
       ignoredCount: ignoredCount + other.ignoredCount,
       conflictCount: conflictCount + other.conflictCount,
+      automaticallyReconciledCount:
+          automaticallyReconciledCount + other.automaticallyReconciledCount,
       serverVersion: other.serverVersion ?? serverVersion,
     );
   }
@@ -229,6 +233,11 @@ final class SyncRunResult {
             result.pushedCount > 0 ||
             result.pulledCount > 0,
       );
+
+  int get automaticallyReconciledCount => entityResults.fold(
+    0,
+    (total, result) => total + result.automaticallyReconciledCount,
+  );
 
   SyncEntityResult? resultFor(SyncEntityType entityType) {
     for (final result in entityResults) {

@@ -4,11 +4,14 @@ import 'package:rebirth/features/growth/presentation/growth_controller.dart';
 import 'package:rebirth/features/personal_data/application/personal_data_aggregation_controller.dart';
 import 'package:rebirth/features/personal_data/application/personal_data_providers.dart';
 import 'package:rebirth/features/profile/data/profile_sync_repository_provider.dart';
+import 'package:rebirth/features/sync/data/sync_conflict_providers.dart';
+import 'package:rebirth/features/sync/data/sync_providers.dart';
 
 import '../application/sync_all_orchestrator.dart';
 import '../application/sync_module_registry.dart';
 import '../application/sync_module_runner.dart';
 import '../domain/sync_module.dart';
+import '../domain/sync_models.dart';
 import 'health_sync_controller.dart';
 import 'ai_report_sync_controller.dart';
 import 'journal_sync_controller.dart';
@@ -24,11 +27,22 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
   final registry = ref.watch(syncModuleRegistryProvider);
   SyncModuleDescriptor descriptor(SyncModuleId id) =>
       registry.descriptorFor(id);
-  Future<T> runAndRefresh<T>(Future<T> Function() operation) async {
-    final result = await operation();
+  Future<SyncRunResult> runAndRefresh(
+    SyncModuleId moduleId,
+    Future<SyncRunResult> Function() operation,
+  ) async {
+    final initial = await operation();
+    final result = await ref
+        .read(syncConflictReconciliationRunnerProvider)
+        .reconcile(
+          entityTypes: descriptor(moduleId).entityTypes,
+          initialResult: initial,
+        );
     ref.invalidate(personalDataAggregationControllerProvider);
     ref.invalidate(personalDataProviderRegistryProvider);
     ref.invalidate(growthControllerProvider);
+    ref.invalidate(activeSyncConflictCountProvider);
+    ref.invalidate(activeSyncConflictListProvider);
     return result;
   }
 
@@ -36,6 +50,7 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
     CallbackSyncModuleRunner(
       descriptor: descriptor(SyncModuleId.profile),
       onRun: () => runAndRefresh(
+        SyncModuleId.profile,
         ref.read(profileSyncControllerProvider.notifier).syncProfile,
       ),
       onRefresh: () async {
@@ -44,8 +59,10 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
     ),
     CallbackSyncModuleRunner(
       descriptor: descriptor(SyncModuleId.plan),
-      onRun: () =>
-          runAndRefresh(ref.read(planSyncControllerProvider.notifier).syncPlan),
+      onRun: () => runAndRefresh(
+        SyncModuleId.plan,
+        ref.read(planSyncControllerProvider.notifier).syncPlan,
+      ),
       onRefresh: ref
           .read(planSyncControllerProvider.notifier)
           .reloadConflictCount,
@@ -53,6 +70,7 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
     CallbackSyncModuleRunner(
       descriptor: descriptor(SyncModuleId.today),
       onRun: () => runAndRefresh(
+        SyncModuleId.today,
         ref.read(todaySyncControllerProvider.notifier).syncToday,
       ),
       onRefresh: ref
@@ -62,6 +80,7 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
     CallbackSyncModuleRunner(
       descriptor: descriptor(SyncModuleId.journal),
       onRun: () => runAndRefresh(
+        SyncModuleId.journal,
         ref.read(journalSyncControllerProvider.notifier).syncJournal,
       ),
       onRefresh: ref
@@ -71,6 +90,7 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
     CallbackSyncModuleRunner(
       descriptor: descriptor(SyncModuleId.health),
       onRun: () => runAndRefresh(
+        SyncModuleId.health,
         ref.read(healthSyncControllerProvider.notifier).syncHealth,
       ),
       onRefresh: ref
@@ -80,6 +100,7 @@ final syncModuleRunnersProvider = Provider<List<SyncModuleRunner>>((ref) {
     CallbackSyncModuleRunner(
       descriptor: descriptor(SyncModuleId.aiReport),
       onRun: () => runAndRefresh(
+        SyncModuleId.aiReport,
         ref.read(aiReportSyncControllerProvider.notifier).syncAiReports,
       ),
       onRefresh: ref
